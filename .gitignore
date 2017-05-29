@@ -15,3 +15,6 @@
 
 /controller
 /ksonnet-seal
+/controller.image
+/*-static
+/controller.yaml
