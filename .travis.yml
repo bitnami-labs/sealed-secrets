@@ -1,0 +1,36 @@
+language: go
+
+go:
+  - 1.7
+  - 1.8
+
+os:
+  - linux
+  - osx
+
+before_install:
+  - set -e
+
+install:
+  - go build -i ./...
+
+script:
+  - make VERSION=${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID}
+  - make test
+  - make vet
+
+after_script: set +e
+
+cache:
+  directories:
+    - $GOPATH/pkg
+
+branches:
+  only:
+    - master
+    # release tags
+    - /^v\d+\.\d+\.\d+.*$/
+
+notifications:
+  email:
+    on_success: never
