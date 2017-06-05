@@ -19,11 +19,11 @@ controller: $(GO_FILES)
 ksonnet-seal: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) ./cmd/ksonnet-seal
 
-%-static: $(GO_FILES)
-	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) ./cmd/$*
+docker/controller: $(GO_FILES)
+	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) ./cmd/controller
 
-controller.image: Dockerfile.single controller-static
-	$(DOCKER) build -f Dockerfile.single -t $(CONTROLLER_IMAGE) .
+controller.image: docker/Dockerfile docker/controller
+	$(DOCKER) build -t $(CONTROLLER_IMAGE) docker/
 	#$(DOCKER) image inspect $(CONTROLLER_IMAGE) -f '$(shell echo $(CONTROLLER_IMAGE) | cut -d: -f1)@{{.Id}}' > $@.tmp
 	echo $(CONTROLLER_IMAGE) >$@.tmp
 	mv $@.tmp $@

@@ -1,5 +1,5 @@
 FROM alpine
 MAINTAINER Angus Lees <gus@inodes.org>
-COPY controller-static /usr/local/bin/controller
+COPY controller /usr/local/bin/
 
 CMD ["controller", "--logtostderr"]
