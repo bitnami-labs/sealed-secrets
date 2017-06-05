@@ -5,6 +5,7 @@ GOFMT = gofmt
 KUBECFG = kubecfg
 DOCKER = docker
 
+DOCKER_USE_SHA = 0
 CONTROLLER_IMAGE = sealed-secrets-controller:latest
 
 # TODO: Simplify this once ./... ignores ./vendor
@@ -24,8 +25,11 @@ docker/controller: $(GO_FILES)
 
 controller.image: docker/Dockerfile docker/controller
 	$(DOCKER) build -t $(CONTROLLER_IMAGE) docker/
-	#$(DOCKER) image inspect $(CONTROLLER_IMAGE) -f '$(shell echo $(CONTROLLER_IMAGE) | cut -d: -f1)@{{.Id}}' > $@.tmp
+ifeq ($(DOCKER_USE_SHA),1)
+	$(DOCKER) image inspect $(CONTROLLER_IMAGE) -f '$(shell echo $(CONTROLLER_IMAGE) | cut -d: -f1)@{{.Id}}' > $@.tmp
+else
 	echo $(CONTROLLER_IMAGE) >$@.tmp
+endif
 	mv $@.tmp $@
 
 controller.yaml: controller.jsonnet controller.image

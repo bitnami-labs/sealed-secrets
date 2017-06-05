@@ -13,38 +13,19 @@ local trim = function(str) (
     str
 );
 
+local namespace = "kube-system";
+
 local controllerImage = trim(importstr "controller.image");
 
 local controllerContainer =
   container.default("sealed-secrets-controller", controllerImage) +
-  container.imagePullPolicy("IfNotPresent");
+  container.command(["controller"]) +
+  container.args(["--logtostderr"]);
 
 local labels = {name: "sealed-secrets-controller"};
 
 local controllerDeployment =
-  deployment.default("sealed-secrets-controller", controllerContainer) +
+  deployment.default("sealed-secrets-controller", controllerContainer, namespace) +
   {spec+: {template+: {metadata: {labels: labels}}}};
 
-//util.prune(controllerDeployment)
-
-local kube = import "kube.libsonnet";
-
-{
-  deploy: kube.Deployment("sealed-secrets-controller") {
-    spec+: {
-      template+: {
-        spec+: {
-          containers_+: {
-            controller: kube.Container("controller") {
-              image: controllerImage,
-              imagePullPolicy: "IfNotPresent",
-              command: ["controller"],
-              args_+: {
-                logtostderr: "true",
-                v: 9,
-              }}}}}}},
-  // tpr: kube.ThirdPartyResource("sealed-secret.ksonnet.io") {
-  //   versions_: ["v1alpha1"],
-  //   description: "A sealed (encrypted) Secret.",
-  // },
-}
+util.prune(controllerDeployment)
