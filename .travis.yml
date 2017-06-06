@@ -42,7 +42,10 @@ after_script: set +e
 
 after_success:
   - |
-    if [ "$TRAVIS_OS_NAME" = linux -a "$TRAVIS_BRANCH" = master -a "$TRAVIS_PULL_REQUEST" = false ]; then
+    if [[ "$TRAVIS_OS_NAME" == linux && \
+          "$TRAVIS_BRANCH" == master && \
+          "$TRAVIS_PULL_REQUEST" == false && \
+          "$TRAVIS_GO_VERSION" =~ '^1\.7\.[0-9]+$' ]]; then
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
       docker tag $CONTROLLER_IMAGE ${CONTROLLER_IMAGE_NAME}:latest
       docker push ${CONTROLLER_IMAGE_NAME}:latest
