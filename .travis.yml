@@ -37,7 +37,7 @@ before_deploy:
     if [ "$TRAVIS_OS_NAME" = linux ]; then
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
       img=quay.io/ksonnet/sealed-secrets-controller:${TRAVIS_TAG:-latest}
-      make controller.yaml CONTROLLER_IMAGE=$img DOCKER_USE_SHA=1
+      make controller.yaml CONTROLLER_IMAGE=$img
       docker push $img
       if [ -n "$TRAVIS_TAG" ]; then
         docker tag $img quay.io/ksonnet/sealed-secrets-controller:latest
