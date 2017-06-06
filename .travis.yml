@@ -11,6 +11,11 @@ os:
   - linux
   - osx
 
+env:
+  global:
+    - CONTROLLER_IMAGE_NAME=quay.io/ksonnet/sealed-secrets-controller
+    - CONTROLLER_IMAGE=${CONTROLLER_IMAGE_NAME}:${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID}
+
 before_install:
   - set -e
 
@@ -21,28 +26,33 @@ install:
   - export KUBECFG_JPATH=$PWD/ksonnet-lib
 
 script:
-  - make VERSION=${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID}
+  - make
   - make test
   - make vet
+  - make ksonnet-seal-static
+  - name=$(go env GOOS)-$(go env GOARCH)-ksonnet-seal
+  - cp ksonnet-seal-static $name
+  - ./$name --help || test $? -eq 2
+  - |
+    if [ "$TRAVIS_OS_NAME" = linux ]; then
+      make controller.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
+    fi
 
 after_script: set +e
 
-before_deploy:
-  - name=$(go env GOOS)-$(go env GOARCH)-ksonnet-seal
-  - cp ksonnet-seal $name
-  - "strip $name || :"
-  - "size $name || :"
+after_success:
   - |
-    rm -f controller.image
+    if [ "$TRAVIS_OS_NAME" = linux -a "$TRAVIS_BRANCH" = master -a "$TRAVIS_PULL_REQUEST" = false ]; then
+      docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
+      docker tag $CONTROLLER_IMAGE ${CONTROLLER_IMAGE_NAME}:latest
+      docker push ${CONTROLLER_IMAGE_NAME}:latest
+    fi
+
+before_deploy:
+  - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then
-      docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
-      img=quay.io/ksonnet/sealed-secrets-controller:${TRAVIS_TAG:-latest}
-      make controller.yaml CONTROLLER_IMAGE=$img DOCKER_USE_SHA=1
-      docker push $img
-      if [ -n "$TRAVIS_TAG" ]; then
-        docker tag $img quay.io/ksonnet/sealed-secrets-controller:latest
-        docker push quay.io/ksonnet/sealed-secrets-controller:latest
-      fi
+      docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
+      docker push $CONTROLLER_IMAGE
     fi
 
 deploy:
@@ -67,7 +77,7 @@ branches:
   only:
     - master
     # release tags
-    - /^v\d+\.\d+\.\d+.*$/
+    - /^v\d+\.\d+\.\d+.*/
 
 notifications:
   email:
