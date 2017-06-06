@@ -4,6 +4,9 @@ go:
   - 1.7
   - 1.8
 
+services:
+  - docker
+
 os:
   - linux
   - osx
@@ -13,6 +16,9 @@ before_install:
 
 install:
   - go build -i ./...
+  - go get github.com/ksonnet/kubecfg
+  - git clone --depth=1 https://github.com/ksonnet/ksonnet-lib.git
+  - export KUBECFG_JPATH=$PWD/ksonnet-lib
 
 script:
   - make VERSION=${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID}
@@ -21,9 +27,41 @@ script:
 
 after_script: set +e
 
+before_deploy:
+  - name=$(go env GOOS)-$(go env GOARCH)-ksonnet-seal
+  - cp ksonnet-seal $name
+  - "strip $name || :"
+  - "size $name || :"
+  - |
+    rm -f controller.image
+    if [ "$TRAVIS_OS_NAME" = linux ]; then
+      docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"
+      img=quay.io/ksonnet/sealed-secrets-controller:${TRAVIS_TAG:-latest}
+      make controller.yaml CONTROLLER_IMAGE=$img DOCKER_USE_SHA=1
+      docker push $img
+      if [ -n "$TRAVIS_TAG" ]; then
+        docker tag $img quay.io/ksonnet/sealed-secrets-controller:latest
+        docker push quay.io/ksonnet/sealed-secrets-controller:latest
+      fi
+    fi
+
+deploy:
+  api_key:
+    secure: f2TxbMzYpq4u/5/B3oJdr7qNdBcTWflWG/SUATPnlIm0IUXKnHNS22MQerL27CNi7Ijg/ecVaWoDuqPwTBKqf1pAaM62JSID/7Y2DzkfvytJ5hCN1ifVYr/MrQJYPrQN49RstBPp7JHe4D+Tm75iVeI2pJEX8RmWBOXKxTp+XaFXymBM0O4qE8GybjRW9X8wXQLuvvH1mnAWGC+hROqYQEAi7JKRTTE8InA22aF73KucJM4FcskRrqSNcdtsMP5Jhlx7OgBnmSNidemYmTrshq7G6pburJjK0bl4mWPnce/4zaPVlTdLlQghn0cIogZ8M3RVwTBjOOsqiKDDhkKihsTWM1ghgtLN+FVpCSVvpwUjBkyatRE1cZk7aXg6xCADcCGQjB8rTveVauusCYm5n5EYFIcXSlZDxFvzVlBcJ2Z4tIHtqDKCd+5okf6AxfCj2bludGyzXVd5f2cqswU+duMVTJCOgaQ9PJc0RLHjvU/vKXkv9uS+1ZaKYlMZrJQD3IR6RIHsazIDVWmfKY8jICDjsIhMJHcc7HqThz3I8P82/o6TJbBDiAiANDD1MlXi+n1Epa6UTxglIdxntFm8CvwKlS+agJSkmLPCNxoENyvu1HRZOe8jW7itjRxxS5+q0jnxbuYLHtRm8kqQb8GYpiRD1UsMJv/ylfKnhd2Epp4=
+  file:
+    - *-ksonnet-seal
+    - controller.yaml
+  file_glob: true
+  on:
+    go: 1.8
+    tags: true
+  provider: releases
+  skip_cleanup: true
+
 cache:
   directories:
     - $GOPATH/pkg
+    - $GOPATH/bin
 
 branches:
   only:

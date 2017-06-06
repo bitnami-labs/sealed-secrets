@@ -224,10 +224,7 @@ func main2() error {
 		return err
 	}
 
-	controller, err := NewSealedSecretController(clientset, ssclient, rand.Reader, privKey)
-	if err != nil {
-		return err
-	}
+	controller := NewController(clientset, ssclient, rand.Reader, privKey)
 
 	stop := make(chan struct{})
 	defer close(stop)

@@ -5,21 +5,39 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"time"
 
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 
 	ssv1alpha1 "github.com/ksonnet/sealed-secrets/apis/v1alpha1"
 )
 
-func unseal(clientset kubernetes.Interface, codecs runtimeserializer.CodecFactory, rnd io.Reader, key *rsa.PrivateKey, ssecret *ssv1alpha1.SealedSecret) error {
+const maxRetries = 5
+
+// Controller implements the main sealed-secrets-controller loop.
+type Controller struct {
+	queue    workqueue.RateLimitingInterface
+	informer cache.SharedIndexInformer
+	sclient  v1.SecretsGetter
+	privKey  *rsa.PrivateKey
+	rand     io.Reader
+}
+
+func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, rnd io.Reader, key *rsa.PrivateKey, ssecret *ssv1alpha1.SealedSecret) error {
 	// Important: Be careful not to reveal the namespace/name of
-	// the decrypted Secret (or any other detail) in log messages.
+	// the *decrypted* Secret (or any other detail) in error/log
+	// messages.
 
 	objName := fmt.Sprintf("%s/%s", ssecret.GetObjectMeta().GetNamespace(), ssecret.GetObjectMeta().GetName())
 	log.Printf("Updating %s", objName)
@@ -30,9 +48,9 @@ func unseal(clientset kubernetes.Interface, codecs runtimeserializer.CodecFactor
 		return err
 	}
 
-	_, err = clientset.Core().Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(secret)
+	_, err = sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(secret)
 	if err != nil && errors.IsAlreadyExists(err) {
-		_, err = clientset.Core().Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(secret)
+		_, err = sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(secret)
 	}
 	if err != nil {
 		// TODO: requeue?
@@ -43,28 +61,144 @@ func unseal(clientset kubernetes.Interface, codecs runtimeserializer.CodecFactor
 	return nil
 }
 
-// NewSealedSecretController returns the main sealed-secrets controller loop.
-func NewSealedSecretController(clientset kubernetes.Interface, ssclient rest.Interface, rand io.Reader, privKey *rsa.PrivateKey) (cache.Controller, error) {
-	informer := cache.NewSharedInformer(
-		cache.NewListWatchFromClient(ssclient, ssv1alpha1.SealedSecretPlural, api.NamespaceAll, fields.Everything()),
+// NewController returns the main sealed-secrets controller loop.
+func NewController(clientset kubernetes.Interface, ssclient rest.Interface, rand io.Reader, privKey *rsa.PrivateKey) cache.Controller {
+	lw := cache.NewListWatchFromClient(ssclient, ssv1alpha1.SealedSecretPlural, api.NamespaceAll, fields.Everything())
+
+	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+
+	informer := cache.NewSharedIndexInformer(
+		lw,
 		&ssv1alpha1.SealedSecret{},
 		0, // No periodic resync
+		cache.Indexers{},
 	)
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			ssecret := obj.(*ssv1alpha1.SealedSecret)
-			if err := unseal(clientset, api.Codecs, rand, privKey, ssecret); err != nil {
-				log.Printf("Error unsealing %s/%s: %v", ssecret.GetObjectMeta().GetNamespace(), ssecret.GetObjectMeta().GetName(), err)
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+			if err == nil {
+				queue.Add(key)
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
-			ssecret := newObj.(*ssv1alpha1.SealedSecret)
-			if err := unseal(clientset, api.Codecs, rand, privKey, ssecret); err != nil {
-				log.Printf("Error unsealing %s/%s: %v", ssecret.GetObjectMeta().GetNamespace(), ssecret.GetObjectMeta().GetName(), err)
+			key, err := cache.MetaNamespaceKeyFunc(newObj)
+			if err == nil {
+				queue.Add(key)
+			}
+		},
+		DeleteFunc: func(obj interface{}) {
+			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+			if err == nil {
+				queue.Add(key)
 			}
 		},
 	})
 
-	return informer, nil
+	return &Controller{
+		informer: informer,
+		queue:    queue,
+		sclient:  clientset.Core(),
+		rand:     rand,
+		privKey:  privKey,
+	}
+}
+
+// HasSynced returns true once this controller has completed an
+// initial resource listing
+func (c *Controller) HasSynced() bool {
+	return c.informer.HasSynced()
+}
+
+// LastSyncResourceVersion is the resource version observed when last
+// synced with the underlying store. The value returned is not
+// synchronized with access to the underlying store and is not
+// thread-safe.
+func (c *Controller) LastSyncResourceVersion() string {
+	return c.informer.LastSyncResourceVersion()
+}
+
+// Run begins processing items, and will continue until a value is
+// sent down stopCh.  It's an error to call Run more than once.  Run
+// blocks; call via go.
+func (c *Controller) Run(stopCh <-chan struct{}) {
+	defer utilruntime.HandleCrash()
+
+	defer c.queue.ShutDown()
+
+	go c.informer.Run(stopCh)
+
+	if !cache.WaitForCacheSync(stopCh, c.informer.HasSynced) {
+		utilruntime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))
+		return
+	}
+
+	wait.Until(c.runWorker, time.Second, stopCh)
+
+	log.Printf("Shutting down controller")
+}
+
+func (c *Controller) runWorker() {
+	for c.processNextItem() {
+		// continue looping
+	}
+}
+
+func (c *Controller) processNextItem() bool {
+	key, quit := c.queue.Get()
+	if quit {
+		return false
+	}
+
+	defer c.queue.Done(key)
+	err := c.unseal(key.(string))
+	if err == nil {
+		// No error, reset the ratelimit counters
+		c.queue.Forget(key)
+	} else if c.queue.NumRequeues(key) < maxRetries {
+		log.Printf("Error updating %s: %v", key, err)
+		c.queue.AddRateLimited(key)
+	} else {
+		// err != nil and too many retries
+		log.Printf("Error updating %s, giving up: %v", key, err)
+		c.queue.Forget(key)
+		utilruntime.HandleError(err)
+	}
+
+	return true
+}
+
+func (c *Controller) unseal(key string) error {
+	obj, exists, err := c.informer.GetIndexer().GetByKey(key)
+	if err != nil {
+		log.Printf("Error fetching object with key %s from store: %v", key, err)
+		return err
+	}
+
+	if !exists {
+		log.Printf("SealedSecret %s has gone, deleting Secret", key)
+		ns, name, err := cache.SplitMetaNamespaceKey(key)
+		if err != nil {
+			return err
+		}
+		err = c.sclient.Secrets(ns).Delete(name, &metav1.DeleteOptions{})
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	ssecret := obj.(*ssv1alpha1.SealedSecret)
+	log.Printf("Updating %s", key)
+
+	secret, err := ssecret.Unseal(api.Codecs, c.rand, c.privKey)
+	if err != nil {
+		return err
+	}
+
+	_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(secret)
+	if err != nil && errors.IsAlreadyExists(err) {
+		_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(secret)
+	}
+	return err
 }

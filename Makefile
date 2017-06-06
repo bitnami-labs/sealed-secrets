@@ -5,6 +5,7 @@ GOFMT = gofmt
 KUBECFG = kubecfg
 DOCKER = docker
 
+DOCKER_USE_SHA = 0
 CONTROLLER_IMAGE = sealed-secrets-controller:latest
 
 # TODO: Simplify this once ./... ignores ./vendor
@@ -19,13 +20,16 @@ controller: $(GO_FILES)
 ksonnet-seal: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) ./cmd/ksonnet-seal
 
-%-static: $(GO_FILES)
-	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) ./cmd/$*
+docker/controller: $(GO_FILES)
+	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) ./cmd/controller
 
-controller.image: Dockerfile.single controller-static
-	$(DOCKER) build -f Dockerfile.single -t $(CONTROLLER_IMAGE) .
-	#$(DOCKER) image inspect $(CONTROLLER_IMAGE) -f '$(shell echo $(CONTROLLER_IMAGE) | cut -d: -f1)@{{.Id}}' > $@.tmp
+controller.image: docker/Dockerfile docker/controller
+	$(DOCKER) build -t $(CONTROLLER_IMAGE) docker/
+ifeq ($(DOCKER_USE_SHA),1)
+	$(DOCKER) image inspect $(CONTROLLER_IMAGE) -f '$(shell echo $(CONTROLLER_IMAGE) | cut -d: -f1)@{{.Id}}' > $@.tmp
+else
 	echo $(CONTROLLER_IMAGE) >$@.tmp
+endif
 	mv $@.tmp $@
 
 controller.yaml: controller.jsonnet controller.image
