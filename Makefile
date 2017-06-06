@@ -20,8 +20,11 @@ controller: $(GO_FILES)
 ksonnet-seal: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) ./cmd/ksonnet-seal
 
-docker/controller: $(GO_FILES)
-	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) ./cmd/controller
+%-static: $(GO_FILES)
+	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) ./cmd/$*
+
+docker/%: %-static
+	cp $< $@
 
 controller.image: docker/Dockerfile docker/controller
 	$(DOCKER) build -t $(CONTROLLER_IMAGE) docker/
@@ -47,5 +50,7 @@ fmt:
 
 clean:
 	$(RM) ./controller ./ksonnet-seal
+	$(RM) *-static
+	$(RM) docker/controller
 
 .PHONY: all test clean vet fmt
