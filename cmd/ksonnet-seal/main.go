@@ -25,7 +25,9 @@ import (
 var (
 	// TODO: Fetch this automatically.
 	// TODO: Verify k8s server signature against cert in kube client config.
-	certFile         = flag.String("cert", "", "Certificate / public key to use for encryption.")
+	certFile = flag.String("cert", "", "Certificate / public key to use for encryption.")
+
+	// TODO: Fetch default from regular kubectl config
 	defaultNamespace = flag.String("namespace", api.NamespaceDefault, "Default namespace to assume for Secret.")
 )
 

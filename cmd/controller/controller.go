@@ -128,7 +128,7 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 
 	go c.informer.Run(stopCh)
 
-	if !cache.WaitForCacheSync(stopCh, c.informer.HasSynced) {
+	if !cache.WaitForCacheSync(stopCh, c.HasSynced) {
 		utilruntime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))
 		return
 	}
@@ -156,7 +156,7 @@ func (c *Controller) processNextItem() bool {
 		// No error, reset the ratelimit counters
 		c.queue.Forget(key)
 	} else if c.queue.NumRequeues(key) < maxRetries {
-		log.Printf("Error updating %s: %v", key, err)
+		log.Printf("Error updating %s, will retry: %v", key, err)
 		c.queue.AddRateLimited(key)
 	} else {
 		// err != nil and too many retries

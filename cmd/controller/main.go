@@ -24,7 +24,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
-	"k8s.io/client-go/pkg/apis/extensions/v1beta1"
 	"k8s.io/client-go/rest"
 	certUtil "k8s.io/client-go/util/cert"
 
@@ -32,7 +31,7 @@ import (
 )
 
 var (
-	keyName  = flag.String("key-name", "seal-key", "Name of Secret containing public/private key.")
+	keyName  = flag.String("key-name", "sealed-secrets-key", "Name of Secret containing public/private key.")
 	keySize  = flag.Int("key-size", 4096, "Size of encryption key.")
 	validFor = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN     = flag.String("my-cn", "", "CN to use in generated certificate.")
@@ -40,27 +39,6 @@ var (
 
 type controller struct {
 	clientset kubernetes.Interface
-}
-
-func createTPR(client kubernetes.Interface) error {
-	tpr := &v1beta1.ThirdPartyResource{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: ssv1alpha1.SealedSecretName,
-		},
-		Versions: []v1beta1.APIVersion{
-			{Name: ssv1alpha1.SchemeGroupVersion.Version},
-		},
-		Description: "A sealed (encrypted) Secret",
-	}
-	result, err := client.ExtensionsV1beta1().ThirdPartyResources().Create(tpr)
-	if err != nil && errors.IsAlreadyExists(err) {
-		result, err = client.ExtensionsV1beta1().ThirdPartyResources().Update(tpr)
-	}
-	if err != nil {
-		return err
-	}
-	log.Printf("Created/updated ThirdPartyResource: %#v", result)
-	return nil
 }
 
 func readKey(client kubernetes.Interface, namespace, keyName string) (*rsa.PrivateKey, []*x509.Certificate, error) {
@@ -214,10 +192,6 @@ func main2() error {
 	}
 
 	myNs := myNamespace()
-
-	if err = createTPR(clientset); err != nil {
-		return err
-	}
 
 	privKey, err := initKey(clientset, rand.Reader, *keySize, myNs, *keyName)
 	if err != nil {

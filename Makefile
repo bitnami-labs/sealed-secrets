@@ -23,7 +23,7 @@ ksonnet-seal: $(GO_FILES)
 %-static: $(GO_FILES)
 	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) ./cmd/$*
 
-docker/%: %-static
+docker/controller: controller-static
 	cp $< $@
 
 controller.image: docker/Dockerfile docker/controller
