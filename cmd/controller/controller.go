@@ -156,7 +156,7 @@ func (c *Controller) processNextItem() bool {
 		// No error, reset the ratelimit counters
 		c.queue.Forget(key)
 	} else if c.queue.NumRequeues(key) < maxRetries {
-		log.Printf("Error updating %s: %v", key, err)
+		log.Printf("Error updating %s, will retry: %v", key, err)
 		c.queue.AddRateLimited(key)
 	} else {
 		// err != nil and too many retries

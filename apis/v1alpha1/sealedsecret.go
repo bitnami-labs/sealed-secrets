@@ -220,11 +220,16 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, rnd io.Read
 	secret.SetNamespace(smeta.GetNamespace())
 	secret.SetName(smeta.GetName())
 
+	// This is sometimes empty?  Fine - we know what the answer is
+	// going to be anyway.
+	//gvk := s.GetObjectKind().GroupVersionKind()
+	gvk := SchemeGroupVersion.WithKind("SealedSecret")
+
 	// Refer back to owning SealedSecret
 	ownerRefs := []metav1.OwnerReference{
-		metav1.OwnerReference{
-			APIVersion: s.GetObjectKind().GroupVersionKind().GroupVersion().String(),
-			Kind:       s.GetObjectKind().GroupVersionKind().Kind,
+		{
+			APIVersion: gvk.GroupVersion().String(),
+			Kind:       gvk.Kind,
 			Name:       smeta.GetName(),
 			UID:        smeta.GetUID(),
 			Controller: &boolTrue,

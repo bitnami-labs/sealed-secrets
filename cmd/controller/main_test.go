@@ -33,27 +33,6 @@ func testRand() io.Reader {
 	return mathrand.New(mathrand.NewSource(42))
 }
 
-func TestCreateTPR(t *testing.T) {
-	client := fake.NewSimpleClientset()
-	if err := createTPR(client); err != nil {
-		t.Errorf("createTPR() from empty failed with %v", err)
-	}
-
-	t.Logf("actions from empty: %v", client.Actions())
-
-	if !hasAction(client, "create", "thirdpartyresources") {
-		t.Errorf("createTPR() failed to create thirdpartyresource")
-	}
-
-	client.ClearActions()
-
-	if err := createTPR(client); err != nil {
-		t.Errorf("createTPR() with existing failed with %v", err)
-	}
-
-	t.Logf("actions with existing: %v", client.Actions())
-}
-
 func TestReadKey(t *testing.T) {
 	rand := testRand()
 
