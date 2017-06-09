@@ -65,6 +65,14 @@ from re-using your sealed secrets.  Any labels, annotations, etc on
 the original `Secret` are preserved, but not automatically reflected
 in the `SealedSecret`.
 
+By design, this scheme *does not authenticate the user*.  In other
+words, *anyone* can create a `SealedSecret` containing any `Secret`
+they like (provided the namespace/name matches).  It is up to your
+existing config management workflow, cluster RBAC rules, etc to ensure
+that only the intended `SealedSecret` is uploaded to the cluster.  The
+only change from existing Kubernetes is that the *contents* of the
+`Secret` are now hidden.
+
 ## Details
 
 This controller adds a new `SealedSecret` third-party resource.  The
