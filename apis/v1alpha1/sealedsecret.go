@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/binary"
@@ -109,7 +110,7 @@ func hybridEncrypt(rnd io.Reader, pubKey *rsa.PublicKey, plaintext, label []byte
 	binary.BigEndian.PutUint16(ciphertext, uint16(len(rsaCiphertext)))
 	ciphertext = append(ciphertext, rsaCiphertext...)
 
-	// SessionKey is random (and single-use), so zero nonce is ok
+	// SessionKey is only used once, so zero nonce is ok
 	zeroNonce := make([]byte, aed.NonceSize())
 
 	// Append symmetrically encrypted Secret
@@ -145,7 +146,7 @@ func hybridDecrypt(rnd io.Reader, privKey *rsa.PrivateKey, ciphertext, label []b
 		return nil, err
 	}
 
-	// Key is random (and single-use), so zero nonce is ok
+	// Key is only used once, so zero nonce is ok
 	zeroNonce := make([]byte, aed.NonceSize())
 
 	plaintext, err := aed.Open(nil, zeroNonce, aesCiphertext, nil)
@@ -158,7 +159,7 @@ func hybridDecrypt(rnd io.Reader, privKey *rsa.PrivateKey, ciphertext, label []b
 
 // NewSealedSecret creates a new SealedSecret object wrapping the
 // provided secret.
-func NewSealedSecret(codecs runtimeserializer.CodecFactory, rnd io.Reader, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
+func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
 	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
 	if !ok {
 		return nil, fmt.Errorf("binary can't serialize JSON")
@@ -178,7 +179,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, rnd io.Reader, pubKe
 	// during decryption.
 	label := labelFor(secret)
 
-	ciphertext, err := hybridEncrypt(rnd, pubKey, plaintext, label)
+	ciphertext, err := hybridEncrypt(rand.Reader, pubKey, plaintext, label)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +196,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, rnd io.Reader, pubKe
 }
 
 // Unseal decypts and returns the embedded v1.Secret.
-func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, rnd io.Reader, privKey *rsa.PrivateKey) (*v1.Secret, error) {
+func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rsa.PrivateKey) (*v1.Secret, error) {
 	boolTrue := true
 	smeta := s.GetObjectMeta()
 
@@ -205,7 +206,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, rnd io.Read
 	// namespace/name.
 	label := labelFor(smeta)
 
-	plaintext, err := hybridDecrypt(rnd, privKey, s.Spec.Data, label)
+	plaintext, err := hybridDecrypt(rand.Reader, privKey, s.Spec.Data, label)
 	if err != nil {
 		return nil, err
 	}

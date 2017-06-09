@@ -198,7 +198,7 @@ func main2() error {
 		return err
 	}
 
-	controller := NewController(clientset, ssclient, rand.Reader, privKey)
+	controller := NewController(clientset, ssclient, privKey)
 
 	stop := make(chan struct{})
 	defer close(stop)

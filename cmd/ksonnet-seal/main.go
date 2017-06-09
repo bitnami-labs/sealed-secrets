@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
 	"crypto/rsa"
 	"errors"
 	"flag"
@@ -102,7 +101,7 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory) er
 	if err != nil {
 		return err
 	}
-	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, rand.Reader, pubKey, secret)
+	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, pubKey, secret)
 	if err != nil {
 		return err
 	}

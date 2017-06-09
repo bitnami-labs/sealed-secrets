@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/rsa"
 	"fmt"
-	"io"
 	"log"
 	"time"
 
@@ -31,10 +30,9 @@ type Controller struct {
 	informer cache.SharedIndexInformer
 	sclient  v1.SecretsGetter
 	privKey  *rsa.PrivateKey
-	rand     io.Reader
 }
 
-func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, rnd io.Reader, key *rsa.PrivateKey, ssecret *ssv1alpha1.SealedSecret) error {
+func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key *rsa.PrivateKey, ssecret *ssv1alpha1.SealedSecret) error {
 	// Important: Be careful not to reveal the namespace/name of
 	// the *decrypted* Secret (or any other detail) in error/log
 	// messages.
@@ -42,7 +40,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, rnd
 	objName := fmt.Sprintf("%s/%s", ssecret.GetObjectMeta().GetNamespace(), ssecret.GetObjectMeta().GetName())
 	log.Printf("Updating %s", objName)
 
-	secret, err := ssecret.Unseal(codecs, rnd, key)
+	secret, err := ssecret.Unseal(codecs, key)
 	if err != nil {
 		// TODO: Add error event
 		return err
@@ -62,7 +60,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, rnd
 }
 
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssclient rest.Interface, rand io.Reader, privKey *rsa.PrivateKey) cache.Controller {
+func NewController(clientset kubernetes.Interface, ssclient rest.Interface, privKey *rsa.PrivateKey) cache.Controller {
 	lw := cache.NewListWatchFromClient(ssclient, ssv1alpha1.SealedSecretPlural, api.NamespaceAll, fields.Everything())
 
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
@@ -99,7 +97,6 @@ func NewController(clientset kubernetes.Interface, ssclient rest.Interface, rand
 		informer: informer,
 		queue:    queue,
 		sclient:  clientset.Core(),
-		rand:     rand,
 		privKey:  privKey,
 	}
 }
@@ -191,7 +188,7 @@ func (c *Controller) unseal(key string) error {
 	ssecret := obj.(*ssv1alpha1.SealedSecret)
 	log.Printf("Updating %s", key)
 
-	secret, err := ssecret.Unseal(api.Codecs, c.rand, c.privKey)
+	secret, err := ssecret.Unseal(api.Codecs, c.privKey)
 	if err != nil {
 		return err
 	}
