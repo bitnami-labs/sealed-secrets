@@ -109,7 +109,7 @@ func hybridEncrypt(rnd io.Reader, pubKey *rsa.PublicKey, plaintext, label []byte
 	binary.BigEndian.PutUint16(ciphertext, uint16(len(rsaCiphertext)))
 	ciphertext = append(ciphertext, rsaCiphertext...)
 
-	// SessionKey is random (and single-use), so zero nonce is ok
+	// SessionKey is only used once, so zero nonce is ok
 	zeroNonce := make([]byte, aed.NonceSize())
 
 	// Append symmetrically encrypted Secret
@@ -145,7 +145,7 @@ func hybridDecrypt(rnd io.Reader, privKey *rsa.PrivateKey, ciphertext, label []b
 		return nil, err
 	}
 
-	// Key is random (and single-use), so zero nonce is ok
+	// Key is only used once, so zero nonce is ok
 	zeroNonce := make([]byte, aed.NonceSize())
 
 	plaintext, err := aed.Open(nil, zeroNonce, aesCiphertext, nil)
