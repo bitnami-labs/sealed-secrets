@@ -120,12 +120,12 @@ func TestSealRoundTrip(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, rand, &key.PublicKey, &secret)
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
 	if err != nil {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
 
-	secret2, err := ssecret.Unseal(codecs, rand, key)
+	secret2, err := ssecret.Unseal(codecs, key)
 	if err != nil {
 		t.Fatalf("Unseal returned error: %v", err)
 	}
