@@ -22,8 +22,9 @@ before_install:
 install:
   - go build -i ./...
   - >-
-    wget -O kubecfg
+    wget -O $GOPATH/bin/kubecfg
     https://github.com/ksonnet/kubecfg/releases/download/v0.2.0/kubecfg-$(go env GOOS)-$(go env GOARCH)
+  - chmod +x $GOPATH/bin/kubecfg
   - git clone --depth=1 https://github.com/ksonnet/ksonnet-lib.git
   - export KUBECFG_JPATH=$PWD/ksonnet-lib
 
