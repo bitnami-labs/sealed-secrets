@@ -21,7 +21,9 @@ before_install:
 
 install:
   - go build -i ./...
-  - go get github.com/ksonnet/kubecfg
+  - >-
+    wget -O kubecfg
+    https://github.com/ksonnet/kubecfg/releases/download/v0.2.0/kubecfg-$(go env GOOS)-$(go env GOARCH)
   - git clone --depth=1 https://github.com/ksonnet/ksonnet-lib.git
   - export KUBECFG_JPATH=$PWD/ksonnet-lib
 
@@ -30,9 +32,9 @@ script:
   - make test
   - make vet
   - make ksonnet-seal-static
-  - name=$(go env GOOS)-$(go env GOARCH)-ksonnet-seal
-  - cp ksonnet-seal-static $name
-  - ./$name --help || test $? -eq 2
+  - EXE_NAME=ksonnet-seal-$(go env GOOS)-$(go env GOARCH)
+  - cp ksonnet-seal-static $EXE_NAME
+  - ./$EXE_NAME --help || test $? -eq 2
   - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then
       make controller.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
@@ -62,9 +64,8 @@ deploy:
   api_key:
     secure: f2TxbMzYpq4u/5/B3oJdr7qNdBcTWflWG/SUATPnlIm0IUXKnHNS22MQerL27CNi7Ijg/ecVaWoDuqPwTBKqf1pAaM62JSID/7Y2DzkfvytJ5hCN1ifVYr/MrQJYPrQN49RstBPp7JHe4D+Tm75iVeI2pJEX8RmWBOXKxTp+XaFXymBM0O4qE8GybjRW9X8wXQLuvvH1mnAWGC+hROqYQEAi7JKRTTE8InA22aF73KucJM4FcskRrqSNcdtsMP5Jhlx7OgBnmSNidemYmTrshq7G6pburJjK0bl4mWPnce/4zaPVlTdLlQghn0cIogZ8M3RVwTBjOOsqiKDDhkKihsTWM1ghgtLN+FVpCSVvpwUjBkyatRE1cZk7aXg6xCADcCGQjB8rTveVauusCYm5n5EYFIcXSlZDxFvzVlBcJ2Z4tIHtqDKCd+5okf6AxfCj2bludGyzXVd5f2cqswU+duMVTJCOgaQ9PJc0RLHjvU/vKXkv9uS+1ZaKYlMZrJQD3IR6RIHsazIDVWmfKY8jICDjsIhMJHcc7HqThz3I8P82/o6TJbBDiAiANDD1MlXi+n1Epa6UTxglIdxntFm8CvwKlS+agJSkmLPCNxoENyvu1HRZOe8jW7itjRxxS5+q0jnxbuYLHtRm8kqQb8GYpiRD1UsMJv/ylfKnhd2Epp4=
   file:
-    - *-ksonnet-seal
+    - $EXE_NAME
     - controller.yaml
-  file_glob: true
   on:
     go: 1.8
     tags: true
