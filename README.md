@@ -18,7 +18,7 @@ release.
 $ go get github.com/ksonnet/sealed-secrets/cmd/ksonnet-seal
 
 # Install server-side controller into kube-system namespace (by default)
-$ kubectl create -f https://github.com/ksonnet/sealed-secrets/releases/download/v0.0.1b/controller.yaml
+$ kubectl create -f https://github.com/ksonnet/sealed-secrets/releases/download/v0.1.0/controller.yaml
 ```
 
 `controller.yaml` will create the `SealedSecret` third-party-resource,
