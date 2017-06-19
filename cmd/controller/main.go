@@ -138,12 +138,6 @@ func initKey(client kubernetes.Interface, r io.Reader, keySize int, namespace, k
 		}
 	}
 
-	pubText, err := certUtil.EncodePublicKeyPEM(&privKey.PublicKey)
-	if err != nil {
-		return nil, err
-	}
-	log.Printf("Public key is:\n%s\n", pubText)
-
 	for _, cert := range certs {
 		log.Printf("Certificate is:\n%s\n", certUtil.EncodeCertPEM(cert))
 	}
