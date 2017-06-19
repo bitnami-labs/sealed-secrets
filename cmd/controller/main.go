@@ -113,28 +113,28 @@ func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
 	return x509.ParseCertificate(data)
 }
 
-func initKey(client kubernetes.Interface, r io.Reader, keySize int, namespace, keyName string) (*rsa.PrivateKey, error) {
+func initKey(client kubernetes.Interface, r io.Reader, keySize int, namespace, keyName string) (*rsa.PrivateKey, []*x509.Certificate, error) {
 	privKey, certs, err := readKey(client, namespace, keyName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Printf("Key %s/%s not found, generating new %d bit key", namespace, keyName, keySize)
 			privKey, err = rsa.GenerateKey(r, keySize)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			cert, err := signKey(r, privKey)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			certs = []*x509.Certificate{cert}
 
 			if err = writeKey(client, privKey, certs, namespace, keyName); err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			log.Printf("New key written to %s/%s", namespace, keyName)
 		} else {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -142,7 +142,7 @@ func initKey(client kubernetes.Interface, r io.Reader, keySize int, namespace, k
 		log.Printf("Certificate is:\n%s\n", certUtil.EncodeCertPEM(cert))
 	}
 
-	return privKey, nil
+	return privKey, certs, nil
 }
 
 func myNamespace() string {
@@ -187,7 +187,7 @@ func main2() error {
 
 	myNs := myNamespace()
 
-	privKey, err := initKey(clientset, rand.Reader, *keySize, myNs, *keyName)
+	privKey, certs, err := initKey(clientset, rand.Reader, *keySize, myNs, *keyName)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	go httpserver()
+	go httpserver(func() ([]*x509.Certificate, error) { return certs, nil })
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
