@@ -199,6 +199,8 @@ func main2() error {
 
 	go controller.Run(stop)
 
+	go httpserver()
+
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
 	<-sigterm
