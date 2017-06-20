@@ -30,26 +30,21 @@ and be ready for operation.  If it does not, check the controller
 logs.
 
 The key certificate (public key portion) is used for sealing secrets,
-and needs to be installed wherever `ksonnet-seal` is going to be
+and needs to be available wherever `ksonnet-seal` is going to be
 used. The certificate is not secret information, although you need to
 ensure you are using the correct file.
 
-The certificate is printed to the controller log on startup, and can
-also be retrieved directly from the underlying secret (the latter
-requires access to the sealing secret, which is generally an
-undesirable thing). (TODO: Improve this part)
-
-```sh
-# Fetch cluster-wide certificate used for encrypting.
-# The certificate is also printed to the controller log on startup.
-$ kubectl get secret -n kube-system sealed-secrets-key -o go-template='{{index .data "tls.crt"}}' | base64 -d > seal.crt
-```
+`ksonnet-seal` will fetch the certificate from the controller at
+runtime (requires secure access to the Kubernetes API server), but can
+also be read from a local file for offline situations (eg: automated
+jobs).  The certificate is also printed to the controller log on
+startup.
 
 ## Usage
 
 ```sh
 # This is the important bit:
-$ ksonnet-seal --cert seal.crt <mysecret.json >mysealedsecret.json
+$ ksonnet-seal --namespace default <mysecret.json >mysealedsecret.json
 
 # mysealedsecret.json is safe to upload to github, post to twitter,
 # etc.  Eventually:
@@ -71,7 +66,7 @@ they like (provided the namespace/name matches).  It is up to your
 existing config management workflow, cluster RBAC rules, etc to ensure
 that only the intended `SealedSecret` is uploaded to the cluster.  The
 only change from existing Kubernetes is that the *contents* of the
-`Secret` are now hidden.
+`Secret` are now hidden while outside the cluster.
 
 ## Details
 
@@ -84,7 +79,9 @@ startup, and generates a new key pair if not found.  The key is
 persisted in a regular `Secret` in the same namespace as the
 controller.  The public key portion of this (in the form of a
 self-signed certificate) should be made publicly available to anyone
-wanting to use `SealedSecret`s with this cluster.
+wanting to use `SealedSecret`s with this cluster.  The certificate is
+printed to the controller log at startup, and available via an HTTP
+GET to `/v1/cert.pem` on the controller.
 
 During encryption, the original `Secret` is JSON-encoded and
 symmetrically encrypted using AES-GCM with a randomly-generated

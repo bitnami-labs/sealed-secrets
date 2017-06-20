@@ -3,34 +3,51 @@ package main
 import (
 	"crypto/rsa"
 	"errors"
-	"flag"
+	goflag "flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 
+	flag "github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/pkg/api"
 	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 
-	// Install standard API types
-	_ "k8s.io/client-go/kubernetes"
-
 	ssv1alpha1 "github.com/ksonnet/sealed-secrets/apis/v1alpha1"
+
+	// Register v1.Secret type
+	_ "k8s.io/client-go/pkg/api/install"
 )
 
 var (
-	// TODO: Fetch this automatically.
 	// TODO: Verify k8s server signature against cert in kube client config.
-	certFile = flag.String("cert", "", "Certificate / public key to use for encryption.")
+	certFile       = flag.String("cert", "", "Certificate / public key to use for encryption. Overrides --controller-*")
+	controllerNs   = flag.String("controller-namespace", api.NamespaceSystem, "Namespace of sealed-secrets controller.")
+	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 
-	// TODO: Fetch default from regular kubectl config
-	defaultNamespace = flag.String("namespace", api.NamespaceDefault, "Default namespace to assume for Secret.")
+	clientConfig clientcmd.ClientConfig
 )
 
-func readKey(r io.Reader) (*rsa.PublicKey, error) {
+func init() {
+	// The "usual" clientcmd/kubectl flags
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+	overrides := clientcmd.ConfigOverrides{}
+	kflags := clientcmd.RecommendedConfigOverrideFlags("")
+	flag.StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
+	clientcmd.BindOverrideFlags(&overrides, flag.CommandLine, kflags)
+	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
+
+	// Standard goflags (glog in particular)
+	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+}
+
+func parseKey(r io.Reader) (*rsa.PublicKey, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
@@ -83,24 +100,56 @@ func prettyEncoder(codecs runtimeserializer.CodecFactory, mediaType string, gv r
 	return enc, nil
 }
 
-func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory) error {
+func openCertFile(certFile string) (io.ReadCloser, error) {
+	f, err := os.Open(certFile)
+	if err != nil {
+		return nil, fmt.Errorf("Error reading %s: %v", certFile, err)
+	}
+	return f, nil
+}
+
+func openCertHTTP(c corev1.CoreV1Interface, namespace, name string) (io.ReadCloser, error) {
+	f, err := c.
+		Services(namespace).
+		ProxyGet("http", name, "", "/v1/cert.pem", nil).
+		Stream()
+	if err != nil {
+		return nil, fmt.Errorf("Error fetching certificate: %v", err)
+	}
+	return f, nil
+}
+
+func openCert() (io.ReadCloser, error) {
+	if *certFile != "" {
+		return openCertFile(*certFile)
+	}
+
+	conf, err := clientConfig.ClientConfig()
+	if err != nil {
+		return nil, err
+	}
+	conf.AcceptContentTypes = "application/x-pem-file, */*"
+	restClient, err := corev1.NewForConfig(conf)
+	if err != nil {
+		return nil, err
+	}
+	return openCertHTTP(restClient, *controllerNs, *controllerName)
+}
+
+func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey) error {
 	secret, err := readSecret(codecs.UniversalDecoder(), in)
 	if err != nil {
 		return err
 	}
 
 	if secret.GetNamespace() == "" {
-		secret.SetNamespace(*defaultNamespace)
+		ns, _, err := clientConfig.Namespace()
+		if err != nil {
+			return err
+		}
+		secret.SetNamespace(ns)
 	}
 
-	f, err := os.Open(*certFile)
-	if err != nil {
-		return fmt.Errorf("Error reading %s: %v", *certFile, err)
-	}
-	pubKey, err := readKey(f)
-	if err != nil {
-		return err
-	}
 	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, pubKey, secret)
 	if err != nil {
 		return err
@@ -124,8 +173,20 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory) er
 
 func main() {
 	flag.Parse()
+	goflag.CommandLine.Parse([]string{})
 
-	if err := seal(os.Stdin, os.Stdout, api.Codecs); err != nil {
+	f, err := openCert()
+	if err != nil {
+		panic(err.Error())
+	}
+	defer f.Close()
+
+	pubKey, err := parseKey(f)
+	if err != nil {
+		panic(err.Error())
+	}
+
+	if err := seal(os.Stdin, os.Stdout, api.Codecs, pubKey); err != nil {
 		panic(err.Error())
 	}
 }
