@@ -14,11 +14,16 @@ See https://github.com/ksonnet/sealed-secrets/releases for the latest
 release.
 
 ```sh
-# Install client-side tool into $GOPATH/bin
-$ go get github.com/ksonnet/sealed-secrets/cmd/ksonnet-seal
+$ release=v0.2.0
+
+# Install client-side tool into /usr/local/bin/
+$ GOOS=$(go env GOOS)
+$ GOARCH=$(go env GOARCH)
+$ wget https://github.com/ksonnet/sealed-secrets/releases/download/$release/ksonnet-seal-$GOOS-$GOARCH
+$ sudo install -m 755 ksonnet-seal-$GOOS-$GOARCH /usr/local/bin/ksonnet-seal
 
 # Install server-side controller into kube-system namespace (by default)
-$ kubectl create -f https://github.com/ksonnet/sealed-secrets/releases/download/v0.1.0/controller.yaml
+$ kubectl create -f https://github.com/ksonnet/sealed-secrets/releases/download/$release/controller.yaml
 ```
 
 `controller.yaml` will create the `SealedSecret` third-party-resource,
@@ -39,6 +44,16 @@ runtime (requires secure access to the Kubernetes API server), but can
 also be read from a local file for offline situations (eg: automated
 jobs).  The certificate is also printed to the controller log on
 startup.
+
+### Installation from source
+
+```sh
+% git clone https://github.com/ksonnet/sealed-secrets.git
+% cd sealed-secrets
+
+# Build client-side tool and controller binaries
+% make
+```
 
 ## Usage
 
