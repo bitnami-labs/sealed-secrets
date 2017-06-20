@@ -4,6 +4,8 @@ local util = import "ksonnet.beta.1/util.libsonnet";
 local objectMeta = k.core.v1.objectMeta;
 local deployment = k.apps.v1beta1.deployment;
 local container = k.core.v1.container;
+local containerPort = k.core.v1.containerPort;
+local probe = k.core.v1.probe;
 local serviceAccount = k.core.v1.serviceAccount;
 
 local clusterRole(name, rules) = {
@@ -68,11 +70,20 @@ local trim = function(str) (
 local namespace = "kube-system";
 
 local controllerImage = trim(importstr "controller.image");
+local controllerPort = 8080;
+
+local controllerProbe =
+  probe.default() +
+  probe.mixin.httpGet.path("/healthz") +
+  probe.mixin.httpGet.port(controllerPort);
 
 local controllerContainer =
   container.default("sealed-secrets-controller", controllerImage) +
   container.command(["controller"]) +
-  container.args(["--logtostderr"]);
+  container.livenessProbe(controllerProbe) +
+  container.readinessProbe(controllerProbe) +
+  container.args(["--logtostderr"]) +
+  container.ports([containerPort.default(controllerPort)]);
 
 local labels = {name: "sealed-secrets-controller"};
 
