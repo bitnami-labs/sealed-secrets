@@ -5,7 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"flag"
+	goflag "flag"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	flag "github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,6 +37,15 @@ var (
 	validFor = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN     = flag.String("my-cn", "", "CN to use in generated certificate.")
 )
+
+func init() {
+	// Standard goflags (glog in particular)
+	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+	if f := flag.CommandLine.Lookup("logtostderr"); f != nil {
+		f.DefValue = "true"
+		f.Value.Set(f.DefValue)
+	}
+}
 
 type controller struct {
 	clientset kubernetes.Interface
@@ -113,28 +123,28 @@ func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
 	return x509.ParseCertificate(data)
 }
 
-func initKey(client kubernetes.Interface, r io.Reader, keySize int, namespace, keyName string) (*rsa.PrivateKey, error) {
+func initKey(client kubernetes.Interface, r io.Reader, keySize int, namespace, keyName string) (*rsa.PrivateKey, []*x509.Certificate, error) {
 	privKey, certs, err := readKey(client, namespace, keyName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Printf("Key %s/%s not found, generating new %d bit key", namespace, keyName, keySize)
 			privKey, err = rsa.GenerateKey(r, keySize)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 
 			cert, err := signKey(r, privKey)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			certs = []*x509.Certificate{cert}
 
 			if err = writeKey(client, privKey, certs, namespace, keyName); err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			log.Printf("New key written to %s/%s", namespace, keyName)
 		} else {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
@@ -142,7 +152,7 @@ func initKey(client kubernetes.Interface, r io.Reader, keySize int, namespace, k
 		log.Printf("Certificate is:\n%s\n", certUtil.EncodeCertPEM(cert))
 	}
 
-	return privKey, nil
+	return privKey, certs, nil
 }
 
 func myNamespace() string {
@@ -187,7 +197,7 @@ func main2() error {
 
 	myNs := myNamespace()
 
-	privKey, err := initKey(clientset, rand.Reader, *keySize, myNs, *keyName)
+	privKey, certs, err := initKey(clientset, rand.Reader, *keySize, myNs, *keyName)
 	if err != nil {
 		return err
 	}
@@ -199,7 +209,7 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	go httpserver()
+	go httpserver(func() ([]*x509.Certificate, error) { return certs, nil })
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
@@ -210,6 +220,7 @@ func main2() error {
 
 func main() {
 	flag.Parse()
+	goflag.CommandLine.Parse([]string{})
 
 	if err := main2(); err != nil {
 		panic(err.Error())

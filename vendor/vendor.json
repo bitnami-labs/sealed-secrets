@@ -113,6 +113,18 @@
 			"revisionTime": "2016-11-22T19:10:42Z"
 		},
 		{
+			"checksumSHA1": "K6exl2ouL7d8cR2i378EzZOdRVI=",
+			"path": "github.com/howeyc/gopass",
+			"revision": "bf9dde6d0d2c004a008c27aaee91170c786f6db8",
+			"revisionTime": "2017-01-09T16:22:49Z"
+		},
+		{
+			"checksumSHA1": "VBXGouqOkPe3OkeJnyUBkx3aZXA=",
+			"path": "github.com/imdario/mergo",
+			"revision": "d806ba8c21777d504a2090a2ca4913c750dd3a33",
+			"revisionTime": "2017-03-26T20:45:27Z"
+		},
+		{
 			"checksumSHA1": "a8Ge6pE7oxux9ZMZVAlyEeGzCng=",
 			"path": "github.com/juju/ratelimit",
 			"revision": "5b9ff866471762aa2ab2dced63c9fb6f53921342",
@@ -155,6 +167,12 @@
 			"revisionTime": "2017-03-12T11:21:14Z"
 		},
 		{
+			"checksumSHA1": "ZaU56svwLgiJD0y8JOB3+/mpYBA=",
+			"path": "golang.org/x/crypto/ssh/terminal",
+			"revision": "adbae1b6b6fb4b02448a0fc0dbbc9ba2b95b294d",
+			"revisionTime": "2017-06-19T06:03:41Z"
+		},
+		{
 			"checksumSHA1": "SPYGC6DQrH9jICccUsOfbvvhB4g=",
 			"path": "golang.org/x/net/http2",
 			"revision": "e90d6d0afc4c315a0d87a568ae68577cc15149a0",
@@ -177,6 +195,12 @@
 			"path": "golang.org/x/net/lex/httplex",
 			"revision": "d8bd24be361e108270fbf56e4c25e443453a3a15",
 			"revisionTime": "2017-05-24T03:11:15Z"
+		},
+		{
+			"checksumSHA1": "Tkb1hBdBWeO7SGjixS2Hm48F6+s=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "fb4cac33e3196ff7f507ab9b2d2a44b0142f5b5a",
+			"revisionTime": "2017-06-14T06:48:48Z"
 		},
 		{
 			"checksumSHA1": "faFDXp++cLjLBlvsr+izZ+go1WU=",
@@ -1179,6 +1203,14 @@
 			"versionExact": "v3.0.0-beta.0"
 		},
 		{
+			"checksumSHA1": "BjbzPnaU9672noMuSuqr0JIg344=",
+			"path": "k8s.io/client-go/tools/auth",
+			"revision": "3627aeb7d4f6ade38f995d2c923e459146493c7e",
+			"revisionTime": "2017-03-31T20:34:26Z",
+			"version": "v3.0",
+			"versionExact": "v3.0.0-beta.0"
+		},
+		{
 			"checksumSHA1": "ITSxtOSOLAw9NIIJDXhauEtzo+M=",
 			"path": "k8s.io/client-go/tools/cache",
 			"revision": "3627aeb7d4f6ade38f995d2c923e459146493c7e",
@@ -1187,8 +1219,32 @@
 			"versionExact": "v3.0.0-beta.0"
 		},
 		{
+			"checksumSHA1": "y8RjCuBi8XrHvvVsguI7E97Fh6M=",
+			"path": "k8s.io/client-go/tools/clientcmd",
+			"revision": "3627aeb7d4f6ade38f995d2c923e459146493c7e",
+			"revisionTime": "2017-03-31T20:34:26Z",
+			"version": "v3.0",
+			"versionExact": "v3.0.0-beta.0"
+		},
+		{
 			"checksumSHA1": "1jUQmUDroNs5XYhsQna4kNTzMik=",
 			"path": "k8s.io/client-go/tools/clientcmd/api",
+			"revision": "3627aeb7d4f6ade38f995d2c923e459146493c7e",
+			"revisionTime": "2017-03-31T20:34:26Z",
+			"version": "v3.0",
+			"versionExact": "v3.0.0-beta.0"
+		},
+		{
+			"checksumSHA1": "6cVFBhDYvRiAwBf0QYbmUoLi5lQ=",
+			"path": "k8s.io/client-go/tools/clientcmd/api/latest",
+			"revision": "3627aeb7d4f6ade38f995d2c923e459146493c7e",
+			"revisionTime": "2017-03-31T20:34:26Z",
+			"version": "v3.0",
+			"versionExact": "v3.0.0-beta.0"
+		},
+		{
+			"checksumSHA1": "DG6X6yy03Om6CFqIZm08+geRGkI=",
+			"path": "k8s.io/client-go/tools/clientcmd/api/v1",
 			"revision": "3627aeb7d4f6ade38f995d2c923e459146493c7e",
 			"revisionTime": "2017-03-31T20:34:26Z",
 			"version": "v3.0",
@@ -1229,6 +1285,14 @@
 		{
 			"checksumSHA1": "pCmdxpwnhYqoDSls5ehHtQFglm4=",
 			"path": "k8s.io/client-go/util/flowcontrol",
+			"revision": "3627aeb7d4f6ade38f995d2c923e459146493c7e",
+			"revisionTime": "2017-03-31T20:34:26Z",
+			"version": "v3.0",
+			"versionExact": "v3.0.0-beta.0"
+		},
+		{
+			"checksumSHA1": "WRb0rXGx56fwcCisVW7GoI6gO/A=",
+			"path": "k8s.io/client-go/util/homedir",
 			"revision": "3627aeb7d4f6ade38f995d2c923e459146493c7e",
 			"revisionTime": "2017-03-31T20:34:26Z",
 			"version": "v3.0",

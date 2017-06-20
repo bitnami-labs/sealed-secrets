@@ -121,7 +121,7 @@ func TestInitKey(t *testing.T) {
 	rand := testRand()
 	client := fake.NewSimpleClientset()
 
-	key, err := initKey(client, rand, 1024, "testns", "testkey")
+	key, certs, err := initKey(client, rand, 1024, "testns", "testkey")
 	if err != nil {
 		t.Fatalf("initKey returned err: %v", err)
 	}
@@ -132,12 +132,16 @@ func TestInitKey(t *testing.T) {
 
 	client.ClearActions()
 
-	key2, err := initKey(client, rand, 1024, "testns", "testkey")
+	key2, certs2, err := initKey(client, rand, 1024, "testns", "testkey")
 	if err != nil {
 		t.Fatalf("initKey returned err: %v", err)
 	}
 
 	if !reflect.DeepEqual(key, key2) {
-		t.Fatalf("Failed to find same key")
+		t.Errorf("Failed to find same key")
+	}
+
+	if !reflect.DeepEqual(certs, certs2) {
+		t.Errorf("Failed to find same certs")
 	}
 }

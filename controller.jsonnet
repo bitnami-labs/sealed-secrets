@@ -1,11 +1,11 @@
 local k = import "ksonnet.beta.1/k.libsonnet";
-local util = import "ksonnet.beta.1/util.libsonnet";
 
 local objectMeta = k.core.v1.objectMeta;
 local deployment = k.apps.v1beta1.deployment;
 local container = k.core.v1.container;
-local containerPort = k.core.v1.containerPort;
 local probe = k.core.v1.probe;
+local service = k.core.v1.service;
+local servicePort = k.core.v1.servicePort;
 local serviceAccount = k.core.v1.serviceAccount;
 
 local clusterRole(name, rules) = {
@@ -82,8 +82,7 @@ local controllerContainer =
   container.command(["controller"]) +
   container.livenessProbe(controllerProbe) +
   container.readinessProbe(controllerProbe) +
-  container.args(["--logtostderr"]) +
-  container.ports([containerPort.default(controllerPort)]);
+  container.helpers.namedPort("http", controllerPort);
 
 local labels = {name: "sealed-secrets-controller"};
 
@@ -134,10 +133,17 @@ local controllerDeployment =
   deployment.mixin.podSpec.serviceAccountName(controllerAccount.metadata.name) +
   {spec+: {template+: {metadata: {labels: labels}}}};
 
+local controllerSvc =
+  service.default("sealed-secrets-controller", namespace) +
+  service.spec(k.core.v1.serviceSpec.default()) +
+  service.mixin.spec.selector(labels) +
+  service.mixin.spec.ports([servicePort.default(controllerPort)]);
+
 {
-  tpr: util.prune(tpr),
-  controller: util.prune(controllerDeployment),
-  account: util.prune(controllerAccount),
+  tpr: k.util.prune(tpr),
+  controller: k.util.prune(controllerDeployment),
+  service: k.util.prune(controllerSvc),
+  account: k.util.prune(controllerAccount),
   unsealerRole: unsealerRole,
   unsealKeyRole: sealKeyRole,
   binding: binding,
