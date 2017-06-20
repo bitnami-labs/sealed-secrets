@@ -2,12 +2,12 @@ package main
 
 import (
 	"crypto/x509"
-	"flag"
 	"io"
 	"log"
 	"net/http"
 	"time"
 
+	flag "github.com/spf13/pflag"
 	certUtil "k8s.io/client-go/util/cert"
 )
 

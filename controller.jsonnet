@@ -82,7 +82,6 @@ local controllerContainer =
   container.command(["controller"]) +
   container.livenessProbe(controllerProbe) +
   container.readinessProbe(controllerProbe) +
-  container.args(["--logtostderr"]) +
   container.helpers.namedPort("http", controllerPort);
 
 local labels = {name: "sealed-secrets-controller"};

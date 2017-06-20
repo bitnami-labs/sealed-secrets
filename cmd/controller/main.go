@@ -5,7 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
-	"flag"
+	goflag "flag"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"time"
 
+	flag "github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -36,6 +37,15 @@ var (
 	validFor = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN     = flag.String("my-cn", "", "CN to use in generated certificate.")
 )
+
+func init() {
+	// Standard goflags (glog in particular)
+	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+	if f := flag.CommandLine.Lookup("logtostderr"); f != nil {
+		f.DefValue = "true"
+		f.Value.Set(f.DefValue)
+	}
+}
 
 type controller struct {
 	clientset kubernetes.Interface
@@ -210,6 +220,7 @@ func main2() error {
 
 func main() {
 	flag.Parse()
+	goflag.CommandLine.Parse([]string{})
 
 	if err := main2(); err != nil {
 		panic(err.Error())
