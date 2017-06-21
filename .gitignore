@@ -14,7 +14,7 @@
 .glide/
 
 /controller
-/ksonnet-seal
+/kubeseal
 /controller.image
 /*-static
 /controller.yaml

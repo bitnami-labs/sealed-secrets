@@ -8,7 +8,7 @@ import (
 )
 
 // GroupName is the group name used in this package
-const GroupName = "ksonnet.io"
+const GroupName = "bitnami.com"
 
 var (
 	// SchemeGroupVersion is the group version used to register these objects

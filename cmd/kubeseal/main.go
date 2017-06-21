@@ -18,7 +18,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 
-	ssv1alpha1 "github.com/ksonnet/sealed-secrets/apis/v1alpha1"
+	ssv1alpha1 "github.com/bitnami/sealed-secrets/apis/v1alpha1"
 
 	// Register v1.Secret type
 	_ "k8s.io/client-go/pkg/api/install"

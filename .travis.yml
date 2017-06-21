@@ -13,7 +13,7 @@ os:
 
 env:
   global:
-    - CONTROLLER_IMAGE_NAME=quay.io/ksonnet/sealed-secrets-controller
+    - CONTROLLER_IMAGE_NAME=quay.io/bitnami/sealed-secrets-controller
     - CONTROLLER_IMAGE=${CONTROLLER_IMAGE_NAME}:${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID}
 
 before_install:
@@ -32,9 +32,9 @@ script:
   - make
   - make test
   - make vet
-  - make ksonnet-seal-static
-  - EXE_NAME=ksonnet-seal-$(go env GOOS)-$(go env GOARCH)
-  - cp ksonnet-seal-static $EXE_NAME
+  - make kubeseal-static
+  - EXE_NAME=kubeseal-$(go env GOOS)-$(go env GOARCH)
+  - cp kubeseal-static $EXE_NAME
   - ./$EXE_NAME --help || test $? -eq 2
   - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then

@@ -1315,5 +1315,5 @@
 			"versionExact": "v3.0.0-beta.0"
 		}
 	],
-	"rootPath": "github.com/ksonnet/sealed-secrets"
+	"rootPath": "github.com/bitnami/sealed-secrets"
 }
