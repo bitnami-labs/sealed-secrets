@@ -114,7 +114,7 @@ local sealKeyRole = role("sealed-secrets-key-admin", namespace, [
   {
     apiGroups: [""],
     resources: ["secrets"],
-    resourceName: ["sealed-secrets-key"],
+    resourceNames: ["sealed-secrets-key"],
     verbs: ["get"],
   },
   {
