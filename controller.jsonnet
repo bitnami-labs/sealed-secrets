@@ -89,7 +89,7 @@ local labels = {name: "sealed-secrets-controller"};
 local tpr = {
   apiVersion: "extensions/v1beta1",
   kind: "ThirdPartyResource",
-  metadata: objectMeta.name("sealed-secret.ksonnet.io"),
+  metadata: objectMeta.name("sealed-secret.bitnami.com"),
   versions: [{name: "v1alpha1"}],
   description: "A sealed (encrypted) Secret",
 };
@@ -99,7 +99,7 @@ local controllerAccount =
 
 local unsealerRole = clusterRole("secrets-unsealer", [
   {
-    apiGroups: ["ksonnet.io"],
+    apiGroups: ["bitnami.com"],
     resources: ["sealedsecrets"],
     verbs: ["get", "list", "watch"],
   },

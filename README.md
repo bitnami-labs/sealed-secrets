@@ -1,6 +1,6 @@
 # "Sealed Secrets" for Kubernetes
 
-[![Build Status](https://travis-ci.org/ksonnet/sealed-secrets.svg?branch=master)](https://travis-ci.org/ksonnet/sealed-secrets)
+[![Build Status](https://travis-ci.org/bitnami/sealed-secrets.svg?branch=master)](https://travis-ci.org/bitnami/sealed-secrets)
 
 **Problem:** "I can manage all my K8s config in git, except Secrets."
 
@@ -12,20 +12,20 @@ original Secret from the SealedSecret.
 
 ## Installation
 
-See https://github.com/ksonnet/sealed-secrets/releases for the latest
+See https://github.com/bitnami/sealed-secrets/releases for the latest
 release.
 
 ```sh
-$ release=$(curl --silent "https://api.github.com/repos/ksonnet/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+$ release=$(curl --silent "https://api.github.com/repos/bitnami/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
 
 # Install client-side tool into /usr/local/bin/
 $ GOOS=$(go env GOOS)
 $ GOARCH=$(go env GOARCH)
-$ wget https://github.com/ksonnet/sealed-secrets/releases/download/$release/ksonnet-seal-$GOOS-$GOARCH
-$ sudo install -m 755 ksonnet-seal-$GOOS-$GOARCH /usr/local/bin/ksonnet-seal
+$ wget https://github.com/bitnami/sealed-secrets/releases/download/$release/kubeseal-$GOOS-$GOARCH
+$ sudo install -m 755 kubeseal-$GOOS-$GOARCH /usr/local/bin/kubeseal
 
 # Install server-side controller into kube-system namespace (by default)
-$ kubectl create -f https://github.com/ksonnet/sealed-secrets/releases/download/$release/controller.yaml
+$ kubectl create -f https://github.com/bitnami/sealed-secrets/releases/download/$release/controller.yaml
 ```
 
 `controller.yaml` will create the `SealedSecret` third-party-resource,
@@ -37,11 +37,11 @@ and be ready for operation.  If it does not, check the controller
 logs.
 
 The key certificate (public key portion) is used for sealing secrets,
-and needs to be available wherever `ksonnet-seal` is going to be
+and needs to be available wherever `kubeseal` is going to be
 used. The certificate is not secret information, although you need to
 ensure you are using the correct file.
 
-`ksonnet-seal` will fetch the certificate from the controller at
+`kubeseal` will fetch the certificate from the controller at
 runtime (requires secure access to the Kubernetes API server), but can
 also be read from a local file for offline situations (eg: automated
 jobs).  The certificate is also printed to the controller log on
@@ -53,14 +53,14 @@ If you just want the latest client tool, it can be installed into
 `$GOPATH/bin` with:
 
 ```sh
-% go get github.com/ksonnet/sealed-secrets/cmd/ksonnet-seal
+% go get github.com/bitnami/sealed-secrets/cmd/kubeseal
 ```
 
 For a more complete development environment, clone the repository and
 use the Makefile:
 
 ```sh
-% git clone https://github.com/ksonnet/sealed-secrets.git
+% git clone https://github.com/bitnami/sealed-secrets.git
 % cd sealed-secrets
 
 # Build client-side tool and controller binaries
@@ -71,7 +71,7 @@ use the Makefile:
 
 ```sh
 # This is the important bit:
-$ ksonnet-seal <mysecret.json >mysealedsecret.json
+$ kubeseal <mysecret.json >mysealedsecret.json
 
 # mysealedsecret.json is safe to upload to github, post to twitter,
 # etc.  Eventually:
@@ -83,7 +83,7 @@ $ kubectl get secret mysecret
 
 Note the `SealedSecret` and `Secret` must have *the same namespace and
 name*.  This is a feature to prevent other users on the same cluster
-from re-using your sealed secrets.  `ksonnet-seal` reads the namespace
+from re-using your sealed secrets.  `kubeseal` reads the namespace
 from the input secret, accepts an explicit `--namespace` arg, and uses
 the `kubectl` default namespace (in that order). Any labels,
 annotations, etc on the original `Secret` are preserved, but not

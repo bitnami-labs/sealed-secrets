@@ -12,13 +12,13 @@ CONTROLLER_IMAGE = sealed-secrets-controller:latest
 GO_PACKAGES = ./cmd/... ./apis/...
 GO_FILES := $(shell find $(shell $(GO) list -f '{{.Dir}}' $(GO_PACKAGES)) -name \*.go)
 
-all: controller ksonnet-seal
+all: controller kubeseal
 
 controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) ./cmd/controller
 
-ksonnet-seal: $(GO_FILES)
-	$(GO) build -o $@ $(GO_FLAGS) ./cmd/ksonnet-seal
+kubeseal: $(GO_FILES)
+	$(GO) build -o $@ $(GO_FLAGS) ./cmd/kubeseal
 
 %-static: $(GO_FILES)
 	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) ./cmd/$*
@@ -49,7 +49,7 @@ fmt:
 	$(GOFMT) -s -w $(GO_FILES)
 
 clean:
-	$(RM) ./controller ./ksonnet-seal
+	$(RM) ./controller ./kubeseal
 	$(RM) *-static
 	$(RM) docker/controller
 

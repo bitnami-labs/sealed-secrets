@@ -13,7 +13,7 @@ os:
 
 env:
   global:
-    - CONTROLLER_IMAGE_NAME=quay.io/ksonnet/sealed-secrets-controller
+    - CONTROLLER_IMAGE_NAME=quay.io/bitnami/sealed-secrets-controller
     - CONTROLLER_IMAGE=${CONTROLLER_IMAGE_NAME}:${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID}
 
 before_install:
@@ -32,9 +32,9 @@ script:
   - make
   - make test
   - make vet
-  - make ksonnet-seal-static
-  - EXE_NAME=ksonnet-seal-$(go env GOOS)-$(go env GOARCH)
-  - cp ksonnet-seal-static $EXE_NAME
+  - make kubeseal-static
+  - EXE_NAME=kubeseal-$(go env GOOS)-$(go env GOARCH)
+  - cp kubeseal-static $EXE_NAME
   - ./$EXE_NAME --help || test $? -eq 2
   - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then
@@ -63,7 +63,7 @@ before_deploy:
 
 deploy:
   api_key:
-    secure: f2TxbMzYpq4u/5/B3oJdr7qNdBcTWflWG/SUATPnlIm0IUXKnHNS22MQerL27CNi7Ijg/ecVaWoDuqPwTBKqf1pAaM62JSID/7Y2DzkfvytJ5hCN1ifVYr/MrQJYPrQN49RstBPp7JHe4D+Tm75iVeI2pJEX8RmWBOXKxTp+XaFXymBM0O4qE8GybjRW9X8wXQLuvvH1mnAWGC+hROqYQEAi7JKRTTE8InA22aF73KucJM4FcskRrqSNcdtsMP5Jhlx7OgBnmSNidemYmTrshq7G6pburJjK0bl4mWPnce/4zaPVlTdLlQghn0cIogZ8M3RVwTBjOOsqiKDDhkKihsTWM1ghgtLN+FVpCSVvpwUjBkyatRE1cZk7aXg6xCADcCGQjB8rTveVauusCYm5n5EYFIcXSlZDxFvzVlBcJ2Z4tIHtqDKCd+5okf6AxfCj2bludGyzXVd5f2cqswU+duMVTJCOgaQ9PJc0RLHjvU/vKXkv9uS+1ZaKYlMZrJQD3IR6RIHsazIDVWmfKY8jICDjsIhMJHcc7HqThz3I8P82/o6TJbBDiAiANDD1MlXi+n1Epa6UTxglIdxntFm8CvwKlS+agJSkmLPCNxoENyvu1HRZOe8jW7itjRxxS5+q0jnxbuYLHtRm8kqQb8GYpiRD1UsMJv/ylfKnhd2Epp4=
+    secure: Bp7TwgtJVDnYSwXAP7uRHN1uXGILOvOASNDGHJI69GB+lG0RU6zqdOQJw8kKWjA67cKSW8RIuQuVlRsuNce3xa9sh1pB4OVZEJGoOiZrLVCM9s+iACuGjuKJB/GYLDDHhZYUTHp6o2Fymud9XhgqU/zpo/vAeVOTlGpj09dwZ0ZHAhivrx9Ubruo5uBgOe/nIcSDnQ9u5if0TOK4rg3EtxFf1ihiu6UXxZKjdi0Hqow8sQOjtqg82iAgpWwYRSIL4ePWear2FpnNMfIvRIMe7DNZvZ6uE9t/wkbLPOlTKSmkYw2YqOw4BvnDa7s8XcsOEzJHvyLh8sSrRFNR2VEiGuGDUPKJEpTJ+88ay7aeN0OLopAxMY0eTECWEKpFIJj6T48PoudevnT+HEBkvy4EkM4zEaf1HATMkZHUIL9qLY//hdMA2/usptLfZMqA2Ouj80Tpzr0AQ1u0QF7CYZt5Ga3YBoCt7yXfhKJ3w5i5EcObTcZBKXi5ScGdri3KfkB1CUuGrp1e/QDo1VWkLhoIGCJvCZnZGH7qDCH8gGyxWvIWTEro+yhmUg+I8786lqDzWLFKCA3NGf0b1W7nvI4pmsGRG5dIrWmpSUfaIJRDqi5R8Nj5S+VV3sdq/bT8+4n4yHcZnDQKdoCjO6K/WBTYBiq8igCIJ3obaWeH8i/XHLg=
   file:
     - $EXE_NAME
     - controller.yaml
