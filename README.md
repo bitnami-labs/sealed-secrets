@@ -1,5 +1,7 @@
 # "Sealed Secrets" for Kubernetes
 
+[![Build Status](https://travis-ci.org/ksonnet/sealed-secrets.svg?branch=master)](https://travis-ci.org/ksonnet/sealed-secrets)
+
 **Problem:** "I can manage all my K8s config in git, except Secrets."
 
 **Solution:** Encrypt your Secret into a SealedSecret, which *is* safe
