@@ -71,7 +71,7 @@ use the Makefile:
 
 ```sh
 # This is the important bit:
-$ ksonnet-seal --namespace default <mysecret.json >mysealedsecret.json
+$ ksonnet-seal <mysecret.json >mysealedsecret.json
 
 # mysealedsecret.json is safe to upload to github, post to twitter,
 # etc.  Eventually:
@@ -83,9 +83,11 @@ $ kubectl get secret mysecret
 
 Note the `SealedSecret` and `Secret` must have *the same namespace and
 name*.  This is a feature to prevent other users on the same cluster
-from re-using your sealed secrets.  Any labels, annotations, etc on
-the original `Secret` are preserved, but not automatically reflected
-in the `SealedSecret`.
+from re-using your sealed secrets.  `ksonnet-seal` reads the namespace
+from the input secret, accepts an explicit `--namespace` arg, and uses
+the `kubectl` default namespace (in that order). Any labels,
+annotations, etc on the original `Secret` are preserved, but not
+automatically reflected in the `SealedSecret`.
 
 By design, this scheme *does not authenticate the user*.  In other
 words, *anyone* can create a `SealedSecret` containing any `Secret`
