@@ -47,6 +47,16 @@ startup.
 
 ### Installation from source
 
+If you just want the latest client tool, it can be installed into
+`$GOPATH/bin` with:
+
+```sh
+% go get github.com/ksonnet/sealed-secrets/cmd/ksonnet-seal
+```
+
+For a more complete development environment, clone the repository and
+use the Makefile:
+
 ```sh
 % git clone https://github.com/ksonnet/sealed-secrets.git
 % cd sealed-secrets
