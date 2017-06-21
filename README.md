@@ -16,7 +16,7 @@ See https://github.com/ksonnet/sealed-secrets/releases for the latest
 release.
 
 ```sh
-$ release=v0.2.0
+$ release=$(curl --silent "https://api.github.com/repos/ksonnet/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
 
 # Install client-side tool into /usr/local/bin/
 $ GOOS=$(go env GOOS)
