@@ -35,9 +35,13 @@ else
 endif
 	mv $@.tmp $@
 
-controller.yaml: controller.jsonnet controller.image
+%.yaml: %.jsonnet
 	$(KUBECFG) show -o yaml $< > $@.tmp
 	mv $@.tmp $@
+
+controller.yaml: controller.jsonnet controller.image controller-norbac.jsonnet
+
+controller-norbac.yaml: controller-norbac.jsonnet controller.image
 
 test:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
@@ -51,6 +55,7 @@ fmt:
 clean:
 	$(RM) ./controller ./kubeseal
 	$(RM) *-static
+	$(RM) controller*.yaml
 	$(RM) docker/controller
 
 .PHONY: all test clean vet fmt
