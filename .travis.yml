@@ -45,10 +45,12 @@ after_script: set +e
 
 after_success:
   - |
+    echo OS_NAME=$TRAVIS_OS_NAME BRANCH=$TRAVIS_BRANCH PR=$TRAVIS_PULL_REQUEST GO_VERSION=$TRAVIS_GO_VERSION
     if [[ "$TRAVIS_OS_NAME" == linux && \
           "$TRAVIS_BRANCH" == master && \
           "$TRAVIS_PULL_REQUEST" == false && \
-          "$TRAVIS_GO_VERSION" =~ ^1\.8\. ]]; then
+          "$TRAVIS_GO_VERSION" == 1.8 ]]; then
+      echo "Pushing :latest..."
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
       docker tag $CONTROLLER_IMAGE ${CONTROLLER_IMAGE_NAME}:latest
       docker push ${CONTROLLER_IMAGE_NAME}:latest
