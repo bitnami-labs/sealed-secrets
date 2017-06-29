@@ -1,6 +1,7 @@
 # "Sealed Secrets" for Kubernetes
 
 [![Build Status](https://travis-ci.org/bitnami/sealed-secrets.svg?branch=master)](https://travis-ci.org/bitnami/sealed-secrets)
+[![Go Report Card](https://goreportcard.com/badge/github.com/bitnami/sealed-secrets)](https://goreportcard.com/report/github.com/bitnami/sealed-secrets)
 
 **Problem:** "I can manage all my K8s config in git, except Secrets."
 
