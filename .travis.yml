@@ -1,8 +1,8 @@
 language: go
 
 go:
-  - 1.7
-  - 1.8
+  - '1.7'
+  - '1.8'
 
 services:
   - docker
@@ -49,7 +49,7 @@ after_success:
     if [[ "$TRAVIS_OS_NAME" == linux && \
           "$TRAVIS_BRANCH" == master && \
           "$TRAVIS_PULL_REQUEST" == false && \
-          "$TRAVIS_GO_VERSION" == 1.8 ]]; then
+          "$TRAVIS_GO_VERSION.0" =~ ^1\.8\. ]]; then
       echo "Pushing :latest..."
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
       docker tag $CONTROLLER_IMAGE ${CONTROLLER_IMAGE_NAME}:latest
@@ -71,7 +71,7 @@ deploy:
     - controller.yaml
     - controller-norbac.yaml
   on:
-    go: 1.8
+    go: '1.8'
     tags: true
   provider: releases
   skip_cleanup: true
