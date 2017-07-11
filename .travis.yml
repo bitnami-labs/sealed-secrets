@@ -71,7 +71,7 @@ deploy:
     - controller.yaml
     - controller-norbac.yaml
   on:
-    go: '1.8'
+    condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.8\.
     tags: true
   provider: releases
   skip_cleanup: true
