@@ -71,6 +71,10 @@ use the Makefile:
 ## Usage
 
 ```sh
+# Create a json/yaml-encoded Secret somehow:
+# (note use of `--dry-run` - this is just a local file!)
+$ kubectl create secret generic mysecret --dry-run --from-literal=foo=bar -o json >mysecret.json
+
 # This is the important bit:
 $ kubeseal <mysecret.json >mysealedsecret.json
 
