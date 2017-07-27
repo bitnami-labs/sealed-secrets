@@ -32,6 +32,8 @@ local controllerContainer =
   container.command(["controller"]) +
   container.livenessProbe(controllerProbe) +
   container.readinessProbe(controllerProbe) +
+  container.mixin.securityContext.readOnlyRootFilesystem(true) +
+  container.mixin.securityContext.runAsUser(1001) +
   container.helpers.namedPort("http", controllerPort);
 
 local labels = {name: "sealed-secrets-controller"};
