@@ -32,6 +32,10 @@ local controllerContainer =
   container.command(["controller"]) +
   container.livenessProbe(controllerProbe) +
   container.readinessProbe(controllerProbe) +
+  container.securityContext(k.core.v1.podSecurityContext.default()) +
+  container.mixin.securityContext.readOnlyRootFilesystem(true) +
+  container.mixin.securityContext.runAsNonRoot(true) +
+  {securityContext+: {runAsUser: 1001}} +
   container.helpers.namedPort("http", controllerPort);
 
 local labels = {name: "sealed-secrets-controller"};
