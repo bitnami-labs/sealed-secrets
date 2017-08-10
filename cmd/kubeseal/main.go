@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"strings"
 
 	flag "github.com/spf13/pflag"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -29,6 +30,7 @@ var (
 	certFile       = flag.String("cert", "", "Certificate / public key to use for encryption. Overrides --controller-*")
 	controllerNs   = flag.String("controller-namespace", api.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
+	outputFormat   = flag.String("format", "json", "Output format for sealed secret. Either json or yaml")
 
 	clientConfig clientcmd.ClientConfig
 )
@@ -155,7 +157,17 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 		return err
 	}
 
-	prettyEnc, err := prettyEncoder(codecs, runtime.ContentTypeJSON, ssv1alpha1.SchemeGroupVersion)
+	var contentType string
+	switch strings.ToLower(*outputFormat) {
+	case "json", "":
+		contentType = runtime.ContentTypeJSON
+	case "yaml":
+		contentType = "application/yaml"
+	default:
+		return fmt.Errorf("unsupported output format: %s", *outputFormat)
+
+	}
+	prettyEnc, err := prettyEncoder(codecs, contentType, ssv1alpha1.SchemeGroupVersion)
 	if err != nil {
 		return err
 	}
