@@ -24,8 +24,7 @@ import (
 	_ "k8s.io/client-go/pkg/api/install"
 
 	// Register Auth providers
-	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
-	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 var (
@@ -48,7 +47,7 @@ func init() {
 	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 
 	// Standard goflags (glog in particular)
-	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+	//flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 }
 
 func parseKey(r io.Reader) (*rsa.PublicKey, error) {
