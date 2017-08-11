@@ -49,7 +49,7 @@ func init() {
 	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
 
 	// Standard goflags (glog in particular)
-	//flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 }
 
 func parseKey(r io.Reader) (*rsa.PublicKey, error) {
