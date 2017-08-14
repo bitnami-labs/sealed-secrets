@@ -23,6 +23,9 @@ import (
 
 	// Register v1.Secret type
 	_ "k8s.io/client-go/pkg/api/install"
+
+	// Register Auth providers
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 var (
