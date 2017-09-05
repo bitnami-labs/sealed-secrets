@@ -26,6 +26,9 @@ import (
 
 	// Register Auth providers
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	// GCP auth plugin needs to be explicitly registered
+	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 )
 
 var (
