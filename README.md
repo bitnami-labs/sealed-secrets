@@ -150,3 +150,37 @@ To restore from a backup after some disaster, just put that secret back before s
 
 `kubectl replace secret -n kube-system sealed-secrets-key master.key`
 `kubectl delete pod -n kube-system -l name=sealed-secrets-controller`
+
+
+- How to update a Sealed Secret with new values?
+
+The procedure is to obtain the secret in json format by executing:
+
+  ```
+  kubectl get secret  web-backend-secrets  -n web  -o json > web-backend-secrets.json
+  ```
+  Then add your bits to the file.  Also, you must remove at least the `resourceVersion` field. 
+  
+  Remember that data is encoded in base64, so you'll need to decode the line you want   to update with
+
+```
+  echo -n  'base64encodedstuff' | base64 -D
+```
+
+Keep in mind that OSX and Linux uses different switches for decoding: OSX uses `-D` while  Linux uses `-d`. Use the   one you need.
+You will need to encode again, but always use `echo -n ` in order to avoid carriage return being encoded.
+If you want to add more content the procedure is very similar, just add your new field, but remember to add `echo -  n` the string.
+
+Once you JSON secret is updated, run `kubeseal` and delete the sealedsecret and his pair secret will be delete auto  matically. Then create the new sealed secret and his pair secret will be cerated automatically too.
+
+```
+   kubeseal < web-backend-secrets.json > sealed-web-backend-secrets.json
+   kubectl delete -f sealed-web-backend-secrets.json
+   kubectl create -f sealed-web-backend-secrets.json
+```
+
+  Verify that the new field has been added to the sealed secret and the companion secret has been updated too with:
+
+```
+   kubectl get secret  web-backend-secrets  -n web -o yaml | grep 'field_you_added'
+```
