@@ -34,12 +34,13 @@ script:
   - make test
   - make vet
   - make kubeseal-static
-  - EXE_NAME=kubeseal-$(go env GOOS)-$(go env GOARCH)
+  - EXE_NAME=$(go env GOOS)-$(go env GOARCH)/kubeseal
+  - mkdir -p $(dirname $EXE_NAME)
   - cp kubeseal-static $EXE_NAME
   - ./$EXE_NAME --help || test $? -eq 2
   - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then
-      make controller.yaml controller-norbac.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
+      make controller.yaml controller-norbac.yaml sealedsecret-crd.yaml sealedsecret-tpr.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
     fi
 
 after_script: set +e
@@ -71,6 +72,8 @@ deploy:
     - $EXE_NAME
     - controller.yaml
     - controller-norbac.yaml
+    - sealedsecret-tpr.yaml
+    - sealedsecret-crd.yaml
   on:
     condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.9\.
     tags: true
