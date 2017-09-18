@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	flag "github.com/spf13/pflag"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -167,6 +168,15 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 		}
 		secret.SetNamespace(ns)
 	}
+
+	// Strip read-only server-side ObjectMeta (if present)
+	secret.SetSelfLink("")
+	secret.SetUID("")
+	secret.SetResourceVersion("")
+	secret.Generation = 0
+	secret.SetCreationTimestamp(metav1.Time{})
+	secret.SetDeletionTimestamp(nil)
+	secret.DeletionGracePeriodSeconds = nil
 
 	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, pubKey, secret)
 	if err != nil {
