@@ -147,6 +147,19 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 		return err
 	}
 
+	if len(secret.Data) == 0 {
+		// No data. This is _theoretically_ just fine, but
+		// almost certainly indicates a misuse of the tools.
+		// If you _really_ want to encrypt an empty secret,
+		// then a PR to skip this check with some sort of
+		// --force flag would be welcomed.
+		return fmt.Errorf("Secret.data is empty in input Secret, assuming this is an error and aborting")
+	}
+
+	if secret.GetName() == "" {
+		return fmt.Errorf("Missing metadata.name in input Secret")
+	}
+
 	if secret.GetNamespace() == "" {
 		ns, _, err := clientConfig.Namespace()
 		if err != nil {
