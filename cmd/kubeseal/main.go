@@ -35,6 +35,7 @@ var (
 	controllerNs   = flag.String("controller-namespace", api.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.String("format", "json", "Output format for sealed secret. Either json or yaml")
+	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout.  Useful for later use with --cert")
 
 	clientConfig clientcmd.ClientConfig
 )
@@ -218,6 +219,13 @@ func main() {
 		panic(err.Error())
 	}
 	defer f.Close()
+
+	if *dumpCert {
+		if _, err := io.Copy(os.Stdout, f); err != nil {
+			panic(err.Error())
+		}
+		return
+	}
 
 	pubKey, err := parseKey(f)
 	if err != nil {
