@@ -179,7 +179,7 @@ func (c *Controller) unseal(key string) error {
 			return err
 		}
 		err = c.sclient.Secrets(ns).Delete(name, &metav1.DeleteOptions{})
-		if err != nil {
+		if err != nil && !errors.IsNotFound(err) {
 			return err
 		}
 		return nil
