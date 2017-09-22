@@ -15,6 +15,25 @@ local crd = {
       kind: "SealedSecret",
       singular: "sealedsecret",
       plural: self.singular + "s",
+      listKind: self.kind + "List",
+    },
+    validation: {
+      openAPIV3Schema: {
+        "$schema": "http://json-schema.org/draft-04/schema#",
+        type: "object",
+        description: "A sealed (encrypted) Secret",
+        properties: {
+          spec: {
+            type: "object",
+            properties: {
+              data: {
+                type: "string",
+                pattern: "^[^A-Za-z0-9+/=]*$", // base64
+              },
+            },
+          },
+        },
+      },
     },
   },
 };
