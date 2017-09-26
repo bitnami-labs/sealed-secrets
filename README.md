@@ -25,7 +25,7 @@ $ release=$(curl --silent "https://api.github.com/repos/bitnami/sealed-secrets/r
 # Install client-side tool into /usr/local/bin/
 $ GOOS=$(go env GOOS)
 $ GOARCH=$(go env GOARCH)
-$ wget https://github.com/bitnami/sealed-secrets/releases/download/$release/$GOOS-$GOARCH/kubeseal
+$ wget https://github.com/bitnami/sealed-secrets/releases/download/$release/kubeseal-$GOOS-$GOARCH -O kubeseal
 $ sudo install -m 755 kubeseal /usr/local/bin/
 
 # Install SealedSecret TPR (for k8s < 1.7)
