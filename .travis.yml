@@ -34,8 +34,7 @@ script:
   - make test
   - make vet
   - make kubeseal-static
-  - EXE_NAME=$(go env GOOS)-$(go env GOARCH)/kubeseal
-  - mkdir -p $(dirname $EXE_NAME)
+  - EXE_NAME=kubeseal-$(go env GOOS)-$(go env GOARCH)
   - cp kubeseal-static $EXE_NAME
   - ./$EXE_NAME --help || test $? -eq 2
   - |
