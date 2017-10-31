@@ -81,8 +81,8 @@ func (sl *SealedSecretList) GetListMeta() metav1.List {
 }
 
 func labelFor(o metav1.Object) ([]byte, bool) {
-	label, ok := o.GetAnnotations()[SealedSecretLabelAnnotation]
-	if ok && label != "" {
+	label := o.GetAnnotations()[SealedSecretLabelAnnotation]
+	if label != "" {
 		return []byte(label), true
 	}
 	label = fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())
