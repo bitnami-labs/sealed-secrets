@@ -42,13 +42,13 @@ func TestLabel(t *testing.T) {
 	}
 }
 
-func TestCustomLabel(t *testing.T) {
+func TestClusterWide(t *testing.T) {
 	s := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
 			Namespace: "myns",
 			Annotations: map[string]string{
-				SealedSecretLabelAnnotation: "my-label",
+				SealedSecretClusterWideAnnotation: "true",
 			},
 		},
 	}
@@ -56,7 +56,7 @@ func TestCustomLabel(t *testing.T) {
 	if !c {
 		t.Errorf("Unexpected value for custom: %#v", c)
 	}
-	if string(l) != "my-label" {
+	if string(l) != "" {
 		t.Errorf("Unexpected label: %#v", l)
 	}
 }
@@ -158,7 +158,7 @@ func TestSealRoundTrip(t *testing.T) {
 	}
 }
 
-func TestSealRoundTripWithCustomLabel(t *testing.T) {
+func TestSealRoundTripWithClusterWide(t *testing.T) {
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)
 
@@ -176,7 +176,7 @@ func TestSealRoundTripWithCustomLabel(t *testing.T) {
 			Name:      "myname",
 			Namespace: "myns",
 			Annotations: map[string]string{
-				SealedSecretLabelAnnotation: "my-custom-label",
+				SealedSecretClusterWideAnnotation: "true",
 			},
 		},
 		Data: map[string][]byte{
@@ -199,7 +199,7 @@ func TestSealRoundTripWithCustomLabel(t *testing.T) {
 	}
 }
 
-func TestSealRoundTripWithMisMatchCustomLabel(t *testing.T) {
+func TestSealRoundTripWithMisMatchClusterWide(t *testing.T) {
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)
 
@@ -217,7 +217,7 @@ func TestSealRoundTripWithMisMatchCustomLabel(t *testing.T) {
 			Name:      "myname",
 			Namespace: "myns",
 			Annotations: map[string]string{
-				SealedSecretLabelAnnotation: "my-custom-label",
+				SealedSecretClusterWideAnnotation: "true",
 			},
 		},
 		Data: map[string][]byte{
@@ -230,7 +230,7 @@ func TestSealRoundTripWithMisMatchCustomLabel(t *testing.T) {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
 
-	ssecret.Metadata.Annotations[SealedSecretLabelAnnotation] = "mismatch"
+	ssecret.Metadata.Annotations[SealedSecretClusterWideAnnotation] = "false"
 
 	_, err = ssecret.Unseal(codecs, key)
 	if err == nil {

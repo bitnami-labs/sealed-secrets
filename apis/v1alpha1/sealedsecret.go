@@ -25,9 +25,9 @@ const (
 	// SealedSecretPlural is the collection plural used with SealedSecret API
 	SealedSecretPlural = "sealedsecrets"
 
-	// SealedSecretLabelAnnotation is the name for the annotation for
-	// overriding the label used for encryption and decryption.
-	SealedSecretLabelAnnotation = "sealedsecrets.bitnami.com/label"
+	// SealedSecretClusterWideAnnotation is the name for the annotation for
+	// setting the secret to be availible cluster wide.
+	SealedSecretClusterWideAnnotation = "sealedsecrets.bitnami.com/cluster-wide"
 
 	sessionKeyBytes = 32
 )
@@ -81,9 +81,9 @@ func (sl *SealedSecretList) GetListMeta() metav1.List {
 }
 
 func labelFor(o metav1.Object) ([]byte, bool) {
-	label := o.GetAnnotations()[SealedSecretLabelAnnotation]
-	if label != "" {
-		return []byte(label), true
+	label := o.GetAnnotations()[SealedSecretClusterWideAnnotation]
+	if label == "true" {
+		return []byte(""), true
 	}
 	label = fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())
 	return []byte(label), false
@@ -185,7 +185,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
 	// during decryption.
-	label, customLabel := labelFor(secret)
+	label, clusterWide := labelFor(secret)
 
 	ciphertext, err := hybridEncrypt(rand.Reader, pubKey, plaintext, label)
 	if err != nil {
@@ -202,8 +202,8 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		},
 	}
 
-	if customLabel {
-		s.Metadata.Annotations = map[string]string{SealedSecretLabelAnnotation: string(label)}
+	if clusterWide {
+		s.Metadata.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
 	}
 	return s, nil
 }
@@ -217,7 +217,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 	// during encryption.  This check ensures that we can't be
 	// tricked into decrypting a sealed secret into an unexpected
 	// namespace/name.
-	label, customLabel := labelFor(smeta)
+	label, _ := labelFor(smeta)
 
 	plaintext, err := hybridDecrypt(rand.Reader, privKey, s.Spec.Data, label)
 	if err != nil {
@@ -228,13 +228,6 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 	dec := codecs.UniversalDecoder(secret.GroupVersionKind().GroupVersion())
 	if err = runtime.DecodeInto(dec, plaintext, &secret); err != nil {
 		return nil, err
-	}
-
-	// If a custom label was used, ensure they match.
-	if customLabel {
-		if secret.ObjectMeta.Annotations == nil || secret.ObjectMeta.Annotations[SealedSecretLabelAnnotation] != string(label) {
-			return nil, fmt.Errorf("custom label annotation does not match")
-		}
 	}
 
 	// Ensure these are set to what we expect
