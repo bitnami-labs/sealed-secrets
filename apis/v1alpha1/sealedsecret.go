@@ -25,6 +25,10 @@ const (
 	// SealedSecretPlural is the collection plural used with SealedSecret API
 	SealedSecretPlural = "sealedsecrets"
 
+	// SealedSecretClusterWideAnnotation is the name for the annotation for
+	// setting the secret to be availible cluster wide.
+	SealedSecretClusterWideAnnotation = "sealedsecrets.bitnami.com/cluster-wide"
+
 	sessionKeyBytes = 32
 )
 
@@ -76,9 +80,13 @@ func (sl *SealedSecretList) GetListMeta() metav1.List {
 	return &sl.Metadata
 }
 
-func labelFor(o metav1.Object) []byte {
-	label := fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())
-	return []byte(label)
+func labelFor(o metav1.Object) ([]byte, bool) {
+	label := o.GetAnnotations()[SealedSecretClusterWideAnnotation]
+	if label == "true" {
+		return []byte(""), true
+	}
+	label = fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())
+	return []byte(label), false
 }
 
 func hybridEncrypt(rnd io.Reader, pubKey *rsa.PublicKey, plaintext, label []byte) ([]byte, error) {
@@ -177,14 +185,14 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
 	// during decryption.
-	label := labelFor(secret)
+	label, clusterWide := labelFor(secret)
 
 	ciphertext, err := hybridEncrypt(rand.Reader, pubKey, plaintext, label)
 	if err != nil {
 		return nil, err
 	}
 
-	return &SealedSecret{
+	s := &SealedSecret{
 		Metadata: metav1.ObjectMeta{
 			Name:      secret.GetName(),
 			Namespace: secret.GetNamespace(),
@@ -192,7 +200,12 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		Spec: SealedSecretSpec{
 			Data: ciphertext,
 		},
-	}, nil
+	}
+
+	if clusterWide {
+		s.Metadata.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
+	}
+	return s, nil
 }
 
 // Unseal decypts and returns the embedded v1.Secret.
@@ -204,7 +217,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 	// during encryption.  This check ensures that we can't be
 	// tricked into decrypting a sealed secret into an unexpected
 	// namespace/name.
-	label := labelFor(smeta)
+	label, _ := labelFor(smeta)
 
 	plaintext, err := hybridDecrypt(rand.Reader, privKey, s.Spec.Data, label)
 	if err != nil {
