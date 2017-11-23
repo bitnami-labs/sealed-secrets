@@ -56,8 +56,9 @@ ensure you are using the correct file.
 `kubeseal` will fetch the certificate from the controller at runtime
 (requires secure access to the Kubernetes API server), which is
 convenient for interactive use.  The recommended automation workflow
-is to store the certificate to local disk with `kubeseal --fetch-cert
->mycert.pem`, and use it offline with `kubeseal --cert mycert.pem`.
+is to store the certificate to local disk with
+`kubeseal --fetch-cert >mycert.pem`,
+and use it offline with `kubeseal --cert mycert.pem`.
 The certificate is also printed to the controller log on startup.
 
 ### Installation from source
