@@ -167,7 +167,7 @@ func TestSeal(t *testing.T) {
 	if smeta.GetNamespace() != "myns" {
 		t.Errorf("Unexpected namespace: %v", smeta.GetNamespace())
 	}
-	if len(result.Spec.Data) < 100 {
+	if len(result.Spec.Data["foo"]) < 100 {
 		t.Errorf("Encrypted data is implausibly short: %v", result.Spec.Data)
 	}
 	// NB: See sealedsecret_test.go for e2e crypto test
