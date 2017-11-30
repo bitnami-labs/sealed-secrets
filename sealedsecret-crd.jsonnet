@@ -27,8 +27,12 @@ local crd = {
             type: "object",
             properties: {
               data: {
-                type: "string",
-                pattern: "^[^A-Za-z0-9+/=]*$", // base64
+                patternProperties: {
+                  "^.*$": {
+                    pattern: "^[^A-Za-z0-9+/=]*$", // base64
+                    type: "string",
+                  },
+                },
               },
             },
           },
