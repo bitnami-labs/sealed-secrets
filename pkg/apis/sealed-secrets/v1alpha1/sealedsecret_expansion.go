@@ -25,28 +25,8 @@ func labelFor(o metav1.Object) ([]byte, bool) {
 // NewSealedSecret creates a new SealedSecret object wrapping the
 // provided secret.
 func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
-	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
-	if !ok {
-		return nil, fmt.Errorf("binary can't serialize JSON")
-	}
-
 	if secret.GetNamespace() == "" {
 		return nil, fmt.Errorf("Secret must declare a namespace")
-	}
-
-	codec := codecs.EncoderForVersion(info.Serializer, v1.SchemeGroupVersion)
-	plaintext, err := runtime.Encode(codec, secret)
-	if err != nil {
-		return nil, err
-	}
-
-	// RSA-OAEP will fail to decrypt unless the same label is used
-	// during decryption.
-	label, clusterWide := labelFor(secret)
-
-	ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, plaintext, label)
-	if err != nil {
-		return nil, err
 	}
 
 	s := &SealedSecret{
@@ -55,8 +35,20 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 			Namespace: secret.GetNamespace(),
 		},
 		Spec: SealedSecretSpec{
-			Data: ciphertext,
+			Data: map[string][]byte{},
 		},
+	}
+
+	// RSA-OAEP will fail to decrypt unless the same label is used
+	// during decryption.
+	label, clusterWide := labelFor(secret)
+
+	for key, value := range secret.Data {
+		ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, value, label)
+		if err != nil {
+			return nil, err
+		}
+		s.Spec.Data[key] = ciphertext
 	}
 
 	if clusterWide {
@@ -76,15 +68,14 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 	// namespace/name.
 	label, _ := labelFor(smeta)
 
-	plaintext, err := crypto.HybridDecrypt(rand.Reader, privKey, s.Spec.Data, label)
-	if err != nil {
-		return nil, err
-	}
-
 	var secret v1.Secret
-	dec := codecs.UniversalDecoder(secret.GroupVersionKind().GroupVersion())
-	if err = runtime.DecodeInto(dec, plaintext, &secret); err != nil {
-		return nil, err
+	secret.Data = map[string][]byte{}
+	for key, value := range s.Spec.Data {
+		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKey, value, label)
+		if err != nil {
+			return nil, err
+		}
+		secret.Data[key] = plaintext
 	}
 
 	// Ensure these are set to what we expect

@@ -20,7 +20,7 @@ const (
 
 // SealedSecretSpec is the specification of a SealedSecret
 type SealedSecretSpec struct {
-	Data []byte `json:"data"`
+	Data map[string][]byte `json:"data"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

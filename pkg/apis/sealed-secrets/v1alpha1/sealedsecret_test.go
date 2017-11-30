@@ -69,7 +69,10 @@ func TestSerialize(t *testing.T) {
 			Namespace: "myns",
 		},
 		Spec: SealedSecretSpec{
-			Data: []byte("xxx"),
+			Data: map[string][]byte{
+				"foo": []byte("secret1"),
+				"bar": []byte("secret2"),
+			},
 		},
 	}
 
