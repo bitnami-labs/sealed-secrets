@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	flag "github.com/spf13/pflag"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -34,6 +35,7 @@ var (
 	controllerNs   = flag.String("controller-namespace", api.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.String("format", "json", "Output format for sealed secret. Either json or yaml")
+	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout.  Useful for later use with --cert")
 
 	clientConfig clientcmd.ClientConfig
 )
@@ -147,6 +149,19 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 		return err
 	}
 
+	if len(secret.Data) == 0 {
+		// No data. This is _theoretically_ just fine, but
+		// almost certainly indicates a misuse of the tools.
+		// If you _really_ want to encrypt an empty secret,
+		// then a PR to skip this check with some sort of
+		// --force flag would be welcomed.
+		return fmt.Errorf("Secret.data is empty in input Secret, assuming this is an error and aborting")
+	}
+
+	if secret.GetName() == "" {
+		return fmt.Errorf("Missing metadata.name in input Secret")
+	}
+
 	if secret.GetNamespace() == "" {
 		ns, _, err := clientConfig.Namespace()
 		if err != nil {
@@ -154,6 +169,15 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 		}
 		secret.SetNamespace(ns)
 	}
+
+	// Strip read-only server-side ObjectMeta (if present)
+	secret.SetSelfLink("")
+	secret.SetUID("")
+	secret.SetResourceVersion("")
+	secret.Generation = 0
+	secret.SetCreationTimestamp(metav1.Time{})
+	secret.SetDeletionTimestamp(nil)
+	secret.DeletionGracePeriodSeconds = nil
 
 	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, pubKey, secret)
 	if err != nil {
@@ -195,6 +219,13 @@ func main() {
 		panic(err.Error())
 	}
 	defer f.Close()
+
+	if *dumpCert {
+		if _, err := io.Copy(os.Stdout, f); err != nil {
+			panic(err.Error())
+		}
+		return
+	}
 
 	pubKey, err := parseKey(f)
 	if err != nil {

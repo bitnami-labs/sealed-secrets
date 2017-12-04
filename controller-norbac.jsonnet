@@ -1,7 +1,6 @@
-// Minimal required deployment for a functional TPR + controller.
+// Minimal required deployment for a functional controller.
 local k = import "ksonnet.beta.1/k.libsonnet";
 
-local objectMeta = k.core.v1.objectMeta;
 local deployment = k.apps.v1beta1.deployment;
 local container = k.core.v1.container;
 local probe = k.core.v1.probe;
@@ -40,14 +39,6 @@ local controllerContainer =
 
 local labels = {name: "sealed-secrets-controller"};
 
-local tpr = {
-  apiVersion: "extensions/v1beta1",
-  kind: "ThirdPartyResource",
-  metadata: objectMeta.name("sealed-secret.bitnami.com"),
-  versions: [{name: "v1alpha1"}],
-  description: "A sealed (encrypted) Secret",
-};
-
 local controllerDeployment =
   deployment.default("sealed-secrets-controller", controllerContainer, namespace) +
   {spec+: {template+: {metadata: {labels: labels}}}};
@@ -60,7 +51,6 @@ local controllerSvc =
 
 {
   namespace:: namespace,
-  tpr: k.util.prune(tpr),
   controller: k.util.prune(controllerDeployment),
   service: k.util.prune(controllerSvc),
 }

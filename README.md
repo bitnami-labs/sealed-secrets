@@ -16,6 +16,9 @@ original Secret from the SealedSecret.
 See https://github.com/bitnami/sealed-secrets/releases for the latest
 release.
 
+**See additional TPR->CRD migration section below if updating an
+existing Sealed Secrets installation from Kubernetes <= 1.7**
+
 ```sh
 $ release=$(curl --silent "https://api.github.com/repos/bitnami/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
 
@@ -25,13 +28,21 @@ $ GOARCH=$(go env GOARCH)
 $ wget https://github.com/bitnami/sealed-secrets/releases/download/$release/kubeseal-$GOOS-$GOARCH
 $ sudo install -m 755 kubeseal-$GOOS-$GOARCH /usr/local/bin/kubeseal
 
+# Install SealedSecret TPR (for k8s < 1.7)
+$ kubectl create -f https://github.com/bitnami/sealed-secrets/releases/download/$release/sealedsecret-tpr.yaml
+
+# Install SealedSecret CRD (for k8s >= 1.7)
+$ kubectl create -f https://github.com/bitnami/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
+
 # Install server-side controller into kube-system namespace (by default)
 $ kubectl create -f https://github.com/bitnami/sealed-secrets/releases/download/$release/controller.yaml
 ```
 
-`controller.yaml` will create the `SealedSecret` third-party-resource,
-install the controller into `kube-system` namespace, create a service
-account and necessary RBAC roles.
+After the `SealedSecret` resource is created with either
+`sealedsecret-tpr.yaml` or `sealedsecret-crd.yaml` (depending on
+Kubernetes version), `controller.yaml` will install the controller
+into `kube-system` namespace, create a service account and necessary
+RBAC roles.
 
 After a few moments, the controller will start, generate a key pair,
 and be ready for operation.  If it does not, check the controller
@@ -42,11 +53,13 @@ and needs to be available wherever `kubeseal` is going to be
 used. The certificate is not secret information, although you need to
 ensure you are using the correct file.
 
-`kubeseal` will fetch the certificate from the controller at
-runtime (requires secure access to the Kubernetes API server), but can
-also be read from a local file for offline situations (eg: automated
-jobs).  The certificate is also printed to the controller log on
-startup.
+`kubeseal` will fetch the certificate from the controller at runtime
+(requires secure access to the Kubernetes API server), which is
+convenient for interactive use.  The recommended automation workflow
+is to store the certificate to local disk with
+`kubeseal --fetch-cert >mycert.pem`,
+and use it offline with `kubeseal --cert mycert.pem`.
+The certificate is also printed to the controller log on startup.
 
 ### Installation from source
 
@@ -67,6 +80,87 @@ use the Makefile:
 # Build client-side tool and controller binaries
 % make
 ```
+
+### Migration from SealedSecret TPR to CRD (ie: K8s <1.7 to >1.7)
+
+Kubernetes migrated the way custom resources are declared from TPR
+(ThirdPartyResource) to CRD (CustomResourceDefinition).  The migration
+has a number of steps, but is easy, and preserves existing
+SealedSecrets.
+
+- The controller is temporarily disabled during the migration, so
+changes to SealedSecrets will not propagate to Secrets until the
+controller is restored.
+- Existing (decrypted) Secrets remain available throughout.
+- This only affects the way the custom resource is _defined_, and API
+clients are able to interact with both versions of SealedSecrets
+without requiring changes.
+
+The following is an adaption
+of [the generic migration doc][tpr-migration] for Sealed Secrets.  See
+the generic documentation for more information on the process.
+
+[tpr-migration]: https://kubernetes.io/docs/tasks/access-kubernetes-api/migrate-third-party-resource/
+
+1. Be running k8s 1.7.x.  Kubernetes 1.7.x is the only Kubernetes
+   release that simultaneously supports both TPRs and CRDs.
+
+2. Install the CRD definition.
+   ```
+   $ release=$(curl --silent "https://api.github.com/repos/bitnami/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+   $ kubectl create -f https://github.com/bitnami/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
+   ```
+
+   Wait until the CRD _Established_ condition becomes True.
+   ```
+   $ kubectl get crd sealedsecrets.bitnami.com -o 'jsonpath={.status.conditions[?(@.type=="Established")].status}'
+   ```
+
+   At this point the TPR is still authoritative.  NB: The CRD name is
+   `sealedsecrets.bitnami.com`, whereas the TPR name is
+   `sealed-secret.bitnami.com`.
+
+3. Stop controller.  For maximum safety, also pause any other
+   processes you have that might modify SealedSecrets during the
+   following steps.
+   ```
+   $ kubectl scale --replicas=0 -n kube-system deployment/sealed-secrets-controller
+   ```
+
+4. Back up existing SealedSecrets data and TPR definition, just in case.
+   ```
+   $ kubectl get sealedsecrets --all-namespaces -o yaml > sealedsecrets.yaml
+   $ kubectl get thirdpartyresource sealed-secret.bitnami.com -o yaml --export > tpr.yaml
+   ```
+
+5. Delete TPR definition.
+   ```
+   $ kubectl delete thirdpartyresource sealed-secret.bitnami.com
+   ```
+
+   NB: The CRD name is `sealedsecrets.bitnami.com`, whereas the TPR
+   name is `sealed-secret.bitnami.com`.
+
+   This will trigger the Kubernetes TPR controller to migrate existing
+   SealedSecrets to the CRD.
+
+6. Once the migration completes, the resources will be available via
+   the CRD.
+
+   ```
+   $ kubectl get sealedsecrets --all-namespaces -o yaml
+   ```
+
+   If the copy fails for some reason and needs to be reverted, the TPR
+   definition can be restored with:
+   ```
+   $ kubectl create -f tpr.yaml
+   ```
+
+7. Restore controller, and any other paused processes.
+   ```
+   $ kubectl scale --replicas=1 -n kube-system deployment/sealed-secrets-controller
+   ```
 
 ## Usage
 
@@ -104,9 +198,9 @@ only change from existing Kubernetes is that the *contents* of the
 
 ## Details
 
-This controller adds a new `SealedSecret` third-party resource.  The
-interesting part of which is a base64-encoded asymmetrically encrypted
-`Secret`.
+This controller adds a new `SealedSecret` custom resource.  The
+interesting part of a `SealedSecret` is a base64-encoded
+asymmetrically encrypted `Secret`.
 
 The controller looks for a cluster-wide private/public key pair on
 startup, and generates a new key pair if not found.  The key is
@@ -138,7 +232,7 @@ will be garbage collected if the `SealedSecret` is deleted.
 
 No, the private key is only stored in the Secret managed by the controller (unless you have some other backup of your k8s objects). There are no backdoors - without that private key, then you can't decrypt the SealedSecrets. If you can't get to the Secret with the encryption key, and you also can't get to the decrypted versions of your Secrets live in the cluster, then you will need to regenerate new passwords for everything, seal them again with a new sealing key, etc.
 
-- How can I do a backup of my SealedSecrets? 
+- How can I do a backup of my SealedSecrets?
 
 If you do want to make a backup of the encryption private key, it's easy to do from an account with suitable access and:
 
