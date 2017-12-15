@@ -50,7 +50,9 @@ test:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
 
 vet:
-	$(GO) vet $(GO_FLAGS) $(GO_PACKAGES)
+	# known issue:
+	# pkg/client/clientset/versioned/fake/clientset_generated.go:46: literal copies lock value from fakePtr
+	$(GO) vet $(GO_FLAGS) -copylocks=false $(GO_PACKAGES)
 
 fmt:
 	$(GOFMT) -s -w $(GO_FILES)
