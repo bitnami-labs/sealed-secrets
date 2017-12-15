@@ -17,18 +17,15 @@ import (
 	"time"
 
 	flag "github.com/spf13/pflag"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 	certUtil "k8s.io/client-go/util/cert"
 
-	ssv1alpha1 "github.com/bitnami/sealed-secrets/apis/v1alpha1"
+	sealedsecrets "github.com/bitnami/sealed-secrets/pkg/client/clientset/versioned"
+	ssinformers "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions"
 )
 
 var (
@@ -167,16 +164,7 @@ func myNamespace() string {
 		}
 	}
 
-	return api.NamespaceDefault
-}
-
-func tprClient(c *rest.Config, gv *schema.GroupVersion) (rest.Interface, error) {
-	tprconfig := *c // shallow copy
-	tprconfig.GroupVersion = gv
-	tprconfig.APIPath = "/apis"
-	tprconfig.ContentType = runtime.ContentTypeJSON
-	tprconfig.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
-	return rest.RESTClientFor(&tprconfig)
+	return metav1.NamespaceDefault
 }
 
 func main2() error {
@@ -190,7 +178,7 @@ func main2() error {
 		return err
 	}
 
-	ssclient, err := tprClient(config, &ssv1alpha1.SchemeGroupVersion)
+	ssclient, err := sealedsecrets.NewForConfig(config)
 	if err != nil {
 		return err
 	}
@@ -202,7 +190,8 @@ func main2() error {
 		return err
 	}
 
-	controller := NewController(clientset, ssclient, privKey)
+	ssinformer := ssinformers.NewSharedInformerFactory(ssclient, 0)
+	controller := NewController(clientset, ssinformer, privKey)
 
 	stop := make(chan struct{})
 	defer close(stop)

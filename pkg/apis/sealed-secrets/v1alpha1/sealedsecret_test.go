@@ -10,12 +10,13 @@ import (
 
 	"github.com/google/gofuzz"
 
-	apitesting "k8s.io/apimachinery/pkg/api/testing"
+	"k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/testing/fuzzer"
+	rttesting "k8s.io/apimachinery/pkg/api/testing/roundtrip"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 
 	// Install standard API types
 	_ "k8s.io/client-go/kubernetes"
@@ -63,7 +64,7 @@ func TestClusterWide(t *testing.T) {
 
 func TestSerialize(t *testing.T) {
 	s := SealedSecret{
-		Metadata: metav1.ObjectMeta{
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
 			Namespace: "myns",
 		},
@@ -72,12 +73,12 @@ func TestSerialize(t *testing.T) {
 		},
 	}
 
-	info, ok := runtime.SerializerInfoForMediaType(api.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
+	info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
 	if !ok {
 		t.Fatalf("binary can't serialize JSON")
 	}
 
-	enc := api.Codecs.EncoderForVersion(info.Serializer, SchemeGroupVersion)
+	enc := scheme.Codecs.EncoderForVersion(info.Serializer, SchemeGroupVersion)
 	buf := bytes.Buffer{}
 	if err := enc.Encode(&s, &buf); err != nil {
 		t.Errorf("Error encoding: %v", err)
@@ -86,7 +87,7 @@ func TestSerialize(t *testing.T) {
 	t.Logf("text is %s", string(buf.Bytes()))
 }
 
-func ssecretFuzzerFuncs(t apitesting.TestingCommon) []interface{} {
+func ssecretFuzzerFuncs(codecs serializer.CodecFactory) []interface{} {
 	return []interface{}{
 		func(obj *SealedSecretList, c fuzz.Continue) {
 			c.FuzzNoCustom(obj)
@@ -108,11 +109,10 @@ func TestRoundTrip(t *testing.T) {
 	SchemeBuilder.AddToScheme(scheme)
 
 	seed := mathrand.Int63()
-	fuzzerFuncs := apitesting.MergeFuzzerFuncs(t, apitesting.GenericFuzzerFuncs(t, codecs), ssecretFuzzerFuncs(t))
-	fuzzer := apitesting.FuzzerFor(fuzzerFuncs, mathrand.NewSource(seed))
+	fuzzer := fuzzer.FuzzerFor(ssecretFuzzerFuncs, mathrand.NewSource(seed), codecs)
 
-	apitesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("SealedSecret"), scheme, codecs, fuzzer, nil)
-	apitesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("SealedSecretList"), scheme, codecs, fuzzer, nil)
+	rttesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("SealedSecret"), scheme, codecs, fuzzer, nil)
+	rttesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("SealedSecretList"), scheme, codecs, fuzzer, nil)
 }
 
 // This is omg-not safe for real crypto use!
@@ -230,7 +230,7 @@ func TestSealRoundTripWithMisMatchClusterWide(t *testing.T) {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
 
-	ssecret.Metadata.Annotations[SealedSecretClusterWideAnnotation] = "false"
+	ssecret.ObjectMeta.Annotations[SealedSecretClusterWideAnnotation] = "false"
 
 	_, err = ssecret.Unseal(codecs, key)
 	if err == nil {

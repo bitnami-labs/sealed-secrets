@@ -9,10 +9,13 @@ DOCKER_USE_SHA = 0
 CONTROLLER_IMAGE = sealed-secrets-controller:latest
 
 # TODO: Simplify this once ./... ignores ./vendor
-GO_PACKAGES = ./cmd/... ./apis/...
+GO_PACKAGES = ./cmd/... ./pkg/...
 GO_FILES := $(shell find $(shell $(GO) list -f '{{.Dir}}' $(GO_PACKAGES)) -name \*.go)
 
 all: controller kubeseal
+
+generate: $(GO_FILES)
+	$(GO) generate $(GO_PACKAGES)
 
 controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) ./cmd/controller

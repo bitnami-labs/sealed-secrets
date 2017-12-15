@@ -11,19 +11,16 @@ import (
 	"strings"
 
 	flag "github.com/spf13/pflag"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 
-	ssv1alpha1 "github.com/bitnami/sealed-secrets/apis/v1alpha1"
-
-	// Register v1.Secret type
-	_ "k8s.io/client-go/pkg/api/install"
+	ssv1alpha1 "github.com/bitnami/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 
 	// Register Auth providers
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -32,7 +29,7 @@ import (
 var (
 	// TODO: Verify k8s server signature against cert in kube client config.
 	certFile       = flag.String("cert", "", "Certificate / public key to use for encryption. Overrides --controller-*")
-	controllerNs   = flag.String("controller-namespace", api.NamespaceSystem, "Namespace of sealed-secrets controller.")
+	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.String("format", "json", "Output format for sealed secret. Either json or yaml")
 	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout.  Useful for later use with --cert")
@@ -232,7 +229,7 @@ func main() {
 		panic(err.Error())
 	}
 
-	if err := seal(os.Stdin, os.Stdout, api.Codecs, pubKey); err != nil {
+	if err := seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey); err != nil {
 		panic(err.Error())
 	}
 }
