@@ -13,6 +13,7 @@ import (
 	"io"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/pkg/api/v1"
@@ -36,7 +37,8 @@ var ErrTooShort = errors.New("SealedSecret data is too short")
 
 // SealedSecretSpec is the specification of a SealedSecret
 type SealedSecretSpec struct {
-	Data map[string][]byte `json:"data"`
+	Data          []byte            `json:"data"`
+	EncryptedData map[string][]byte `json:"encryptedData"`
 }
 
 // SealedSecret is the K8s representation of a "sealed Secret" - a
@@ -164,8 +166,54 @@ func hybridDecrypt(rnd io.Reader, privKey *rsa.PrivateKey, ciphertext, label []b
 	return plaintext, nil
 }
 
+// NewSealedSecretV1 creates a new SealedSecret object wrapping the
+// provided secret. This encrypts all the secrets into a single encrypted
+// blob and stores it in the `Data` attribute. Keeping this for backward
+// compatibility.
+func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
+	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
+	if !ok {
+		return nil, fmt.Errorf("binary can't serialize JSON")
+	}
+
+	if secret.GetNamespace() == "" {
+		return nil, fmt.Errorf("Secret must declare a namespace")
+	}
+
+	codec := codecs.EncoderForVersion(info.Serializer, v1.SchemeGroupVersion)
+	plaintext, err := runtime.Encode(codec, secret)
+	if err != nil {
+		return nil, err
+	}
+
+	// RSA-OAEP will fail to decrypt unless the same label is used
+	// during decryption.
+	label, clusterWide := labelFor(secret)
+
+	ciphertext, err := hybridEncrypt(rand.Reader, pubKey, plaintext, label)
+	if err != nil {
+		return nil, err
+	}
+
+	s := &SealedSecret{
+		Metadata: metav1.ObjectMeta{
+			Name:      secret.GetName(),
+			Namespace: secret.GetNamespace(),
+		},
+		Spec: SealedSecretSpec{
+			Data: ciphertext,
+		},
+	}
+
+	if clusterWide {
+		s.Metadata.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
+	}
+	return s, nil
+}
+
 // NewSealedSecret creates a new SealedSecret object wrapping the
-// provided secret.
+// provided secret. This encrypts only the values of each secrets
+// individually, so secrets can be updated one by one.
 func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
 	if secret.GetNamespace() == "" {
 		return nil, fmt.Errorf("Secret must declare a namespace")
@@ -177,7 +225,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 			Namespace: secret.GetNamespace(),
 		},
 		Spec: SealedSecretSpec{
-			Data: map[string][]byte{},
+			EncryptedData: map[string][]byte{},
 		},
 	}
 
@@ -190,7 +238,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		if err != nil {
 			return nil, err
 		}
-		s.Spec.Data[key] = ciphertext
+		s.Spec.EncryptedData[key] = ciphertext
 	}
 
 	if clusterWide {
@@ -211,13 +259,26 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 	label, _ := labelFor(smeta)
 
 	var secret v1.Secret
-	secret.Data = map[string][]byte{}
-	for key, value := range s.Spec.Data {
-		plaintext, err := hybridDecrypt(rand.Reader, privKey, value, label)
+
+	if len(s.Spec.EncryptedData) > 0 {
+		secret.Data = map[string][]byte{}
+		for key, value := range s.Spec.EncryptedData {
+			plaintext, err := hybridDecrypt(rand.Reader, privKey, value, label)
+			if err != nil {
+				return nil, err
+			}
+			secret.Data[key] = plaintext
+		}
+	} else { // Support decrypting old secrets for backward compatibility
+		plaintext, err := hybridDecrypt(rand.Reader, privKey, s.Spec.Data, label)
 		if err != nil {
 			return nil, err
 		}
-		secret.Data[key] = plaintext
+
+		dec := codecs.UniversalDecoder(secret.GroupVersionKind().GroupVersion())
+		if err = runtime.DecodeInto(dec, plaintext, &secret); err != nil {
+			return nil, err
+		}
 	}
 
 	// Ensure these are set to what we expect

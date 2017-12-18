@@ -68,7 +68,7 @@ func TestSerialize(t *testing.T) {
 			Namespace: "myns",
 		},
 		Spec: SealedSecretSpec{
-			Data: map[string][]byte{
+			EncryptedData: map[string][]byte{
 				"foo": []byte("secret1"),
 				"bar": []byte("secret2"),
 			},
@@ -238,5 +238,46 @@ func TestSealRoundTripWithMisMatchClusterWide(t *testing.T) {
 	_, err = ssecret.Unseal(codecs, key)
 	if err == nil {
 		t.Fatalf("Unseal did not return expected error: %v", err)
+	}
+}
+
+func TestUnsealingV1Format(t *testing.T) {
+	scheme := runtime.NewScheme()
+	codecs := serializer.NewCodecFactory(scheme)
+
+	SchemeBuilder.AddToScheme(scheme)
+	v1.SchemeBuilder.AddToScheme(scheme)
+
+	rand := testRand()
+	key, err := rsa.GenerateKey(rand, 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+			Annotations: map[string]string{
+				SealedSecretClusterWideAnnotation: "true",
+			},
+		},
+		Data: map[string][]byte{
+			"foo": []byte("bar"),
+		},
+	}
+
+	ssecret, err := NewSealedSecretV1(codecs, &key.PublicKey, &secret)
+	if err != nil {
+		t.Fatalf("NewSealedSecret returned error: %v", err)
+	}
+
+	secret2, err := ssecret.Unseal(codecs, key)
+	if err != nil {
+		t.Fatalf("Unseal returned error: %v", err)
+	}
+
+	if !reflect.DeepEqual(secret.Data, secret2.Data) {
+		t.Errorf("Unsealed secret != original secret: %v != %v", secret, secret2)
 	}
 }
