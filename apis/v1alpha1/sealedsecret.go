@@ -37,7 +37,8 @@ var ErrTooShort = errors.New("SealedSecret data is too short")
 
 // SealedSecretSpec is the specification of a SealedSecret
 type SealedSecretSpec struct {
-	Data []byte `json:"data"`
+	Data          []byte            `json:"data"`
+	EncryptedData map[string][]byte `json:"encryptedData"`
 }
 
 // SealedSecret is the K8s representation of a "sealed Secret" - a
@@ -165,9 +166,11 @@ func hybridDecrypt(rnd io.Reader, privKey *rsa.PrivateKey, ciphertext, label []b
 	return plaintext, nil
 }
 
-// NewSealedSecret creates a new SealedSecret object wrapping the
-// provided secret.
-func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
+// NewSealedSecretV1 creates a new SealedSecret object wrapping the
+// provided secret. This encrypts all the secrets into a single encrypted
+// blob and stores it in the `Data` attribute. Keeping this for backward
+// compatibility.
+func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
 	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
 	if !ok {
 		return nil, fmt.Errorf("binary can't serialize JSON")
@@ -208,6 +211,42 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 	return s, nil
 }
 
+// NewSealedSecret creates a new SealedSecret object wrapping the
+// provided secret. This encrypts only the values of each secrets
+// individually, so secrets can be updated one by one.
+func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
+	if secret.GetNamespace() == "" {
+		return nil, fmt.Errorf("Secret must declare a namespace")
+	}
+
+	s := &SealedSecret{
+		Metadata: metav1.ObjectMeta{
+			Name:      secret.GetName(),
+			Namespace: secret.GetNamespace(),
+		},
+		Spec: SealedSecretSpec{
+			EncryptedData: map[string][]byte{},
+		},
+	}
+
+	// RSA-OAEP will fail to decrypt unless the same label is used
+	// during decryption.
+	label, clusterWide := labelFor(secret)
+
+	for key, value := range secret.Data {
+		ciphertext, err := hybridEncrypt(rand.Reader, pubKey, value, label)
+		if err != nil {
+			return nil, err
+		}
+		s.Spec.EncryptedData[key] = ciphertext
+	}
+
+	if clusterWide {
+		s.Metadata.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
+	}
+	return s, nil
+}
+
 // Unseal decypts and returns the embedded v1.Secret.
 func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rsa.PrivateKey) (*v1.Secret, error) {
 	boolTrue := true
@@ -219,15 +258,27 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 	// namespace/name.
 	label, _ := labelFor(smeta)
 
-	plaintext, err := hybridDecrypt(rand.Reader, privKey, s.Spec.Data, label)
-	if err != nil {
-		return nil, err
-	}
-
 	var secret v1.Secret
-	dec := codecs.UniversalDecoder(secret.GroupVersionKind().GroupVersion())
-	if err = runtime.DecodeInto(dec, plaintext, &secret); err != nil {
-		return nil, err
+
+	if len(s.Spec.EncryptedData) > 0 {
+		secret.Data = map[string][]byte{}
+		for key, value := range s.Spec.EncryptedData {
+			plaintext, err := hybridDecrypt(rand.Reader, privKey, value, label)
+			if err != nil {
+				return nil, err
+			}
+			secret.Data[key] = plaintext
+		}
+	} else { // Support decrypting old secrets for backward compatibility
+		plaintext, err := hybridDecrypt(rand.Reader, privKey, s.Spec.Data, label)
+		if err != nil {
+			return nil, err
+		}
+
+		dec := codecs.UniversalDecoder(secret.GroupVersionKind().GroupVersion())
+		if err = runtime.DecodeInto(dec, plaintext, &secret); err != nil {
+			return nil, err
+		}
 	}
 
 	// Ensure these are set to what we expect
