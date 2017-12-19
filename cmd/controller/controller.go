@@ -8,18 +8,17 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
-	ssv1alpha1 "github.com/bitnami/sealed-secrets/apis/v1alpha1"
+	ssv1alpha1 "github.com/bitnami/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	ssinformer "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions"
 )
 
 const maxRetries = 5
@@ -60,17 +59,12 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 }
 
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssclient rest.Interface, privKey *rsa.PrivateKey) cache.Controller {
-	lw := cache.NewListWatchFromClient(ssclient, ssv1alpha1.SealedSecretPlural, api.NamespaceAll, fields.Everything())
-
+func NewController(clientset kubernetes.Interface, ssinformer ssinformer.SharedInformerFactory, privKey *rsa.PrivateKey) cache.Controller {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
-	informer := cache.NewSharedIndexInformer(
-		lw,
-		&ssv1alpha1.SealedSecret{},
-		0, // No periodic resync
-		cache.Indexers{},
-	)
+	informer := ssinformer.Bitnami().V1alpha1().
+		SealedSecrets().
+		Informer()
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
@@ -188,7 +182,7 @@ func (c *Controller) unseal(key string) error {
 	ssecret := obj.(*ssv1alpha1.SealedSecret)
 	log.Printf("Updating %s", key)
 
-	secret, err := ssecret.Unseal(api.Codecs, c.privKey)
+	secret, err := ssecret.Unseal(scheme.Codecs, c.privKey)
 	if err != nil {
 		return err
 	}

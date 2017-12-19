@@ -3,7 +3,6 @@ language: go
 go:
   - '1.9'
   - '1.8'
-  - '1.7'
 
 services:
   - docker
@@ -32,7 +31,7 @@ install:
 script:
   - make
   - make test
-  - make vet
+  - if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.9\. ]]; then make vet; fi
   - make kubeseal-static
   - EXE_NAME=kubeseal-$(go env GOOS)-$(go env GOARCH)
   - cp kubeseal-static $EXE_NAME
