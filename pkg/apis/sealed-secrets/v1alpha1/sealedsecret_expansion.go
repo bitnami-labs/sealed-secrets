@@ -10,7 +10,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
-	"github.com/bitnami/sealed-secrets/pkg/crypto"
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 )
 
 func labelFor(o metav1.Object) ([]byte, bool) {

@@ -19,8 +19,8 @@ limitations under the License.
 package bitnami
 
 import (
-	v1alpha1 "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions/bitnami/v1alpha1"
-	internalinterfaces "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/bitnami/v1alpha1"
+	internalinterfaces "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/internalinterfaces"
 )
 
 // Interface provides access to each of this group's versions.
