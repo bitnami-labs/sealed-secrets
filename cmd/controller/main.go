@@ -24,8 +24,8 @@ import (
 	"k8s.io/client-go/rest"
 	certUtil "k8s.io/client-go/util/cert"
 
-	sealedsecrets "github.com/bitnami/sealed-secrets/pkg/client/clientset/versioned"
-	ssinformers "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions"
+	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
+	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
 )
 
 var (

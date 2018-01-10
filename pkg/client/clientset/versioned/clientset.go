@@ -17,7 +17,7 @@ limitations under the License.
 package versioned
 
 import (
-	bitnamiv1alpha1 "github.com/bitnami/sealed-secrets/pkg/client/clientset/versioned/typed/sealed-secrets/v1alpha1"
+	bitnamiv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/typed/sealed-secrets/v1alpha1"
 	glog "github.com/golang/glog"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"

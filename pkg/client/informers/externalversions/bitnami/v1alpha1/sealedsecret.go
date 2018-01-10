@@ -19,10 +19,10 @@ limitations under the License.
 package v1alpha1
 
 import (
-	sealed_secrets_v1alpha1 "github.com/bitnami/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
-	versioned "github.com/bitnami/sealed-secrets/pkg/client/clientset/versioned"
-	internalinterfaces "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/bitnami/sealed-secrets/pkg/client/listers/bitnami/v1alpha1"
+	sealed_secrets_v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	versioned "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
+	internalinterfaces "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/listers/bitnami/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
