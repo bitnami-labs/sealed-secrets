@@ -20,7 +20,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 
-	ssv1alpha1 "github.com/bitnami/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 
 	// Register Auth providers
 	_ "k8s.io/client-go/plugin/pkg/client/auth"

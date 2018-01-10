@@ -19,7 +19,7 @@ limitations under the License.
 package bitnami
 
 import (
-	v1alpha1 "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions/bitnami/v1alpha1"
+	v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/bitnami/v1alpha1"
 	internalinterfaces "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions/internalinterfaces"
 )
 
