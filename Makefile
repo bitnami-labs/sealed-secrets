@@ -4,9 +4,11 @@ GOFMT = gofmt
 
 KUBECFG = kubecfg
 DOCKER = docker
+GINKGO = ginkgo -p
 
 DOCKER_USE_SHA = 0
 CONTROLLER_IMAGE = sealed-secrets-controller:latest
+KUBECONFIG ?= $(HOME)/.kube/config
 
 # TODO: Simplify this once ./... ignores ./vendor
 GO_PACKAGES = ./cmd/... ./pkg/...
@@ -48,6 +50,10 @@ controller-norbac.yaml: controller-norbac.jsonnet controller.image
 
 test:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
+
+integrationtest: kubeseal
+	# Assumes a k8s cluster exists, with controller already installed
+	$(GINKGO) -tags 'integration' integration -- -kubeconfig $(KUBECONFIG) -kubeseal-bin $(abspath $<)
 
 vet:
 	# known issue:
