@@ -31,6 +31,7 @@ local crd = {
                 pattern: "^[A-Za-z0-9+/=]*$", // base64
               },
               encryptedData: {
+                type: "object",
                 patternProperties: {
                   "^.*$": {
                     pattern: "^[A-Za-z0-9+/=]*$", // base64
