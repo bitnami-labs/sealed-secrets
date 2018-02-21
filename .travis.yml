@@ -15,12 +15,50 @@ env:
   global:
     - CONTROLLER_IMAGE_NAME=quay.io/bitnami/sealed-secrets-controller
     - CONTROLLER_IMAGE=${CONTROLLER_IMAGE_NAME}:${TRAVIS_TAG:-build-$TRAVIS_BUILD_ID}
+    - MINIKUBE_WANTUPDATENOTIFICATION=false
+    - MINIKUBE_WANTREPORTERRORPROMPT=false
+    - MINIKUBE_HOME=${HOME}
+    - CHANGE_MINIKUBE_NONE_USER=true
+    - KUBECONFIG=${HOME}/.kube/config
+
+matrix:
+  include:
+    - env: INT_KVERS=v1.9.0 INT_SSC_CONF=sealedsecret-crd.yaml,controller.yaml
+    - env: INT_KVERS=v1.8.0 INT_SSC_CONF=sealedsecret-crd.yaml,controller.yaml
+    - env: INT_KVERS=v1.7.0 INT_SSC_CONF=sealedsecret-crd.yaml,controller.yaml
+    - env: INT_KVERS=v1.7.0 INT_SSC_CONF=sealedsecret-tpr.yaml,controller.yaml
+    - env: INT_KVERS=v1.6.0 INT_SSC_CONF=sealedsecret-tpr.yaml,controller.yaml
+
+addons:
+  apt:
+    packages:
+      - wget
+      - ca-certificates
 
 before_install:
   - set -e
 
 install:
   - go build -i ./...
+  - |
+    if [ "$INT_KVERS" != "" ]; then
+      if ! which minikube; then
+        wget -O minikube \
+           https://storage.googleapis.com/minikube/releases/v0.25.0/minikube-$(go env GOOS)-$(go env GOARCH)
+        install -m 755 minikube $GOPATH/bin/minikube
+      fi
+      if ! which kubectl; then
+        wget https://storage.googleapis.com/kubernetes-release/release/$INT_KVERS/bin/$(go env GOOS)/$(go env GOARCH)/kubectl
+        install -m 755 kubectl $GOPATH/bin/kubectl
+      fi
+      mkdir -p $(dirname $KUBECONFIG)
+      touch $KUBECONFIG
+      sudo -E $GOPATH/bin/minikube start --vm-driver=none \
+        --extra-config apiserver.Authorization.Mode=RBAC \
+        --kubernetes-version $INT_KVERS
+
+      go get github.com/onsi/ginkgo/ginkgo
+    fi
   - >-
     wget -O $GOPATH/bin/kubecfg
     https://github.com/ksonnet/kubecfg/releases/download/v0.4.0/kubecfg-$(go env GOOS)-$(go env GOARCH)
@@ -39,6 +77,15 @@ script:
   - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then
       make controller.yaml controller-norbac.yaml sealedsecret-crd.yaml sealedsecret-tpr.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
+    fi
+  - |
+    if [ "$INT_KVERS" != "" ]; then
+      minikube update-context
+      minikube status
+      while ! kubectl cluster-info; do sleep 3; done
+      kubectl create -f $INT_SSC_CONF
+      kubectl rollout status deployment/sealed-secrets-controller -n kube-system -w
+      make integrationtest CONTROLLER_IMAGE=$CONTROLLER_IMAGE
     fi
 
 after_script: set +e
@@ -82,6 +129,7 @@ cache:
   directories:
     - $GOPATH/pkg
     - $GOPATH/bin
+    - $HOME/.minikube/cache
 
 branches:
   only:

@@ -1,7 +1,7 @@
 # "Sealed Secrets" for Kubernetes
 
-[![Build Status](https://travis-ci.org/bitnami/sealed-secrets.svg?branch=master)](https://travis-ci.org/bitnami/sealed-secrets)
-[![Go Report Card](https://goreportcard.com/badge/github.com/bitnami/sealed-secrets)](https://goreportcard.com/report/github.com/bitnami/sealed-secrets)
+[![Build Status](https://travis-ci.org/bitnami-labs/sealed-secrets.svg?branch=master)](https://travis-ci.org/bitnami-labs/sealed-secrets)
+[![Go Report Card](https://goreportcard.com/badge/github.com/bitnami-labs/sealed-secrets)](https://goreportcard.com/report/github.com/bitnami-labs/sealed-secrets)
 
 **Problem:** "I can manage all my K8s config in git, except Secrets."
 
@@ -13,29 +13,29 @@ original Secret from the SealedSecret.
 
 ## Installation
 
-See https://github.com/bitnami/sealed-secrets/releases for the latest
+See https://github.com/bitnami-labs/sealed-secrets/releases for the latest
 release.
 
 **See additional TPR->CRD migration section below if updating an
 existing Sealed Secrets installation from Kubernetes <= 1.7**
 
 ```sh
-$ release=$(curl --silent "https://api.github.com/repos/bitnami/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+$ release=$(curl --silent "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
 
 # Install client-side tool into /usr/local/bin/
 $ GOOS=$(go env GOOS)
 $ GOARCH=$(go env GOARCH)
-$ wget https://github.com/bitnami/sealed-secrets/releases/download/$release/kubeseal-$GOOS-$GOARCH
+$ wget https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/kubeseal-$GOOS-$GOARCH
 $ sudo install -m 755 kubeseal-$GOOS-$GOARCH /usr/local/bin/kubeseal
 
 # Install SealedSecret TPR (for k8s < 1.7)
-$ kubectl create -f https://github.com/bitnami/sealed-secrets/releases/download/$release/sealedsecret-tpr.yaml
+$ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-tpr.yaml
 
 # Install SealedSecret CRD (for k8s >= 1.7)
-$ kubectl create -f https://github.com/bitnami/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
+$ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
 
 # Install server-side controller into kube-system namespace (by default)
-$ kubectl create -f https://github.com/bitnami/sealed-secrets/releases/download/$release/controller.yaml
+$ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
 ```
 
 After the `SealedSecret` resource is created with either
@@ -67,14 +67,14 @@ If you just want the latest client tool, it can be installed into
 `$GOPATH/bin` with:
 
 ```sh
-% go get github.com/bitnami/sealed-secrets/cmd/kubeseal
+% go get github.com/bitnami-labs/sealed-secrets/cmd/kubeseal
 ```
 
 For a more complete development environment, clone the repository and
 use the Makefile:
 
 ```sh
-% git clone https://github.com/bitnami/sealed-secrets.git
+% git clone https://github.com/bitnami-labs/sealed-secrets.git
 % cd sealed-secrets
 
 # Build client-side tool and controller binaries
@@ -107,8 +107,8 @@ the generic documentation for more information on the process.
 
 2. Install the CRD definition.
    ```
-   $ release=$(curl --silent "https://api.github.com/repos/bitnami/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
-   $ kubectl create -f https://github.com/bitnami/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
+   $ release=$(curl --silent "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+   $ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
    ```
 
    Wait until the CRD _Established_ condition becomes True.

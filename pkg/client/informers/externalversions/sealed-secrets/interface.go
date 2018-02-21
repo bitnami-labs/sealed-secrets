@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors.
+Copyright 2018 The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -19,8 +19,8 @@ limitations under the License.
 package bitnami
 
 import (
-	internalinterfaces "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions/sealed-secrets/v1alpha1"
+	internalinterfaces "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/internalinterfaces"
+	v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/sealed-secrets/v1alpha1"
 )
 
 // Interface provides access to each of this group's versions.

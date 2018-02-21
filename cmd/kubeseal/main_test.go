@@ -16,7 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 
-	ssv1alpha1 "github.com/bitnami/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 )
 
 const testCert = `
