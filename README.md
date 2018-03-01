@@ -203,7 +203,7 @@ interesting part of a `SealedSecret` is a base64-encoded
 asymmetrically encrypted `Secret`.
 
 The controller looks for a cluster-wide private/public key pair on
-startup, and generates a new key pair if not found.  The key is
+startup, and generates a new 4096 bit (by default) RSA key pair if not found.  The key is
 persisted in a regular `Secret` in the same namespace as the
 controller.  The public key portion of this (in the form of a
 self-signed certificate) should be made publicly available to anyone
@@ -212,9 +212,9 @@ printed to the controller log at startup, and available via an HTTP
 GET to `/v1/cert.pem` on the controller.
 
 During encryption, the original `Secret` is JSON-encoded and
-symmetrically encrypted using AES-GCM with a randomly-generated
-single-use session key.  The session key is then asymmetrically
-encrypted with the controller's public key using RSA-OAEP, and the
+symmetrically encrypted using AES-GCM (AES-256) with a randomly-generated
+single-use 32 byte session key.  The session key is then asymmetrically
+encrypted with the controller's public key using RSA-OAEP (using SHA256), and the
 original `Secret`'s namespace/name as the OAEP input parameter (aka
 label).  The final output is: 2 byte encrypted session key length ||
 encrypted session key || encrypted Secret.
