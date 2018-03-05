@@ -211,7 +211,7 @@ wanting to use `SealedSecret`s with this cluster.  The certificate is
 printed to the controller log at startup, and available via an HTTP
 GET to `/v1/cert.pem` on the controller.
 
-During encryption, the original `Secret` is JSON-encoded and
+During encryption, each value in the original `Secret` is
 symmetrically encrypted using AES-GCM (AES-256) with a randomly-generated
 single-use 32 byte session key.  The session key is then asymmetrically
 encrypted with the controller's public key using RSA-OAEP (using SHA256), and the
