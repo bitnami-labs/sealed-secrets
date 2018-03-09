@@ -20,7 +20,9 @@ const (
 
 // SealedSecretSpec is the specification of a SealedSecret
 type SealedSecretSpec struct {
-	Data []byte `json:"data"`
+	// Data is deprecated and will be removed eventually. Use per-value EncryptedData instead.
+	Data          []byte            `json:"data"`
+	EncryptedData map[string][]byte `json:"encryptedData"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
