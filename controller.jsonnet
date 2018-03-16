@@ -15,7 +15,7 @@ local clusterRole(name, rules) = {
   rules: rules,
 };
 
-local role(name, namespace="default", rules) = {
+local role(name, namespace, rules) = {
   apiVersion: "rbac.authorization.k8s.io/v1beta1",
   kind: "Role",
   metadata: objectMeta.name(name) + objectMeta.namespace(namespace),
@@ -46,7 +46,7 @@ local clusterRoleBinding(name, role, subjects) = {
   roleRef: crossGroupRef(role),
 };
 
-local roleBinding(name, namespace="default", role, subjects) = {
+local roleBinding(name, namespace, role, subjects) = {
   apiVersion: "rbac.authorization.k8s.io/v1beta1",
   kind: "RoleBinding",
   metadata: objectMeta.name(name) + objectMeta.namespace(namespace),
