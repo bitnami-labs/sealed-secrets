@@ -83,6 +83,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		Spec: SealedSecretSpec{
 			EncryptedData: map[string][]byte{},
 		},
+		Type: secret.Type,
 	}
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
@@ -103,7 +104,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 	return s, nil
 }
 
-// Unseal decypts and returns the embedded v1.Secret.
+// Unseal decrypts and returns the embedded v1.Secret.
 func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rsa.PrivateKey) (*v1.Secret, error) {
 	boolTrue := true
 	smeta := s.GetObjectMeta()
@@ -124,6 +125,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 			}
 			secret.Data[key] = plaintext
 		}
+		secret.Type = s.Type
 	} else { // Support decrypting old secrets for backward compatibility
 		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKey, s.Spec.Data, label)
 		if err != nil {
