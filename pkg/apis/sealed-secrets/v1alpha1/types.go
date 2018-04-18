@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	apiv1  "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,6 +37,8 @@ type SealedSecret struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec SealedSecretSpec `json:"spec"`
+
+	Type apiv1.SecretType `json:"type,omitempty" protobuf:"bytes,3,opt,name=type,casttype=SecretType"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
