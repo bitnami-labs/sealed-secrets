@@ -38,6 +38,7 @@ type SealedSecret struct {
 
 	Spec SealedSecretSpec `json:"spec"`
 
+	// +optional
 	Type apiv1.SecretType `json:"type,omitempty" protobuf:"bytes,3,opt,name=type,casttype=SecretType"`
 }
 
