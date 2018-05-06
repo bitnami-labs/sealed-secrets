@@ -62,7 +62,7 @@ install:
     fi
   - |
     if ! which kubecfg; then
-      wget -O $GOPATH/bin/kubecfg https://github.com/ksonnet/kubecfg/releases/download/v0.7.1/kubecfg-$(go env GOOS)-$(go env GOARCH)
+      wget -O $GOPATH/bin/kubecfg https://github.com/ksonnet/kubecfg/releases/download/v0.7.2/kubecfg-$(go env GOOS)-$(go env GOARCH)
       chmod +x $GOPATH/bin/kubecfg
     fi
   - git clone --depth=1 https://github.com/ksonnet/ksonnet-lib.git
