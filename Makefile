@@ -14,6 +14,24 @@ KUBECONFIG ?= $(HOME)/.kube/config
 GO_PACKAGES = ./cmd/... ./pkg/...
 GO_FILES := $(shell find $(shell $(GO) list -f '{{.Dir}}' $(GO_PACKAGES)) -name \*.go)
 
+COMMIT = $(shell git rev-parse HEAD)
+TAG = $(shell git describe --exact-match --abbrev=0 --tags '$(COMMIT)' 2> /dev/null || true)
+DIRTY = $(shell git diff --shortstat 2> /dev/null | tail -n1)
+
+# Use a tag if set, otherwise use the commit hash
+ifeq ($(TAG),)
+VERSION := $(COMMIT)
+else
+VERSION := $(TAG)
+endif
+
+# Check for changed files
+ifneq ($(DIRTY),)
+VERSION := $(VERSION)+dirty
+endif
+
+GO_LD_FLAGS = -ldflags "-X main.VERSION=$(VERSION)"
+
 all: controller kubeseal
 
 generate: $(GO_FILES)
@@ -23,7 +41,7 @@ controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) ./cmd/controller
 
 kubeseal: $(GO_FILES)
-	$(GO) build -o $@ $(GO_FLAGS) ./cmd/kubeseal
+	$(GO) build -o $@ $(GO_FLAGS) $(GO_LD_FLAGS) ./cmd/kubeseal
 
 %-static: $(GO_FILES)
 	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) ./cmd/$*
@@ -69,4 +87,4 @@ clean:
 	$(RM) controller*.yaml
 	$(RM) docker/controller
 
-.PHONY: all test clean vet fmt
+.PHONY: all kubeseal test clean vet fmt

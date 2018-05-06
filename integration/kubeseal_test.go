@@ -209,3 +209,26 @@ var _ = Describe("kubeseal --fetch-cert", func() {
 			Should(Equal(certs))
 	})
 })
+
+var _ = Describe("kubeseal --version", func() {
+	var c corev1.CoreV1Interface
+	var input io.Reader
+	var output *bytes.Buffer
+	var args []string
+
+	BeforeEach(func() {
+		c = corev1.NewForConfigOrDie(clusterConfigOrDie())
+
+		args = append(args, "--version")
+		output = &bytes.Buffer{}
+	})
+
+	JustBeforeEach(func() {
+		err := runKubeseal(args, input, output)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should produce the version", func() {
+		Expect(output.String()).Should(MatchRegexp("(v[0-9]+\\.[0-9]+\\.[0-9]+|[0-9a-f]{40})(\\+dirty)?"))
+	})
+})
