@@ -2,11 +2,10 @@ GO = go
 GO_FLAGS =
 GOFMT = gofmt
 
-KUBECFG = kubecfg
+KUBECFG = kubecfg -U https://github.com/bitnami-labs/kube-libsonnet/raw/52ba963ca44f7a4960aeae9ee0fbee44726e481f
 DOCKER = docker
 GINKGO = ginkgo -p
 
-DOCKER_USE_SHA = 0
 CONTROLLER_IMAGE = sealed-secrets-controller:latest
 KUBECONFIG ?= $(HOME)/.kube/config
 
@@ -33,15 +32,11 @@ docker/controller: controller-static
 
 controller.image: docker/Dockerfile docker/controller
 	$(DOCKER) build -t $(CONTROLLER_IMAGE) docker/
-ifeq ($(DOCKER_USE_SHA),1)
-	$(DOCKER) image inspect $(CONTROLLER_IMAGE) -f '$(shell echo $(CONTROLLER_IMAGE) | cut -d: -f1)@{{.Id}}' > $@.tmp
-else
 	echo $(CONTROLLER_IMAGE) >$@.tmp
-endif
 	mv $@.tmp $@
 
 %.yaml: %.jsonnet
-	$(KUBECFG) show -o yaml $< > $@.tmp
+	$(KUBECFG) show -V CONTROLLER_IMAGE=$(CONTROLLER_IMAGE) -o yaml $< > $@.tmp
 	mv $@.tmp $@
 
 controller.yaml: controller.jsonnet controller.image controller-norbac.jsonnet
