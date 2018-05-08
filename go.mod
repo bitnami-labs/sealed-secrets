@@ -20,9 +20,7 @@ require (
 	github.com/hashicorp/golang-lru v0.0.0-20160813221303-0a025b7e63ad // indirect
 	github.com/howeyc/gopass v0.0.0-20170109162249-bf9dde6d0d2c // indirect
 	github.com/imdario/mergo v0.0.0-20170620104701-e3000cb3d28c // indirect
-	github.com/json-iterator/go v0.0.0-20180612202835-f2b4162afba3 // indirect
 	github.com/kr/pretty v0.1.0 // indirect
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/onsi/ginkgo v0.0.0-20180119174237-747514b53ddd
 	github.com/onsi/gomega v0.0.0-20180205174834-a9c79f175573
@@ -39,8 +37,8 @@ require (
 	google.golang.org/appengine v0.0.0-20170801183137-c5a90ac045b7 // indirect
 	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/inf.v0 v0.9.0 // indirect
-	gopkg.in/yaml.v2 v2.0.0 // indirect
 	k8s.io/api v0.0.0-20180828232432-12444147eb11
 	k8s.io/apimachinery v0.0.0-20180619225948-e386b2658ed2
 	k8s.io/client-go v0.0.0-20180817174322-745ca8300397
+	k8s.io/kube-openapi v0.0.0-20190709113604-33be087ad058 // indirect
 )
