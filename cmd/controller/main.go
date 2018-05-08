@@ -183,7 +183,7 @@ func main2() error {
 		return err
 	}
 
-	ssclient, err := sealedsecrets.NewForConfig(config)
+	ssclientset, err := sealedsecrets.NewForConfig(config)
 	if err != nil {
 		return err
 	}
@@ -195,8 +195,8 @@ func main2() error {
 		return err
 	}
 
-	ssinformer := ssinformers.NewSharedInformerFactory(ssclient, 0)
-	controller := NewController(clientset, ssinformer, privKey)
+	ssinformer := ssinformers.NewSharedInformerFactory(ssclientset, 0)
+	controller := NewController(clientset, ssclientset, ssinformer, privKey)
 
 	stop := make(chan struct{})
 	defer close(stop)

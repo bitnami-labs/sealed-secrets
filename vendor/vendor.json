@@ -673,14 +673,6 @@
 			"revisionTime": "2018-01-09T11:43:31Z"
 		},
 		{
-			"checksumSHA1": "KLYoFauTMOxpJ+gszp+P1O5QmTY=",
-			"path": "k8s.io/api",
-			"revision": "12444147eb1150aa5c80d2aae532cbc5b7be73d0",
-			"revisionTime": "2018-08-28T21:57:19Z",
-			"version": "=kubernetes-1.10.9",
-			"versionExact": "kubernetes-1.10.9"
-		},
-		{
 			"checksumSHA1": "QjG7KyEszqzdnvk7TzxNP5ZtJXM=",
 			"path": "k8s.io/api/admissionregistration/v1alpha1",
 			"revision": "12444147eb1150aa5c80d2aae532cbc5b7be73d0",

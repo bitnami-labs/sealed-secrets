@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/onsi/gomega/types"
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,6 +53,16 @@ func fetchKeys(c corev1.SecretsGetter) (*rsa.PrivateKey, []*x509.Certificate, er
 	return privKey.(*rsa.PrivateKey), certs, nil
 }
 
+func containEventWithReason(matcher types.GomegaMatcher) types.GomegaMatcher {
+	return WithTransform(
+		func(l *v1.EventList) []v1.Event { return l.Items },
+		ContainElement(WithTransform(
+			func(e *v1.Event) string { return e.Reason },
+			matcher,
+		)),
+	)
+}
+
 var _ = Describe("create", func() {
 	var c corev1.CoreV1Interface
 	var ssc ssclient.Interface
@@ -71,6 +82,9 @@ var _ = Describe("create", func() {
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: ns,
 				Name:      secretName,
+				Labels: map[string]string{
+					"mylabel": "myvalue",
+				},
 			},
 			Data: map[string][]byte{
 				"foo": []byte("bar"),
@@ -84,7 +98,6 @@ var _ = Describe("create", func() {
 		fmt.Fprintf(GinkgoWriter, "Sealing Secret %#v", s)
 		ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
 		Expect(err).NotTo(HaveOccurred())
-
 	})
 	AfterEach(func() {
 		deleteNsOrDie(c, ns)
@@ -106,6 +119,16 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
 				}).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+				}).Should(WithTransform(metav1.Object.GetLabels,
+					HaveKeyWithValue("mylabel", "myvalue")))
+
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
 			})
 		})
 
@@ -189,8 +212,15 @@ var _ = Describe("create", func() {
 			}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 		})
 
-		// TODO: Check for a suitable error event on the
-		// SealedSecret (once implemented)
+		It("should produce an error Event", func() {
+			// Check for a suitable error event on the
+			// SealedSecret
+			Eventually(func() (*v1.EventList, error) {
+				return c.Events(ns).Search(scheme.Scheme, ss)
+			}).Should(
+				containEventWithReason(Equal("ErrUnsealFailed")),
+			)
+		})
 	})
 
 	Describe("Different name/namespace", func() {
@@ -206,8 +236,15 @@ var _ = Describe("create", func() {
 				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 			})
 
-			// TODO: Check for a suitable error event on
-			// the SealedSecret (once implemented)
+			It("should produce an error Event", func() {
+				// Check for a suitable error event on the
+				// SealedSecret
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}).Should(
+					containEventWithReason(Equal("ErrUnsealFailed")),
+				)
+			})
 		})
 
 		Context("With wrong namespace", func() {
@@ -227,8 +264,38 @@ var _ = Describe("create", func() {
 				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 			})
 
-			// TODO: Check for a suitable error event on
-			// the SealedSecret (once implemented)
+			It("should produce an error Event", func() {
+				// Check for a suitable error event on the
+				// SealedSecret
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns2).Search(scheme.Scheme, ss)
+				}).Should(
+					containEventWithReason(Equal("ErrUnsealFailed")),
+				)
+			})
+		})
+
+		Context("With wrong name via template.metadata", func() {
+			const secretName2 = "not-testsecret"
+			BeforeEach(func() {
+				ss.Spec.Template.Name = secretName2
+			})
+			It("should *not* produce a Secret", func() {
+				Consistently(func() error {
+					_, err := c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
+					return err
+				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
+			})
+
+			It("should produce an error Event", func() {
+				// Check for a suitable error event on the
+				// SealedSecret
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}).Should(
+					containEventWithReason(Equal("ErrUnsealFailed")),
+				)
+			})
 		})
 
 		Context("With cluster-wide annotation", func() {
