@@ -43,15 +43,21 @@ install:
   - go build -i ./...
   - |
     if [ "$INT_KVERS" != "" ]; then
-      if ! which minikube; then
-        wget -O minikube \
-           https://storage.googleapis.com/minikube/releases/v0.25.0/minikube-$(go env GOOS)-$(go env GOARCH)
-        install -m 755 minikube $GOPATH/bin/minikube
+      v=0.25.0
+      if ! which minikube-$v; then
+        wget -O $GOPATH/bin/minikube-$v \
+           https://storage.googleapis.com/minikube/releases/v$v/minikube-$(go env GOOS)-$(go env GOARCH)
+        chmod +x $GOPATH/bin/minikube-$v
       fi
-      if ! which kubectl; then
-        wget https://storage.googleapis.com/kubernetes-release/release/$INT_KVERS/bin/$(go env GOOS)/$(go env GOARCH)/kubectl
-        install -m 755 kubectl $GOPATH/bin/kubectl
+      ln -sf minikube-$v $GOPATH/bin/minikube
+
+      v=$INT_KVERS
+      if ! which kubectl-$v; then
+        wget -O $GOPATH/bin/kubectl-$v https://storage.googleapis.com/kubernetes-release/release/$v/bin/$(go env GOOS)/$(go env GOARCH)/kubectl
+        chmod +x $GOPATH/bin/kubectl-$v
       fi
+      ln -sf kubectl-$v $GOPATH/bin/kubectl
+
       mkdir -p $(dirname $KUBECONFIG)
       touch $KUBECONFIG
       sudo -E $GOPATH/bin/minikube start --vm-driver=none \
@@ -61,10 +67,12 @@ install:
       go get github.com/onsi/ginkgo/ginkgo
     fi
   - |
-    if ! which kubecfg; then
-      wget -O $GOPATH/bin/kubecfg https://github.com/ksonnet/kubecfg/releases/download/v0.7.1/kubecfg-$(go env GOOS)-$(go env GOARCH)
-      chmod +x $GOPATH/bin/kubecfg
+    v=0.7.2
+    if ! which kubecfg-$v; then
+      wget -O $GOPATH/bin/kubecfg-$v https://github.com/ksonnet/kubecfg/releases/download/v$v/kubecfg-$(go env GOOS)-$(go env GOARCH)
+      chmod +x $GOPATH/bin/kubecfg-$v
     fi
+    ln -sf kubecfg-$v $GOPATH/bin/kubecfg
   - git clone --depth=1 https://github.com/ksonnet/ksonnet-lib.git
   - export KUBECFG_JPATH=$PWD/ksonnet-lib
 
