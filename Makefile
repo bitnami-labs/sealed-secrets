@@ -30,7 +30,7 @@ ifneq ($(DIRTY),)
 VERSION := $(VERSION)+dirty
 endif
 
-GO_LD_FLAGS = -ldflags "-X main.VERSION=$(VERSION)"
+GO_LD_FLAGS = -X main.VERSION=$(VERSION)
 
 all: controller kubeseal
 
@@ -41,7 +41,7 @@ controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) ./cmd/controller
 
 kubeseal: $(GO_FILES)
-	$(GO) build -o $@ $(GO_FLAGS) $(GO_LD_FLAGS) ./cmd/kubeseal
+	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/kubeseal
 
 %-static: $(GO_FILES)
 	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) ./cmd/$*
