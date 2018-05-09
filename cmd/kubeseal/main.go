@@ -216,7 +216,7 @@ func main() {
 	goflag.CommandLine.Parse([]string{})
 
 	if *printVersion {
-		fmt.Printf("%s\n", VERSION)
+		fmt.Printf("kubeseal version %s\n", VERSION)
 		return
 	}
 
