@@ -37,7 +37,7 @@ generate: $(GO_FILES)
 	$(GO) generate $(GO_PACKAGES)
 
 controller: $(GO_FILES)
-	$(GO) build -o $@ $(GO_FLAGS) ./cmd/controller
+	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/controller
 
 kubeseal: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/kubeseal
@@ -64,9 +64,9 @@ controller-norbac.yaml: controller-norbac.jsonnet controller.image
 test:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
 
-integrationtest: kubeseal
+integrationtest: kubeseal controller
 	# Assumes a k8s cluster exists, with controller already installed
-	$(GINKGO) -tags 'integration' integration -- -kubeconfig $(KUBECONFIG) -kubeseal-bin $(abspath $<)
+	$(GINKGO) -tags 'integration' integration -- -kubeconfig $(KUBECONFIG) -kubeseal-bin $(abspath $<) -controller-bin $(abspath $(word 2,$^))
 
 vet:
 	# known issue:
@@ -82,4 +82,4 @@ clean:
 	$(RM) controller*.yaml
 	$(RM) docker/controller
 
-.PHONY: all kubeseal test clean vet fmt
+.PHONY: all kubeseal controller test clean vet fmt

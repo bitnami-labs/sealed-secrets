@@ -3,10 +3,12 @@
 package integration
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+	"io"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -254,5 +256,25 @@ var _ = Describe("create", func() {
 				}).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
+	})
+})
+
+var _ = Describe("controller --version", func() {
+	var input io.Reader
+	var output *bytes.Buffer
+	var args []string
+
+	BeforeEach(func() {
+		args = []string{"--version"}
+		output = &bytes.Buffer{}
+	})
+
+	JustBeforeEach(func() {
+		err := runController(args, input, output)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should produce the version", func() {
+		Expect(output.String()).Should(MatchRegexp("^controller version: (v[0-9]+\\.[0-9]+\\.[0-9]+|[0-9a-f]{40})(\\+dirty)?"))
 	})
 })
