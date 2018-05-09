@@ -28,7 +28,7 @@ func getData(s *v1.Secret) map[string][]byte {
 }
 
 func fetchKeys(c corev1.SecretsGetter) (*rsa.PrivateKey, []*x509.Certificate, error) {
-	s, err := c.Secrets("kube-system").Get("sealed-secrets-key", metav1.GetOptions{})
+	s, err := c.Secrets("sealed-secrets").Get("sealed-secrets-key", metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, err
 	}

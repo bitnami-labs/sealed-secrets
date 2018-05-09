@@ -10,7 +10,7 @@ local trim = function(str) (
     str
 );
 
-local namespace = "kube-system";
+local namespace = "sealed-secrets";
 local controllerImage = std.extVar("CONTROLLER_IMAGE");
 
 // This is a bit odd: Downgrade to apps/v1beta1 so we can continue

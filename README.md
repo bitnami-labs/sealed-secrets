@@ -19,6 +19,11 @@ release.
 **See additional TPR->CRD migration section below if updating an
 existing Sealed Secrets installation from Kubernetes <= 1.7**
 
+**See additional namespace migration section below if updating from a 
+version prior to 0.8.0, the controller was previously installed into
+`kube-system` namespace by default but to support managed services like
+GKE the default was changed to `sealed-secrets`.**
+
 ```sh
 $ release=$(curl --silent "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
 
@@ -34,14 +39,14 @@ $ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/down
 # Install SealedSecret CRD (for k8s >= 1.7)
 $ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
 
-# Install server-side controller into kube-system namespace (by default)
+# Install server-side controller into `sealed-secrets` namespace (by default)
 $ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
 ```
 
 After the `SealedSecret` resource is created with either
 `sealedsecret-tpr.yaml` or `sealedsecret-crd.yaml` (depending on
 Kubernetes version), `controller.yaml` will install the controller
-into `kube-system` namespace, create a service account and necessary
+into `sealed-secrets` namespace, create a service account and necessary
 RBAC roles.
 
 After a few moments, the controller will start, generate a key pair,
@@ -162,6 +167,52 @@ the generic documentation for more information on the process.
    $ kubectl scale --replicas=1 -n kube-system deployment/sealed-secrets-controller
    ```
 
+### Migration from SealedSecret <0.8.0 to 0.8.0+
+
+In versions prior to 0.8.0 the controller was installed into
+`kube-system` namespace by default but to support managed services like
+GKE the default was changed to `sealed-secrets`.
+[Issue ref](https://github.com/bitnami-labs/sealed-secrets/issues/90)
+
+To migrate, follow this procedure:
+
+1. Backup your existing encryption private key:
+   ```sh
+   $ kubectl get secret -n sealed-secrets sealed-secrets-key -o yaml >master.key
+   ```
+
+2. Prepare to load your encryption private key into the new namespace:
+   ```sh
+   $ sed -i 's/kube-system/sealed-secrets/g' master.key
+   ```
+   Or on Mac OS:
+   ```sh
+   $ sed -i '' 's/kube-system/sealed-secrets/g' master.key
+   ```
+
+3. Install the latest sealed-secrets controller into the `sealed-secrets` namespace (the new default) and wait a minute or so for it to boot
+   ```sh
+   $ release=$(curl --silent "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+   $ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
+   ```
+
+4. Scale down the new controller and then override the secret it just created with your existing one you just prepared in steps 1/2:
+   ```sh
+   $ kubectl scale deployment sealed-secrets-controller -n sealed-secrets --replicas=0
+   $ kubectl replace secret -n sealed-secrets sealed-secrets-key master.key
+   ```
+
+5. Delete the old controller and encryption private key from the `kube-system` namespace:
+   ```sh
+   $ kubectl delete deployment sealed-secrets-controller -n kube-system
+   $ kubectl delete secret sealed-secrets-key -n kube-system
+   ```
+
+6. Finally, scale back up the new controller:
+   ```sh
+   $ kubectl scale deployment sealed-secrets-controller -n sealed-secrets --replicas=1
+   ```
+
 ## Usage
 
 ```sh
@@ -236,11 +287,20 @@ No, the private key is only stored in the Secret managed by the controller (unle
 
 If you do want to make a backup of the encryption private key, it's easy to do from an account with suitable access and:
 
+`kubectl get secret -n sealed-secrets sealed-secrets-key -o yaml >master.key`
+
+Or prior to 0.8.0 use:
+
 `kubectl get secret -n kube-system sealed-secrets-key -o yaml >master.key`
 
 NOTE: This is the controller's public + private key and should be kept omg-safe!
 
 To restore from a backup after some disaster, just put that secret back before starting the controller - or if the controller was already started, replace the newly-created secret and restart the controller:
+
+`kubectl replace secret -n sealed-secrets sealed-secrets-key master.key`
+`kubectl delete pod -n sealed-secrets -l name=sealed-secrets-controller`
+
+Or prior to 0.8.0 use:
 
 `kubectl replace secret -n kube-system sealed-secrets-key master.key`
 `kubectl delete pod -n kube-system -l name=sealed-secrets-controller`
