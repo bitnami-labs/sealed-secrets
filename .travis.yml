@@ -146,6 +146,9 @@ branches:
     - master
     # release tags
     - /^v\d+\.\d+\.\d+.*/
+    # for bors (in particular: don't build "staging.tmp")
+    - staging
+    - trying
 
 notifications:
   email:
