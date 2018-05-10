@@ -89,12 +89,14 @@ script:
       make controller.yaml controller-norbac.yaml sealedsecret-crd.yaml sealedsecret-tpr.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
     fi
   - |
+    set -x
     if [ "$INT_KVERS" != "" ]; then
       minikube update-context
       minikube status
       while ! kubectl cluster-info; do sleep 3; done
-      kubectl create -f $INT_SSC_CONF
-      kubectl rollout status deployment/sealed-secrets-controller -n sealed-secrets -w
+      kubectl get namespaces
+      kubectl -v=8 create -f $INT_SSC_CONF
+      kubectl -v=8 rollout status deployment/sealed-secrets-controller -n sealed-secrets -w
       make integrationtest CONTROLLER_IMAGE=$CONTROLLER_IMAGE
     fi
 
