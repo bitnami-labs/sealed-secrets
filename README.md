@@ -244,3 +244,7 @@ To restore from a backup after some disaster, just put that secret back before s
 
 `kubectl replace secret -n kube-system sealed-secrets-key master.key`
 `kubectl delete pod -n kube-system -l name=sealed-secrets-controller`
+
+- What flags are available for kubeseal?
+
+You can check the flags available using `kubeseal --help`.
