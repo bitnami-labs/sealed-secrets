@@ -33,6 +33,10 @@ var (
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.String("format", "json", "Output format for sealed secret. Either json or yaml")
 	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout.  Useful for later use with --cert")
+	printVersion   = flag.Bool("version", false, "Print version information and exit")
+
+	// VERSION set from Makefile
+	VERSION = "UNKNOWN"
 
 	clientConfig clientcmd.ClientConfig
 )
@@ -210,6 +214,11 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
+
+	if *printVersion {
+		fmt.Printf("kubeseal version: %s\n", VERSION)
+		return
+	}
 
 	f, err := openCert()
 	if err != nil {

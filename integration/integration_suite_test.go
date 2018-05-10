@@ -29,6 +29,7 @@ import (
 
 var kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
 var kubesealBin = flag.String("kubeseal-bin", "kubeseal", "path to kubeseal executable under test")
+var controllerBin = flag.String("controller-bin", "controller", "path to controller executable under test")
 
 func clusterConfigOrDie() *rest.Config {
 	var config *rest.Config
@@ -84,8 +85,16 @@ func runKubeseal(flags []string, input io.Reader, output io.Writer) error {
 	}
 	args = append(args, flags...)
 
-	fmt.Fprintf(GinkgoWriter, "Running %q %q\n", *kubesealBin, args)
-	cmd := exec.Command(*kubesealBin, args...)
+	return runApp(*kubesealBin, args, input, output)
+}
+
+func runController(flags []string, input io.Reader, output io.Writer) error {
+	return runApp(*controllerBin, flags, input, output)
+}
+
+func runApp(app string, flags []string, input io.Reader, output io.Writer) error {
+	fmt.Fprintf(GinkgoWriter, "Running %q %q\n", app, flags)
+	cmd := exec.Command(app, flags...)
 	cmd.Stdin = input
 	cmd.Stdout = output
 	cmd.Stderr = GinkgoWriter
