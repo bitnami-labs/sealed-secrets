@@ -178,16 +178,15 @@ To migrate, follow this procedure:
 
 1. Backup your existing encryption private key:
    ```sh
-   $ kubectl get secret -n sealed-secrets sealed-secrets-key -o yaml >master.key
+   $ kubectl get secret -n kube-system sealed-secrets-key -o yaml >master.key
    ```
 
-2. Prepare to load your encryption private key into the new namespace:
+2. Copy your existing encryption private key into the new namespace:
    ```sh
-   $ sed -i 's/kube-system/sealed-secrets/g' master.key
-   ```
-   Or on Mac OS:
-   ```sh
-   $ sed -i '' 's/kube-system/sealed-secrets/g' master.key
+   $ kubectl create namespace sealed-secrets
+   $ kubectl get secret -n kube-system sealed-secrets-key -o yaml | \
+       sed 's/kube-system/sealed-secrets/g' | \
+       kubectl create -f -
    ```
 
 3. Install the latest sealed-secrets controller into the `sealed-secrets` namespace (the new default) and wait a minute or so for it to boot
@@ -196,21 +195,15 @@ To migrate, follow this procedure:
    $ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
    ```
 
-4. Scale down the new controller and then override the secret it just created with your existing one you just prepared in steps 1/2:
-   ```sh
-   $ kubectl scale deployment sealed-secrets-controller -n sealed-secrets --replicas=0
-   $ kubectl replace secret -n sealed-secrets sealed-secrets-key master.key
-   ```
-
-5. Delete the old controller and encryption private key from the `kube-system` namespace:
+4. Delete the old controller and encryption private key from the `kube-system` namespace:
    ```sh
    $ kubectl delete deployment sealed-secrets-controller -n kube-system
    $ kubectl delete secret sealed-secrets-key -n kube-system
    ```
 
-6. Finally, scale back up the new controller:
+5. Assuming the previous steps all succeeded, you can delete the local backup of your encryption private key:
    ```sh
-   $ kubectl scale deployment sealed-secrets-controller -n sealed-secrets --replicas=1
+   $ rm master.key
    ```
 
 ## Usage
