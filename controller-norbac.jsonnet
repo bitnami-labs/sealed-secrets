@@ -25,7 +25,8 @@ local v1beta1_Deployment(name) = kube.Deployment(name) {
 {
   namespace:: {metadata+: {namespace: namespace}},
 
-  ns: kube.Namespace($.namespace.metadata.namespace),
+  // TODO uncomment when comments at https://github.com/bitnami-labs/sealed-secrets/pull/99#issuecomment-387962489 resolved
+  // ns: kube.Namespace($.namespace.metadata.namespace),
 
   service: kube.Service("sealed-secrets-controller") + $.namespace {
     target_pod: $.controller.spec.template,

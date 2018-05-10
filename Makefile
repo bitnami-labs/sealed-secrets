@@ -54,12 +54,13 @@ controller.image: docker/Dockerfile docker/controller
 	mv $@.tmp $@
 
 %.yaml: %.jsonnet
-	$(KUBECFG) show -V CONTROLLER_IMAGE=$(CONTROLLER_IMAGE) -o yaml $< > $@.tmp
+	cat namespace.yaml > $@.tmp # TODO remove when comments at https://github.com/bitnami-labs/sealed-secrets/pull/99#issuecomment-387962489 resolved
+	$(KUBECFG) show -V CONTROLLER_IMAGE=$(CONTROLLER_IMAGE) -o yaml $< >> $@.tmp
 	mv $@.tmp $@
 
-controller.yaml: controller.jsonnet controller.image controller-norbac.jsonnet
+controller.yaml: controller.jsonnet controller.image controller-norbac.jsonnet namespace.yaml
 
-controller-norbac.yaml: controller-norbac.jsonnet controller.image
+controller-norbac.yaml: controller-norbac.jsonnet controller.image namespace.yaml
 
 test:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
