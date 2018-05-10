@@ -17,5 +17,5 @@
 /kubeseal
 /controller.image
 /*-static
-/controller.yaml
+/controller*.yaml
 /docker/controller
