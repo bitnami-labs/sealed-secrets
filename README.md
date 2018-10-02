@@ -280,23 +280,31 @@ No, the private key is only stored in the Secret managed by the controller (unle
 
 If you do want to make a backup of the encryption private key, it's easy to do from an account with suitable access and:
 
-`kubectl get secret -n sealed-secrets sealed-secrets-key -o yaml >master.key`
+```
+$ kubectl get secret -n sealed-secrets sealed-secrets-key -o yaml >master.key
+```
 
 Or prior to 0.8.0 use:
 
-`kubectl get secret -n kube-system sealed-secrets-key -o yaml >master.key`
+```
+$ kubectl get secret -n kube-system sealed-secrets-key -o yaml >master.key
+```
 
 NOTE: This is the controller's public + private key and should be kept omg-safe!
 
 To restore from a backup after some disaster, just put that secret back before starting the controller - or if the controller was already started, replace the newly-created secret and restart the controller:
 
-`kubectl replace secret -n sealed-secrets sealed-secrets-key master.key`
-`kubectl delete pod -n sealed-secrets -l name=sealed-secrets-controller`
+```
+$ kubectl replace -f master.key
+$ kubectl delete pod -n sealed-secrets -l name=sealed-secrets-controller
+```
 
 Or prior to 0.8.0 use:
 
-`kubectl replace secret -n kube-system sealed-secrets-key master.key`
-`kubectl delete pod -n kube-system -l name=sealed-secrets-controller`
+```
+$ kubectl replace -f master.key
+$ kubectl delete pod -n kube-system -l name=sealed-secrets-controller
+```
 
 - What flags are available for kubeseal?
 
