@@ -93,7 +93,7 @@ script:
       minikube update-context
       minikube status
       while ! kubectl cluster-info; do sleep 3; done
-      kubectl create -f $INT_SSC_CONF
+      kubectl apply -f $INT_SSC_CONF
       kubectl rollout status deployment/sealed-secrets-controller -n sealed-secrets -w
       make integrationtest CONTROLLER_IMAGE=$CONTROLLER_IMAGE
     fi
