@@ -229,3 +229,63 @@ var _ = Describe("kubeseal --version", func() {
 		Expect(output.String()).Should(MatchRegexp("^kubeseal version: (v[0-9]+\\.[0-9]+\\.[0-9]+|[0-9a-f]{40})(\\+dirty)?"))
 	})
 })
+
+var _ = Describe("kubeseal --verify", func() {
+	var c corev1.CoreV1Interface
+	const secretName = "testSecret"
+	const testNs = "testns"
+	var input io.Reader
+	var output *bytes.Buffer
+	var ss *ssv1alpha1.SealedSecret
+	var args []string
+	var err error
+
+	BeforeEach(func() {
+		c = corev1.NewForConfigOrDie(clusterConfigOrDie())
+		args = append(args, "--validate")
+		output = &bytes.Buffer{}
+	})
+
+	BeforeEach(func() {
+		input := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: testNs,
+				Name:      secretName,
+			},
+			Data: map[string][]byte{
+				"foo": []byte("bar"),
+			},
+		}
+		outobj, err := runKubesealWith([]string{}, input)
+		Expect(err).NotTo(HaveOccurred())
+		ss = outobj.(*ssv1alpha1.SealedSecret)
+	})
+
+	JustBeforeEach(func() {
+		enc := scheme.Codecs.LegacyCodec(ssv1alpha1.SchemeGroupVersion)
+		indata, err := runtime.Encode(enc, ss)
+		Expect(err).NotTo(HaveOccurred())
+		input = bytes.NewReader(indata)
+	})
+
+	JustBeforeEach(func() {
+		err = runKubeseal(args, input, output)
+	})
+
+	Context("valid sealed secret", func() {
+		It("should see the sealed secret as valid", func() {
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Context("invalid sealed secret", func() {
+		BeforeEach(func() {
+			ss.Name = "a-completely-different-name"
+		})
+
+		It("should see the sealed secret as invalid", func() {
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
+})

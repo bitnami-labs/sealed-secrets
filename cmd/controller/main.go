@@ -203,7 +203,7 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	go httpserver(func() ([]*x509.Certificate, error) { return certs, nil })
+	go httpserver(func() ([]*x509.Certificate, error) { return certs, nil }, controller.AttemptUnseal)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)

@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/x509"
 	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -20,12 +21,39 @@ var (
 // Called on every request to /cert.  Errors will be logged and return a 500.
 type certProvider func() ([]*x509.Certificate, error)
 
-func httpserver(cp certProvider) {
+type secretChecker func([]byte) (bool, error)
+
+func httpserver(cp certProvider, sc secretChecker) {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		io.WriteString(w, "ok\n")
+	})
+
+	mux.HandleFunc("/v1/verify", func(w http.ResponseWriter, r *http.Request) {
+		content, err := ioutil.ReadAll(r.Body)
+
+		if err != nil {
+			log.Printf("Error handling /v1/verify request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		valid, err := sc(content)
+
+		if err != nil {
+			log.Printf("Error validating secret: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		if valid {
+			w.WriteHeader(http.StatusOK)
+		} else {
+			w.WriteHeader(http.StatusConflict)
+		}
+
 	})
 
 	mux.HandleFunc("/v1/cert.pem", func(w http.ResponseWriter, r *http.Request) {
