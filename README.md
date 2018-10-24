@@ -226,6 +226,37 @@ namespace/name is used as the OAEP input parameter, ensuring that the
 The generated `Secret` is marked as "owned" by the `SealedSecret` and
 will be garbage collected if the `SealedSecret` is deleted.
 
+## Developing
+To be able to develop on this project, you need to have the following tools installed:
+* make
+* [Ginkgo](https://onsi.github.io/ginkgo/)
+* [Minikuke](https://github.com/kubernetes/minikube)
+* [kubecfg](https://github.com/ksonnet/kubecfg)
+* Go
+
+To build the `kubeseal` and controller binaries, run:
+```bash
+$ make
+```
+
+To run the unit tests:
+```bash
+$ make test
+```
+
+To run the integration tests:
+* Start Minikube
+* Build the controller for Linux, so that it can be run within a Docker image - edit the Makefile to add 
+`GOOS=linux GOARCH=amd64` to `%-static`, and then run `make controller.yaml sealedsecret-crd.yaml`
+* Alter `controller.yaml` so that `imagePullPolicy: Never`, to ensure that the image you've just built will be
+used by Kubernetes
+* Add the sealed-secret CRD and controller to Kubernetes - `kubectl apply -f sealedsecret-crd.yaml,controller.yaml`
+* Revert any changes made to the Makefile to build the Linux controller
+* Remove the binaries which were possibly built for another OS - `make clean`
+* Rebuild the binaries for your OS - `make`
+* Run the integration tests - `make integrationtest`
+
+
 ## FAQ
 
 - Will you still be able to decrypt if you no longer have access to your cluster?
