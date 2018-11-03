@@ -429,6 +429,22 @@
 			"revisionTime": "2017-11-06T14:28:49Z"
 		},
 		{
+			"checksumSHA1": "bZ/JxouzL+lVFiE1ct3yEgEmYa4=",
+			"path": "github.com/throttled/throttled",
+			"revision": "ee00e877b953e232c5b0fff46f75cdc56b984524",
+			"revisionTime": "2018-10-19T04:20:48Z",
+			"version": "v2.2.2",
+			"versionExact": "v2.2.2"
+		},
+		{
+			"checksumSHA1": "luibTEupyY3oquYFg9/YaXrumXY=",
+			"path": "github.com/throttled/throttled/store/memstore",
+			"revision": "ee00e877b953e232c5b0fff46f75cdc56b984524",
+			"revisionTime": "2018-10-19T04:20:48Z",
+			"version": "v2.2.2",
+			"versionExact": "v2.2.2"
+		},
+		{
 			"checksumSHA1": "ZaU56svwLgiJD0y8JOB3+/mpYBA=",
 			"path": "golang.org/x/crypto/ssh/terminal",
 			"revision": "3627ff35f31987174dbee61d9d1dcc1c643e7174",

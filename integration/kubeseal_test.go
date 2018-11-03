@@ -233,7 +233,7 @@ var _ = Describe("kubeseal --version", func() {
 var _ = Describe("kubeseal --verify", func() {
 	var c corev1.CoreV1Interface
 	const secretName = "testSecret"
-	const testNs = "testns"
+	const testNs = "testverifyns"
 	var input io.Reader
 	var output *bytes.Buffer
 	var ss *ssv1alpha1.SealedSecret
