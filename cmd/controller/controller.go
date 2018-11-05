@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rsa"
 	"fmt"
+	"k8s.io/apimachinery/pkg/runtime"
 	"log"
 	"time"
 
@@ -59,7 +60,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 }
 
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssinformer ssinformer.SharedInformerFactory, privKey *rsa.PrivateKey) cache.Controller {
+func NewController(clientset kubernetes.Interface, ssinformer ssinformer.SharedInformerFactory, privKey *rsa.PrivateKey) *Controller {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
 	informer := ssinformer.Bitnami().V1alpha1().
@@ -192,4 +193,22 @@ func (c *Controller) unseal(key string) error {
 		_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(secret)
 	}
 	return err
+}
+
+func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
+	object, err := runtime.Decode(scheme.Codecs.UniversalDecoder(ssv1alpha1.SchemeGroupVersion), content)
+	if err != nil {
+		return false, err
+	}
+
+	switch s := object.(type) {
+	case *ssv1alpha1.SealedSecret:
+		if _, err := s.Unseal(scheme.Codecs, c.privKey); err != nil {
+			return false, nil
+		}
+		return true, nil
+	default:
+		return false, fmt.Errorf("Unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
+
+	}
 }
