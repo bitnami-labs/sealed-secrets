@@ -10,6 +10,9 @@ import (
 	"io/ioutil"
 	"os"
 
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,11 +22,6 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	certUtil "k8s.io/client-go/util/cert"
-
-	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("kubeseal", func() {
@@ -44,9 +42,7 @@ var _ = Describe("kubeseal", func() {
 			&clientcmd.ConfigOverrides{})
 		rawconf, err := clientConfig.RawConfig()
 		Expect(err).NotTo(HaveOccurred())
-		tmp, err := clientcmdlatest.Scheme.Copy(&rawconf)
-		Expect(err).NotTo(HaveOccurred())
-		config = tmp.(*clientcmdapi.Config)
+		config = rawconf.DeepCopy()
 	})
 
 	JustBeforeEach(func() {
