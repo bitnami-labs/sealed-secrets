@@ -190,7 +190,14 @@ func (c *Controller) unseal(key string) error {
 
 	_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(secret)
 	if err != nil && errors.IsAlreadyExists(err) {
+		// Fetch existing owner references
+		existingSecret, err := c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Get(secret.GetObjectMeta().GetName(), metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		secret.SetOwnerReferences(append(existingSecret.GetOwnerReferences(), secret.GetOwnerReferences()...))
 		_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(secret)
+
 	}
 	return err
 }
