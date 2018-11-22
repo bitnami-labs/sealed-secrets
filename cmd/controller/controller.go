@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
+	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -190,16 +191,43 @@ func (c *Controller) unseal(key string) error {
 
 	_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(secret)
 	if err != nil && errors.IsAlreadyExists(err) {
-		// Fetch existing owner references
-		existingSecret, err := c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Get(secret.GetObjectMeta().GetName(), metav1.GetOptions{})
+		updatedSecret, err := c.updateSecret(secret)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to update existing secret: %s", err)
 		}
-		secret.SetOwnerReferences(append(existingSecret.GetOwnerReferences(), secret.GetOwnerReferences()...))
-		_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(secret)
-
+		_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(updatedSecret)
 	}
 	return err
+}
+
+func (c *Controller) updateSecret(newSecret *apiv1.Secret) (*apiv1.Secret, error) {
+	existingSecret, err := c.sclient.Secrets(newSecret.GetObjectMeta().GetNamespace()).Get(newSecret.GetObjectMeta().GetName(), metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to read existing secret: %s", err)
+	}
+	existingSecret.Data = newSecret.Data
+
+	c.updateOwnerReferences(existingSecret, newSecret)
+
+	return existingSecret, nil
+}
+
+func (c *Controller) updateOwnerReferences(existing, new *apiv1.Secret) {
+	ownerRefs := existing.GetOwnerReferences()
+
+	for _, newRef := range new.GetOwnerReferences() {
+		found := false
+		for _, ref := range ownerRefs {
+			if newRef.UID == ref.UID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			ownerRefs = append(ownerRefs, newRef)
+		}
+	}
+	existing.SetOwnerReferences(ownerRefs)
 }
 
 func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
