@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
+	"time"
 
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -130,7 +131,7 @@ var _ = Describe("create", func() {
 				}
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
-				}).Should(WithTransform(getData, Equal(expected)))
+				}, 5 * time.Second).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
 
