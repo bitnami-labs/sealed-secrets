@@ -4,6 +4,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -80,12 +81,18 @@ var _ = Describe("create", func() {
 	var ss *ssv1alpha1.SealedSecret
 	var s *v1.Secret
 	var pubKey *rsa.PublicKey
+	var cancelLog context.CancelFunc
 
 	BeforeEach(func() {
+		var ctx context.Context
+		ctx, cancelLog = context.WithCancel(context.Background())
+
 		conf := clusterConfigOrDie()
 		c = corev1.NewForConfigOrDie(conf)
 		ssc = ssclient.NewForConfigOrDie(conf)
 		ns = createNsOrDie(c, "create")
+
+		go streamLog(ctx, c, ns, "sealed-secrets-controller", "sealed-secrets-controller", GinkgoWriter, fmt.Sprintf("[%s] ", ns))
 
 		s = &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
@@ -110,6 +117,7 @@ var _ = Describe("create", func() {
 	})
 	AfterEach(func() {
 		deleteNsOrDie(c, ns)
+		cancelLog()
 	})
 
 	JustBeforeEach(func() {
