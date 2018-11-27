@@ -3,10 +3,12 @@ package main
 import (
 	"crypto/rsa"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime"
 	"log"
 	"time"
 
+	"k8s.io/apimachinery/pkg/runtime"
+
+	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
@@ -15,7 +17,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
-	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/util/workqueue"
 
@@ -190,13 +191,17 @@ func (c *Controller) unseal(key string) error {
 	}
 
 	_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(secret)
-	if err != nil && errors.IsAlreadyExists(err) {
-		updatedSecret, err := c.updateSecret(secret)
-		if err != nil {
-			return fmt.Errorf("failed to update existing secret: %s", err)
-		}
-		_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(updatedSecret)
+	if err != nil && !errors.IsAlreadyExists(err) {
+		// Error wasn't already exists so is real error
+		return err
 	}
+
+	// Secret already exists so update it in place with new data/owner reference
+	updatedSecret, err := c.updateSecret(secret)
+	if err != nil {
+		return fmt.Errorf("failed to update existing secret: %s", err)
+	}
+	_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(updatedSecret)
 	return err
 }
 
