@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	apiv1  "k8s.io/api/core/v1"
+	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -15,8 +15,12 @@ const (
 	annoNs = "sealedsecrets." + GroupName + "/"
 
 	// SealedSecretClusterWideAnnotation is the name for the annotation for
-	// setting the secret to be availible cluster wide.
+	// setting the secret to be available cluster wide.
 	SealedSecretClusterWideAnnotation = annoNs + "cluster-wide"
+
+	// SealedSecretNamespaceWideAnnotation is the name for the annotation for
+	// setting the secret to be available namespace wide.
+	SealedSecretNamespaceWideAnnotation = annoNs + "namespace-wide"
 )
 
 // SealedSecretSpec is the specification of a SealedSecret

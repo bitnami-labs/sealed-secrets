@@ -34,9 +34,9 @@ func TestLabel(t *testing.T) {
 			Namespace: "myns",
 		},
 	}
-	l, c := labelFor(&s)
+	l, c, _ := labelFor(&s)
 	if c {
-		t.Errorf("Unexpected value for custom: %#v", c)
+		t.Errorf("Unexpected value for cluster wide annotation: %#v", c)
 	}
 	if string(l) != "myns/myname" {
 		t.Errorf("Unexpected label: %#v", l)
@@ -53,9 +53,51 @@ func TestClusterWide(t *testing.T) {
 			},
 		},
 	}
-	l, c := labelFor(&s)
+	l, c, _ := labelFor(&s)
 	if !c {
-		t.Errorf("Unexpected value for custom: %#v", c)
+		t.Errorf("Unexpected value for cluster wide annotation: %#v", c)
+	}
+	if string(l) != "" {
+		t.Errorf("Unexpected label: %#v", l)
+	}
+}
+
+func TestNamespaceWide(t *testing.T) {
+	s := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+			Annotations: map[string]string{
+				SealedSecretNamespaceWideAnnotation: "true",
+			},
+		},
+	}
+	l, _, n := labelFor(&s)
+	if !n {
+		t.Errorf("Unexpected value for namespace wide annotation: %#v", n)
+	}
+	if string(l) != "myns" {
+		t.Errorf("Unexpected label: %#v", l)
+	}
+}
+
+func TestClusterAndNamespaceWide(t *testing.T) {
+	s := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+			Annotations: map[string]string{
+				SealedSecretNamespaceWideAnnotation: "true",
+				SealedSecretClusterWideAnnotation:   "true",
+			},
+		},
+	}
+	l, c, n := labelFor(&s)
+	if !c {
+		t.Errorf("Unexpected value for cluster wide annotation: %#v", c)
+	}
+	if n {
+		t.Errorf("Unexpected value for namespace wide annotation: %#v", n)
 	}
 	if string(l) != "" {
 		t.Errorf("Unexpected label: %#v", l)
@@ -234,6 +276,86 @@ func TestSealRoundTripWithMisMatchClusterWide(t *testing.T) {
 	}
 
 	ssecret.ObjectMeta.Annotations[SealedSecretClusterWideAnnotation] = "false"
+
+	_, err = ssecret.Unseal(codecs, key)
+	if err == nil {
+		t.Fatalf("Unseal did not return expected error: %v", err)
+	}
+}
+
+func TestSealRoundTripWithNamespaceWide(t *testing.T) {
+	scheme := runtime.NewScheme()
+	codecs := serializer.NewCodecFactory(scheme)
+
+	SchemeBuilder.AddToScheme(scheme)
+	v1.SchemeBuilder.AddToScheme(scheme)
+
+	rand := testRand()
+	key, err := rsa.GenerateKey(rand, 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+			Annotations: map[string]string{
+				SealedSecretNamespaceWideAnnotation: "true",
+			},
+		},
+		Data: map[string][]byte{
+			"foo": []byte("bar"),
+		},
+	}
+
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
+	if err != nil {
+		t.Fatalf("NewSealedSecret returned error: %v", err)
+	}
+
+	secret2, err := ssecret.Unseal(codecs, key)
+	if err != nil {
+		t.Fatalf("Unseal returned error: %v", err)
+	}
+
+	if !reflect.DeepEqual(secret.Data, secret2.Data) {
+		t.Errorf("Unsealed secret != original secret: %v != %v", secret, secret2)
+	}
+}
+
+func TestSealRoundTripWithMisMatchNamespaceWide(t *testing.T) {
+	scheme := runtime.NewScheme()
+	codecs := serializer.NewCodecFactory(scheme)
+
+	SchemeBuilder.AddToScheme(scheme)
+	v1.SchemeBuilder.AddToScheme(scheme)
+
+	rand := testRand()
+	key, err := rsa.GenerateKey(rand, 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+			Annotations: map[string]string{
+				SealedSecretNamespaceWideAnnotation: "true",
+			},
+		},
+		Data: map[string][]byte{
+			"foo": []byte("bar"),
+		},
+	}
+
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
+	if err != nil {
+		t.Fatalf("NewSealedSecret returned error: %v", err)
+	}
+
+	ssecret.ObjectMeta.Annotations[SealedSecretNamespaceWideAnnotation] = "false"
 
 	_, err = ssecret.Unseal(codecs, key)
 	if err == nil {
