@@ -261,7 +261,6 @@ var _ = Describe("create", func() {
 			var ns2 string
 			BeforeEach(func() {
 				ns2 = createNsOrDie(c, "create")
-				ss.Namespace = ns2
 			})
 			BeforeEach(func() {
 				var err error
@@ -272,6 +271,7 @@ var _ = Describe("create", func() {
 
 				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v", s)
 				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+				ss.Namespace = ns2
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
@@ -317,7 +317,6 @@ var _ = Describe("create", func() {
 			var ns2 string
 			BeforeEach(func() {
 				ns2 = createNsOrDie(c, "create")
-				ss.Namespace = ns2
 			})
 			BeforeEach(func() {
 				var err error
@@ -328,6 +327,7 @@ var _ = Describe("create", func() {
 
 				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v", s)
 				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+				ss.Namespace = ns2
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
