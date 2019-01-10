@@ -21,7 +21,7 @@ func labelFor(o metav1.Object) ([]byte, bool, bool) {
 	}
 	namespaceWide := o.GetAnnotations()[SealedSecretNamespaceWideAnnotation]
 	if namespaceWide == "true" {
-		return []byte(fmt.Sprintf("%s", o.GetNamespace())), false, true
+        return []byte(o.GetNamespace()), false, true
 	}
 	return []byte(fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())), false, false
 }
@@ -48,7 +48,7 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
 	// during decryption.
-	label, clusterWide, _ := labelFor(secret)
+	label, clusterWide, namespaceWide := labelFor(secret)
 
 	ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, plaintext, label)
 	if err != nil {
@@ -67,6 +67,9 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 
 	if clusterWide {
 		s.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
+	}
+	if namespaceWide {
+		s.Annotations = map[string]string{SealedSecretNamespaceWideAnnotation: "true"}
 	}
 	return s, nil
 }

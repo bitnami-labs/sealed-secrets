@@ -381,7 +381,8 @@ func TestUnsealingV1Format(t *testing.T) {
 			Name:      "myname",
 			Namespace: "myns",
 			Annotations: map[string]string{
-				SealedSecretClusterWideAnnotation: "true",
+				SealedSecretClusterWideAnnotation:   "true",
+				SealedSecretNamespaceWideAnnotation: "true",
 			},
 		},
 		Data: map[string][]byte{
