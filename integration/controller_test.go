@@ -231,7 +231,7 @@ var _ = Describe("create", func() {
 			// the SealedSecret (once implemented)
 		})
 
-		Context("With cluster-wide annotation", func() {
+		Context("With wrong name and cluster-wide annotation", func() {
 			const secretName2 = "not-testsecret"
 			BeforeEach(func() {
 				var err error
@@ -254,6 +254,91 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
 				}).Should(WithTransform(getData, Equal(expected)))
+			})
+		})
+
+		Context("With wrong namespace and cluster-wide annotation", func() {
+			var ns2 string
+			BeforeEach(func() {
+				ns2 = createNsOrDie(c, "create")
+			})
+			BeforeEach(func() {
+				var err error
+
+				s.Annotations = map[string]string{
+					ssv1alpha1.SealedSecretClusterWideAnnotation: "true",
+				}
+
+				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v", s)
+				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+				ss.Namespace = ns2
+				Expect(err).NotTo(HaveOccurred())
+			})
+			AfterEach(func() {
+				deleteNsOrDie(c, ns2)
+			})
+			It("should produce expected Secret", func() {
+				expected := map[string][]byte{
+					"foo": []byte("bar"),
+				}
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns2).Get(secretName, metav1.GetOptions{})
+				}).Should(WithTransform(getData, Equal(expected)))
+			})
+		})
+
+		Context("With wrong name and namespace-wide annotation", func() {
+			const secretName2 = "not-testsecret"
+			BeforeEach(func() {
+				var err error
+
+				s.Annotations = map[string]string{
+					ssv1alpha1.SealedSecretNamespaceWideAnnotation: "true",
+				}
+
+				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v", s)
+				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+				Expect(err).NotTo(HaveOccurred())
+			})
+			BeforeEach(func() {
+				ss.Name = secretName2
+			})
+			It("should produce expected Secret", func() {
+				expected := map[string][]byte{
+					"foo": []byte("bar"),
+				}
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
+				}).Should(WithTransform(getData, Equal(expected)))
+			})
+		})
+
+		Context("With wrong namespace and namespace-wide annotation", func() {
+			var ns2 string
+			BeforeEach(func() {
+				ns2 = createNsOrDie(c, "create")
+			})
+			BeforeEach(func() {
+				var err error
+
+				s.Annotations = map[string]string{
+					ssv1alpha1.SealedSecretNamespaceWideAnnotation: "true",
+				}
+
+				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v", s)
+				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+				ss.Namespace = ns2
+				Expect(err).NotTo(HaveOccurred())
+			})
+			AfterEach(func() {
+				deleteNsOrDie(c, ns2)
+			})
+
+			It("should *not* produce a Secret", func() {
+				Consistently(func() error {
+					_, err := c.Secrets(ns2).Get(secretName, metav1.GetOptions{})
+					return err
+				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 			})
 		})
 	})

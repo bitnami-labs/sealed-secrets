@@ -13,13 +13,17 @@ import (
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 )
 
-func labelFor(o metav1.Object) ([]byte, bool) {
-	label := o.GetAnnotations()[SealedSecretClusterWideAnnotation]
-	if label == "true" {
-		return []byte(""), true
+// Returns labels followed by clusterWide followed by namespaceWide.
+func labelFor(o metav1.Object) ([]byte, bool, bool) {
+	clusterWide := o.GetAnnotations()[SealedSecretClusterWideAnnotation]
+	if clusterWide == "true" {
+		return []byte(""), true, false
 	}
-	label = fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())
-	return []byte(label), false
+	namespaceWide := o.GetAnnotations()[SealedSecretNamespaceWideAnnotation]
+	if namespaceWide == "true" {
+        return []byte(o.GetNamespace()), false, true
+	}
+	return []byte(fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())), false, false
 }
 
 // NewSealedSecretV1 creates a new SealedSecret object wrapping the
@@ -44,7 +48,7 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
 	// during decryption.
-	label, clusterWide := labelFor(secret)
+	label, clusterWide, namespaceWide := labelFor(secret)
 
 	ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, plaintext, label)
 	if err != nil {
@@ -63,6 +67,9 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 
 	if clusterWide {
 		s.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
+	}
+	if namespaceWide {
+		s.Annotations = map[string]string{SealedSecretNamespaceWideAnnotation: "true"}
 	}
 	return s, nil
 }
@@ -88,7 +95,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
 	// during decryption.
-	label, clusterWide := labelFor(secret)
+	label, clusterWide, namespaceWide := labelFor(secret)
 
 	for key, value := range secret.Data {
 		ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, value, label)
@@ -100,6 +107,9 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 
 	if clusterWide {
 		s.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
+	}
+	if namespaceWide {
+		s.Annotations = map[string]string{SealedSecretNamespaceWideAnnotation: "true"}
 	}
 	return s, nil
 }
@@ -113,7 +123,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 	// during encryption.  This check ensures that we can't be
 	// tricked into decrypting a sealed secret into an unexpected
 	// namespace/name.
-	label, _ := labelFor(smeta)
+	label, _, _ := labelFor(smeta)
 
 	var secret v1.Secret
 	if len(s.Spec.EncryptedData) > 0 {
