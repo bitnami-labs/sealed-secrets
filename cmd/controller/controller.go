@@ -191,7 +191,11 @@ func (c *Controller) unseal(key string) error {
 	}
 
 	_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(secret)
-	if err != nil && !errors.IsAlreadyExists(err) {
+	if err == nil {
+		// Secret successfully created
+		return nil
+	}
+	if !errors.IsAlreadyExists(err) {
 		// Error wasn't already exists so is real error
 		return err
 	}
@@ -210,6 +214,7 @@ func (c *Controller) updateSecret(newSecret *apiv1.Secret) (*apiv1.Secret, error
 	if err != nil {
 		return nil, fmt.Errorf("failed to read existing secret: %s", err)
 	}
+	existingSecret = existingSecret.DeepCopy()
 	existingSecret.Data = newSecret.Data
 
 	c.updateOwnerReferences(existingSecret, newSecret)
