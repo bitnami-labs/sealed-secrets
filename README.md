@@ -236,7 +236,7 @@ will be garbage collected if the `SealedSecret` is deleted.
 To be able to develop on this project, you need to have the following tools installed:
 * make
 * [Ginkgo](https://onsi.github.io/ginkgo/)
-* [Minikuke](https://github.com/kubernetes/minikube)
+* [Minikube](https://github.com/kubernetes/minikube)
 * [kubecfg](https://github.com/ksonnet/kubecfg)
 * Go
 
