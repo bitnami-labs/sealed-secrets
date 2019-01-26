@@ -1,0 +1,82 @@
+## Bitnami Sealed Secrets
+
+release:
+  # Comment out to enable publishing
+  # disable: true
+
+builds:
+- binary: controller
+  main: ./cmd/controller/
+  env:
+  - CGO_ENABLED=0
+  goarch:
+  - amd64
+  goos:
+  - linux
+  - darwin
+  - windows
+  ldflags: -X main.VERSION={{.Version}}
+  hooks:
+    post: make -B controller.yaml controller-norbac.yaml
+- binary: kubeseal
+  main: ./cmd/kubeseal/
+  env:
+  - CGO_ENABLED=0
+  goarch:
+  - amd64
+  goos:
+  - linux
+  - darwin
+  - windows
+  ldflags: -X main.VERSION={{.Version}}
+
+# TODO: use upstream formula https://github.com/Homebrew/homebrew-core/blob/master/Formula/kubeseal.rb
+# brew:
+#   github:
+#     owner: bitnami-labs
+#     name: sealed-secrets
+#   homepage: "https://github.com/bitnami-labs/sealed-secrets/"
+#   description: "A Kubernetes controller and tool for one-way encrypted Secrets"
+#   skip_upload: true
+#   # Replace with existing brew formula
+#   test: |
+#     system "#{bin}/program --version"
+
+dockers:
+- goarch: amd64
+  goos: linux
+  binaries:
+  - controller
+  dockerfile: ./docker/Dockerfile
+  image_templates:
+  - quay.io/bitnami-labs/sealed-secrets-controller:latest
+  - quay.io/bitnami-labs/sealed-secrets-controller:latest-amd64
+  - quay.io/bitnami-labs/sealed-secrets-controller:{{ .Version }}
+  - quay.io/bitnami-labs/sealed-secrets-controller:{{ .Version }}-amd64
+  # Comment below out to push to configured repository
+  # skip_push: true
+
+archive:
+  replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+  format_overrides:
+  - goos: windows
+    format: zip
+  files:
+  - controller.yaml
+  - controller-norbac.yaml
+
+checksum:
+  name_template: 'checksums.txt'
+
+snapshot:
+  name_template: "{{ .FullCommit }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'

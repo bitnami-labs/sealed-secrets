@@ -84,7 +84,10 @@ script:
   - ./$EXE_NAME --help || test $? -eq 2
   - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then
-      make controller.yaml controller-norbac.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
+      # `controller.image` target builds the Docker image.
+      # This is not required for and breaks GoReleaser so the specific make target was added here.
+      # Replace this section with `make snapshot` to perform a full build + package via GoReleaser.
+      make controller.image controller.yaml controller-norbac.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
     fi
   - |
     if [ "$INT_KVERS" != "" ]; then

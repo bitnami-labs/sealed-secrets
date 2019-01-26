@@ -1,12 +1,14 @@
 GO = go
 GO_FLAGS =
 GOFMT = gofmt
+GORELEASER = goreleaser
 
 KUBECFG = kubecfg -U https://github.com/bitnami-labs/kube-libsonnet/raw/52ba963ca44f7a4960aeae9ee0fbee44726e481f
 DOCKER = docker
 GINKGO = ginkgo -p
 
-CONTROLLER_IMAGE = sealed-secrets-controller:latest
+# + is not a permitted character in image tags and '+dirty' is not passed in to goreleaser breaking snapshots
+CONTROLLER_IMAGE = $(subst +dirty,,quay.io/bitnami-labs/sealed-secrets-controller:$(VERSION))
 KUBECONFIG ?= $(HOME)/.kube/config
 
 # TODO: Simplify this once ./... ignores ./vendor
@@ -57,9 +59,9 @@ controller.image: docker/Dockerfile docker/controller
 	$(KUBECFG) show -V CONTROLLER_IMAGE=$(CONTROLLER_IMAGE) -o yaml $< > $@.tmp
 	mv $@.tmp $@
 
-controller.yaml: controller.jsonnet controller.image controller-norbac.jsonnet
+controller.yaml: controller.jsonnet controller-norbac.jsonnet
 
-controller-norbac.yaml: controller-norbac.jsonnet controller.image
+controller-norbac.yaml: controller-norbac.jsonnet
 
 test:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
@@ -81,5 +83,15 @@ clean:
 	$(RM) *-static
 	$(RM) controller*.yaml
 	$(RM) docker/controller
+	$(RM) -r dist/
+
+release: clean ## Generate a release, but don't publish to GitHub.
+	$(GORELEASER) --skip-validate --skip-publish
+
+publish: clean ## Generate a release, and publish to GitHub.
+	$(GORELEASER)
+
+snapshot: clean ## Generate a snapshot release.
+	$(GORELEASER) --snapshot --skip-validate --skip-publish
 
 .PHONY: all kubeseal controller test clean vet fmt
