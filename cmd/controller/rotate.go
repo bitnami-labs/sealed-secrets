@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"errors"
+	"fmt"
 	"log"
 	"time"
 
@@ -31,7 +32,7 @@ func ScheduleJobWithTrigger(period time.Duration, trigger chan struct{}, job fun
 	go ScheduleJobWithTrigger(period, trigger, job)
 }
 
-func rotationFunc(rotateKey func() error) func() {
+func rotationErrorLogger(rotateKey func() error) func() {
 	return func() {
 		if err := rotateKey(); err != nil {
 			log.Printf("Failed to generate new key : %v\n", err)
@@ -39,9 +40,8 @@ func rotationFunc(rotateKey func() error) func() {
 	}
 }
 
-func createAutomaticKeyRotationJob(client kubernetes.Interface,
+func createKeyRotationJob(client kubernetes.Interface,
 	privateKeyRegistry *KeyRegistry,
-	certRegistry *CertRegistry,
 	namespace string,
 	keySize int,
 	nameGen keyNameGen,
@@ -60,8 +60,7 @@ func createAutomaticKeyRotationJob(client kubernetes.Interface,
 		}
 		log.Printf("New key written to %s/%s\n", namespace, newKeyName)
 		log.Printf("Certificate is \n%s\n", certUtil.EncodeCertPEM(cert))
-		privateKeyRegistry.register(newKeyName, privKey)
-		certRegistry.register(newKeyName, cert)
+		privateKeyRegistry.register(newKeyName, privKey, cert)
 		return nil
 	}
 }
@@ -116,54 +115,37 @@ func writeKeyToKube(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509
 	return err
 }
 
-type KeyBlacklist struct {
-	list map[string]struct{}
-}
-
-func (bl *KeyBlacklist) blacklist(keyName string) {
-	bl.list[keyName] = struct{}{}
-}
-
 type KeyRegistry struct {
-	registry map[string]*rsa.PrivateKey
+	keys      map[string]*rsa.PrivateKey
+	certs     map[string]*x509.Certificate
+	blacklist map[string]struct{}
 }
 
-func (kr *KeyRegistry) register(keyName string, privKey *rsa.PrivateKey) {
-	kr.registry[keyName] = privKey
+func (kr *KeyRegistry) register(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate) {
+	kr.keys[keyName] = privKey
+	kr.certs[keyName] = cert
 }
 
-func (kr *KeyRegistry) remove(keyName string) {
-	_, ok := kr.registry[keyName]
-	if !ok {
-		log.Println("Attempted to remove a non-existant private key")
-		return
-	}
-	delete(kr.registry, keyName)
+func (kr *KeyRegistry) blacklistKey(keyName string) {
+	kr.blacklist[keyName] = struct{}{}
 }
 
-type CertRegistry struct {
-	registry map[string]*x509.Certificate
-}
-
-func (cr *CertRegistry) register(keyname string, cert *x509.Certificate) {
-	cr.registry[keyname] = cert
-}
-
-func (cr *CertRegistry) remove(keyname string) {
-	_, ok := cr.registry[keyname]
-	if !ok {
-		log.Println("Attempted to remove non-existant key")
-		return
-	}
-	delete(cr.registry, keyname)
-}
-
-func (cr *CertRegistry) GetCertsArray() []*x509.Certificate {
-	arr := make([]*x509.Certificate, len(cr.registry))
+func (kr *KeyRegistry) getBlacklistedKeys() []string {
+	list := make([]string, len(kr.blacklist))
 	count := 0
-	for _, cert := range cr.registry {
-		arr[count] = cert
+	for name, _ := range kr.blacklist {
+		list[count] = name
 		count++
 	}
-	return arr
+	return list
+}
+
+func PrefixedNameGen(prefix string) (func() (string, error), error) {
+	count := 0
+	// TODO: validate prefix string for kubernetes compatibility
+	return func() (string, error) {
+		name := fmt.Sprintf("%s-%d", prefix, count)
+		count++
+		return name, nil
+	}, nil
 }
