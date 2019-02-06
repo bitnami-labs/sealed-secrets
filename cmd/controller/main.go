@@ -194,9 +194,11 @@ func main2() error {
 	if err != nil {
 		return err
 	}
+	keyRegistry := NewKeyRegistry()
+	keyRegistry.registerNewKey(*keyName, privKey, certs[0]) // Dirty hack
 
 	ssinformer := ssinformers.NewSharedInformerFactory(ssclient, 0)
-	controller := NewController(clientset, ssinformer, privKey)
+	controller := NewController(clientset, ssinformer, keyRegistry)
 
 	stop := make(chan struct{})
 	defer close(stop)

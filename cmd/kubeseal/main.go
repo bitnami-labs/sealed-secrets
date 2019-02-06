@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/net"
 	"net/http"
 	"os"
 	"strings"
+
+	"k8s.io/apimachinery/pkg/util/net"
 
 	flag "github.com/spf13/pflag"
 	"k8s.io/api/core/v1"

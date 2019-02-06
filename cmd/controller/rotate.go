@@ -41,7 +41,7 @@ func rotationErrorLogger(rotateKey func() error) func() {
 }
 
 func createKeyRotationJob(client kubernetes.Interface,
-	privateKeyRegistry *KeyRegistry,
+	keyRegistry *KeyRegistry,
 	namespace string,
 	keySize int,
 	nameGen keyNameGen,
@@ -60,7 +60,7 @@ func createKeyRotationJob(client kubernetes.Interface,
 		}
 		log.Printf("New key written to %s/%s\n", namespace, newKeyName)
 		log.Printf("Certificate is \n%s\n", certUtil.EncodeCertPEM(cert))
-		privateKeyRegistry.register(newKeyName, privKey, cert)
+		keyRegistry.registerNewKey(newKeyName, privKey, cert)
 		return nil
 	}
 }
@@ -115,19 +115,44 @@ func writeKeyToKube(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509
 	return err
 }
 
+func createBlacklister(keyRegistry *KeyRegistry, trigger chan struct{}) func(string) error {
+	return func(keyName string) error {
+		privKey, err := keyRegistry.GetPrivateKey(keyName)
+		if err != nil {
+			return err
+		}
+		keyRegistry.blacklistKey(keyName)
+		if privKey == keyRegistry.GetLatestPrivateKey() {
+			trigger <- struct{}{}
+		}
+		return nil
+	}
+}
+
 type KeyRegistry struct {
+	latestKey *rsa.PrivateKey
 	keys      map[string]*rsa.PrivateKey
 	certs     map[string]*x509.Certificate
 	blacklist map[string]struct{}
 }
 
-func (kr *KeyRegistry) register(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate) {
+func NewKeyRegistry() *KeyRegistry {
+	return &KeyRegistry{
+		keys:      make(map[string]*rsa.PrivateKey),
+		certs:     make(map[string]*x509.Certificate),
+		blacklist: make(map[string]struct{}),
+	}
+}
+
+func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate) {
 	kr.keys[keyName] = privKey
 	kr.certs[keyName] = cert
+	kr.latestKey = privKey
 }
 
 func (kr *KeyRegistry) blacklistKey(keyName string) {
 	kr.blacklist[keyName] = struct{}{}
+	// Do we remove the corresponding cert?
 }
 
 func (kr *KeyRegistry) getBlacklistedKeys() []string {
@@ -138,6 +163,18 @@ func (kr *KeyRegistry) getBlacklistedKeys() []string {
 		count++
 	}
 	return list
+}
+
+func (kr *KeyRegistry) GetPrivateKey(keyName string) (*rsa.PrivateKey, error) {
+	privKey, ok := kr.keys[keyName]
+	if !ok {
+		return nil, fmt.Errorf("No key with name %s\n", keyName)
+	}
+	return privKey, nil
+}
+
+func (kr *KeyRegistry) GetLatestPrivateKey() *rsa.PrivateKey {
+	return kr.latestKey
 }
 
 func PrefixedNameGen(prefix string) (func() (string, error), error) {

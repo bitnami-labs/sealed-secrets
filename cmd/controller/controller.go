@@ -1,11 +1,11 @@
 package main
 
 import (
-	"crypto/rsa"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime"
 	"log"
 	"time"
+
+	"k8s.io/apimachinery/pkg/runtime"
 
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,13 +26,13 @@ const maxRetries = 5
 
 // Controller implements the main sealed-secrets-controller loop.
 type Controller struct {
-	queue    workqueue.RateLimitingInterface
-	informer cache.SharedIndexInformer
-	sclient  v1.SecretsGetter
-	privKey  *rsa.PrivateKey
+	queue       workqueue.RateLimitingInterface
+	informer    cache.SharedIndexInformer
+	sclient     v1.SecretsGetter
+	keyRegistry *KeyRegistry
 }
 
-func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key *rsa.PrivateKey, ssecret *ssv1alpha1.SealedSecret) error {
+func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, keyRegistry *KeyRegistry, ssecret *ssv1alpha1.SealedSecret) error {
 	// Important: Be careful not to reveal the namespace/name of
 	// the *decrypted* Secret (or any other detail) in error/log
 	// messages.
@@ -40,7 +40,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 	objName := fmt.Sprintf("%s/%s", ssecret.GetObjectMeta().GetNamespace(), ssecret.GetObjectMeta().GetName())
 	log.Printf("Updating %s", objName)
 
-	secret, err := ssecret.Unseal(codecs, key)
+	secret, err := ssecret.Unseal(codecs, keyRegistry)
 	if err != nil {
 		// TODO: Add error event
 		return err
@@ -60,7 +60,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 }
 
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssinformer ssinformer.SharedInformerFactory, privKey *rsa.PrivateKey) *Controller {
+func NewController(clientset kubernetes.Interface, ssinformer ssinformer.SharedInformerFactory, keyRegistry *KeyRegistry) *Controller {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
 	informer := ssinformer.Bitnami().V1alpha1().
@@ -89,10 +89,10 @@ func NewController(clientset kubernetes.Interface, ssinformer ssinformer.SharedI
 	})
 
 	return &Controller{
-		informer: informer,
-		queue:    queue,
-		sclient:  clientset.Core(),
-		privKey:  privKey,
+		informer:    informer,
+		queue:       queue,
+		sclient:     clientset.Core(),
+		keyRegistry: keyRegistry,
 	}
 }
 
@@ -183,7 +183,7 @@ func (c *Controller) unseal(key string) error {
 	ssecret := obj.(*ssv1alpha1.SealedSecret)
 	log.Printf("Updating %s", key)
 
-	secret, err := ssecret.Unseal(scheme.Codecs, c.privKey)
+	secret, err := ssecret.Unseal(scheme.Codecs, c.keyRegistry)
 	if err != nil {
 		return err
 	}
@@ -203,7 +203,7 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 
 	switch s := object.(type) {
 	case *ssv1alpha1.SealedSecret:
-		if _, err := s.Unseal(scheme.Codecs, c.privKey); err != nil {
+		if _, err := s.Unseal(scheme.Codecs, c.keyRegistry); err != nil {
 			return false, nil
 		}
 		return true, nil
