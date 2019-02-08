@@ -30,11 +30,12 @@ import (
 )
 
 var (
-	keyName      = flag.String("key-name", "sealed-secrets-key", "Name of Secret containing public/private key.")
-	keySize      = flag.Int("key-size", 4096, "Size of encryption key.")
-	validFor     = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
-	myCN         = flag.String("my-cn", "", "CN to use in generated certificate.")
-	printVersion = flag.Bool("version", false, "Print version information and exit")
+	keyListName     = flag.String("key-list", "sealed-secrets-keys", "Name of Secret containing names of public/private keys.")
+	keySize         = flag.Int("key-size", 4096, "Size of encryption key.")
+	validFor        = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
+	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")
+	printVersion    = flag.Bool("version", false, "Print version information and exit")
+	keyRotatePeriod = flag.Int("key-rotate", 14, "Key rotation period in days")
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
@@ -125,36 +126,71 @@ func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
 	return x509.ParseCertificate(data)
 }
 
-func initKey(client kubernetes.Interface, r io.Reader, keySize int, namespace, keyName string) (*rsa.PrivateKey, []*x509.Certificate, error) {
-	privKey, certs, err := readKey(client, namespace, keyName)
+func readKeyNameList(client kubernetes.Interface, namespace, listName string) (map[string]struct{}, error) {
+	secret, err := client.Core().Secrets(namespace).Get(listName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	keyNames := map[string]struct{}{}
+	for keyName, _ := range secret.Data {
+		keyNames[keyName] = struct{}{}
+	}
+	return keyNames, nil
+}
+
+func updateKeyNameList(client kubernetes.Interface, namespace, listName, newKeyName string) error {
+	secret, err := client.Core().Secrets(namespace).Get(listName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	secret.Data[newKeyName] = []byte{}
+	if _, err := client.Core().Secrets(namespace).Update(secret); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeKeyNameList(client kubernetes.Interface, namespace, listName string) error {
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      listName,
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{},
+		Type: v1.SecretTypeTLS,
+	}
+	if _, err := client.Core().Secrets(namespace).Create(secret); err != nil {
+		return err
+	}
+	return nil
+}
+
+func initKeyNameList(client kubernetes.Interface, r io.Reader, namespace, listName string) (*KeyRegistry, error) {
+	list, err := readKeyNameList(client, namespace, listName)
 	if err != nil {
 		if errors.IsNotFound(err) {
-			log.Printf("Key %s/%s not found, generating new %d bit key", namespace, keyName, keySize)
-			privKey, err = rsa.GenerateKey(r, keySize)
-			if err != nil {
-				return nil, nil, err
+			log.Printf("Keyname list %s/%s not found, generating new keyname list", namespace, listName)
+			if err = writeKeyNameList(client, namespace, listName); err != nil {
+				return nil, err
 			}
-
-			cert, err := signKey(r, privKey)
-			if err != nil {
-				return nil, nil, err
-			}
-			certs = []*x509.Certificate{cert}
-
-			if err = writeKey(client, privKey, certs, namespace, keyName); err != nil {
-				return nil, nil, err
-			}
-			log.Printf("New key written to %s/%s", namespace, keyName)
+			log.Printf("New keyname list generated")
+			return NewKeyRegistry(), nil
 		} else {
-			return nil, nil, err
+			return nil, err
 		}
+	} else {
+		keyRegistry := NewKeyRegistry()
+		// for each key, get the stored private key
+		for keyName := range list {
+			key, certs, err := readKey(client, namespace, keyName)
+			if err != nil {
+				return nil, err
+			}
+			keyRegistry.registerNewKey(keyName, key, certs[0])
+		}
+		return keyRegistry, nil
 	}
-
-	for _, cert := range certs {
-		log.Printf("Certificate is:\n%s\n", certUtil.EncodeCertPEM(cert))
-	}
-
-	return privKey, certs, nil
 }
 
 func myNamespace() string {
@@ -170,6 +206,19 @@ func myNamespace() string {
 	}
 
 	return metav1.NamespaceDefault
+}
+
+func initKeyRotation(client kubernetes.Interface, registry *KeyRegistry, namespace string) error {
+	keyNameGenerator, _ := PrefixedNameGen(*keyListName)
+	keyRotationFunc := createKeyRotationJob(client, registry, namespace, *keySize, keyNameGenerator)
+	if err := keyRotationFunc(); err != nil { // create the first key
+		return err
+	}
+	keyRotationJob := rotationErrorLogger(keyRotationFunc)
+	trigger := make(chan struct{})
+	rotationPeriod := time.Duration(*keyRotatePeriod*24) * time.Hour
+	go ScheduleJobWithTrigger(rotationPeriod, trigger, keyRotationJob)
+	return nil
 }
 
 func main2() error {
@@ -190,12 +239,14 @@ func main2() error {
 
 	myNs := myNamespace()
 
-	privKey, certs, err := initKey(clientset, rand.Reader, *keySize, myNs, *keyName)
+	keyRegistry, err := initKeyNameList(clientset, rand.Reader, myNs, *keyListName)
 	if err != nil {
 		return err
 	}
-	keyRegistry := NewKeyRegistry()
-	keyRegistry.registerNewKey(*keyName, privKey, certs[0]) // Dirty hack
+
+	if err = initKeyRotation(clientset, keyRegistry, myNs); err != nil {
+		return err
+	}
 
 	ssinformer := ssinformers.NewSharedInformerFactory(ssclient, 0)
 	controller := NewController(clientset, ssinformer, keyRegistry)
@@ -205,7 +256,10 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	go httpserver(func() ([]*x509.Certificate, error) { return certs, nil }, controller.AttemptUnseal)
+	certProvider := func() ([]*x509.Certificate, error) {
+		return []*x509.Certificate{keyRegistry.Cert()}, nil
+	}
+	go httpserver(certProvider, controller.AttemptUnseal)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)

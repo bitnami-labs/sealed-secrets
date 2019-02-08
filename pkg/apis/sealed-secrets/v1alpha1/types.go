@@ -43,7 +43,7 @@ type SealedSecret struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
 	Spec    SealedSecretSpec `json:"spec"`
-	SealKey string           `json:"sealkey"`
+	KeyName string           `json:"keyname"`
 
 	// +optional
 	Type apiv1.SecretType `json:"type,omitempty" protobuf:"bytes,3,opt,name=type,casttype=SecretType"`
@@ -60,6 +60,6 @@ type SealedSecretList struct {
 }
 
 type KeyRegistry interface {
+	CurrentKeyName() string
 	GetPrivateKey(keyName string) (*rsa.PrivateKey, error)
-	GetLatestPrivateKey() *rsa.PrivateKey
 }

@@ -77,7 +77,7 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 // NewSealedSecret creates a new SealedSecret object wrapping the
 // provided secret. This encrypts only the values of each secrets
 // individually, so secrets can be updated one by one.
-func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
+func NewSealedSecret(codecs runtimeserializer.CodecFactory, keyName string, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
 	if secret.GetNamespace() == "" {
 		return nil, fmt.Errorf("Secret must declare a namespace")
 	}
@@ -90,7 +90,8 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		Spec: SealedSecretSpec{
 			EncryptedData: map[string][]byte{},
 		},
-		Type: secret.Type,
+		KeyName: keyName,
+		Type:    secret.Type,
 	}
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
@@ -118,7 +119,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, keyRegistry KeyRegistry) (*v1.Secret, error) {
 	boolTrue := true
 	smeta := s.GetObjectMeta()
-	privKey, err := keyRegistry.GetPrivateKey(s.SealKey)
+	privKey, err := keyRegistry.GetPrivateKey(s.KeyName)
 	if err != nil {
 		return nil, err
 	}

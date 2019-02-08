@@ -117,12 +117,13 @@ func writeKeyToKube(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509
 
 func createBlacklister(keyRegistry *KeyRegistry, trigger chan struct{}) func(string) error {
 	return func(keyName string) error {
-		privKey, err := keyRegistry.GetPrivateKey(keyName)
+		key, err := keyRegistry.GetPrivateKey(keyName)
 		if err != nil {
 			return err
 		}
 		keyRegistry.blacklistKey(keyName)
-		if privKey == keyRegistry.GetLatestPrivateKey() {
+		// If the latest key is being blacklisted, generate a new key
+		if key == keyRegistry.PrivateKey() {
 			trigger <- struct{}{}
 		}
 		return nil
@@ -130,10 +131,10 @@ func createBlacklister(keyRegistry *KeyRegistry, trigger chan struct{}) func(str
 }
 
 type KeyRegistry struct {
-	latestKey *rsa.PrivateKey
-	keys      map[string]*rsa.PrivateKey
-	certs     map[string]*x509.Certificate
-	blacklist map[string]struct{}
+	currentKeyName string
+	keys           map[string]*rsa.PrivateKey
+	certs          map[string]*x509.Certificate
+	blacklist      map[string]struct{}
 }
 
 func NewKeyRegistry() *KeyRegistry {
@@ -144,15 +145,37 @@ func NewKeyRegistry() *KeyRegistry {
 	}
 }
 
+func (kr *KeyRegistry) CurrentKeyName() string {
+	return kr.currentKeyName
+}
+
+func (kr *KeyRegistry) GetPrivateKey(keyName string) (*rsa.PrivateKey, error) {
+	key, ok := kr.keys[kr.currentKeyName]
+	if !ok {
+		return nil, fmt.Errorf("No key exists with name %s", keyName)
+	}
+	return key, nil
+}
+
 func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate) {
 	kr.keys[keyName] = privKey
-	kr.certs[keyName] = cert
-	kr.latestKey = privKey
+	kr.currentKeyName = keyName
+}
+
+func (kr *KeyRegistry) Cert() *x509.Certificate {
+	return kr.certs[kr.currentKeyName]
+}
+
+func (kr *KeyRegistry) OldCert(keyName string) (*x509.Certificate, error) {
+	cert, ok := kr.certs[keyName]
+	if !ok {
+		return nil, fmt.Errorf("No key with name %s", keyName)
+	}
+	return cert, nil
 }
 
 func (kr *KeyRegistry) blacklistKey(keyName string) {
 	kr.blacklist[keyName] = struct{}{}
-	// Do we remove the corresponding cert?
 }
 
 func (kr *KeyRegistry) getBlacklistedKeys() []string {
@@ -165,16 +188,8 @@ func (kr *KeyRegistry) getBlacklistedKeys() []string {
 	return list
 }
 
-func (kr *KeyRegistry) GetPrivateKey(keyName string) (*rsa.PrivateKey, error) {
-	privKey, ok := kr.keys[keyName]
-	if !ok {
-		return nil, fmt.Errorf("No key with name %s\n", keyName)
-	}
-	return privKey, nil
-}
-
-func (kr *KeyRegistry) GetLatestPrivateKey() *rsa.PrivateKey {
-	return kr.latestKey
+func (kr *KeyRegistry) PrivateKey() *rsa.PrivateKey {
+	return kr.keys[kr.currentKeyName]
 }
 
 func PrefixedNameGen(prefix string) (func() (string, error), error) {
