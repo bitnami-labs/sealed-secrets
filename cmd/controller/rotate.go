@@ -150,7 +150,7 @@ func (kr *KeyRegistry) CurrentKeyName() string {
 }
 
 func (kr *KeyRegistry) GetPrivateKey(keyName string) (*rsa.PrivateKey, error) {
-	key, ok := kr.keys[kr.currentKeyName]
+	key, ok := kr.keys[keyName]
 	if !ok {
 		return nil, fmt.Errorf("No key exists with name %s", keyName)
 	}

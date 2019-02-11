@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"crypto/rsa"
-
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -57,9 +55,4 @@ type SealedSecretList struct {
 	metav1.ListMeta `json:"metadata"`
 
 	Items []SealedSecret `json:"items"`
-}
-
-type KeyRegistry interface {
-	CurrentKeyName() string
-	GetPrivateKey(keyName string) (*rsa.PrivateKey, error)
 }

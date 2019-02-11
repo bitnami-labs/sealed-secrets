@@ -116,13 +116,9 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, keyName string, pubK
 }
 
 // Unseal decrypts and returns the embedded v1.Secret.
-func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, keyRegistry KeyRegistry) (*v1.Secret, error) {
+func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rsa.PrivateKey) (*v1.Secret, error) {
 	boolTrue := true
 	smeta := s.GetObjectMeta()
-	privKey, err := keyRegistry.GetPrivateKey(s.Spec.EncryptionKeyName)
-	if err != nil {
-		return nil, err
-	}
 
 	// This will fail to decrypt unless the same label was used
 	// during encryption.  This check ensures that we can't be

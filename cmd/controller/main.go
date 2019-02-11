@@ -35,7 +35,7 @@ var (
 	validFor        = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")
 	printVersion    = flag.Bool("version", false, "Print version information and exit")
-	keyRotatePeriod = flag.Int("key-rotate", 14, "Key rotation period in days")
+	keyRotatePeriod = flag.Int("key-rotate", 1, "Key rotation period in days")
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
@@ -240,7 +240,7 @@ func initKeyRotation(client kubernetes.Interface, registry *KeyRegistry, namespa
 	}
 	keyRotationJob := rotationErrorLogger(keyRotationFunc)
 	trigger := make(chan struct{})
-	rotationPeriod := time.Duration(*keyRotatePeriod*24) * time.Hour
+	rotationPeriod := time.Duration(*keyRotatePeriod) * time.Minute
 	go ScheduleJobWithTrigger(rotationPeriod, trigger, keyRotationJob)
 	return nil
 }

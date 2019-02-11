@@ -40,7 +40,9 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 	objName := fmt.Sprintf("%s/%s", ssecret.GetObjectMeta().GetNamespace(), ssecret.GetObjectMeta().GetName())
 	log.Printf("Updating %s", objName)
 
-	secret, err := ssecret.Unseal(codecs, keyRegistry)
+	privKey, err := keyRegistry.GetPrivateKey(ssecret.Spec.EncryptionKeyName)
+
+	secret, err := ssecret.Unseal(codecs, privKey)
 	if err != nil {
 		// TODO: Add error event
 		return err
@@ -183,7 +185,11 @@ func (c *Controller) unseal(key string) error {
 	ssecret := obj.(*ssv1alpha1.SealedSecret)
 	log.Printf("Updating %s", key)
 
-	secret, err := ssecret.Unseal(scheme.Codecs, c.keyRegistry)
+	privKey, err := c.keyRegistry.GetPrivateKey(ssecret.Spec.EncryptionKeyName)
+	if err != nil {
+		return err
+	}
+	secret, err := ssecret.Unseal(scheme.Codecs, privKey)
 	if err != nil {
 		return err
 	}
@@ -203,7 +209,11 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 
 	switch s := object.(type) {
 	case *ssv1alpha1.SealedSecret:
-		if _, err := s.Unseal(scheme.Codecs, c.keyRegistry); err != nil {
+		privKey, err := c.keyRegistry.GetPrivateKey(s.Spec.EncryptionKeyName)
+		if err != nil {
+			return false, fmt.Errorf("Could not retrieve private key from registry. %s", err)
+		}
+		if _, err := s.Unseal(scheme.Codecs, privKey); err != nil {
 			return false, nil
 		}
 		return true, nil
