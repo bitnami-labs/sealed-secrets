@@ -37,7 +37,9 @@ var (
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.String("format", "json", "Output format for sealed secret. Either json or yaml")
-	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout.  Useful for later use with --cert")
+	keyName        = flag.String("keyname", "", "Name of a key to use.")
+	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
+	dumpKeyName    = flag.Bool("fetch-keyname", false, "Write keyname so stdout. Useful for later use with --keyname")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
 
@@ -150,7 +152,38 @@ func openCert() (io.ReadCloser, error) {
 	return openCertHTTP(restClient, *controllerNs, *controllerName)
 }
 
-func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey) error {
+func getKeyName() (string, error) {
+	if *keyName != "" {
+		return *keyName, nil
+	}
+
+	// Setup client
+	conf, err := clientConfig.ClientConfig()
+	if err != nil {
+		return "", err
+	}
+	conf.AcceptContentTypes = "plain/text"
+	restClient, err := corev1.NewForConfig(conf)
+	if err != nil {
+		return "", err
+	}
+	// Get the latest keyname from controller
+	f, err := restClient.
+		Services(*controllerNs).
+		ProxyGet("http", *controllerName, "", "/v1/keyname", nil).
+		Stream()
+	if err != nil {
+		return "", fmt.Errorf("Error fetching keyname: %v", err)
+	}
+	defer f.Close()
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return "", fmt.Errorf("Error reading fetched keyname: %v", err)
+	}
+	return string(data), nil
+}
+
+func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, keyname string) error {
 	secret, err := readSecret(codecs.UniversalDecoder(), in)
 	if err != nil {
 		return err
@@ -186,7 +219,7 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 	secret.SetDeletionTimestamp(nil)
 	secret.DeletionGracePeriodSeconds = nil
 
-	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, "sealed-secrets-keys-0", pubKey, secret)
+	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, keyname, pubKey, secret)
 	if err != nil {
 		return err
 	}
@@ -268,6 +301,15 @@ func main() {
 		return
 	}
 
+	if *dumpKeyName {
+		keyName, err := getKeyName()
+		if err != nil {
+			panic(err.Error())
+		}
+		fmt.Printf("Latest key name: %v\n", keyName)
+		return
+	}
+
 	f, err := openCert()
 	if err != nil {
 		panic(err.Error())
@@ -281,12 +323,18 @@ func main() {
 		return
 	}
 
+	keyname, err := getKeyName()
+	if err != nil {
+		panic(err.Error())
+		return
+	}
+
 	pubKey, err := parseKey(f)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	if err := seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey); err != nil {
+	if err := seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey, keyname); err != nil {
 		panic(err.Error())
 	}
 }

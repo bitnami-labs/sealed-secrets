@@ -280,10 +280,13 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	certProvider := func() ([]*x509.Certificate, error) {
+	cp := func() ([]*x509.Certificate, error) {
 		return []*x509.Certificate{keyRegistry.Cert()}, nil
 	}
-	go httpserver(certProvider, controller.AttemptUnseal)
+	cnp := func() (string, error) {
+		return keyRegistry.CurrentKeyName(), nil
+	}
+	go httpserver(cp, cnp, controller.AttemptUnseal)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
