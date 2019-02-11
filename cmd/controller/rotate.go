@@ -159,6 +159,7 @@ func (kr *KeyRegistry) GetPrivateKey(keyName string) (*rsa.PrivateKey, error) {
 
 func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate) {
 	kr.keys[keyName] = privKey
+	kr.certs[keyName] = cert
 	kr.currentKeyName = keyName
 }
 

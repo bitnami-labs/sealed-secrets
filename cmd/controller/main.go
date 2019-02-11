@@ -126,6 +126,19 @@ func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
 	return x509.ParseCertificate(data)
 }
 
+func newKey(r io.Reader) (*rsa.PrivateKey, *x509.Certificate, error) {
+	privKey, err := rsa.GenerateKey(r, *keySize)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	cert, err := signKey(r, privKey)
+	if err != nil {
+		return nil, nil, err
+	}
+	return privKey, cert, nil
+}
+
 func readKeyNameList(client kubernetes.Interface, namespace, listName string) (map[string]struct{}, error) {
 	secret, err := client.Core().Secrets(namespace).Get(listName, metav1.GetOptions{})
 	if err != nil {
@@ -134,7 +147,9 @@ func readKeyNameList(client kubernetes.Interface, namespace, listName string) (m
 
 	keyNames := map[string]struct{}{}
 	for keyName, _ := range secret.Data {
-		keyNames[keyName] = struct{}{}
+		if (keyName == v1.TLSPrivateKeyKey) || (keyName == v1.TLSCertKey) {
+			keyNames[keyName] = struct{}{}
+		}
 	}
 	return keyNames, nil
 }
@@ -151,13 +166,16 @@ func updateKeyNameList(client kubernetes.Interface, namespace, listName, newKeyN
 	return nil
 }
 
-func writeKeyNameList(client kubernetes.Interface, namespace, listName string) error {
+func writeKeyNameList(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509.Certificate, namespace, listName string) error {
 	secret := &v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      listName,
 			Namespace: namespace,
 		},
-		Data: map[string][]byte{},
+		Data: map[string][]byte{
+			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
+			v1.TLSCertKey:       certUtil.EncodeCertPEM(cert),
+		},
 		Type: v1.SecretTypeTLS,
 	}
 	if _, err := client.Core().Secrets(namespace).Create(secret); err != nil {
@@ -171,7 +189,13 @@ func initKeyNameList(client kubernetes.Interface, r io.Reader, namespace, listNa
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Printf("Keyname list %s/%s not found, generating new keyname list", namespace, listName)
-			if err = writeKeyNameList(client, namespace, listName); err != nil {
+
+			privKey, cert, err := newKey(r)
+			if err != nil {
+				return nil, err
+			}
+
+			if err = writeKeyNameList(client, privKey, cert, namespace, listName); err != nil {
 				return nil, err
 			}
 			log.Printf("New keyname list generated")
