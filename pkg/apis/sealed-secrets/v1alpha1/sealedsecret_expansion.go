@@ -88,10 +88,10 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, keyName string, pubK
 			Namespace: secret.GetNamespace(),
 		},
 		Spec: SealedSecretSpec{
-			EncryptedData: map[string][]byte{},
+			EncryptedData:     map[string][]byte{},
+			EncryptionKeyName: keyName,
 		},
-		KeyName: keyName,
-		Type:    secret.Type,
+		Type: secret.Type,
 	}
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
@@ -119,7 +119,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, keyName string, pubK
 func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, keyRegistry KeyRegistry) (*v1.Secret, error) {
 	boolTrue := true
 	smeta := s.GetObjectMeta()
-	privKey, err := keyRegistry.GetPrivateKey(s.KeyName)
+	privKey, err := keyRegistry.GetPrivateKey(s.Spec.EncryptionKeyName)
 	if err != nil {
 		return nil, err
 	}

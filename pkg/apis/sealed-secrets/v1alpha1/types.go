@@ -28,8 +28,9 @@ const (
 // SealedSecretSpec is the specification of a SealedSecret
 type SealedSecretSpec struct {
 	// Data is deprecated and will be removed eventually. Use per-value EncryptedData instead.
-	Data          []byte            `json:"data,omitempty"`
-	EncryptedData map[string][]byte `json:"encryptedData"`
+	Data              []byte            `json:"data,omitempty"`
+	EncryptedData     map[string][]byte `json:"encryptedData"`
+	EncryptionKeyName string            `json:"keyname"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -42,8 +43,7 @@ type SealedSecret struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec    SealedSecretSpec `json:"spec"`
-	KeyName string           `json:"keyname"`
+	Spec SealedSecretSpec `json:"spec"`
 
 	// +optional
 	Type apiv1.SecretType `json:"type,omitempty" protobuf:"bytes,3,opt,name=type,casttype=SecretType"`
