@@ -38,6 +38,7 @@ var (
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.String("format", "json", "Output format for sealed secret. Either json or yaml")
 	keyName        = flag.String("keyname", "", "Name of a key to use.")
+	rotate         = flag.Bool("rotate", false, "Rotate the given key to use the latest private key in the cluster.")
 	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
 	dumpKeyName    = flag.Bool("fetch-keyname", false, "Write keyname so stdout. Useful for later use with --keyname")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
@@ -284,6 +285,46 @@ func validateSealedSecret(in io.Reader, namespace, name string) error {
 	return nil
 }
 
+func rotateSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, namespace, name string) error {
+	conf, err := clientConfig.ClientConfig()
+	if err != nil {
+		return err
+	}
+	restClient, err := corev1.NewForConfig(conf)
+	if err != nil {
+		return err
+	}
+
+	content, err := ioutil.ReadAll(in)
+	if err != nil {
+		return err
+	}
+
+	req := restClient.RESTClient().Post().
+		Namespace(namespace).
+		Resource("services").
+		SubResource("proxy").
+		Name(net.JoinSchemeNamePort("http", name, "")).
+		Suffix("/v1/rotate")
+
+	req.Body(content)
+	res := req.Do()
+	if err := res.Error(); err != nil {
+		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
+			return fmt.Errorf("Unable to rotate secret")
+		}
+		return fmt.Errorf("Error occurred while rotating secret")
+	}
+	body, err := res.Raw()
+	if err != nil {
+		return err
+	}
+	if _, err = out.Write(body); err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
@@ -307,6 +348,13 @@ func main() {
 			panic(err.Error())
 		}
 		fmt.Printf("Latest key name: %v\n", keyName)
+		return
+	}
+
+	if *rotate {
+		if err := rotateSealedSecret(os.Stdin, os.Stdout, scheme.Codecs, *controllerNs, *controllerName); err != nil {
+			panic(err.Error())
+		}
 		return
 	}
 

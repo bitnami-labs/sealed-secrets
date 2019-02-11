@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -220,5 +221,41 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 	default:
 		return false, fmt.Errorf("Unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
 
+	}
+}
+
+func (c *Controller) Rotate(content []byte) ([]byte, error) {
+	object, err := runtime.Decode(scheme.Codecs.UniversalDecoder(ssv1alpha1.SchemeGroupVersion), content)
+	if err != nil {
+		return nil, err
+	}
+
+	switch s := object.(type) {
+	case *ssv1alpha1.SealedSecret:
+		privKey, err := c.keyRegistry.GetPrivateKey(s.Spec.EncryptionKeyName)
+		if err != nil {
+			return nil, fmt.Errorf("Could not retrieve private key from registry. %v", err)
+		}
+		secret, err := s.Unseal(scheme.Codecs, privKey)
+		if err != nil {
+			return nil, fmt.Errorf("Error decrypting sealed secret. %v", err)
+		}
+
+		latestKeyName := c.keyRegistry.CurrentKeyName()
+		latestPrivKey, err := c.keyRegistry.GetPrivateKey(latestKeyName)
+		if err != nil {
+			return nil, fmt.Errorf("Error getting latest private key. %v", err)
+		}
+		resealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, latestKeyName, &latestPrivKey.PublicKey, secret)
+		if err != nil {
+			return nil, fmt.Errorf("Error creating new sealed secret. %v", err)
+		}
+		data, err := json.Marshal(resealedSecret)
+		if err != nil {
+			return nil, fmt.Errorf("Error marshalling new secret to json. %v", err)
+		}
+		return data, nil
+	default:
+		return nil, fmt.Errorf("Unexpected resoure type: %s", s.GetObjectKind().GroupVersionKind().String())
 	}
 }

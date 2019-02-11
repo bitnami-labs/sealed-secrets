@@ -24,8 +24,9 @@ var (
 type certProvider func() ([]*x509.Certificate, error)
 type certNameProvider func() (string, error)
 type secretChecker func([]byte) (bool, error)
+type secretRotator func([]byte) ([]byte, error)
 
-func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker) {
+func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secretRotator) {
 	httpRateLimiter := rateLimter()
 
 	mux := http.NewServeMux()
@@ -57,8 +58,29 @@ func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker) {
 		} else {
 			w.WriteHeader(http.StatusConflict)
 		}
-
 	})))
+
+	mux.HandleFunc("/v1/rotate", func(w http.ResponseWriter, r *http.Request) {
+		content, err := ioutil.ReadAll(r.Body)
+
+		if err != nil {
+			log.Printf("Error handling /v1/rotato request: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+
+		newSecret, err := sr(content)
+
+		if err != nil {
+			log.Printf("Error rotating secret: %v", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(newSecret)
+	})
 
 	mux.HandleFunc("/v1/cert.pem", func(w http.ResponseWriter, r *http.Request) {
 		certs, err := cp()

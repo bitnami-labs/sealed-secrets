@@ -286,7 +286,7 @@ func main2() error {
 	cnp := func() (string, error) {
 		return keyRegistry.CurrentKeyName(), nil
 	}
-	go httpserver(cp, cnp, controller.AttemptUnseal)
+	go httpserver(cp, cnp, controller.AttemptUnseal, controller.Rotate)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
