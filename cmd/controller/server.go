@@ -21,7 +21,7 @@ var (
 )
 
 // Called on every request to /cert.  Errors will be logged and return a 500.
-type certProvider func() ([]*x509.Certificate, error)
+type certProvider func(keyname string) ([]*x509.Certificate, error)
 type certNameProvider func() (string, error)
 type secretChecker func([]byte) (bool, error)
 type secretRotator func([]byte) ([]byte, error)
@@ -83,7 +83,11 @@ func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secr
 	})
 
 	mux.HandleFunc("/v1/cert.pem", func(w http.ResponseWriter, r *http.Request) {
-		certs, err := cp()
+		keyname := r.URL.Query().Get("keyname")
+		if keyname == "" {
+			keyname, _ = cnp()
+		}
+		certs, err := cp(keyname)
 
 		if err != nil {
 			log.Printf("Error handling /cert request: %v", err)

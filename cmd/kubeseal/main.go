@@ -117,38 +117,46 @@ func prettyEncoder(codecs runtimeserializer.CodecFactory, mediaType string, gv r
 	return enc, nil
 }
 
-func openCertFile(certFile string) (io.ReadCloser, error) {
+func openCertFile(certFile string) (io.ReadCloser, string, error) {
 	f, err := os.Open(certFile)
 	if err != nil {
-		return nil, fmt.Errorf("Error reading %s: %v", certFile, err)
+		return nil, "", fmt.Errorf("Error reading %s: %v", certFile, err)
 	}
-	return f, nil
+	return f, *keyName, nil
 }
 
-func openCertHTTP(c corev1.CoreV1Interface, namespace, name string) (io.ReadCloser, error) {
+func openCertHTTP(c corev1.CoreV1Interface, namespace, name string) (io.ReadCloser, string, error) {
 	f, err := c.
 		Services(namespace).
-		ProxyGet("http", name, "", "/v1/cert.pem", nil).
+		ProxyGet("http", name, "", "/v1/cert.pem", map[string]string{"keyname": *keyName}).
 		Stream()
 	if err != nil {
-		return nil, fmt.Errorf("Error fetching certificate: %v", err)
+		return nil, "", fmt.Errorf("Error fetching certificate: %v", err)
 	}
-	return f, nil
+	return f, *keyName, nil
 }
 
-func openCert() (io.ReadCloser, error) {
+func openCert() (io.ReadCloser, string, error) {
 	if *certFile != "" {
 		return openCertFile(*certFile)
 	}
 
+	if *keyName == "" {
+		name, err := getKeyName()
+		if err != nil {
+			return nil, "", err
+		}
+		*keyName = name
+	}
+
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	conf.AcceptContentTypes = "application/x-pem-file, */*"
 	restClient, err := corev1.NewForConfig(conf)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	return openCertHTTP(restClient, *controllerNs, *controllerName)
 }
@@ -228,6 +236,8 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 	var contentType string
 	switch strings.ToLower(*outputFormat) {
 	case "json", "":
+		x := 1
+		fmt.Println(x + 1)
 		contentType = runtime.ContentTypeJSON
 	case "yaml":
 		contentType = "application/yaml"
@@ -347,7 +357,7 @@ func main() {
 		if err != nil {
 			panic(err.Error())
 		}
-		fmt.Printf("Latest key name: %v\n", keyName)
+		os.Stdout.WriteString(keyName)
 		return
 	}
 
@@ -358,7 +368,7 @@ func main() {
 		return
 	}
 
-	f, err := openCert()
+	f, name, err := openCert()
 	if err != nil {
 		panic(err.Error())
 	}
@@ -371,18 +381,12 @@ func main() {
 		return
 	}
 
-	keyname, err := getKeyName()
-	if err != nil {
-		panic(err.Error())
-		return
-	}
-
 	pubKey, err := parseKey(f)
 	if err != nil {
 		panic(err.Error())
 	}
 
-	if err := seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey, keyname); err != nil {
+	if err := seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey, name); err != nil {
 		panic(err.Error())
 	}
 }

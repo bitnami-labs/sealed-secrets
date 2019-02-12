@@ -280,8 +280,12 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	cp := func() ([]*x509.Certificate, error) {
-		return []*x509.Certificate{keyRegistry.Cert()}, nil
+	cp := func(keyname string) ([]*x509.Certificate, error) {
+		cert, err := keyRegistry.GetCert(keyname)
+		if err != nil {
+			return nil, err
+		}
+		return []*x509.Certificate{cert}, nil
 	}
 	cnp := func() (string, error) {
 		return keyRegistry.CurrentKeyName(), nil

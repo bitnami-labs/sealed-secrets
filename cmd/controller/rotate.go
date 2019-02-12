@@ -167,7 +167,7 @@ func (kr *KeyRegistry) Cert() *x509.Certificate {
 	return kr.certs[kr.currentKeyName]
 }
 
-func (kr *KeyRegistry) OldCert(keyName string) (*x509.Certificate, error) {
+func (kr *KeyRegistry) GetCert(keyName string) (*x509.Certificate, error) {
 	cert, ok := kr.certs[keyName]
 	if !ok {
 		return nil, fmt.Errorf("No key with name %s", keyName)
