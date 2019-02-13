@@ -232,17 +232,15 @@ func myNamespace() string {
 	return metav1.NamespaceDefault
 }
 
-func initKeyRotation(client kubernetes.Interface, registry *KeyRegistry, namespace string) error {
+func initKeyRotation(client kubernetes.Interface, registry *KeyRegistry, namespace string) (func(), error) {
 	keyNameGenerator, _ := PrefixedNameGen(*keyListName)
 	keyRotationFunc := createKeyRotationJob(client, registry, namespace, *keySize, keyNameGenerator)
 	if err := keyRotationFunc(); err != nil { // create the first key
-		return err
+		return nil, err
 	}
 	keyRotationJob := rotationErrorLogger(keyRotationFunc)
-	trigger := make(chan struct{})
 	rotationPeriod := time.Duration(*keyRotatePeriod) * time.Minute
-	go ScheduleJobWithTrigger(rotationPeriod, trigger, keyRotationJob)
-	return nil
+	return ScheduleJobWithTrigger(rotationPeriod, keyRotationJob), nil
 }
 
 func main2() error {
@@ -268,7 +266,8 @@ func main2() error {
 		return err
 	}
 
-	if err = initKeyRotation(clientset, keyRegistry, myNs); err != nil {
+	keyGenTrigger, err := initKeyRotation(clientset, keyRegistry, myNs)
+	if err != nil {
 		return err
 	}
 
@@ -290,7 +289,7 @@ func main2() error {
 	cnp := func() (string, error) {
 		return keyRegistry.CurrentKeyName(), nil
 	}
-	go httpserver(cp, cnp, controller.AttemptUnseal, controller.Rotate)
+	go httpserver(cp, cnp, controller.AttemptUnseal, controller.Rotate, keyGenTrigger)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)

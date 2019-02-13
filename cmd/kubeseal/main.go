@@ -43,6 +43,7 @@ var (
 	dumpKeyName    = flag.Bool("fetch-keyname", false, "Write keyname so stdout. Useful for later use with --keyname")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
+	genKey         = flag.Bool("gen-key", false, "Trigger sealed secrets controller to generate a new private key.")
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
@@ -335,12 +336,41 @@ func rotateSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer.Co
 	return nil
 }
 
+func generateKey(namespace, name string) error {
+	conf, err := clientConfig.ClientConfig()
+	if err != nil {
+		return err
+	}
+	restClient, err := corev1.NewForConfig(conf)
+	if err != nil {
+		return err
+	}
+	req := restClient.RESTClient().Post().
+		Namespace(namespace).
+		Resource("services").
+		SubResource("proxy").
+		Name(net.JoinSchemeNamePort("http", name, "")).
+		Suffix("/v1/keygen")
+	res := req.Do()
+	if err = res.Error(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
 	if *printVersion {
 		fmt.Printf("kubeseal version: %s\n", VERSION)
+		return
+	}
+
+	if *genKey {
+		if err := generateKey(*controllerNs, *controllerName); err != nil {
+			panic(err.Error())
+		}
 		return
 	}
 

@@ -18,18 +18,25 @@ import (
 
 type keyNameGen func() (string, error)
 
-func ScheduleJobWithTrigger(period time.Duration, trigger chan struct{}, job func()) {
-	sched := make(chan struct{})
+func ScheduleJobWithTrigger(period time.Duration, job func()) func() {
+	trigger := make(chan struct{})
 	go func() {
-		time.Sleep(period)
-		sched <- struct{}{}
+		for {
+			sched := make(chan struct{})
+			go func() {
+				time.Sleep(period)
+				sched <- struct{}{}
+			}()
+			select {
+			case <-trigger:
+			case <-sched:
+			}
+			go job()
+		}
 	}()
-	select {
-	case <-trigger:
-	case <-sched:
+	return func() {
+		trigger <- struct{}{}
 	}
-	go job()
-	go ScheduleJobWithTrigger(period, trigger, job)
 }
 
 func rotationErrorLogger(rotateKey func() error) func() {

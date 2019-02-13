@@ -25,8 +25,9 @@ type certProvider func(keyname string) ([]*x509.Certificate, error)
 type certNameProvider func() (string, error)
 type secretChecker func([]byte) (bool, error)
 type secretRotator func([]byte) ([]byte, error)
+type keyGenTrigger func()
 
-func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secretRotator) {
+func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secretRotator, kg keyGenTrigger) {
 	httpRateLimiter := rateLimter()
 
 	mux := http.NewServeMux()
@@ -34,6 +35,11 @@ func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secr
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		io.WriteString(w, "ok\n")
+	})
+
+	mux.HandleFunc("/v1/keygen", func(w http.ResponseWriter, r *http.Request) {
+		kg()
+		w.WriteHeader(http.StatusOK)
 	})
 
 	mux.Handle("/v1/verify", httpRateLimiter.RateLimit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
