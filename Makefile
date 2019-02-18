@@ -31,13 +31,16 @@ endif
 
 GO_LD_FLAGS = -X main.VERSION=$(VERSION)
 
-all: controller kubeseal
+all: controller trigger kubeseal
 
 generate: $(GO_FILES)
 	$(GO) generate $(GO_PACKAGES)
 
 controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/controller
+
+trigger: $(GO_FILES)
+	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/trigger
 
 kubeseal: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/kubeseal
@@ -48,7 +51,10 @@ kubeseal: $(GO_FILES)
 docker/controller: controller-static
 	cp $< $@
 
-controller.image: docker/Dockerfile docker/controller
+docker/trigger: trigger-static
+	cp $< $@
+
+controller.image: docker/Dockerfile docker/controller docker/trigger
 	$(DOCKER) build -t $(CONTROLLER_IMAGE) docker/
 	echo $(CONTROLLER_IMAGE) >$@.tmp
 	mv $@.tmp $@
@@ -77,7 +83,7 @@ fmt:
 	$(GOFMT) -s -w $(GO_FILES)
 
 clean:
-	$(RM) ./controller ./kubeseal
+	$(RM) ./controller ./kubeseal ./trigger
 	$(RM) *-static
 	$(RM) controller*.yaml
 	$(RM) docker/controller

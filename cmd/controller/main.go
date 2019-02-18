@@ -289,6 +289,11 @@ func main2() error {
 	cnp := func() (string, error) {
 		return keyRegistry.CurrentKeyName(), nil
 	}
+	close, err := triggerserver(keyGenTrigger)
+	if err != nil {
+		return err
+	}
+	defer close()
 	go httpserver(cp, cnp, controller.AttemptUnseal, controller.Rotate, keyGenTrigger)
 
 	sigterm := make(chan os.Signal, 1)

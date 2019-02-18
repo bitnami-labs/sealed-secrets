@@ -5,7 +5,9 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"net"
 	"net/http"
+	"net/rpc"
 	"time"
 
 	flag "github.com/spf13/pflag"
@@ -15,6 +17,7 @@ import (
 )
 
 var (
+	triggerAddr  = flag.String("trigger-addr", ":8081", "trigger rpc serving address.")
 	listenAddr   = flag.String("listen-addr", ":8080", "HTTP serving address.")
 	readTimeout  = flag.Duration("read-timeout", 2*time.Minute, "HTTP request timeout.")
 	writeTimeout = flag.Duration("write-timeout", 2*time.Minute, "HTTP response timeout.")
@@ -25,7 +28,25 @@ type certProvider func(keyname string) ([]*x509.Certificate, error)
 type certNameProvider func() (string, error)
 type secretChecker func([]byte) (bool, error)
 type secretRotator func([]byte) ([]byte, error)
+
+// Called when needing to generate a new key on demand
 type keyGenTrigger func()
+
+func (t keyGenTrigger) Trigger(struct{}, *struct{}) error {
+	t()
+	return nil
+}
+
+func triggerserver(kg keyGenTrigger) (func() error, error) {
+	lis, err := net.Listen("tcp", *triggerAddr)
+	if err != nil {
+		return nil, err
+	}
+	server := rpc.NewServer()
+	server.RegisterName("trigger", kg)
+	go server.Accept(lis)
+	return lis.Close, nil
+}
 
 func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secretRotator, kg keyGenTrigger) {
 	httpRateLimiter := rateLimter()
