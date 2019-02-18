@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"k8s.io/api/core/v1"
@@ -137,9 +138,20 @@ func createBlacklister(keyRegistry *KeyRegistry, trigger chan struct{}) func(str
 	}
 }
 
+const kubeChars = "abcdefghijklmnopqrstuvwxyz0123456789-"
+
 func PrefixedNameGen(prefix string) (func() (string, error), error) {
 	count := 0
-	// TODO: validate prefix string for kubernetes compatibility
+	maxLen := 245
+	prefixLen := len(prefix)
+	if prefixLen > maxLen {
+		return nil, fmt.Errorf("keyname prefix is too long, must be shorter than %d, got %d", maxLen, prefixLen)
+	}
+	for _, char := range prefix {
+		if !strings.ContainsRune(kubeChars, char) {
+			return nil, fmt.Errorf("keyname prefix contains illegal character %c", char)
+		}
+	}
 	return func() (string, error) {
 		name := fmt.Sprintf("%s-%d", prefix, count)
 		count++
