@@ -233,7 +233,7 @@ func myNamespace() string {
 }
 
 func initKeyRotation(client kubernetes.Interface, registry *KeyRegistry, namespace string) (func(), error) {
-	keyNameGenerator, _ := PrefixedNameGen(*keyListName)
+	keyNameGenerator, _ := PrefixedNameGen(*keyListName, len(registry.keys))
 	keyRotationFunc := createKeyRotationJob(client, registry, namespace, *keySize, keyNameGenerator)
 	if err := keyRotationFunc(); err != nil { // create the first key
 		return nil, err
@@ -271,6 +271,11 @@ func main2() error {
 		return err
 	}
 
+	blacklister, err := createBlacklist(clientset, rand.Reader, myNs, "sealed-secrets-blacklist", keyRegistry, keyGenTrigger)
+	if err != nil {
+		return err
+	}
+
 	ssinformer := ssinformers.NewSharedInformerFactory(ssclient, 0)
 	controller := NewController(clientset, ssinformer, keyRegistry)
 
@@ -289,7 +294,7 @@ func main2() error {
 	cnp := func() (string, error) {
 		return keyRegistry.CurrentKeyName(), nil
 	}
-	close, err := triggerserver(keyGenTrigger)
+	close, err := triggerserver(blacklister, keyGenTrigger)
 	if err != nil {
 		return err
 	}

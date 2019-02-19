@@ -42,6 +42,9 @@ controller: $(GO_FILES)
 trigger: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/trigger
 
+blacklist: $(GO_FILES)
+	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/blacklist
+
 kubeseal: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/kubeseal
 
@@ -54,7 +57,10 @@ docker/controller: controller-static
 docker/trigger: trigger-static
 	cp $< $@
 
-controller.image: docker/Dockerfile docker/controller docker/trigger
+docker/blacklist: blacklist-static
+	cp $< $@
+
+controller.image: docker/Dockerfile docker/controller docker/trigger docker/blacklist
 	$(DOCKER) build -t $(CONTROLLER_IMAGE) docker/
 	echo $(CONTROLLER_IMAGE) >$@.tmp
 	mv $@.tmp $@

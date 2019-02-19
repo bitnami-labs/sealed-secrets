@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"strings"
 	"time"
@@ -107,7 +108,6 @@ func generatePrivateKeyAndCert(keySize int) (*rsa.PrivateKey, *x509.Certificate,
 }
 
 func writeKeyToKube(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509.Certificate, namespace, keyName string) error {
-	data := certUtil.EncodeCertPEM(cert)
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      keyName,
@@ -115,7 +115,7 @@ func writeKeyToKube(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509
 		},
 		Data: map[string][]byte{
 			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
-			v1.TLSCertKey:       data,
+			v1.TLSCertKey:       certUtil.EncodeCertPEM(cert),
 		},
 		Type: v1.SecretTypeTLS,
 	}
@@ -123,25 +123,51 @@ func writeKeyToKube(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509
 	return err
 }
 
-func createBlacklister(keyRegistry *KeyRegistry, trigger chan struct{}) func(string) error {
+func createBlacklist(client kubernetes.Interface, r io.Reader, namespace, blacklistName string, keyRegistry *KeyRegistry, trigger func()) (func(string) error, error) {
+	privkey, cert, err := newKey(r)
+	if err != nil {
+		return nil, err
+	}
+	blacklist := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      blacklistName,
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(privkey),
+			v1.TLSCertKey:       certUtil.EncodeCertPEM(cert),
+		},
+		Type: v1.SecretTypeTLS,
+	}
+	if _, err := client.Core().Secrets(namespace).Create(blacklist); err != nil {
+		return nil, err
+	}
 	return func(keyName string) error {
-		key, err := keyRegistry.GetPrivateKey(keyName)
+		blacklist, err := client.Core().Secrets(namespace).Get(blacklistName, metav1.GetOptions{})
 		if err != nil {
+			return err
+		}
+		blacklist.Data[keyName] = []byte{}
+		if _, err = client.Core().Secrets(namespace).Update(blacklist); err != nil {
 			return err
 		}
 		keyRegistry.blacklistKey(keyName)
 		// If the latest key is being blacklisted, generate a new key
-		if key == keyRegistry.PrivateKey() {
-			trigger <- struct{}{}
+		if keyName == keyRegistry.CurrentKeyName() {
+			trigger()
 		}
 		return nil
-	}
+	}, nil
 }
 
 const kubeChars = "abcdefghijklmnopqrstuvwxyz0123456789-"
 
-func PrefixedNameGen(prefix string) (func() (string, error), error) {
-	count := 0
+// PrefixedNameGen creates a function that generates keynames when called.
+// Keynames are of the form <prefix>-<number>.
+// where the inital count should be set to the number of existing keys,
+// and is incremented every time the generator is called.
+func PrefixedNameGen(prefix string, initialCount int) (func() (string, error), error) {
+	count := initialCount
 	maxLen := 245
 	prefixLen := len(prefix)
 	if prefixLen > maxLen {

@@ -21,14 +21,24 @@ func NewKeyRegistry() *KeyRegistry {
 	}
 }
 
+func (kr *KeyRegistry) checkBlacklist(keyname string) error {
+	if _, ok := kr.blacklist[keyname]; ok {
+		return fmt.Errorf("%s is blacklisted", keyname)
+	}
+	return nil
+}
+
 func (kr *KeyRegistry) CurrentKeyName() string {
 	return kr.currentKeyName
 }
 
-func (kr *KeyRegistry) GetPrivateKey(keyName string) (*rsa.PrivateKey, error) {
-	key, ok := kr.keys[keyName]
+func (kr *KeyRegistry) GetPrivateKey(keyname string) (*rsa.PrivateKey, error) {
+	key, ok := kr.keys[keyname]
 	if !ok {
-		return nil, fmt.Errorf("No key exists with name %s", keyName)
+		return nil, fmt.Errorf("No key exists with name %s", keyname)
+	}
+	if err := kr.checkBlacklist(keyname); err != nil {
+		return nil, err
 	}
 	return key, nil
 }
@@ -43,10 +53,13 @@ func (kr *KeyRegistry) Cert() *x509.Certificate {
 	return kr.certs[kr.currentKeyName]
 }
 
-func (kr *KeyRegistry) GetCert(keyName string) (*x509.Certificate, error) {
-	cert, ok := kr.certs[keyName]
+func (kr *KeyRegistry) GetCert(keyname string) (*x509.Certificate, error) {
+	cert, ok := kr.certs[keyname]
 	if !ok {
-		return nil, fmt.Errorf("No key with name %s", keyName)
+		return nil, fmt.Errorf("No key with name %s", keyname)
+	}
+	if err := kr.checkBlacklist(keyname); err != nil {
+		return nil, err
 	}
 	return cert, nil
 }

@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	triggerAddr  = flag.String("trigger-addr", ":8081", "trigger rpc serving address.")
+	localAddr    = flag.String("local-addr", ":8081", "trigger rpc serving address.")
 	listenAddr   = flag.String("listen-addr", ":8080", "HTTP serving address.")
 	readTimeout  = flag.Duration("read-timeout", 2*time.Minute, "HTTP request timeout.")
 	writeTimeout = flag.Duration("write-timeout", 2*time.Minute, "HTTP response timeout.")
@@ -29,21 +29,27 @@ type certNameProvider func() (string, error)
 type secretChecker func([]byte) (bool, error)
 type secretRotator func([]byte) ([]byte, error)
 
-// Called when needing to generate a new key on demand
+// local server functions
+type blacklistFunc func(string) error
 type keyGenTrigger func()
+
+func (b blacklistFunc) Blacklist(keyname string, blank *struct{}) error {
+	return b(keyname)
+}
 
 func (t keyGenTrigger) Trigger(struct{}, *struct{}) error {
 	t()
 	return nil
 }
 
-func triggerserver(kg keyGenTrigger) (func() error, error) {
-	lis, err := net.Listen("tcp", *triggerAddr)
+func triggerserver(bl blacklistFunc, kg keyGenTrigger) (func() error, error) {
+	lis, err := net.Listen("tcp", *localAddr)
 	if err != nil {
 		return nil, err
 	}
 	server := rpc.NewServer()
 	server.RegisterName("trigger", kg)
+	server.RegisterName("blacklister", bl)
 	go server.Accept(lis)
 	return lis.Close, nil
 }
