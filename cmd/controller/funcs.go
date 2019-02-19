@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
 	"errors"
@@ -95,19 +94,6 @@ func generateNewKeyName(client kubernetes.Interface, namespace string, generateN
 	}
 	// If this fails 10 times, bad things
 	return "", errors.New("Failed to generate new key name not in use")
-}
-
-func generatePrivateKeyAndCert(keySize int) (*rsa.PrivateKey, *x509.Certificate, error) {
-	r := rand.Reader
-	privKey, err := rsa.GenerateKey(r, keySize)
-	if err != nil {
-		return nil, nil, err
-	}
-	cert, err := signKey(r, privKey)
-	if err != nil {
-		return nil, nil, err
-	}
-	return privKey, cert, nil
 }
 
 func writeKeyToKube(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509.Certificate, namespace, keyName string) error {

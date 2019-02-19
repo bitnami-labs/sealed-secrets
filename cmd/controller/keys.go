@@ -15,8 +15,9 @@ import (
 	certUtil "k8s.io/client-go/util/cert"
 )
 
-func newKey(r io.Reader) (*rsa.PrivateKey, *x509.Certificate, error) {
-	privKey, err := rsa.GenerateKey(r, *keySize)
+func generatePrivateKeyAndCert(keySize int) (*rsa.PrivateKey, *x509.Certificate, error) {
+	r := rand.Reader
+	privKey, err := rsa.GenerateKey(r, keySize)
 	if err != nil {
 		return nil, nil, err
 	}

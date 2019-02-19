@@ -56,7 +56,7 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, listNa
 		if errors.IsNotFound(err) {
 			log.Printf("Keyname list %s/%s not found, generating new keyname list", namespace, listName)
 
-			privKey, cert, err := newKey(r)
+			privKey, cert, err := generatePrivateKeyAndCert(*keySize)
 			if err != nil {
 				return nil, err
 			}
@@ -88,7 +88,7 @@ func initBlacklist(client kubernetes.Interface, r io.Reader, registry *KeyRegist
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Printf("Blacklist name %s/%s not found, generating a new blacklist", namespace, blacklistName)
-			privkey, cert, err := newKey(r)
+			privkey, cert, err := generatePrivateKeyAndCert(*keySize)
 			if err != nil {
 				return nil, err
 			}
