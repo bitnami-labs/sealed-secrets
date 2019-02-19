@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"strings"
 	"time"
@@ -49,9 +48,9 @@ func rotationErrorLogger(rotateKey func() error) func() {
 	}
 }
 
-func createKeyRotationJob(client kubernetes.Interface,
+func createKeyGenJob(client kubernetes.Interface,
 	keyRegistry *KeyRegistry,
-	namespace string,
+	namespace, listname string,
 	keySize int,
 	nameGen keyNameGen,
 ) func() error {
@@ -64,7 +63,11 @@ func createKeyRotationJob(client kubernetes.Interface,
 		if err != nil {
 			return err
 		}
-		if err = writeKeyToKube(client, privKey, cert, namespace, newKeyName); err != nil {
+		certs := []*x509.Certificate{cert}
+		if err = writeKey(client, privKey, certs, namespace, newKeyName); err != nil {
+			return err
+		}
+		if err = updateKeyRegistry(client, namespace, listname, newKeyName); err != nil {
 			return err
 		}
 		log.Printf("New key written to %s/%s\n", namespace, newKeyName)
@@ -123,25 +126,7 @@ func writeKeyToKube(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509
 	return err
 }
 
-func createBlacklist(client kubernetes.Interface, r io.Reader, namespace, blacklistName string, keyRegistry *KeyRegistry, trigger func()) (func(string) (bool, error), error) {
-	privkey, cert, err := newKey(r)
-	if err != nil {
-		return nil, err
-	}
-	blacklist := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      blacklistName,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(privkey),
-			v1.TLSCertKey:       certUtil.EncodeCertPEM(cert),
-		},
-		Type: v1.SecretTypeTLS,
-	}
-	if _, err := client.Core().Secrets(namespace).Create(blacklist); err != nil {
-		return nil, err
-	}
+func createBlacklister(client kubernetes.Interface, namespace, blacklistName string, keyRegistry *KeyRegistry, trigger func()) func(string) (bool, error) {
 	return func(keyName string) (bool, error) {
 		blacklist, err := client.Core().Secrets(namespace).Get(blacklistName, metav1.GetOptions{})
 		if err != nil {
@@ -158,7 +143,7 @@ func createBlacklist(client kubernetes.Interface, r io.Reader, namespace, blackl
 			return true, nil
 		}
 		return false, nil
-	}, nil
+	}
 }
 
 const kubeChars = "abcdefghijklmnopqrstuvwxyz0123456789-"

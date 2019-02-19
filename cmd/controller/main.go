@@ -2,15 +2,12 @@ package main
 
 import (
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	goflag "flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
-	"math/big"
 	"os"
 	"os/signal"
 	"strings"
@@ -18,12 +15,10 @@ import (
 	"time"
 
 	flag "github.com/spf13/pflag"
-	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	certUtil "k8s.io/client-go/util/cert"
 
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
@@ -31,6 +26,7 @@ import (
 
 var (
 	keyListName     = flag.String("key-list", "sealed-secrets-keys", "Name of Secret containing names of public/private keys.")
+	blacklistName   = flag.String("blacklist", "sealed-secrets-keys-blacklist", "Name of the blacklist of keys")
 	keySize         = flag.Int("key-size", 4096, "Size of encryption key.")
 	validFor        = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")
@@ -54,138 +50,8 @@ type controller struct {
 	clientset kubernetes.Interface
 }
 
-func readKey(client kubernetes.Interface, namespace, keyName string) (*rsa.PrivateKey, []*x509.Certificate, error) {
-	secret, err := client.Core().Secrets(namespace).Get(keyName, metav1.GetOptions{})
-	if err != nil {
-		return nil, nil, err
-	}
-
-	key, err := certUtil.ParsePrivateKeyPEM(secret.Data[v1.TLSPrivateKeyKey])
-	if err != nil {
-		return nil, nil, err
-	}
-
-	certs, err := certUtil.ParseCertsPEM(secret.Data[v1.TLSCertKey])
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return key.(*rsa.PrivateKey), certs, nil
-}
-
-func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, keyName string) error {
-	certbytes := []byte{}
-	for _, cert := range certs {
-		certbytes = append(certbytes, certUtil.EncodeCertPEM(cert)...)
-	}
-
-	secret := v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      keyName,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
-			v1.TLSCertKey:       certbytes,
-		},
-		Type: v1.SecretTypeTLS,
-	}
-
-	_, err := client.Core().Secrets(namespace).Create(&secret)
-	return err
-}
-
-func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
-	// TODO: use certificates API to get this signed by the cluster root CA
-	// See https://kubernetes.io/docs/tasks/tls/managing-tls-in-a-cluster/
-
-	notBefore := time.Now()
-
-	serialNo, err := rand.Int(r, new(big.Int).Lsh(big.NewInt(1), 128))
-	if err != nil {
-		return nil, err
-	}
-
-	cert := x509.Certificate{
-		SerialNumber: serialNo,
-		KeyUsage:     x509.KeyUsageEncipherOnly,
-		NotBefore:    notBefore.UTC(),
-		NotAfter:     notBefore.Add(*validFor).UTC(),
-		Subject: pkix.Name{
-			CommonName: *myCN,
-		},
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-	}
-
-	data, err := x509.CreateCertificate(r, &cert, &cert, &key.PublicKey, key)
-	if err != nil {
-		return nil, err
-	}
-
-	return x509.ParseCertificate(data)
-}
-
-func newKey(r io.Reader) (*rsa.PrivateKey, *x509.Certificate, error) {
-	privKey, err := rsa.GenerateKey(r, *keySize)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	cert, err := signKey(r, privKey)
-	if err != nil {
-		return nil, nil, err
-	}
-	return privKey, cert, nil
-}
-
-func readKeyNameList(client kubernetes.Interface, namespace, listName string) (map[string]struct{}, error) {
-	secret, err := client.Core().Secrets(namespace).Get(listName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	keyNames := map[string]struct{}{}
-	for keyName, _ := range secret.Data {
-		if (keyName == v1.TLSPrivateKeyKey) || (keyName == v1.TLSCertKey) {
-			keyNames[keyName] = struct{}{}
-		}
-	}
-	return keyNames, nil
-}
-
-func updateKeyNameList(client kubernetes.Interface, namespace, listName, newKeyName string) error {
-	secret, err := client.Core().Secrets(namespace).Get(listName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	secret.Data[newKeyName] = []byte{}
-	if _, err := client.Core().Secrets(namespace).Update(secret); err != nil {
-		return err
-	}
-	return nil
-}
-
-func writeKeyNameList(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509.Certificate, namespace, listName string) error {
-	secret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      listName,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
-			v1.TLSCertKey:       certUtil.EncodeCertPEM(cert),
-		},
-		Type: v1.SecretTypeTLS,
-	}
-	if _, err := client.Core().Secrets(namespace).Create(secret); err != nil {
-		return err
-	}
-	return nil
-}
-
-func initKeyNameList(client kubernetes.Interface, r io.Reader, namespace, listName string) (*KeyRegistry, error) {
-	list, err := readKeyNameList(client, namespace, listName)
+func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, listName string) (*KeyRegistry, error) {
+	list, err := readKeyRegistry(client, namespace, listName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Printf("Keyname list %s/%s not found, generating new keyname list", namespace, listName)
@@ -195,7 +61,7 @@ func initKeyNameList(client kubernetes.Interface, r io.Reader, namespace, listNa
 				return nil, err
 			}
 
-			if err = writeKeyNameList(client, privKey, cert, namespace, listName); err != nil {
+			if err = writeKeyRegistry(client, privKey, cert, namespace, listName); err != nil {
 				return nil, err
 			}
 			log.Printf("New keyname list generated")
@@ -217,6 +83,31 @@ func initKeyNameList(client kubernetes.Interface, r io.Reader, namespace, listNa
 	}
 }
 
+func initBlacklist(client kubernetes.Interface, r io.Reader, registry *KeyRegistry, namespace, blacklistName string, trigger func()) (func(string) (bool, error), error) {
+	blacklist, err := readBlacklist(client, namespace, blacklistName)
+	if err != nil {
+		if errors.IsNotFound(err) {
+			log.Printf("Blacklist name %s/%s not found, generating a new blacklist", namespace, blacklistName)
+			privkey, cert, err := newKey(r)
+			if err != nil {
+				return nil, err
+			}
+			if err = writeBlacklist(client, privkey, cert, namespace, blacklistName); err != nil {
+				return nil, err
+			}
+			log.Printf("New blacklist generated")
+		} else {
+			return nil, err
+		}
+	} else {
+		log.Printf("Blacklist found, copying values into local store")
+		for keyname := range blacklist {
+			registry.blacklistKey(keyname)
+		}
+	}
+	return createBlacklister(client, namespace, blacklistName, registry, trigger), nil
+}
+
 func myNamespace() string {
 	if ns := os.Getenv("POD_NAMESPACE"); ns != "" {
 		return ns
@@ -234,7 +125,7 @@ func myNamespace() string {
 
 func initKeyRotation(client kubernetes.Interface, registry *KeyRegistry, namespace string) (func(), error) {
 	keyNameGenerator, _ := PrefixedNameGen(*keyListName, len(registry.keys))
-	keyRotationFunc := createKeyRotationJob(client, registry, namespace, *keySize, keyNameGenerator)
+	keyRotationFunc := createKeyGenJob(client, registry, namespace, *keyListName, *keySize, keyNameGenerator)
 	if err := keyRotationFunc(); err != nil { // create the first key
 		return nil, err
 	}
@@ -261,7 +152,7 @@ func main2() error {
 
 	myNs := myNamespace()
 
-	keyRegistry, err := initKeyNameList(clientset, rand.Reader, myNs, *keyListName)
+	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, *keyListName)
 	if err != nil {
 		return err
 	}
@@ -271,7 +162,7 @@ func main2() error {
 		return err
 	}
 
-	blacklister, err := createBlacklist(clientset, rand.Reader, myNs, "sealed-secrets-blacklist", keyRegistry, keyGenTrigger)
+	blacklister, err := initBlacklist(clientset, rand.Reader, keyRegistry, myNs, *blacklistName, keyGenTrigger)
 	if err != nil {
 		return err
 	}

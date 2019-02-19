@@ -4,7 +4,101 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+
+	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	certUtil "k8s.io/client-go/util/cert"
 )
+
+func readKeyRegistry(client kubernetes.Interface, namespace, listName string) (map[string]struct{}, error) {
+	secret, err := client.Core().Secrets(namespace).Get(listName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	keyNames := map[string]struct{}{}
+	for keyName := range secret.Data {
+		if (keyName != v1.TLSPrivateKeyKey) && (keyName != v1.TLSCertKey) {
+			keyNames[keyName] = struct{}{}
+		}
+	}
+	return keyNames, nil
+}
+
+func updateKeyRegistry(client kubernetes.Interface, namespace, listName, newKeyName string) error {
+	secret, err := client.Core().Secrets(namespace).Get(listName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	secret.Data[newKeyName] = []byte{}
+	if _, err := client.Core().Secrets(namespace).Update(secret); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeKeyRegistry(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509.Certificate, namespace, listName string) error {
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      listName,
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
+			v1.TLSCertKey:       certUtil.EncodeCertPEM(cert),
+		},
+		Type: v1.SecretTypeTLS,
+	}
+	if _, err := client.Core().Secrets(namespace).Create(secret); err != nil {
+		return err
+	}
+	return nil
+}
+
+func readBlacklist(client kubernetes.Interface, namespace, blacklistName string) (map[string]struct{}, error) {
+	secret, err := client.Core().Secrets(namespace).Get(blacklistName, metav1.GetOptions{})
+	if err != nil {
+		return nil, err
+	}
+	keynames := map[string]struct{}{}
+	for keyname := range secret.Data {
+		if (keyname != v1.TLSPrivateKeyKey) && (keyname != v1.TLSCertKey) {
+			keynames[keyname] = struct{}{}
+		}
+	}
+	return keynames, nil
+}
+
+func updateBlacklist(client kubernetes.Interface, namespace, blacklistName, keyname string) error {
+	blacklist, err := client.Core().Secrets(namespace).Get(blacklistName, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	blacklist.Data[keyname] = []byte{}
+	if _, err = client.Core().Secrets(namespace).Update(blacklist); err != nil {
+		return err
+	}
+	return nil
+}
+
+func writeBlacklist(client kubernetes.Interface, privkey *rsa.PrivateKey, cert *x509.Certificate, namespace, blacklistName string) error {
+	secret := &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      blacklistName,
+			Namespace: namespace,
+		},
+		Data: map[string][]byte{
+			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(privkey),
+			v1.TLSCertKey:       certUtil.EncodeCertPEM(cert),
+		},
+		Type: v1.SecretTypeTLS,
+	}
+	if _, err := client.Core().Secrets(namespace).Create(secret); err != nil {
+		return err
+	}
+	return nil
+}
 
 type KeyRegistry struct {
 	currentKeyName string
