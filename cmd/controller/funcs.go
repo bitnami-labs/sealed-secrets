@@ -123,7 +123,7 @@ func writeKeyToKube(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509
 	return err
 }
 
-func createBlacklist(client kubernetes.Interface, r io.Reader, namespace, blacklistName string, keyRegistry *KeyRegistry, trigger func()) (func(string) error, error) {
+func createBlacklist(client kubernetes.Interface, r io.Reader, namespace, blacklistName string, keyRegistry *KeyRegistry, trigger func()) (func(string) (bool, error), error) {
 	privkey, cert, err := newKey(r)
 	if err != nil {
 		return nil, err
@@ -142,21 +142,22 @@ func createBlacklist(client kubernetes.Interface, r io.Reader, namespace, blackl
 	if _, err := client.Core().Secrets(namespace).Create(blacklist); err != nil {
 		return nil, err
 	}
-	return func(keyName string) error {
+	return func(keyName string) (bool, error) {
 		blacklist, err := client.Core().Secrets(namespace).Get(blacklistName, metav1.GetOptions{})
 		if err != nil {
-			return err
+			return false, err
 		}
 		blacklist.Data[keyName] = []byte{}
 		if _, err = client.Core().Secrets(namespace).Update(blacklist); err != nil {
-			return err
+			return false, err
 		}
 		keyRegistry.blacklistKey(keyName)
 		// If the latest key is being blacklisted, generate a new key
 		if keyName == keyRegistry.CurrentKeyName() {
 			trigger()
+			return true, nil
 		}
-		return nil
+		return false, nil
 	}, nil
 }
 

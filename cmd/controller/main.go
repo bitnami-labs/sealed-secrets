@@ -294,7 +294,7 @@ func main2() error {
 	cnp := func() (string, error) {
 		return keyRegistry.CurrentKeyName(), nil
 	}
-	close, err := triggerserver(blacklister, keyGenTrigger)
+	close, err := adminserver(blacklister, keyGenTrigger)
 	if err != nil {
 		return err
 	}

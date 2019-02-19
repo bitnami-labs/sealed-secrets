@@ -31,7 +31,7 @@ endif
 
 GO_LD_FLAGS = -X main.VERSION=$(VERSION)
 
-all: controller trigger kubeseal
+all: controller ssadmin kubeseal
 
 generate: $(GO_FILES)
 	$(GO) generate $(GO_PACKAGES)
@@ -39,11 +39,8 @@ generate: $(GO_FILES)
 controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/controller
 
-trigger: $(GO_FILES)
-	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/trigger
-
-blacklist: $(GO_FILES)
-	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/blacklist
+ssadmin: $(GO_FILES)
+	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/ssadmin
 
 kubeseal: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/kubeseal
@@ -54,13 +51,10 @@ kubeseal: $(GO_FILES)
 docker/controller: controller-static
 	cp $< $@
 
-docker/trigger: trigger-static
+docker/ssadmin: ssadmin-static
 	cp $< $@
 
-docker/blacklist: blacklist-static
-	cp $< $@
-
-controller.image: docker/Dockerfile docker/controller docker/trigger docker/blacklist
+controller.image: docker/Dockerfile docker/controller docker/ssadmin
 	$(DOCKER) build -t $(CONTROLLER_IMAGE) docker/
 	echo $(CONTROLLER_IMAGE) >$@.tmp
 	mv $@.tmp $@

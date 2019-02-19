@@ -30,11 +30,13 @@ type secretChecker func([]byte) (bool, error)
 type secretRotator func([]byte) ([]byte, error)
 
 // local server functions
-type blacklistFunc func(string) error
+type blacklistFunc func(string) (bool, error)
 type keyGenTrigger func()
 
-func (b blacklistFunc) Blacklist(keyname string, blank *struct{}) error {
-	return b(keyname)
+func (b blacklistFunc) Blacklist(keyname string, generated *bool) error {
+	gen, err := b(keyname)
+	*generated = gen
+	return err
 }
 
 func (t keyGenTrigger) Trigger(struct{}, *struct{}) error {
@@ -42,7 +44,7 @@ func (t keyGenTrigger) Trigger(struct{}, *struct{}) error {
 	return nil
 }
 
-func triggerserver(bl blacklistFunc, kg keyGenTrigger) (func() error, error) {
+func adminserver(bl blacklistFunc, kg keyGenTrigger) (func() error, error) {
 	lis, err := net.Listen("tcp", *localAddr)
 	if err != nil {
 		return nil, err
