@@ -43,7 +43,6 @@ var (
 	dumpKeyName    = flag.Bool("fetch-keyname", false, "Write keyname so stdout. Useful for later use with --keyname")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
-	genKey         = flag.Bool("gen-key", false, "Trigger sealed secrets controller to generate a new private key.")
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
@@ -364,13 +363,6 @@ func main() {
 
 	if *printVersion {
 		fmt.Printf("kubeseal version: %s\n", VERSION)
-		return
-	}
-
-	if *genKey {
-		if err := generateKey(*controllerNs, *controllerName); err != nil {
-			panic(err.Error())
-		}
 		return
 	}
 

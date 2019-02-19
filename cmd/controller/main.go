@@ -190,7 +190,7 @@ func main2() error {
 		return err
 	}
 	defer close()
-	go httpserver(cp, cnp, controller.AttemptUnseal, controller.Rotate, keyGenTrigger)
+	go httpserver(cp, cnp, controller.AttemptUnseal, controller.Rotate)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)

@@ -56,7 +56,7 @@ func adminserver(bl blacklistFunc, kg keyGenTrigger) (func() error, error) {
 	return lis.Close, nil
 }
 
-func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secretRotator, kg keyGenTrigger) {
+func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secretRotator) {
 	httpRateLimiter := rateLimter()
 
 	mux := http.NewServeMux()
@@ -64,11 +64,6 @@ func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secr
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		io.WriteString(w, "ok\n")
-	})
-
-	mux.HandleFunc("/v1/keygen", func(w http.ResponseWriter, r *http.Request) {
-		kg()
-		w.WriteHeader(http.StatusOK)
 	})
 
 	mux.Handle("/v1/verify", httpRateLimiter.RateLimit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
