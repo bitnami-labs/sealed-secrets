@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/rsa"
+	"encoding/json"
 	"errors"
 	goflag "flag"
 	"fmt"
@@ -232,30 +233,9 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 	if err != nil {
 		return err
 	}
-
-	var contentType string
-	switch strings.ToLower(*outputFormat) {
-	case "json", "":
-		contentType = runtime.ContentTypeJSON
-	case "yaml":
-		contentType = "application/yaml"
-	default:
-		return fmt.Errorf("unsupported output format: %s", *outputFormat)
-
-	}
-	prettyEnc, err := prettyEncoder(codecs, contentType, ssv1alpha1.SchemeGroupVersion)
-	if err != nil {
+	if err = sealedSecretOutput(out, codecs, ssecret); err != nil {
 		return err
 	}
-
-	buf, err := runtime.Encode(prettyEnc, ssecret)
-	if err != nil {
-		return err
-	}
-
-	out.Write(buf)
-	fmt.Fprint(out, "\n")
-
 	return nil
 }
 
@@ -327,9 +307,39 @@ func rotateSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer.Co
 	if err != nil {
 		return err
 	}
-	if _, err = out.Write(body); err != nil {
+	ssecret := &ssv1alpha1.SealedSecret{}
+	if err = json.Unmarshal(body, ssecret); err != nil {
 		return err
 	}
+	ssecret.SetCreationTimestamp(metav1.Time{})
+	ssecret.SetDeletionTimestamp(nil)
+	ssecret.Generation = 0
+	if err = sealedSecretOutput(out, codecs, ssecret); err != nil {
+		return err
+	}
+	return nil
+}
+
+func sealedSecretOutput(out io.Writer, codecs runtimeserializer.CodecFactory, ssecret *ssv1alpha1.SealedSecret) error {
+	var contentType string
+	switch strings.ToLower(*outputFormat) {
+	case "json", "":
+		contentType = runtime.ContentTypeJSON
+	case "yaml":
+		contentType = "application/yaml"
+	default:
+		return fmt.Errorf("unsupported output format: %s", *outputFormat)
+	}
+	prettyEnc, err := prettyEncoder(codecs, contentType, ssv1alpha1.SchemeGroupVersion)
+	if err != nil {
+		return err
+	}
+	buf, err := runtime.Encode(prettyEnc, ssecret)
+	if err != nil {
+		return err
+	}
+	out.Write(buf)
+	fmt.Fprint(out, "\n")
 	return nil
 }
 
