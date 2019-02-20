@@ -236,8 +236,6 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 	var contentType string
 	switch strings.ToLower(*outputFormat) {
 	case "json", "":
-		x := 1
-		fmt.Println(x + 1)
 		contentType = runtime.ContentTypeJSON
 	case "yaml":
 		contentType = "application/yaml"
