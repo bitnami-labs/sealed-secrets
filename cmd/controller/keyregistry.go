@@ -115,6 +115,12 @@ func NewKeyRegistry() *KeyRegistry {
 	}
 }
 
+func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate) {
+	kr.keys[keyName] = privKey
+	kr.certs[keyName] = cert
+	kr.currentKeyName = keyName
+}
+
 func (kr *KeyRegistry) checkBlacklist(keyname string) error {
 	if _, ok := kr.blacklist[keyname]; ok {
 		return fmt.Errorf("%s is blacklisted", keyname)
@@ -122,11 +128,11 @@ func (kr *KeyRegistry) checkBlacklist(keyname string) error {
 	return nil
 }
 
-func (kr *KeyRegistry) CurrentKeyName() string {
+func (kr *KeyRegistry) latestKeyName() string {
 	return kr.currentKeyName
 }
 
-func (kr *KeyRegistry) GetPrivateKey(keyname string) (*rsa.PrivateKey, error) {
+func (kr *KeyRegistry) getPrivateKey(keyname string) (*rsa.PrivateKey, error) {
 	key, ok := kr.keys[keyname]
 	if !ok {
 		return nil, fmt.Errorf("No key exists with name %s", keyname)
@@ -137,17 +143,7 @@ func (kr *KeyRegistry) GetPrivateKey(keyname string) (*rsa.PrivateKey, error) {
 	return key, nil
 }
 
-func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate) {
-	kr.keys[keyName] = privKey
-	kr.certs[keyName] = cert
-	kr.currentKeyName = keyName
-}
-
-func (kr *KeyRegistry) Cert() *x509.Certificate {
-	return kr.certs[kr.currentKeyName]
-}
-
-func (kr *KeyRegistry) GetCert(keyname string) (*x509.Certificate, error) {
+func (kr *KeyRegistry) getCert(keyname string) (*x509.Certificate, error) {
 	cert, ok := kr.certs[keyname]
 	if !ok {
 		return nil, fmt.Errorf("No key with name %s", keyname)
@@ -160,18 +156,4 @@ func (kr *KeyRegistry) GetCert(keyname string) (*x509.Certificate, error) {
 
 func (kr *KeyRegistry) blacklistKey(keyName string) {
 	kr.blacklist[keyName] = struct{}{}
-}
-
-func (kr *KeyRegistry) getBlacklistedKeys() []string {
-	list := make([]string, len(kr.blacklist))
-	count := 0
-	for name, _ := range kr.blacklist {
-		list[count] = name
-		count++
-	}
-	return list
-}
-
-func (kr *KeyRegistry) PrivateKey() *rsa.PrivateKey {
-	return kr.keys[kr.currentKeyName]
 }

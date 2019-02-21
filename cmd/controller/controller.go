@@ -42,7 +42,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 	objName := fmt.Sprintf("%s/%s", ssecret.GetObjectMeta().GetNamespace(), ssecret.GetObjectMeta().GetName())
 	log.Printf("Updating %s", objName)
 
-	privKey, err := keyRegistry.GetPrivateKey(ssecret.Spec.EncryptionKeyName)
+	privKey, err := keyRegistry.getPrivateKey(ssecret.Spec.EncryptionKeyName)
 
 	secret, err := ssecret.Unseal(codecs, privKey)
 	if err != nil {
@@ -187,7 +187,7 @@ func (c *Controller) unseal(key string) error {
 	ssecret := obj.(*ssv1alpha1.SealedSecret)
 	log.Printf("Updating %s", key)
 
-	privKey, err := c.keyRegistry.GetPrivateKey(ssecret.Spec.EncryptionKeyName)
+	privKey, err := c.keyRegistry.getPrivateKey(ssecret.Spec.EncryptionKeyName)
 	if err != nil {
 		return err
 	}
@@ -254,7 +254,7 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 
 	switch s := object.(type) {
 	case *ssv1alpha1.SealedSecret:
-		privKey, err := c.keyRegistry.GetPrivateKey(s.Spec.EncryptionKeyName)
+		privKey, err := c.keyRegistry.getPrivateKey(s.Spec.EncryptionKeyName)
 		if err != nil {
 			return false, fmt.Errorf("Could not retrieve private key from registry. %s", err)
 		}
@@ -276,7 +276,7 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 
 	switch s := object.(type) {
 	case *ssv1alpha1.SealedSecret:
-		privKey, err := c.keyRegistry.GetPrivateKey(s.Spec.EncryptionKeyName)
+		privKey, err := c.keyRegistry.getPrivateKey(s.Spec.EncryptionKeyName)
 		if err != nil {
 			return nil, fmt.Errorf("Could not retrieve private key from registry. %v", err)
 		}
@@ -285,8 +285,8 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 			return nil, fmt.Errorf("Error decrypting sealed secret. %v", err)
 		}
 
-		latestKeyName := c.keyRegistry.CurrentKeyName()
-		latestPrivKey, err := c.keyRegistry.GetPrivateKey(latestKeyName)
+		latestKeyName := c.keyRegistry.latestKeyName()
+		latestPrivKey, err := c.keyRegistry.getPrivateKey(latestKeyName)
 		if err != nil {
 			return nil, fmt.Errorf("Error getting latest private key. %v", err)
 		}

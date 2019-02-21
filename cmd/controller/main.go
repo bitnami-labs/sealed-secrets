@@ -176,14 +176,14 @@ func main2() error {
 	go controller.Run(stop)
 
 	cp := func(keyname string) ([]*x509.Certificate, error) {
-		cert, err := keyRegistry.GetCert(keyname)
+		cert, err := keyRegistry.getCert(keyname)
 		if err != nil {
 			return nil, err
 		}
 		return []*x509.Certificate{cert}, nil
 	}
 	cnp := func() (string, error) {
-		return keyRegistry.CurrentKeyName(), nil
+		return keyRegistry.latestKeyName(), nil
 	}
 	close, err := adminserver(blacklister, keyGenTrigger)
 	if err != nil {
