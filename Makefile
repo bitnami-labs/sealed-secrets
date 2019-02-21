@@ -86,6 +86,6 @@ clean:
 	$(RM) ./controller ./kubeseal ./trigger
 	$(RM) *-static
 	$(RM) controller*.yaml
-	$(RM) docker/controller
+	$(RM) docker/controller docker/ssadmin
 
 .PHONY: all kubeseal controller test clean vet fmt

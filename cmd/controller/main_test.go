@@ -3,6 +3,7 @@ package main
 import (
 	"reflect"
 	"testing"
+	"time"
 
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
@@ -27,21 +28,79 @@ func TestInitKeyRegistry(t *testing.T) {
 
 	registry, err := initKeyRegistry(client, rand, "testns", "testkeylist")
 	if err != nil {
-		t.Fatalf("initKey returned err: %v", err)
+		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
 	if !hasAction(client, "create", "secrets") {
-		t.Errorf("initKey() failed to create secret")
+		t.Errorf("initKeyRegistry() failed to create keylist secret")
 	}
 
+	// Add a key to the controller for second test
+	nameGen := func() (string, error) { return "name", nil }
+	createKeyGenJob(client, registry, "testns", "testkeylist", 1024, nameGen)()
+	if registry.CurrentKeyName() != "name" {
+		t.Fatalf("Error adding key to registry")
+	}
 	client.ClearActions()
 
 	registry2, err := initKeyRegistry(client, rand, "testns", "testkeylist")
 	if err != nil {
-		t.Fatalf("initKey returned err: %v", err)
+		t.Fatalf("initKeyRegistry() returned err: %v", err)
+	}
+	if !hasAction(client, "get", "secrets") {
+		t.Errorf("initKeyRegistry() failed to read existing keylist")
+	}
+	// Checks the second init picked up the key created after the first init
+	if !reflect.DeepEqual(registry, registry2) {
+		t.Errorf("Failed to find same keylist")
+	}
+}
+
+func TestInitKeyBlacklist(t *testing.T) {
+	rand := testRand()
+	client := fake.NewSimpleClientset()
+
+	registry := NewKeyRegistry()
+	_, err := initBlacklist(client, rand, registry, "testns", "testblacklistname", func() {})
+	if err != nil {
+		t.Fatalf("initBlacklist() returned err: %v", err)
+	}
+	if !hasAction(client, "create", "secrets") {
+		t.Errorf("initBlacklist() failed to create blacklist secret")
+	}
+	client.ClearActions()
+
+	_, err = initBlacklist(client, rand, registry, "testns", "testblacklistname", func() {})
+	if err != nil {
+		t.Fatalf("initBlacklist() returned err: %v", err)
+	}
+	// Check a blacklist is retrieved rather than created
+	if !hasAction(client, "get", "secrets") {
+		t.Errorf("initBlacklist() failed to read existing blacklist")
+	}
+}
+
+func TestInitKeyRotation(t *testing.T) {
+	rand := testRand()
+	client := fake.NewSimpleClientset()
+	registry, err := initKeyRegistry(client, rand, "namespace", "listname")
+	if err != nil {
+		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	if !reflect.DeepEqual(registry, registry2) {
-		t.Errorf("Failed to find same key")
+	keyGenTrigger, err := initKeyRotation(client, registry, "namespace", "listname", 1024, time.Minute)
+	if err != nil {
+		t.Fatalf("initKeyRotation() returned err: %v", err)
+	}
+	if !hasAction(client, "create", "secrets") {
+		t.Errorf("initKeyRotation() failed to generate an initial key")
+	}
+
+	client.ClearActions()
+
+	keyGenTrigger()
+	time.Sleep(50 * time.Millisecond) // TODO: investigate if testing the trigger function can be improved
+	if !hasAction(client, "create", "secrets") {
+		t.Errorf("trigger function failed to activate early key generation")
 	}
 }

@@ -31,7 +31,7 @@ var (
 	validFor        = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")
 	printVersion    = flag.Bool("version", false, "Print version information and exit")
-	keyRotatePeriod = flag.Int("key-rotate", 1, "Key rotation period in days")
+	keyRotatePeriod = flag.Duration("key-rotate", time.Minute, "Key rotation period")
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
@@ -54,6 +54,7 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, listNa
 	list, err := readKeyRegistry(client, namespace, listName)
 	if err != nil {
 		if errors.IsNotFound(err) {
+			// keylist isn't found, create a new one
 			log.Printf("Keyname list %s/%s not found, generating new keyname list", namespace, listName)
 
 			privKey, cert, err := generatePrivateKeyAndCert(*keySize)
@@ -66,21 +67,21 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, listNa
 			}
 			log.Printf("New keyname list generated")
 			return NewKeyRegistry(), nil
-		} else {
+		}
+		return nil, err
+	}
+	// If a keylist is found, read each value, retrive the key and add to the registry
+	log.Printf("Keyname list %s/%s found, copying values into local store", namespace, listName)
+	keyRegistry := NewKeyRegistry()
+	// for each key, get the stored private key
+	for keyName := range list {
+		key, certs, err := readKey(client, namespace, keyName)
+		if err != nil {
 			return nil, err
 		}
-	} else {
-		keyRegistry := NewKeyRegistry()
-		// for each key, get the stored private key
-		for keyName := range list {
-			key, certs, err := readKey(client, namespace, keyName)
-			if err != nil {
-				return nil, err
-			}
-			keyRegistry.registerNewKey(keyName, key, certs[0])
-		}
-		return keyRegistry, nil
+		keyRegistry.registerNewKey(keyName, key, certs[0])
 	}
+	return keyRegistry, nil
 }
 
 func initBlacklist(client kubernetes.Interface, r io.Reader, registry *KeyRegistry, namespace, blacklistName string, trigger func()) (func(string) (bool, error), error) {
@@ -123,15 +124,14 @@ func myNamespace() string {
 	return metav1.NamespaceDefault
 }
 
-func initKeyRotation(client kubernetes.Interface, registry *KeyRegistry, namespace string) (func(), error) {
-	keyNameGenerator, _ := PrefixedNameGen(*keyListName, len(registry.keys))
-	keyRotationFunc := createKeyGenJob(client, registry, namespace, *keyListName, *keySize, keyNameGenerator)
-	if err := keyRotationFunc(); err != nil { // create the first key
+func initKeyRotation(client kubernetes.Interface, registry *KeyRegistry, namespace, listname string, keysize int, period time.Duration) (func(), error) {
+	keyNameGenerator, _ := PrefixedNameGen(listname, len(registry.keys))
+	keyGenFunc := createKeyGenJob(client, registry, namespace, listname, keysize, keyNameGenerator)
+	if err := keyGenFunc(); err != nil { // create the first key
 		return nil, err
 	}
-	keyRotationJob := rotationErrorLogger(keyRotationFunc)
-	rotationPeriod := time.Duration(*keyRotatePeriod) * time.Minute
-	return ScheduleJobWithTrigger(rotationPeriod, keyRotationJob), nil
+	keyRotationJob := rotationErrorLogger(keyGenFunc)
+	return ScheduleJobWithTrigger(period, keyRotationJob), nil
 }
 
 func main2() error {
@@ -157,7 +157,7 @@ func main2() error {
 		return err
 	}
 
-	keyGenTrigger, err := initKeyRotation(clientset, keyRegistry, myNs)
+	keyGenTrigger, err := initKeyRotation(clientset, keyRegistry, myNs, *keyListName, *keySize, *keyRotatePeriod)
 	if err != nil {
 		return err
 	}
