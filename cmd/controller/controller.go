@@ -8,6 +8,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/runtime"
 
+	apiv1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
@@ -196,10 +197,53 @@ func (c *Controller) unseal(key string) error {
 	}
 
 	_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(secret)
-	if err != nil && errors.IsAlreadyExists(err) {
-		_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(secret)
+	if err == nil {
+		// Secret successfully created
+		return nil
 	}
+	if !errors.IsAlreadyExists(err) {
+		// Error wasn't already exists so is real error
+		return err
+	}
+
+	// Secret already exists so update it in place with new data/owner reference
+	updatedSecret, err := c.updateSecret(secret)
+	if err != nil {
+		return fmt.Errorf("failed to update existing secret: %s", err)
+	}
+	_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(updatedSecret)
 	return err
+}
+
+func (c *Controller) updateSecret(newSecret *apiv1.Secret) (*apiv1.Secret, error) {
+	existingSecret, err := c.sclient.Secrets(newSecret.GetObjectMeta().GetNamespace()).Get(newSecret.GetObjectMeta().GetName(), metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to read existing secret: %s", err)
+	}
+	existingSecret = existingSecret.DeepCopy()
+	existingSecret.Data = newSecret.Data
+
+	c.updateOwnerReferences(existingSecret, newSecret)
+
+	return existingSecret, nil
+}
+
+func (c *Controller) updateOwnerReferences(existing, new *apiv1.Secret) {
+	ownerRefs := existing.GetOwnerReferences()
+
+	for _, newRef := range new.GetOwnerReferences() {
+		found := false
+		for _, ref := range ownerRefs {
+			if newRef.UID == ref.UID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			ownerRefs = append(ownerRefs, newRef)
+		}
+	}
+	existing.SetOwnerReferences(ownerRefs)
 }
 
 func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
