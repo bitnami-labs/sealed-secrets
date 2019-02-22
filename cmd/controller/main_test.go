@@ -38,7 +38,7 @@ func TestInitKeyRegistry(t *testing.T) {
 	// Add a key to the controller for second test
 	nameGen := func() (string, error) { return "name", nil }
 	createKeyGenJob(client, registry, "testns", "testkeylist", 1024, nameGen)()
-	if registry.CurrentKeyName() != "name" {
+	if registry.latestKeyName() != "name" {
 		t.Fatalf("Error adding key to registry")
 	}
 	client.ClearActions()
