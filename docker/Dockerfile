@@ -4,5 +4,4 @@ COPY controller /usr/local/bin/
 COPY ssadmin /usr/local/bin/
 
 EXPOSE 8080
-EXPOSE 8081
 ENTRYPOINT ["controller"]
