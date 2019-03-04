@@ -24,11 +24,9 @@ env:
 
 matrix:
   include:
-    - env: INT_KVERS=v1.9.0 INT_SSC_CONF=sealedsecret-crd.yaml,controller.yaml
-    - env: INT_KVERS=v1.8.0 INT_SSC_CONF=sealedsecret-crd.yaml,controller.yaml
-    - env: INT_KVERS=v1.7.0 INT_SSC_CONF=sealedsecret-crd.yaml,controller.yaml
-    - env: INT_KVERS=v1.7.0 INT_SSC_CONF=sealedsecret-tpr.yaml,controller.yaml
-    - env: INT_KVERS=v1.6.0 INT_SSC_CONF=sealedsecret-tpr.yaml,controller.yaml
+    - env: INT_KVERS=v1.9.0 INT_SSC_CONF=controller.yaml
+    - env: INT_KVERS=v1.8.0 INT_SSC_CONF=controller.yaml
+    - env: INT_KVERS=v1.7.0 INT_SSC_CONF=controller.yaml
 
 addons:
   apt:
@@ -86,7 +84,7 @@ script:
   - ./$EXE_NAME --help || test $? -eq 2
   - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then
-      make controller.yaml controller-norbac.yaml sealedsecret-crd.yaml sealedsecret-tpr.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
+      make controller.yaml controller-norbac.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
     fi
   - |
     if [ "$INT_KVERS" != "" ]; then
@@ -127,8 +125,6 @@ deploy:
     - $EXE_NAME
     - controller.yaml
     - controller-norbac.yaml
-    - sealedsecret-tpr.yaml
-    - sealedsecret-crd.yaml
   on:
     condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.9\.
     tags: true
