@@ -23,6 +23,8 @@ local v1beta1_Deployment(name) = kube.Deployment(name) {
 };
 
 {
+  crd: kube.CustomResourceDefinition("bitnami.com", "v1alpha1", "SealedSecret"),
+
   namespace:: {metadata+: {namespace: namespace}},
 
   service: kube.Service("sealed-secrets-controller") + $.namespace {
