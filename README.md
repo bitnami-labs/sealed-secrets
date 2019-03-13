@@ -11,93 +11,72 @@ decrypted only by the controller running in the target cluster and
 nobody else (not even the original author) is able to obtain the
 original Secret from the SealedSecret.
 
-<br>
-
 ## Installation
-
-There are two parts to installation:
-* [controller](#controller-installation) 
-* [kubeseal](#kubeseal-installation)
 
 See https://github.com/bitnami-labs/sealed-secrets/releases for the latest
 release.
 
-<br>
-
-## Controller Installation
-
-`controller.yaml` will install the `controller` into `kube-system` namespace, create a service account, necessary RBAC roles and a `SealedSecret` CRD.  
-After a few moments, the `controller` will start, generate a key pair, and be ready for operation.  If it does not, check the `controller` logs.
-
-The key certificate (public key portion) is used for sealing secrets, and will be printed to the `controller` log on startup.
-
 ```sh
+$ release=$(curl --silent "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+
+# Install client-side tool into /usr/local/bin/
+$ GOOS=$(go env GOOS)
+$ GOARCH=$(go env GOARCH)
+$ wget https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/kubeseal-$GOOS-$GOARCH
+$ sudo install -m 755 kubeseal-$GOOS-$GOARCH /usr/local/bin/kubeseal
+
 # Note:  If installing on a GKE cluster, a ClusterRoleBinding may be needed to successfully deploy the controller in the final command.  Replace <your-email> with a valid email, and then deploy the cluster role binding:
 $ USER_EMAIL=<your-email>
 $ kubectl create clusterrolebinding $USER-cluster-admin-binding --clusterrole=cluster-admin --user=$USER_EMAIL
 
-# get latest release version
-$ release=$(curl --silent "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
-
-# Download release
-$ wget https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealed-secrets_$release_$(uname)_$(uname -m).tar.gz
-
-# Extract release
-$ tar -zxvf sealed-secrets_$release_$(uname)_$(uname -m).tar.gz
-
-# For clusters with RBAC
-$ kubectl apply -f controller.yaml
-
-# For clusters without RBAC
-$ kubectl apply -f controller-norbac.yaml
+# Install SealedSecret CRD, server-side controller into kube-system namespace (by default)
+$ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
 ```
 
-### Saving key certificate - Recommended
+`controller.yaml` will create the `SealedSecret` resource and install the controller
+into `kube-system` namespace, create a service account and necessary
+RBAC roles.
 
-The public cert can be commited to git and supplied as an argument to `kubeseal` instead of requiring cluster access. For example: `kubeseal --cert mycert.pem`
+After a few moments, the controller will start, generate a key pair,
+and be ready for operation.  If it does not, check the controller
+logs.
+
+The key certificate (public key portion) is used for sealing secrets,
+and needs to be available wherever `kubeseal` is going to be
+used. The certificate is not secret information, although you need to
+ensure you are using the correct file.
+
+`kubeseal` will fetch the certificate from the controller at runtime
+(requires secure access to the Kubernetes API server), which is
+convenient for interactive use.  The recommended automation workflow
+is to store the certificate to local disk with
+`kubeseal --fetch-cert >mycert.pem`,
+and use it offline with `kubeseal --cert mycert.pem`.
+The certificate is also printed to the controller log on startup.
+
+### Installation from source
+
+If you just want the latest client tool, it can be installed into
+`$GOPATH/bin` with:
 
 ```sh
-# Save public cert to file (if using port-forward or other method to expose the controller)
-$ kubeseal --fetch-cert > mycert.pem
+% go get github.com/bitnami-labs/sealed-secrets/cmd/kubeseal
 ```
 
-<br>
+For a more complete development environment, clone the repository and
+use the Makefile:
 
-## Kubeseal Installation
-
-MacOS: 
 ```sh
-$ brew install kubeseal
+% git clone https://github.com/bitnami-labs/sealed-secrets.git
+% cd sealed-secrets
+
+# Build client-side tool and controller binaries
+% make
 ```
 
-Linux:
-```sh
-# get latest release version
-$ release=$(curl --silent "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
-
-# Download release
-$ wget https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealed-secrets_$release_$(uname)_$(uname -m).tar.gz
-
-# Extract release
-$ tar -zxvf sealed-secrets_$release_$(uname)_$(uname -m).tar.gz
-
-# Install in path (if required)
-$ sudo install -m 755 kubeseal /usr/local/bin/kubeseal
-```
-
-Windows:
-- download latest [release](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
-- extract archive
-
-<br>
-
-## Client usage 
+## Usage
 
 **WARNING**: A bug in the current version is limiting secrets to use the "opaque" type. If you need to use another secret type (eg: `kubernetes.io/dockerconfigjson`), please use kubeseal from release 0.5.1 until [#86](https://github.com/bitnami-labs/sealed-secrets/issues/86) and [#92](https://github.com/bitnami-labs/sealed-secrets/issues/92) are resolved.
-
-`kubeseal` will fetch the certificate from the controller at runtime (requires secure access to the Kubernetes API server), which is convenient for interactive use.  
-The recommended automation workflow is to store the certificate to local disk and use it offline with `kubeseal --cert mycert.pem`. See [Saving key certificate](#saving-key-certificate---recommended)
-
 
 ```sh
 # Create a json/yaml-encoded Secret somehow:
@@ -107,21 +86,29 @@ $ kubectl create secret generic mysecret --dry-run --from-literal=foo=bar -o jso
 # This is the important bit:
 $ kubeseal <mysecret.json >mysealedsecret.json
 
-# mysealedsecret.json is safe to upload to github, post to twitter, etc. Eventually:
+# mysealedsecret.json is safe to upload to github, post to twitter,
+# etc.  Eventually:
 $ kubectl create -f mysealedsecret.json
 
 # Profit!
 $ kubectl get secret mysecret
 ```
 
-Note the `SealedSecret` and `Secret` must have *the same namespace and name*.  This is a feature to prevent other users on the same cluster from re-using your sealed secrets.  
-`kubeseal` reads the namespace from the input secret, accepts an explicit `--namespace` arg, and uses the `kubectl` default namespace (in that order). Any labels, annotations, etc on the original `Secret` are preserved, but not automatically reflected in the `SealedSecret`.
+Note the `SealedSecret` and `Secret` must have *the same namespace and
+name*.  This is a feature to prevent other users on the same cluster
+from re-using your sealed secrets.  `kubeseal` reads the namespace
+from the input secret, accepts an explicit `--namespace` arg, and uses
+the `kubectl` default namespace (in that order). Any labels,
+annotations, etc on the original `Secret` are preserved, but not
+automatically reflected in the `SealedSecret`.
 
-By design, this scheme *does not authenticate the user*.  In other words, *anyone* can create a `SealedSecret` containing any `Secret` they like (provided the namespace/name matches).  
-It is up to your existing config management workflow, cluster RBAC rules, etc to ensure that only the intended `SealedSecret` is uploaded to the cluster.  
-The only change from existing Kubernetes is that the *contents* of the `Secret` are now hidden while outside the cluster.
-
-<br>
+By design, this scheme *does not authenticate the user*.  In other
+words, *anyone* can create a `SealedSecret` containing any `Secret`
+they like (provided the namespace/name matches).  It is up to your
+existing config management workflow, cluster RBAC rules, etc to ensure
+that only the intended `SealedSecret` is uploaded to the cluster.  The
+only change from existing Kubernetes is that the *contents* of the
+`Secret` are now hidden while outside the cluster.
 
 ## Details
 
@@ -153,13 +140,36 @@ namespace/name is used as the OAEP input parameter, ensuring that the
 The generated `Secret` is marked as "owned" by the `SealedSecret` and
 will be garbage collected if the `SealedSecret` is deleted.
 
-<br>
+## Developing
+To be able to develop on this project, you need to have the following tools installed:
+* make
+* [Ginkgo](https://onsi.github.io/ginkgo/)
+* [Minikube](https://github.com/kubernetes/minikube)
+* [kubecfg](https://github.com/ksonnet/kubecfg)
+* Go
 
-## Contributing
+To build the `kubeseal` and controller binaries, run:
+```bash
+$ make
+```
 
-See [CONTRIBUTING.md](CONTRIBUTING.md)
+To run the unit tests:
+```bash
+$ make test
+```
 
-<br>
+To run the integration tests:
+* Start Minikube
+* Build the controller for Linux, so that it can be run within a Docker image - edit the Makefile to add 
+`GOOS=linux GOARCH=amd64` to `%-static`, and then run `make controller.yaml `
+* Alter `controller.yaml` so that `imagePullPolicy: Never`, to ensure that the image you've just built will be
+used by Kubernetes
+* Add the sealed-secret CRD and controller to Kubernetes - `kubectl apply -f controller.yaml`
+* Revert any changes made to the Makefile to build the Linux controller
+* Remove the binaries which were possibly built for another OS - `make clean`
+* Rebuild the binaries for your OS - `make`
+* Run the integration tests - `make integrationtest`
+
 
 ## FAQ
 
