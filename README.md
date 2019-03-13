@@ -30,7 +30,9 @@ $ USER_EMAIL=<your-email>
 $ kubectl create clusterrolebinding $USER-cluster-admin-binding --clusterrole=cluster-admin --user=$USER_EMAIL
 
 # Install SealedSecret CRD, server-side controller into kube-system namespace (by default)
-$ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
+# Note the second sealedsecret-crd.yaml file is not necessary for releases >= 0.8.0
+$ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
+$ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
 ```
 
 `controller.yaml` will create the `SealedSecret` resource and install the controller
