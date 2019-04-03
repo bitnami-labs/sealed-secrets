@@ -18,16 +18,14 @@ func ScheduleJobWithTrigger(period time.Duration, job func()) func() {
 	trigger := make(chan struct{})
 	go func() {
 		for {
-			sched := make(chan struct{})
-			go func() {
-				time.Sleep(period)
-				sched <- struct{}{}
-			}()
-			select {
-			case <-trigger:
-			case <-sched:
-			}
-			go job()
+			<-trigger
+			job()
+		}
+	}()
+	go func() {
+		for {
+			time.Sleep(period)
+			trigger <- struct{}{}
 		}
 	}()
 	return func() {
