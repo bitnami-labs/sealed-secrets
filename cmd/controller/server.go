@@ -94,7 +94,7 @@ func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secr
 		content, err := ioutil.ReadAll(r.Body)
 
 		if err != nil {
-			log.Printf("Error handling /v1/rotato request: %v", err)
+			log.Printf("Error handling /v1/rotate request: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
