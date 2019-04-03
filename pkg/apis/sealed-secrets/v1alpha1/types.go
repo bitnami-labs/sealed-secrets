@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	// SealedSecretName is the name used in SealedSecret TPR
+	// SealedSecretName is the name used in SealedSecret CRD
 	SealedSecretName = "sealed-secret." + GroupName
 	// SealedSecretPlural is the collection plural used with SealedSecret API
 	SealedSecretPlural = "sealedsecrets"
