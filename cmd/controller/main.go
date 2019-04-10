@@ -160,12 +160,7 @@ func main2() error {
 		return err
 	}
 
-	keyGenTrigger, err := initKeyRotation(clientset, keyRegistry, myNs, *keyListName, *keySize, *keyRotatePeriod)
-	if err != nil {
-		return err
-	}
-
-	blacklister, err := initBlacklist(clientset, rand.Reader, keyRegistry, myNs, *blacklistName, keyGenTrigger)
+	_, err = initKeyRotation(clientset, keyRegistry, myNs, *keyListName, *keySize, *keyRotatePeriod)
 	if err != nil {
 		return err
 	}
@@ -188,11 +183,7 @@ func main2() error {
 	cnp := func() (string, error) {
 		return keyRegistry.latestKeyName(), nil
 	}
-	close, err := adminserver(blacklister, keyGenTrigger)
-	if err != nil {
-		return err
-	}
-	defer close()
+
 	go httpserver(cp, cnp, controller.AttemptUnseal, controller.Rotate)
 
 	sigterm := make(chan os.Signal, 1)

@@ -5,9 +5,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"net"
 	"net/http"
-	"net/rpc"
 	"time"
 
 	flag "github.com/spf13/pflag"
@@ -28,33 +26,6 @@ type certProvider func(keyname string) ([]*x509.Certificate, error)
 type certNameProvider func() (string, error)
 type secretChecker func([]byte) (bool, error)
 type secretRotator func([]byte) ([]byte, error)
-
-// local server functions
-type blacklistFunc func(string) (bool, error)
-type keyGenTrigger func()
-
-func (b blacklistFunc) Blacklist(keyname string, generated *bool) error {
-	gen, err := b(keyname)
-	*generated = gen
-	return err
-}
-
-func (t keyGenTrigger) Trigger(struct{}, *struct{}) error {
-	t()
-	return nil
-}
-
-func adminserver(bl blacklistFunc, kg keyGenTrigger) (func() error, error) {
-	lis, err := net.Listen("tcp", *localAddr)
-	if err != nil {
-		return nil, err
-	}
-	server := rpc.NewServer()
-	server.RegisterName("trigger", kg)
-	server.RegisterName("blacklister", bl)
-	go server.Accept(lis)
-	return lis.Close, nil
-}
 
 func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secretRotator) {
 	httpRateLimiter := rateLimter()

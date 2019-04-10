@@ -31,16 +31,13 @@ endif
 
 GO_LD_FLAGS = -X main.VERSION=$(VERSION)
 
-all: controller ssadmin kubeseal
+all: controller kubeseal
 
 generate: $(GO_FILES)
 	$(GO) generate $(GO_PACKAGES)
 
 controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/controller
-
-ssadmin: $(GO_FILES)
-	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/ssadmin
 
 kubeseal: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/kubeseal
@@ -51,10 +48,7 @@ kubeseal: $(GO_FILES)
 docker/controller: controller-static
 	cp $< $@
 
-docker/ssadmin: ssadmin-static
-	cp $< $@
-
-controller.image: docker/Dockerfile docker/controller docker/ssadmin
+controller.image: docker/Dockerfile docker/controller
 	$(DOCKER) build -t $(CONTROLLER_IMAGE) docker/
 	echo $(CONTROLLER_IMAGE) >$@.tmp
 	mv $@.tmp $@
@@ -83,9 +77,9 @@ fmt:
 	$(GOFMT) -s -w $(GO_FILES)
 
 clean:
-	$(RM) ./controller ./kubeseal ./trigger
+	$(RM) ./controller ./kubeseal
 	$(RM) *-static
 	$(RM) controller*.yaml
-	$(RM) docker/controller docker/ssadmin
+	$(RM) docker/controller
 
 .PHONY: all kubeseal controller test clean vet fmt
