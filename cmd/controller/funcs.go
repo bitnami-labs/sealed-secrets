@@ -14,6 +14,9 @@ import (
 
 type keyNameGen func() (string, error)
 
+// ScheduleJobWithTrigger creates a long-running loop that runs a jub each
+// loop
+// returns a trigger function that runs the job early when called
 func ScheduleJobWithTrigger(period time.Duration, job func()) func() {
 	trigger := make(chan struct{})
 	go func() {
@@ -45,16 +48,16 @@ func createKeyGenJob(client kubernetes.Interface,
 	keyRegistry *KeyRegistry,
 	namespace, listname string,
 	keySize int,
-	nameGen keyNameGen,
+	prefix string,
 ) func() error {
 	return func() error {
-		newKeyName, err := nameGen()
 		privKey, cert, err := generatePrivateKeyAndCert(keySize)
 		if err != nil {
 			return err
 		}
 		certs := []*x509.Certificate{cert}
-		if err = writeKey(client, privKey, certs, namespace, newKeyName); err != nil {
+		newKeyName, err := writeKey(client, privKey, certs, namespace, prefix)
+		if err != nil {
 			return err
 		}
 		if err = updateKeyRegistry(client, namespace, listname, newKeyName); err != nil {
@@ -95,25 +98,17 @@ func createBlacklister(client kubernetes.Interface, namespace, blacklistName str
 
 const kubeChars = "abcdefghijklmnopqrstuvwxyz0123456789-"
 
-// PrefixedNameGen creates a function that generates keynames when called.
-// Keynames are of the form <prefix>-<number>.
-// where the inital count should be set to the number of existing keys,
-// and is incremented every time the generator is called.
-func PrefixedNameGen(prefix string, initialCount int) (func() (string, error), error) {
-	count := initialCount
+// validateKeyName is used to validate whether a string can be used as part of a keyname in kubernetes
+func validateKeyName(name string) error {
 	maxLen := 245
-	prefixLen := len(prefix)
-	if prefixLen > maxLen {
-		return nil, fmt.Errorf("keyname prefix is too long, must be shorter than %d, got %d", maxLen, prefixLen)
+	nameLen := len(name)
+	if nameLen > maxLen {
+		return fmt.Errorf("keyname name is too long, must be shorter than %d, got %d", maxLen, nameLen)
 	}
-	for _, char := range prefix {
+	for _, char := range name {
 		if !strings.ContainsRune(kubeChars, char) {
-			return nil, fmt.Errorf("keyname prefix contains illegal character %c", char)
+			return fmt.Errorf("name contains illegal character %c", char)
 		}
 	}
-	return func() (string, error) {
-		name := fmt.Sprintf("%s-%d", prefix, count)
-		count++
-		return name, nil
-	}, nil
+	return nil
 }

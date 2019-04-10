@@ -47,7 +47,7 @@ func readKey(client kubernetes.Interface, namespace, keyName string) (*rsa.Priva
 	return key.(*rsa.PrivateKey), certs, nil
 }
 
-func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, keyName string) error {
+func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, prefix string) (string, error) {
 	certbytes := []byte{}
 	for _, cert := range certs {
 		certbytes = append(certbytes, certUtil.EncodeCertPEM(cert)...)
@@ -55,8 +55,8 @@ func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Ce
 
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      keyName,
-			Namespace: namespace,
+			Namespace:    namespace,
+			GenerateName: prefix,
 		},
 		Data: map[string][]byte{
 			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
@@ -65,8 +65,11 @@ func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Ce
 		Type: v1.SecretTypeTLS,
 	}
 
-	_, err := client.Core().Secrets(namespace).Create(&secret)
-	return err
+	createdSecret, err := client.Core().Secrets(namespace).Create(&secret)
+	if err != nil {
+		return "", err
+	}
+	return createdSecret.Name, nil
 }
 
 func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {

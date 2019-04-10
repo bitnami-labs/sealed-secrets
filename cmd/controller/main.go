@@ -31,7 +31,7 @@ var (
 	validFor        = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")
 	printVersion    = flag.Bool("version", false, "Print version information and exit")
-	keyRotatePeriod = flag.Duration("key-rotate", time.Minute, "Key rotation period")
+	keyRotatePeriod = flag.Duration("key-rotate", time.Minute, "New key generation period")
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
@@ -125,8 +125,7 @@ func myNamespace() string {
 }
 
 func initKeyRotation(client kubernetes.Interface, registry *KeyRegistry, namespace, listname string, keysize int, period time.Duration) (func(), error) {
-	keyNameGenerator, _ := PrefixedNameGen(listname, len(registry.keys))
-	keyGenFunc := createKeyGenJob(client, registry, namespace, listname, keysize, keyNameGenerator)
+	keyGenFunc := createKeyGenJob(client, registry, namespace, listname, keysize, listname)
 	if err := keyGenFunc(); err != nil { // create the first key
 		return nil, err
 	}
@@ -151,6 +150,10 @@ func main2() error {
 	}
 
 	myNs := myNamespace()
+
+	if err := validateKeyName(*keyListName); err != nil {
+		return err
+	}
 
 	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, *keyListName)
 	if err != nil {
