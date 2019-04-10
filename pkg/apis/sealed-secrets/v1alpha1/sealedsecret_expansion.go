@@ -21,7 +21,7 @@ func labelFor(o metav1.Object) ([]byte, bool, bool) {
 	}
 	namespaceWide := o.GetAnnotations()[SealedSecretNamespaceWideAnnotation]
 	if namespaceWide == "true" {
-		return []byte(o.GetNamespace()), false, true
+        return []byte(o.GetNamespace()), false, true
 	}
 	return []byte(fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())), false, false
 }
@@ -77,7 +77,7 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 // NewSealedSecret creates a new SealedSecret object wrapping the
 // provided secret. This encrypts only the values of each secrets
 // individually, so secrets can be updated one by one.
-func NewSealedSecret(codecs runtimeserializer.CodecFactory, keyName string, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
+func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
 	if secret.GetNamespace() == "" {
 		return nil, fmt.Errorf("Secret must declare a namespace")
 	}
@@ -88,8 +88,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, keyName string, pubK
 			Namespace: secret.GetNamespace(),
 		},
 		Spec: SealedSecretSpec{
-			EncryptedData:     map[string][]byte{},
-			EncryptionKeyName: keyName,
+			EncryptedData: map[string][]byte{},
 		},
 		Type: secret.Type,
 	}

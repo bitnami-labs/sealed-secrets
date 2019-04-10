@@ -188,7 +188,7 @@ func TestSealRoundTrip(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, "keyname", &key.PublicKey, &secret)
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
 	if err != nil {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
@@ -229,7 +229,7 @@ func TestSealRoundTripWithClusterWide(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, "keyname", &key.PublicKey, &secret)
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
 	if err != nil {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
@@ -270,7 +270,7 @@ func TestSealRoundTripWithMisMatchClusterWide(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, "keyname", &key.PublicKey, &secret)
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
 	if err != nil {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
@@ -309,7 +309,7 @@ func TestSealRoundTripWithNamespaceWide(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, "keyname", &key.PublicKey, &secret)
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
 	if err != nil {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
@@ -350,7 +350,7 @@ func TestSealRoundTripWithMisMatchNamespaceWide(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, "keyname", &key.PublicKey, &secret)
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
 	if err != nil {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}

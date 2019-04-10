@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	// SealedSecretName is the name used in SealedSecret CRD
+	// SealedSecretName is the name used in SealedSecret TPR
 	SealedSecretName = "sealed-secret." + GroupName
 	// SealedSecretPlural is the collection plural used with SealedSecret API
 	SealedSecretPlural = "sealedsecrets"
@@ -26,9 +26,8 @@ const (
 // SealedSecretSpec is the specification of a SealedSecret
 type SealedSecretSpec struct {
 	// Data is deprecated and will be removed eventually. Use per-value EncryptedData instead.
-	Data              []byte            `json:"data,omitempty"`
-	EncryptedData     map[string][]byte `json:"encryptedData"`
-	EncryptionKeyName string            `json:"keyname"`
+	Data          []byte            `json:"data,omitempty"`
+	EncryptedData map[string][]byte `json:"encryptedData"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
