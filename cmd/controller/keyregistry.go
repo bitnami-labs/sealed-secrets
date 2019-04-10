@@ -80,23 +80,23 @@ func NewKeyRegistry(client kubernetes.Interface, namespace, listname string, key
 	}
 }
 
-func (kr *KeyRegistry) generateKey(keysize int) error {
-	key, cert, err := generatePrivateKeyAndCert(keysize)
+func (kr *KeyRegistry) generateKey() (string, error) {
+	key, cert, err := generatePrivateKeyAndCert(kr.keysize)
 	if err != nil {
-		return err
+		return "", err
 	}
 	certs := []*x509.Certificate{cert}
 	generatedName, err := writeKey(kr.client, key, certs, kr.namespace, kr.listname)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if err := updateKeyRegistry(kr.client, kr.namespace, kr.listname, generatedName); err != nil {
-		return err
+		return "", err
 	}
 	kr.keys[generatedName] = key
 	kr.certs[generatedName] = cert
 	kr.currentKeyName = generatedName
-	return nil
+	return generatedName, nil
 }
 
 func (kr *KeyRegistry) blacklistKey(keyname string) error {

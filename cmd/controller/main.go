@@ -104,7 +104,7 @@ func myNamespace() string {
 }
 
 func initKeyRotation(client kubernetes.Interface, registry *KeyRegistry, namespace, listname string, keysize int, period time.Duration) (func(), error) {
-	keyGenFunc := createKeyGenJob(client, registry, namespace, listname, keysize, listname)
+	keyGenFunc := createKeyGenJob(registry)
 	if err := keyGenFunc(); err != nil { // create the first key
 		return nil, err
 	}

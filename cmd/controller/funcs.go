@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/x509"
 	"fmt"
 	"log"
 	"strings"
@@ -45,28 +44,14 @@ func rotationErrorLogger(rotateKey func() error) func() {
 	}
 }
 
-func createKeyGenJob(client kubernetes.Interface,
-	keyRegistry *KeyRegistry,
-	namespace, listname string,
-	keySize int,
-	prefix string,
-) func() error {
+func createKeyGenJob(keyRegistry *KeyRegistry) func() error {
 	return func() error {
-		privKey, cert, err := generatePrivateKeyAndCert(keySize)
+		generatedName, err := keyRegistry.generateKey()
 		if err != nil {
 			return err
 		}
-		certs := []*x509.Certificate{cert}
-		newKeyName, err := writeKey(client, privKey, certs, namespace, prefix)
-		if err != nil {
-			return err
-		}
-		if err = updateKeyRegistry(client, namespace, listname, newKeyName); err != nil {
-			return err
-		}
-		log.Printf("New key written to %s/%s\n", namespace, newKeyName)
-		log.Printf("Certificate is \n%s\n", certUtil.EncodeCertPEM(cert))
-		keyRegistry.registerNewKey(newKeyName, privKey, cert)
+		log.Printf("New key written to %s/%s\n", keyRegistry.namespace, generatedName)
+		log.Printf("Certificate is \n%s\n", certUtil.EncodeCertPEM(keyRegistry.certs[generatedName]))
 		return nil
 	}
 }
