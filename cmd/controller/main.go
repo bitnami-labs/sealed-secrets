@@ -50,14 +50,14 @@ type controller struct {
 	clientset kubernetes.Interface
 }
 
-func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, listName string) (*KeyRegistry, error) {
+func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, listName string, keysize int) (*KeyRegistry, error) {
 	list, err := readKeyRegistry(client, namespace, listName)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// keylist isn't found, create a new one
 			log.Printf("Keyname list %s/%s not found, generating new keyname list", namespace, listName)
 
-			privKey, cert, err := generatePrivateKeyAndCert(*keySize)
+			privKey, cert, err := generatePrivateKeyAndCert(keysize)
 			if err != nil {
 				return nil, err
 			}
@@ -66,47 +66,26 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, listNa
 				return nil, err
 			}
 			log.Printf("New keyname list generated")
-			return NewKeyRegistry(), nil
+			return NewKeyRegistry(client, namespace, listName, keysize), nil
 		}
 		return nil, err
 	}
 	// If a keylist is found, read each value, retrive the key and add to the registry
 	log.Printf("Keyname list %s/%s found, copying values into local store", namespace, listName)
-	keyRegistry := NewKeyRegistry()
+	keyRegistry := NewKeyRegistry(client, namespace, listName, keysize)
 	// for each key, get the stored private key
 	for keyName := range list {
 		key, certs, err := readKey(client, namespace, keyName)
 		if err != nil {
-			return nil, err
+			if err == ErrKeyBlacklisted {
+				keyRegistry.blacklistKey(keyName)
+			} else {
+				return nil, err
+			}
 		}
 		keyRegistry.registerNewKey(keyName, key, certs[0])
 	}
 	return keyRegistry, nil
-}
-
-func initBlacklist(client kubernetes.Interface, r io.Reader, registry *KeyRegistry, namespace, blacklistName string, trigger func()) (func(string) (bool, error), error) {
-	blacklist, err := readBlacklist(client, namespace, blacklistName)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			log.Printf("Blacklist name %s/%s not found, generating a new blacklist", namespace, blacklistName)
-			privkey, cert, err := generatePrivateKeyAndCert(*keySize)
-			if err != nil {
-				return nil, err
-			}
-			if err = writeBlacklist(client, privkey, cert, namespace, blacklistName); err != nil {
-				return nil, err
-			}
-			log.Printf("New blacklist generated")
-		} else {
-			return nil, err
-		}
-	} else {
-		log.Printf("Blacklist found, copying values into local store")
-		for keyname := range blacklist {
-			registry.blacklistKey(keyname)
-		}
-	}
-	return createBlacklister(client, namespace, blacklistName, registry, trigger), nil
 }
 
 func myNamespace() string {
@@ -155,7 +134,7 @@ func main2() error {
 		return err
 	}
 
-	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, *keyListName)
+	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, *keyListName, *keySize)
 	if err != nil {
 		return err
 	}

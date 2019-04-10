@@ -26,7 +26,7 @@ func TestInitKeyRegistry(t *testing.T) {
 	rand := testRand()
 	client := fake.NewSimpleClientset()
 
-	registry, err := initKeyRegistry(client, rand, "testns", "testkeylist")
+	registry, err := initKeyRegistry(client, rand, "testns", "testkeylist", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -36,14 +36,13 @@ func TestInitKeyRegistry(t *testing.T) {
 	}
 
 	// Add a key to the controller for second test
-	nameGen := func() (string, error) { return "name", nil }
-	createKeyGenJob(client, registry, "testns", "testkeylist", 1024, nameGen)()
+	createKeyGenJob(client, registry, "testns", "testkeylist", 1024, "testkeylist")()
 	if registry.latestKeyName() != "name" {
 		t.Fatalf("Error adding key to registry")
 	}
 	client.ClearActions()
 
-	registry2, err := initKeyRegistry(client, rand, "testns", "testkeylist")
+	registry2, err := initKeyRegistry(client, rand, "testns", "testkeylist", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -56,34 +55,10 @@ func TestInitKeyRegistry(t *testing.T) {
 	}
 }
 
-func TestInitKeyBlacklist(t *testing.T) {
-	rand := testRand()
-	client := fake.NewSimpleClientset()
-
-	registry := NewKeyRegistry()
-	_, err := initBlacklist(client, rand, registry, "testns", "testblacklistname", func() {})
-	if err != nil {
-		t.Fatalf("initBlacklist() returned err: %v", err)
-	}
-	if !hasAction(client, "create", "secrets") {
-		t.Errorf("initBlacklist() failed to create blacklist secret")
-	}
-	client.ClearActions()
-
-	_, err = initBlacklist(client, rand, registry, "testns", "testblacklistname", func() {})
-	if err != nil {
-		t.Fatalf("initBlacklist() returned err: %v", err)
-	}
-	// Check a blacklist is retrieved rather than created
-	if !hasAction(client, "get", "secrets") {
-		t.Errorf("initBlacklist() failed to read existing blacklist")
-	}
-}
-
 func TestInitKeyRotation(t *testing.T) {
 	rand := testRand()
 	client := fake.NewSimpleClientset()
-	registry, err := initKeyRegistry(client, rand, "namespace", "listname")
+	registry, err := initKeyRegistry(client, rand, "namespace", "listname", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}

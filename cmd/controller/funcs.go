@@ -7,14 +7,15 @@ import (
 	"strings"
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	certUtil "k8s.io/client-go/util/cert"
 )
 
-type keyNameGen func() (string, error)
+const (
+	compromised = "compromised"
+)
 
-// ScheduleJobWithTrigger creates a long-running loop that runs a jub each
+// ScheduleJobWithTrigger creates a long-running loop that runs a job each
 // loop
 // returns a trigger function that runs the job early when called
 func ScheduleJobWithTrigger(period time.Duration, job func()) func() {
@@ -70,25 +71,18 @@ func createKeyGenJob(client kubernetes.Interface,
 	}
 }
 
-func createBlacklister(client kubernetes.Interface, namespace, blacklistName string, keyRegistry *KeyRegistry, trigger func()) func(string) (bool, error) {
-	return func(keyName string) (bool, error) {
-		if _, ok := keyRegistry.keys[keyName]; !ok {
-			return false, fmt.Errorf("key %s does not exist", keyName)
+func createBlacklister(client kubernetes.Interface, namespace string, keyRegistry *KeyRegistry, trigger func()) func(string) (bool, error) {
+	return func(keyname string) (bool, error) {
+		if _, ok := keyRegistry.keys[keyname]; !ok {
+			return false, fmt.Errorf("key %s does not exist", keyname)
 		}
-		if _, ok := keyRegistry.blacklist[keyName]; ok {
-			return false, fmt.Errorf("key %s is already blacklisted", keyName)
+		if _, ok := keyRegistry.blacklist[keyname]; ok {
+			return true, nil
 		}
-		blacklist, err := client.Core().Secrets(namespace).Get(blacklistName, metav1.GetOptions{})
-		if err != nil {
-			return false, err
-		}
-		blacklist.Data[keyName] = []byte{}
-		if _, err = client.Core().Secrets(namespace).Update(blacklist); err != nil {
-			return false, err
-		}
-		keyRegistry.blacklistKey(keyName)
+		blacklistKey(client, namespace, keyname)
+		keyRegistry.blacklistKey(keyname)
 		// If the latest key is being blacklisted, generate a new key
-		if keyName == keyRegistry.latestKeyName() {
+		if keyname == keyRegistry.latestKeyName() {
 			trigger()
 			return true, nil
 		}
@@ -96,14 +90,15 @@ func createBlacklister(client kubernetes.Interface, namespace, blacklistName str
 	}
 }
 
-const kubeChars = "abcdefghijklmnopqrstuvwxyz0123456789-"
+const (
+	kubeChars     = "abcdefghijklmnopqrstuvwxyz0123456789-" // Acceptable characters in k8s resource name
+	maxNameLength = 245                                     // Max resource name length is 253, leave some room for a suffix
+)
 
 // validateKeyName is used to validate whether a string can be used as part of a keyname in kubernetes
 func validateKeyName(name string) error {
-	maxLen := 245
-	nameLen := len(name)
-	if nameLen > maxLen {
-		return fmt.Errorf("keyname name is too long, must be shorter than %d, got %d", maxLen, nameLen)
+	if len(name) > maxNameLength {
+		return fmt.Errorf("name is too long, must be shorter than %d, got %d", maxNameLength, len(name))
 	}
 	for _, char := range name {
 		if !strings.ContainsRune(kubeChars, char) {

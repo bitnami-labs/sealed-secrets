@@ -72,7 +72,8 @@ func TestWriteKey(t *testing.T) {
 
 	client := fake.NewSimpleClientset()
 
-	if err := writeKey(client, key, []*x509.Certificate{cert}, "myns", "mykey"); err != nil {
+	_, err = writeKey(client, key, []*x509.Certificate{cert}, "myns", "mykey")
+	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
 

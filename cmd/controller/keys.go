@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"errors"
 	"io"
 	"math/big"
 	"time"
@@ -13,6 +14,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	certUtil "k8s.io/client-go/util/cert"
+)
+
+var (
+	ErrKeyBlacklisted = errors.New("Key is blacklisted")
 )
 
 func generatePrivateKeyAndCert(keySize int) (*rsa.PrivateKey, *x509.Certificate, error) {
@@ -32,6 +37,9 @@ func readKey(client kubernetes.Interface, namespace, keyName string) (*rsa.Priva
 	secret, err := client.Core().Secrets(namespace).Get(keyName, metav1.GetOptions{})
 	if err != nil {
 		return nil, nil, err
+	}
+	if _, ok := secret.GetAnnotations()[compromised]; ok {
+		return nil, nil, ErrKeyBlacklisted
 	}
 
 	key, err := certUtil.ParsePrivateKeyPEM(secret.Data[v1.TLSPrivateKeyKey])
@@ -101,4 +109,17 @@ func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
 	}
 
 	return x509.ParseCertificate(data)
+}
+
+func blacklistKey(client kubernetes.Interface, namespace, keyname string) error {
+	keySecret, err := client.Core().Secrets(namespace).Get(keyname, metav1.GetOptions{})
+	if err != nil {
+		return err
+	}
+	blacklistedKey := keySecret.DeepCopy()
+	blacklistedKey.Annotations["compromised"] = ""
+	if _, err := client.Core().Secrets(namespace).Update(blacklistedKey); err != nil {
+		return err
+	}
+	return nil
 }
