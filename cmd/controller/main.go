@@ -111,6 +111,17 @@ func initKeyRotation(registry *KeyRegistry, period time.Duration) (func(), error
 	return ScheduleJobWithTrigger(period, keyRotationJob), nil
 }
 
+func initKeyGenSignalListener(trigger func()) {
+	sigChannel := make(chan os.Signal)
+	signal.Notify(sigChannel, syscall.SIGUSR1)
+	go func() {
+		for {
+			<-sigChannel
+			trigger()
+		}
+	}()
+}
+
 func main2() error {
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -139,10 +150,12 @@ func main2() error {
 		return err
 	}
 
-	_, err = initKeyRotation(keyRegistry, *keyRotatePeriod)
+	trigger, err := initKeyRotation(keyRegistry, *keyRotatePeriod)
 	if err != nil {
 		return err
 	}
+
+	initKeyGenSignalListener(trigger)
 
 	ssinformer := ssinformers.NewSharedInformerFactory(ssclient, 0)
 	controller := NewController(clientset, ssinformer, keyRegistry)
