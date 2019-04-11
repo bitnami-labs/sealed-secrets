@@ -11,20 +11,21 @@ import (
 type KeyRegistry struct {
 	client         kubernetes.Interface
 	namespace      string
-	listname       string
-	prefix         string
+	keyPrefix      string
+	keyLabel       string
 	keysize        int
 	currentKeyName string
 	keys           map[string]*rsa.PrivateKey
 	certs          map[string]*x509.Certificate
 }
 
-func NewKeyRegistry(client kubernetes.Interface, namespace, listname string, keysize int) *KeyRegistry {
+func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel string, keysize int) *KeyRegistry {
 	return &KeyRegistry{
 		client:    client,
 		namespace: namespace,
-		listname:  listname,
+		keyPrefix: keyPrefix,
 		keysize:   keysize,
+		keyLabel:  keyLabel,
 		keys:      make(map[string]*rsa.PrivateKey),
 		certs:     make(map[string]*x509.Certificate),
 	}
@@ -36,7 +37,7 @@ func (kr *KeyRegistry) generateKey() (string, error) {
 		return "", err
 	}
 	certs := []*x509.Certificate{cert}
-	generatedName, err := writeKey(kr.client, key, certs, kr.namespace, kr.listname)
+	generatedName, err := writeKey(kr.client, key, certs, kr.namespace, kr.keyLabel, kr.keyPrefix)
 	if err != nil {
 		return "", err
 	}

@@ -24,8 +24,8 @@ import (
 )
 
 var (
-	keyListName     = flag.String("key-list", "sealed-secrets-keys", "Name of Secret containing names of public/private keys.")
-	blacklistName   = flag.String("blacklist", "sealed-secrets-keys-blacklist", "Name of the blacklist of keys")
+	keyLabelName    = flag.String("key-label", "sealed-secrets-key", "Label used to identify public/private key pairs in k8s.")
+	keyPrefix       = flag.String("key-prefix", "", "Prefix used to name keys. Defaults to label name.")
 	keySize         = flag.Int("key-size", 4096, "Size of encryption key.")
 	validFor        = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")
@@ -52,7 +52,22 @@ type controller struct {
 	clientset kubernetes.Interface
 }
 
-func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, listName string, keysize int) (*KeyRegistry, error) {
+func initNames(prefix, label *string) (string, string, error) {
+	if *prefix == "" {
+		*prefix = *label
+	}
+	var err error
+	*prefix, err = validateKeyPrefix(*keyPrefix) // if valid, appends '-' to prefix
+	if err != nil {
+		return "", "", err
+	}
+	if _, err := validateKeyPrefix(*keyLabelName); err != nil {
+		return "", "", err
+	}
+	return *prefix, *label, err
+}
+
+func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, label, prefix string, keysize int) (*KeyRegistry, error) {
 	log.Printf("Searching for existing private keys")
 	secretList, err := client.Core().Secrets(namespace).List(metav1.ListOptions{
 		LabelSelector: keySelector,
@@ -60,7 +75,7 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, listNa
 	if err != nil {
 		return nil, err
 	}
-	keyRegistry := NewKeyRegistry(client, namespace, listName, keysize)
+	keyRegistry := NewKeyRegistry(client, namespace, label, prefix, keysize)
 	for _, secret := range secretList.Items {
 		key, certs, err := readKey(secret)
 		if err != nil {
@@ -114,11 +129,12 @@ func main2() error {
 
 	myNs := myNamespace()
 
-	if err := validateKeyName(*keyListName); err != nil {
+	prefix, label, err := initNames(keyPrefix, keyLabelName)
+	if err != nil {
 		return err
 	}
 
-	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, *keyListName, *keySize)
+	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, prefix, label, *keySize)
 	if err != nil {
 		return err
 	}

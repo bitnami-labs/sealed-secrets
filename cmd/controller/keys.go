@@ -53,7 +53,7 @@ func readKey(secret v1.Secret) (*rsa.PrivateKey, []*x509.Certificate, error) {
 	}
 }
 
-func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, prefix string) (string, error) {
+func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, label, prefix string) (string, error) {
 	certbytes := []byte{}
 	for _, cert := range certs {
 		certbytes = append(certbytes, certUtil.EncodeCertPEM(cert)...)
@@ -64,7 +64,7 @@ func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Ce
 			Namespace:    namespace,
 			GenerateName: prefix,
 			Labels: map[string]string{
-				SealedSecretsKeyLabel: "active", // Value is not currently used to find keys
+				label: "active", // Value is not currently used to find keys
 			},
 		},
 		Data: map[string][]byte{

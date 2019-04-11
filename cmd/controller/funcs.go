@@ -61,14 +61,18 @@ const (
 )
 
 // validateKeyName is used to validate whether a string can be used as part of a keyname in kubernetes
-func validateKeyName(name string) error {
+// if input name does not have a '-' at the end, will append one and return the new prefix
+func validateKeyPrefix(name string) (string, error) {
 	if len(name) > maxNameLength {
-		return fmt.Errorf("name is too long, must be shorter than %d, got %d", maxNameLength, len(name))
+		return "", fmt.Errorf("name is too long, must be shorter than %d, got %d", maxNameLength, len(name))
 	}
 	for _, char := range name {
 		if !strings.ContainsRune(kubeChars, char) {
-			return fmt.Errorf("name contains illegal character %c", char)
+			return "", fmt.Errorf("name contains illegal character %c", char)
 		}
 	}
-	return nil
+	if name[len(name)-1] != '-' {
+		return name + "-", nil
+	}
+	return name, nil
 }
