@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/client-go/kubernetes"
 	certUtil "k8s.io/client-go/util/cert"
 )
 
@@ -53,25 +52,6 @@ func createKeyGenJob(keyRegistry *KeyRegistry) func() error {
 		log.Printf("New key written to %s/%s\n", keyRegistry.namespace, generatedName)
 		log.Printf("Certificate is \n%s\n", certUtil.EncodeCertPEM(keyRegistry.certs[generatedName]))
 		return nil
-	}
-}
-
-func createBlacklister(client kubernetes.Interface, namespace string, keyRegistry *KeyRegistry, trigger func()) func(string) (bool, error) {
-	return func(keyname string) (bool, error) {
-		if _, ok := keyRegistry.keys[keyname]; !ok {
-			return false, fmt.Errorf("key %s does not exist", keyname)
-		}
-		if _, ok := keyRegistry.blacklist[keyname]; ok {
-			return true, nil
-		}
-		blacklistKey(client, namespace, keyname)
-		keyRegistry.blacklistKey(keyname)
-		// If the latest key is being blacklisted, generate a new key
-		if keyname == keyRegistry.latestKeyName() {
-			trigger()
-			return true, nil
-		}
-		return false, nil
 	}
 }
 

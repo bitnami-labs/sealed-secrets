@@ -15,7 +15,6 @@ import (
 	"time"
 
 	flag "github.com/spf13/pflag"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -35,6 +34,9 @@ var (
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
+
+	// Selector used to find existing public/private key pairs on startup
+	keySelector = SealedSecretsKeyLabel + "=" + "active"
 )
 
 func init() {
@@ -51,39 +53,21 @@ type controller struct {
 }
 
 func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, listName string, keysize int) (*KeyRegistry, error) {
-	list, err := readKeyRegistry(client, namespace, listName)
+	log.Printf("Searching for existing private keys")
+	secretList, err := client.Core().Secrets(namespace).List(metav1.ListOptions{
+		LabelSelector: keySelector,
+	})
 	if err != nil {
-		if errors.IsNotFound(err) {
-			// keylist isn't found, create a new one
-			log.Printf("Keyname list %s/%s not found, generating new keyname list", namespace, listName)
-
-			privKey, cert, err := generatePrivateKeyAndCert(keysize)
-			if err != nil {
-				return nil, err
-			}
-
-			if err = writeKeyRegistry(client, privKey, cert, namespace, listName); err != nil {
-				return nil, err
-			}
-			log.Printf("New keyname list generated")
-			return NewKeyRegistry(client, namespace, listName, keysize), nil
-		}
 		return nil, err
 	}
-	// If a keylist is found, read each value, retrive the key and add to the registry
-	log.Printf("Keyname list %s/%s found, copying values into local store", namespace, listName)
 	keyRegistry := NewKeyRegistry(client, namespace, listName, keysize)
-	// for each key, get the stored private key
-	for keyName := range list {
-		key, certs, err := readKey(client, namespace, keyName)
+	for _, secret := range secretList.Items {
+		key, certs, err := readKey(secret)
 		if err != nil {
-			if err == ErrKeyBlacklisted {
-				keyRegistry.blacklistKey(keyName)
-			} else {
-				return nil, err
-			}
+			log.Printf("Error reading key %s: %v", secret.Name, err)
 		}
-		keyRegistry.registerNewKey(keyName, key, certs[0])
+		keyRegistry.registerNewKey(secret.Name, key, certs[0])
+		log.Printf("----- %s", secret.Name)
 	}
 	return keyRegistry, nil
 }
@@ -103,7 +87,7 @@ func myNamespace() string {
 	return metav1.NamespaceDefault
 }
 
-func initKeyRotation(client kubernetes.Interface, registry *KeyRegistry, namespace, listname string, keysize int, period time.Duration) (func(), error) {
+func initKeyRotation(registry *KeyRegistry, period time.Duration) (func(), error) {
 	keyGenFunc := createKeyGenJob(registry)
 	if err := keyGenFunc(); err != nil { // create the first key
 		return nil, err
@@ -139,7 +123,7 @@ func main2() error {
 		return err
 	}
 
-	_, err = initKeyRotation(clientset, keyRegistry, myNs, *keyListName, *keySize, *keyRotatePeriod)
+	_, err = initKeyRotation(keyRegistry, *keyRotatePeriod)
 	if err != nil {
 		return err
 	}

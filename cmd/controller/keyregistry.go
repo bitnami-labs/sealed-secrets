@@ -5,56 +5,8 @@ import (
 	"crypto/x509"
 	"fmt"
 
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	certUtil "k8s.io/client-go/util/cert"
 )
-
-func readKeyRegistry(client kubernetes.Interface, namespace, listName string) (map[string]struct{}, error) {
-	secret, err := client.Core().Secrets(namespace).Get(listName, metav1.GetOptions{})
-	if err != nil {
-		return nil, err
-	}
-
-	keyNames := map[string]struct{}{}
-	for keyName := range secret.Data {
-		if (keyName != v1.TLSPrivateKeyKey) && (keyName != v1.TLSCertKey) {
-			keyNames[keyName] = struct{}{}
-		}
-	}
-	return keyNames, nil
-}
-
-func updateKeyRegistry(client kubernetes.Interface, namespace, listName, newKeyName string) error {
-	secret, err := client.Core().Secrets(namespace).Get(listName, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	secret.Data[newKeyName] = []byte{}
-	if _, err := client.Core().Secrets(namespace).Update(secret); err != nil {
-		return err
-	}
-	return nil
-}
-
-func writeKeyRegistry(client kubernetes.Interface, key *rsa.PrivateKey, cert *x509.Certificate, namespace, listName string) error {
-	secret := &v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      listName,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
-			v1.TLSCertKey:       certUtil.EncodeCertPEM(cert),
-		},
-		Type: v1.SecretTypeTLS,
-	}
-	if _, err := client.Core().Secrets(namespace).Create(secret); err != nil {
-		return err
-	}
-	return nil
-}
 
 type KeyRegistry struct {
 	client         kubernetes.Interface
@@ -65,7 +17,6 @@ type KeyRegistry struct {
 	currentKeyName string
 	keys           map[string]*rsa.PrivateKey
 	certs          map[string]*x509.Certificate
-	blacklist      map[string]struct{}
 }
 
 func NewKeyRegistry(client kubernetes.Interface, namespace, listname string, keysize int) *KeyRegistry {
@@ -76,7 +27,6 @@ func NewKeyRegistry(client kubernetes.Interface, namespace, listname string, key
 		keysize:   keysize,
 		keys:      make(map[string]*rsa.PrivateKey),
 		certs:     make(map[string]*x509.Certificate),
-		blacklist: make(map[string]struct{}),
 	}
 }
 
@@ -90,20 +40,19 @@ func (kr *KeyRegistry) generateKey() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := updateKeyRegistry(kr.client, kr.namespace, kr.listname, generatedName); err != nil {
-		return "", err
-	}
-	kr.keys[generatedName] = key
-	kr.certs[generatedName] = cert
-	kr.currentKeyName = generatedName
+	// Only store key to local store if write to k8s worked
+	kr.registerNewKey(generatedName, key, cert)
 	return generatedName, nil
 }
 
+// blacklistKey deletes a key from the local store and marks the corresponding k8s secret
+// as compromised. This effectively deletes the key from the sealedsecrets controller
+// while the key is still available to admins if need be
 func (kr *KeyRegistry) blacklistKey(keyname string) error {
 	if err := blacklistKey(kr.client, kr.namespace, keyname); err != nil {
 		return err
 	}
-	kr.blacklist[keyname] = struct{}{}
+	// Only delete if modifying the k8s secret succeeded
 	delete(kr.keys, keyname)
 	delete(kr.certs, keyname)
 	return nil
@@ -115,11 +64,6 @@ func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, c
 	kr.currentKeyName = keyName
 }
 
-func (kr *KeyRegistry) isBlacklisted(keyname string) bool {
-	_, ok := kr.blacklist[keyname]
-	return ok
-}
-
 func (kr *KeyRegistry) latestKeyName() string {
 	return kr.currentKeyName
 }
@@ -129,9 +73,6 @@ func (kr *KeyRegistry) getPrivateKey(keyname string) (*rsa.PrivateKey, error) {
 	if !ok {
 		return nil, fmt.Errorf("No key exists with name %s", keyname)
 	}
-	if kr.isBlacklisted(keyname) {
-		return nil, ErrKeyBlacklisted
-	}
 	return key, nil
 }
 
@@ -139,9 +80,6 @@ func (kr *KeyRegistry) getCert(keyname string) (*x509.Certificate, error) {
 	cert, ok := kr.certs[keyname]
 	if !ok {
 		return nil, fmt.Errorf("No key with name %s", keyname)
-	}
-	if kr.isBlacklisted(keyname) {
-		return nil, ErrKeyBlacklisted
 	}
 	return cert, nil
 }

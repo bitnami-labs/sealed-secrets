@@ -16,8 +16,11 @@ import (
 	certUtil "k8s.io/client-go/util/cert"
 )
 
+const SealedSecretsKeyLabel = "sealed-secrets-key"
+
 var (
-	ErrKeyBlacklisted = errors.New("Key is blacklisted")
+	ErrKeyBlacklisted   = errors.New("Key is blacklisted")
+	ErrPrivateKeyNotRSA = errors.New("Private key is not an rsa key")
 )
 
 func generatePrivateKeyAndCert(keySize int) (*rsa.PrivateKey, *x509.Certificate, error) {
@@ -33,26 +36,21 @@ func generatePrivateKeyAndCert(keySize int) (*rsa.PrivateKey, *x509.Certificate,
 	return privKey, cert, nil
 }
 
-func readKey(client kubernetes.Interface, namespace, keyName string) (*rsa.PrivateKey, []*x509.Certificate, error) {
-	secret, err := client.Core().Secrets(namespace).Get(keyName, metav1.GetOptions{})
-	if err != nil {
-		return nil, nil, err
-	}
-	if _, ok := secret.GetAnnotations()[compromised]; ok {
-		return nil, nil, ErrKeyBlacklisted
-	}
-
+func readKey(secret v1.Secret) (*rsa.PrivateKey, []*x509.Certificate, error) {
 	key, err := certUtil.ParsePrivateKeyPEM(secret.Data[v1.TLSPrivateKeyKey])
 	if err != nil {
 		return nil, nil, err
 	}
-
-	certs, err := certUtil.ParseCertsPEM(secret.Data[v1.TLSCertKey])
-	if err != nil {
-		return nil, nil, err
+	switch rsaKey := key.(type) {
+	case *rsa.PrivateKey:
+		certs, err := certUtil.ParseCertsPEM(secret.Data[v1.TLSCertKey])
+		if err != nil {
+			return nil, nil, err
+		}
+		return rsaKey, certs, nil
+	default:
+		return nil, nil, ErrPrivateKeyNotRSA
 	}
-
-	return key.(*rsa.PrivateKey), certs, nil
 }
 
 func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, prefix string) (string, error) {
@@ -65,6 +63,9 @@ func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Ce
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    namespace,
 			GenerateName: prefix,
+			Labels: map[string]string{
+				SealedSecretsKeyLabel: "active", // Value is not currently used to find keys
+			},
 		},
 		Data: map[string][]byte{
 			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
@@ -117,7 +118,7 @@ func blacklistKey(client kubernetes.Interface, namespace, keyname string) error 
 		return err
 	}
 	blacklistedKey := keySecret.DeepCopy()
-	blacklistedKey.Annotations["compromised"] = ""
+	blacklistedKey.Labels[SealedSecretsKeyLabel] = compromised
 	if _, err := client.Core().Secrets(namespace).Update(blacklistedKey); err != nil {
 		return err
 	}
