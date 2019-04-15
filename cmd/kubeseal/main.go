@@ -46,6 +46,10 @@ var (
 	clientConfig clientcmd.ClientConfig
 )
 
+const (
+	defaultlocalCertPath = "sealed-secrets.crt"
+)
+
 func init() {
 	// The "usual" clientcmd/kubectl flags
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
@@ -132,9 +136,26 @@ func openCertHTTP(c corev1.CoreV1Interface, namespace, name string) (io.ReadClos
 	return f, nil
 }
 
+// getCachedCertificateFilename returns the filename to the cached certificate / public key from the cluster.
+//
+// By default, this is just 'sealed-secrets.crt', relative to the current working directory, but it can be overridden
+// by the SEALED_SECRETS_CERT environment variable.
+func getCachedCertificateFilename() string {
+	if envPath := os.Getenv("SEALED_SECRETS_CERT"); len(envPath) != 0 {
+		return envPath
+	}
+	return defaultlocalCertPath
+}
+
 func openCert() (io.ReadCloser, error) {
 	if *certFile != "" {
 		return openCertFile(*certFile)
+	}
+
+	// let's see if we have a cached certificate; if so, use it instead of reaching out to the cluster
+	cachedCertFilename := getCachedCertificateFilename()
+	if _, err := os.Stat(cachedCertFilename); err == nil {
+		return openCertFile(cachedCertFilename)
 	}
 
 	conf, err := clientConfig.ClientConfig()
