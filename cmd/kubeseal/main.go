@@ -7,35 +7,41 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"k8s.io/apimachinery/pkg/util/net"
+	"net/http"
 	"os"
 	"strings"
 
 	flag "github.com/spf13/pflag"
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 
-	ssv1alpha1 "github.com/bitnami/sealed-secrets/apis/v1alpha1"
-
-	// Register v1.Secret type
-	_ "k8s.io/client-go/pkg/api/install"
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 
 	// Register Auth providers
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
+
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
 var (
 	// TODO: Verify k8s server signature against cert in kube client config.
 	certFile       = flag.String("cert", "", "Certificate / public key to use for encryption. Overrides --controller-*")
-	controllerNs   = flag.String("controller-namespace", api.NamespaceSystem, "Namespace of sealed-secrets controller.")
+	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.String("format", "json", "Output format for sealed secret. Either json or yaml")
 	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout.  Useful for later use with --cert")
+	printVersion   = flag.Bool("version", false, "Print version information and exit")
+	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
+
+	// VERSION set from Makefile
+	VERSION = "UNKNOWN"
 
 	clientConfig clientcmd.ClientConfig
 )
@@ -210,9 +216,56 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 	return nil
 }
 
+func validateSealedSecret(in io.Reader, namespace, name string) error {
+	conf, err := clientConfig.ClientConfig()
+	if err != nil {
+		return err
+	}
+	restClient, err := corev1.NewForConfig(conf)
+	if err != nil {
+		return err
+	}
+
+	content, err := ioutil.ReadAll(in)
+	if err != nil {
+		return err
+	}
+
+	req := restClient.RESTClient().Post().
+		Namespace(namespace).
+		Resource("services").
+		SubResource("proxy").
+		Name(net.JoinSchemeNamePort("http", name, "")).
+		Suffix("/v1/verify")
+
+	req.Body(content)
+	res := req.Do()
+	if err := res.Error(); err != nil {
+		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
+			return fmt.Errorf("Unable to decrypt sealed secret")
+		}
+		return fmt.Errorf("Error occurred while validating sealed secret")
+	}
+
+	return nil
+}
+
 func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
+
+	if *printVersion {
+		fmt.Printf("kubeseal version: %s\n", VERSION)
+		return
+	}
+
+	if *validateSecret {
+		err := validateSealedSecret(os.Stdin, *controllerNs, *controllerName)
+		if err != nil {
+			panic(err.Error())
+		}
+		return
+	}
 
 	f, err := openCert()
 	if err != nil {
@@ -232,7 +285,7 @@ func main() {
 		panic(err.Error())
 	}
 
-	if err := seal(os.Stdin, os.Stdout, api.Codecs, pubKey); err != nil {
+	if err := seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey); err != nil {
 		panic(err.Error())
 	}
 }

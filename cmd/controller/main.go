@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	goflag "flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -17,25 +18,26 @@ import (
 	"time"
 
 	flag "github.com/spf13/pflag"
+	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
 	"k8s.io/client-go/rest"
 	certUtil "k8s.io/client-go/util/cert"
 
-	ssv1alpha1 "github.com/bitnami/sealed-secrets/apis/v1alpha1"
+	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
+	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
 )
 
 var (
-	keyName  = flag.String("key-name", "sealed-secrets-key", "Name of Secret containing public/private key.")
-	keySize  = flag.Int("key-size", 4096, "Size of encryption key.")
-	validFor = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
-	myCN     = flag.String("my-cn", "", "CN to use in generated certificate.")
+	keyName      = flag.String("key-name", "sealed-secrets-key", "Name of Secret containing public/private key.")
+	keySize      = flag.Int("key-size", 4096, "Size of encryption key.")
+	validFor     = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
+	myCN         = flag.String("my-cn", "", "CN to use in generated certificate.")
+	printVersion = flag.Bool("version", false, "Print version information and exit")
+
+	// VERSION set from Makefile
+	VERSION = "UNKNOWN"
 )
 
 func init() {
@@ -112,7 +114,7 @@ func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
 			CommonName: *myCN,
 		},
 		BasicConstraintsValid: true,
-		IsCA: true,
+		IsCA:                  true,
 	}
 
 	data, err := x509.CreateCertificate(r, &cert, &cert, &key.PublicKey, key)
@@ -167,16 +169,7 @@ func myNamespace() string {
 		}
 	}
 
-	return api.NamespaceDefault
-}
-
-func tprClient(c *rest.Config, gv *schema.GroupVersion) (rest.Interface, error) {
-	tprconfig := *c // shallow copy
-	tprconfig.GroupVersion = gv
-	tprconfig.APIPath = "/apis"
-	tprconfig.ContentType = runtime.ContentTypeJSON
-	tprconfig.NegotiatedSerializer = serializer.DirectCodecFactory{CodecFactory: api.Codecs}
-	return rest.RESTClientFor(&tprconfig)
+	return metav1.NamespaceDefault
 }
 
 func main2() error {
@@ -190,7 +183,7 @@ func main2() error {
 		return err
 	}
 
-	ssclient, err := tprClient(config, &ssv1alpha1.SchemeGroupVersion)
+	ssclient, err := sealedsecrets.NewForConfig(config)
 	if err != nil {
 		return err
 	}
@@ -202,14 +195,15 @@ func main2() error {
 		return err
 	}
 
-	controller := NewController(clientset, ssclient, privKey)
+	ssinformer := ssinformers.NewSharedInformerFactory(ssclient, 0)
+	controller := NewController(clientset, ssinformer, privKey)
 
 	stop := make(chan struct{})
 	defer close(stop)
 
 	go controller.Run(stop)
 
-	go httpserver(func() ([]*x509.Certificate, error) { return certs, nil })
+	go httpserver(func() ([]*x509.Certificate, error) { return certs, nil }, controller.AttemptUnseal)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
@@ -221,6 +215,13 @@ func main2() error {
 func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
+
+	if *printVersion {
+		fmt.Printf("controller version: %s\n", VERSION)
+		return
+	}
+
+	log.Printf("Starting sealed-secrets controller version: %s\n", VERSION)
 
 	if err := main2(); err != nil {
 		panic(err.Error())

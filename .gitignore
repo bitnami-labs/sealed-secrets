@@ -13,9 +13,15 @@
 # Project-local glide cache, RE: https://github.com/Masterminds/glide/issues/736
 .glide/
 
+# Output from goreleaser
+/dist
+
 /controller
 /kubeseal
 /controller.image
 /*-static
 /controller.yaml
+/controller-norbac.yaml
 /docker/controller
+*.iml
+.idea

@@ -11,12 +11,12 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/pkg/api"
-	"k8s.io/client-go/pkg/api/v1"
+	"k8s.io/client-go/kubernetes/scheme"
 
-	ssv1alpha1 "github.com/bitnami/sealed-secrets/apis/v1alpha1"
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 )
 
 const testCert = `
@@ -135,11 +135,11 @@ func TestSeal(t *testing.T) {
 		},
 	}
 
-	info, ok := runtime.SerializerInfoForMediaType(api.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
+	info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
 	if !ok {
 		t.Fatalf("binary can't serialize JSON")
 	}
-	enc := api.Codecs.EncoderForVersion(info.Serializer, v1.SchemeGroupVersion)
+	enc := scheme.Codecs.EncoderForVersion(info.Serializer, v1.SchemeGroupVersion)
 	inbuf := bytes.Buffer{}
 	if err := enc.Encode(&secret, &inbuf); err != nil {
 		t.Fatalf("Error encoding: %v", err)
@@ -148,7 +148,7 @@ func TestSeal(t *testing.T) {
 	t.Logf("input is: %s", string(inbuf.Bytes()))
 
 	outbuf := bytes.Buffer{}
-	if err := seal(&inbuf, &outbuf, api.Codecs, key); err != nil {
+	if err := seal(&inbuf, &outbuf, scheme.Codecs, key); err != nil {
 		t.Fatalf("seal() returned error: %v", err)
 	}
 
@@ -156,7 +156,7 @@ func TestSeal(t *testing.T) {
 	t.Logf("output is %s", outBytes)
 
 	var result ssv1alpha1.SealedSecret
-	if err = runtime.DecodeInto(api.Codecs.UniversalDecoder(), outBytes, &result); err != nil {
+	if err = runtime.DecodeInto(scheme.Codecs.UniversalDecoder(), outBytes, &result); err != nil {
 		t.Fatalf("Failed to parse result: %v", err)
 	}
 
@@ -167,8 +167,8 @@ func TestSeal(t *testing.T) {
 	if smeta.GetNamespace() != "myns" {
 		t.Errorf("Unexpected namespace: %v", smeta.GetNamespace())
 	}
-	if len(result.Spec.Data) < 100 {
-		t.Errorf("Encrypted data is implausibly short: %v", result.Spec.Data)
+	if len(result.Spec.EncryptedData["foo"]) < 100 {
+		t.Errorf("Encrypted data is implausibly short: %v", result.Spec.EncryptedData)
 	}
 	// NB: See sealedsecret_test.go for e2e crypto test
 }
