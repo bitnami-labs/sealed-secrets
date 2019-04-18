@@ -244,3 +244,7 @@ To restore from a backup after some disaster, just put that secret back before s
 
 `kubectl replace secret -n kube-system sealed-secrets-key master.key`
 `kubectl delete pod -n kube-system -l name=sealed-secrets-controller`
+
+## Helm Charts
+
+Sealed secret controller's helm chart can be found on this [link](https://github.com/helm/charts/tree/master/stable/sealed-secrets)
