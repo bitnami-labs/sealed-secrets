@@ -30,7 +30,7 @@ var (
 	validFor        = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")
 	printVersion    = flag.Bool("version", false, "Print version information and exit")
-	keyRotatePeriod = flag.Duration("key-rotate", 30*24*time.Hour, "New key generation period")
+	keyRotatePeriod = flag.Duration("rotate-period", 30*24*time.Hour, "New key generation period")
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"

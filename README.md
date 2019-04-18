@@ -118,93 +118,34 @@ This controller adds a new `SealedSecret` custom resource.  The
 interesting part of a `SealedSecret` is a base64-encoded
 asymmetrically encrypted `Secret`.
 
-The controller maintains a list of private/public key pairs, each
-identified by a name. A new pair is added periodically, with the names
-stored to the list. On startup, the controller does a few things.
+The controller maintains a set of private/public key pairs as kubernetes
+secrets. These secrets are labelled as sealed secrets keys and
+identified in the label as either active or compromised. On startup,
+The sealed secrets controller will...
+1. Search for these keys and add them to its local store if they are
+labelled as active.
+2. Create a new key
+3. Start the key rotation cycle
 
-1. Look for an existing `keynamelist`.
-2. If a list is found, the controller cycles through each name, and
-looks for a secret with that name. The secret contains a private/public
-key pair for that name, and is added to the controllers local key registry.
-3. If a list is not found, the controller with create the list.
-4. Regardless of whether a list is found or not, the controller will
-generate a new private/public key pair and store it to both kubernetes
-and the local store.
+#### Key rotation
 
-The private/public key pairs are, by default, 4096 bit RSA key pairs.
-The pairs and the list of key names are persisted in regular `Secret`
-objects in the same namespace as the controller. These keys are generated
-on a 14 day (default) cycle, and can be generated early in the container
-(more on this later). The public keys are stored in the form of a self-
-signed certificate, and should be made available to anyone wanting to
-use `SealedSecret`s with the cluster. Each certificate is printed to the
-controller log when they are generated, and avaible via an HTTP GET to
-`/v1/cert.pem?keyname=<name>`. The keyname may be ommitted to retrieve
-the latest public key.
+Keys are automatically rotated. This can be configured on startup with
+the `--rotate-preiod=<value>` flag. `value` is taken as milliseconds with
+a default of 30 days.
 
-During encryption, each value in the original `Secret` is
-symmetrically encrypted using AES-GCM (AES-256) with a randomly-generated
-single-use 32 byte session key.  The session key is then asymmetrically
-encrypted with the controller's public key using RSA-OAEP (using SHA256), and the
-original `Secret`'s namespace/name as the OAEP input parameter (aka
-label).  The final output is: 2 byte encrypted session key length ||
-encrypted session key || encrypted Secret.
+A key can be generated early in two ways
+1. Send `SIGUSR1` to the controller
+`kubectl exec -it <controller pod> -- kill -SIGUSR1 1`
+2. Label the current latest key as compromised (anything no active)
+`kubectl label secrets <keyname> sealed-secrets-key=compromised`
 
-Note that during decryption by the controller, the `SealedSecret`'s
-namespace/name is used as the OAEP input parameter, ensuring that the
-`SealedSecret` and `Secret` are tied to the same namespace and name.
+**NOTE** Sealed secrets currently does not automtically pick up
+relabelled keys, you must restart the controller before the effect
+will apply.
 
-The generated `Secret` is marked as "owned" by the `SealedSecret` and
-will be garbage collected if the `SealedSecret` is deleted.
-
-After sime time, the key used to encrypt a `SealedSecret` is replaced by
-a newer key. The `SealedSecret` can still be decrypted by the old key,
-but it is recommended to update with the latest key. This can be a
-problem without access to the private key outside the cluster.
-
-The `SealedSecret` can be re-encrypted by the cluster using an HTTP POST
-to `/v1/rotate`.
-
-**WARNING**
-A current issue in serializing the data prevents the `/v1/rotate` endpoint
-from returning a valid `SealedSecret` object. A workaround exists in the
-`./kubeseal --rotate` flag.
-
-### Blacklisting
-Sealed secrets provides a blacklisting feature to warn users of secrets
-that may have been encrypted with a compromised private key. The
-controller maintains a list of key names corresponding to keys that are
-suspected to be compromised. This list is also stored as a secret in
-the controllers namespace and maintained similarly to the key list
-itself.
-
-The `SealedSecret`s controller will refuse to work with blacklisted
-private and public keys. This will cause operations involving the
-blacklisted keys to fail, including
-
-1. Validating a `SealedSecret`
-2. Rotating a `SealedSecret` to use the latest key
-3. Retrieving a public key
-
-If a `SealedSecret` is encrypted with a compromised private key, it is
-recommended to change the data that is stored in it, and then re-encrypt
-it.
-
-### Controller Admin
-
-Sealed secrets provides in-container controlls for managing the key
-generation and blacklisting. With access to the container, the following
-commands are available
-
-* `ssadmin --key-gen`. Force the controller to generate a new private/
-public key pair immediately before the scheduled time.
-* `ssadmin --blacklist=<name>`. Blacklist a key name. If the key happens
-to be the latest key, the controller will automatically generate a new
-pair.
-
-These flags can be used together. In the case of using `--key-gen` and
-`--blacklist=<latest_keyname>`, the controller will only generate one new
-pair.
+Labelling a secret with anything other than `active` effectively deletes
+the key from the sealed secrets controller, but it is still available for
+manual encryption/decryption if need be.
 
 ## Developing
 To be able to develop on this project, you need to have the following tools installed:
@@ -226,7 +167,7 @@ $ make test
 
 To run the integration tests:
 * Start Minikube
-* Build the controller for Linux, so that it can be run within a Docker image - edit the Makefile to add 
+* Build the controller for Linux, so that it can be run within a Docker image - edit the Makefile to add
 `GOOS=linux GOARCH=amd64` to `%-static`, and then run `make controller.yaml `
 * Alter `controller.yaml` so that `imagePullPolicy: Never`, to ensure that the image you've just built will be
 used by Kubernetes
