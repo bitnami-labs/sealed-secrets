@@ -1,19 +1,23 @@
 package main
 
 import (
+	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base64"
 	"errors"
 	goflag "flag"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/net"
 	"net/http"
 	"os"
 	"strings"
 
+	"k8s.io/apimachinery/pkg/util/net"
+
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	flag "github.com/spf13/pflag"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
@@ -39,6 +43,8 @@ var (
 	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout.  Useful for later use with --cert")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
+	raw            = flag.Bool("raw", false, "Encrypt raw value from stdin instead of the whole secret object")
+	secretName     = flag.String("name", "", "Name of the sealed secret (required with --raw)")
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
@@ -283,6 +289,31 @@ func main() {
 	pubKey, err := parseKey(f)
 	if err != nil {
 		panic(err.Error())
+	}
+
+	if *raw {
+		data, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			panic(err.Error())
+		}
+		ns, _, err := clientConfig.Namespace()
+		if err != nil {
+			panic(err.Error())
+		}
+		if ns == "" {
+			fmt.Println("Must provide the --namespace flag with --raw")
+			os.Exit(1)
+		}
+		if *secretName == "" {
+			fmt.Println("Must provide the --name flag with --raw")
+			os.Exit(1)
+		}
+		out, err := crypto.HybridEncrypt(rand.Reader, pubKey, data, []byte(fmt.Sprintf("%s/%s", ns, *secretName)))
+		if err != nil {
+			panic(err.Error())
+		}
+		fmt.Fprint(os.Stdout, base64.StdEncoding.EncodeToString(out))
+		return
 	}
 
 	if err := seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey); err != nil {
