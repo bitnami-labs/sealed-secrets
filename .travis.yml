@@ -1,8 +1,8 @@
 language: go
 
 go:
-  - '1.9'
-  - '1.8'
+  - '1.12'
+  - '1.11'
 
 services:
   - docker
@@ -10,6 +10,8 @@ services:
 os:
   - linux
   - osx
+
+dist: xenial
 
 env:
   global:
@@ -24,9 +26,9 @@ env:
 
 matrix:
   include:
-    - env: INT_KVERS=v1.9.0 INT_SSC_CONF=controller.yaml
-    - env: INT_KVERS=v1.8.0 INT_SSC_CONF=controller.yaml
-    - env: INT_KVERS=v1.7.0 INT_SSC_CONF=controller.yaml
+    - env: INT_KVERS=v1.14.0 INT_SSC_CONF=controller.yaml
+    - env: INT_KVERS=v1.13.0 INT_SSC_CONF=controller.yaml
+    - env: INT_KVERS=v1.12.0 INT_SSC_CONF=controller.yaml
 
 addons:
   apt:
@@ -41,7 +43,7 @@ install:
   - go build -i ./...
   - |
     if [ "$INT_KVERS" != "" ]; then
-      v=0.25.0
+      v=1.0.0
       if ! which minikube-$v; then
         wget -O $GOPATH/bin/minikube-$v \
            https://storage.googleapis.com/minikube/releases/v$v/minikube-$(go env GOOS)-$(go env GOARCH)
@@ -56,11 +58,12 @@ install:
       fi
       ln -sf kubectl-$v $GOPATH/bin/kubectl
 
-      mkdir -p $(dirname $KUBECONFIG)
+      mkdir -p $(dirname $KUBECONFIG) $HOME/.minikube
       touch $KUBECONFIG
       sudo -E $GOPATH/bin/minikube start --vm-driver=none \
-        --extra-config apiserver.Authorization.Mode=RBAC \
+        --extra-config=apiserver.authorization-mode=RBAC \
         --kubernetes-version $INT_KVERS
+      sudo chown -R travis: /home/travis/.minikube/
 
       go get github.com/onsi/ginkgo/ginkgo
     fi
@@ -77,7 +80,7 @@ install:
 script:
   - make
   - make test
-  - if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.9\. ]]; then make vet; fi
+  - if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.12\. ]]; then make vet; fi
   - make kubeseal-static
   - EXE_NAME=kubeseal-$(go env GOOS)-$(go env GOARCH)
   - cp kubeseal-static $EXE_NAME
@@ -104,7 +107,7 @@ after_success:
     if [[ "$TRAVIS_OS_NAME" == linux && \
           "$TRAVIS_BRANCH" == master && \
           "$TRAVIS_PULL_REQUEST" == false && \
-          "$TRAVIS_GO_VERSION.0" =~ ^1\.9\. ]]; then
+          "$TRAVIS_GO_VERSION.0" =~ ^1\.12\. ]]; then
       echo "Pushing :latest..."
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
       docker tag $CONTROLLER_IMAGE ${CONTROLLER_IMAGE_NAME}:latest
@@ -126,7 +129,7 @@ deploy:
     - controller.yaml
     - controller-norbac.yaml
   on:
-    condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.9\.
+    condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.12\.
     tags: true
   provider: releases
   skip_cleanup: true
