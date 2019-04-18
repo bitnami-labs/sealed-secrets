@@ -187,3 +187,9 @@ $ kubectl delete pod -n kube-system -l name=sealed-secrets-controller
 - What flags are available for kubeseal?
 
 You can check the flags available using `kubeseal --help`.
+
+## Helm Charts
+
+- Sealed Secret controller hel chart can be found on this [link](https://github.com/helm/charts/tree/master/stable/sealed-secrets)
+
+
