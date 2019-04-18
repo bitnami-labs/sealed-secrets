@@ -301,14 +301,17 @@ func main() {
 			panic(err.Error())
 		}
 		if ns == "" {
-			fmt.Println("Must provide the --namespace flag with --raw")
-			os.Exit(1)
+			panic("Must provide the --namespace flag with --raw")
 		}
 		if *secretName == "" {
-			fmt.Println("Must provide the --name flag with --raw")
-			os.Exit(1)
+			panic("Must provide the --name flag with --raw")
 		}
-		out, err := crypto.HybridEncrypt(rand.Reader, pubKey, data, []byte(fmt.Sprintf("%s/%s", ns, *secretName)))
+		toEncrypt := make([]byte, base64.StdEncoding.DecodedLen(len(data)))
+		_, err = base64.StdEncoding.Decode(toEncrypt, data)
+		if err != nil {
+			panic(err.Error())
+		}
+		out, err := crypto.HybridEncrypt(rand.Reader, pubKey, toEncrypt, []byte(fmt.Sprintf("%s/%s", ns, *secretName)))
 		if err != nil {
 			panic(err.Error())
 		}
