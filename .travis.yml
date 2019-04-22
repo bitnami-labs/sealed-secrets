@@ -80,7 +80,7 @@ install:
 script:
   - make
   - make test
-  - if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.12\. ]]; then make vet; fi
+  - if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.10\. ]]; then make vet; fi
   - make kubeseal-static
   - EXE_NAME=kubeseal-$(go env GOOS)-$(go env GOARCH)
   - cp kubeseal-static $EXE_NAME
@@ -107,7 +107,7 @@ after_success:
     if [[ "$TRAVIS_OS_NAME" == linux && \
           "$TRAVIS_BRANCH" == master && \
           "$TRAVIS_PULL_REQUEST" == false && \
-          "$TRAVIS_GO_VERSION.0" =~ ^1\.12\. ]]; then
+          "$TRAVIS_GO_VERSION.0" =~ ^1\.10\. ]]; then
       echo "Pushing :latest..."
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
       docker tag $CONTROLLER_IMAGE ${CONTROLLER_IMAGE_NAME}:latest
@@ -129,7 +129,7 @@ deploy:
     - controller.yaml
     - controller-norbac.yaml
   on:
-    condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.12\.
+    condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.10\.
     tags: true
   provider: releases
   skip_cleanup: true
