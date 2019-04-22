@@ -1,8 +1,8 @@
 language: go
 
 go:
-  - '1.12'
-  - '1.11'
+  - '1.10'
+  - '1.9'
 
 services:
   - docker
@@ -26,9 +26,9 @@ env:
 
 matrix:
   include:
-    - env: INT_KVERS=v1.14.0 INT_SSC_CONF=controller.yaml
-    - env: INT_KVERS=v1.13.0 INT_SSC_CONF=controller.yaml
-    - env: INT_KVERS=v1.12.0 INT_SSC_CONF=controller.yaml
+    - env: INT_KVERS=v1.14.1 INT_SSC_CONF=controller.yaml
+    - env: INT_KVERS=v1.13.5 INT_SSC_CONF=controller.yaml
+    - env: INT_KVERS=v1.12.7 INT_SSC_CONF=controller.yaml
 
 addons:
   apt:
