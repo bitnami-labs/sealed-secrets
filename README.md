@@ -129,9 +129,8 @@ labelled as active.
 
 #### Key rotation
 
-Keys are automatically rotated. This can be configured on startup with
-the `--rotate-period=<value>` flag. `value` is taken as milliseconds with
-a default of 30 days.
+Keys are automatically rotated. This can be configured on controller startup with
+the `--rotate-period=<value>` flag. The `value` field can be given as golang duration flag (eg: `720h30m`).
 
 A key can be generated early in two ways
 1. Send `SIGUSR1` to the controller
