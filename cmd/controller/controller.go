@@ -300,9 +300,9 @@ func (c *Controller) attemptUnseal(ss *ssv1alpha1.SealedSecret) (*apiv1.Secret, 
 }
 
 func attemptUnseal(ss *ssv1alpha1.SealedSecret, keyRegistry *KeyRegistry) (*apiv1.Secret, string, error) {
-	for _, privKey := range keyRegistry.keys {
+	for keyName, privKey := range keyRegistry.keys {
 		if secret, err := ss.Unseal(scheme.Codecs, privKey); err == nil {
-			return secret, "", nil
+			return secret, keyName, nil
 		}
 	}
 	return nil, "", fmt.Errorf("No key could decrypt secret")
