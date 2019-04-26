@@ -22,12 +22,11 @@ var (
 )
 
 // Called on every request to /cert.  Errors will be logged and return a 500.
-type certProvider func(keyname string) ([]*x509.Certificate, error)
-type certNameProvider func() (string, error)
+type certProvider func() []*x509.Certificate
 type secretChecker func([]byte) (bool, error)
 type secretRotator func([]byte) ([]byte, error)
 
-func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secretRotator) {
+func httpserver(cp certProvider, sc secretChecker, sr secretRotator) {
 	httpRateLimiter := rateLimter()
 
 	mux := http.NewServeMux()
@@ -84,38 +83,11 @@ func httpserver(cp certProvider, cnp certNameProvider, sc secretChecker, sr secr
 	})
 
 	mux.HandleFunc("/v1/cert.pem", func(w http.ResponseWriter, r *http.Request) {
-		keyname := r.URL.Query().Get("keyname")
-		if keyname == "" {
-			keyname, _ = cnp()
-		}
-		certs, err := cp(keyname)
-
-		if err != nil {
-			log.Printf("Error handling /cert request: %v", err)
-			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-			w.WriteHeader(http.StatusInternalServerError)
-			io.WriteString(w, "Internal error\n")
-			return
-		}
-
+		certs := cp()
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		for _, cert := range certs {
 			w.Write(certUtil.EncodeCertPEM(cert))
 		}
-	})
-
-	mux.HandleFunc("/v1/keyname", func(w http.ResponseWriter, r *http.Request) {
-		keyname, err := cnp()
-		if err != nil {
-			log.Printf("Error handling /cert request: %v", err)
-			w.Header().Set("Content-Type", "text/plain;charset=utf-8")
-			w.WriteHeader(http.StatusInternalServerError)
-			io.WriteString(w, "Internal error\n")
-			return
-		}
-
-		w.Header().Set("Content-Type", "text/plain;charset=utf-8")
-		io.WriteString(w, keyname)
 	})
 
 	server := http.Server{

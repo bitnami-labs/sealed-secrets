@@ -165,18 +165,12 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	cp := func(keyname string) ([]*x509.Certificate, error) {
-		cert, err := keyRegistry.getCert(keyname)
-		if err != nil {
-			return nil, err
-		}
-		return []*x509.Certificate{cert}, nil
-	}
-	cnp := func() (string, error) {
-		return keyRegistry.latestKeyName(), nil
+	cp := func() []*x509.Certificate {
+		cert := keyRegistry.certs[keyRegistry.currentKeyName]
+		return []*x509.Certificate{cert}
 	}
 
-	go httpserver(cp, cnp, controller.AttemptUnseal, controller.Rotate)
+	go httpserver(cp, controller.AttemptUnseal, controller.Rotate)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
