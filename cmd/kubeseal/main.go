@@ -38,7 +38,7 @@ var (
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.String("format", "json", "Output format for sealed secret. Either json or yaml")
-	rotate         = flag.Bool("rotate", false, "Rotate the given key to use the latest private key in the cluster.")
+	rotate         = flag.Bool("rotate", false, "Re-encrypt the given sealed secret to use the latest cluster key.")
 	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
@@ -299,28 +299,6 @@ func sealedSecretOutput(out io.Writer, codecs runtimeserializer.CodecFactory, ss
 	}
 	out.Write(buf)
 	fmt.Fprint(out, "\n")
-	return nil
-}
-
-func generateKey(namespace, name string) error {
-	conf, err := clientConfig.ClientConfig()
-	if err != nil {
-		return err
-	}
-	restClient, err := corev1.NewForConfig(conf)
-	if err != nil {
-		return err
-	}
-	req := restClient.RESTClient().Post().
-		Namespace(namespace).
-		Resource("services").
-		SubResource("proxy").
-		Name(net.JoinSchemeNamePort("http", name, "")).
-		Suffix("/v1/keygen")
-	res := req.Do()
-	if err = res.Error(); err != nil {
-		return err
-	}
 	return nil
 }
 
