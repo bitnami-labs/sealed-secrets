@@ -130,21 +130,21 @@ labelled as active.
 #### Key rotation
 
 Keys are automatically rotated. This can be configured on startup with
-the `--rotate-preiod=<value>` flag. `value` is taken as milliseconds with
+the `--rotate-period=<value>` flag. `value` is taken as milliseconds with
 a default of 30 days.
 
 A key can be generated early in two ways
 1. Send `SIGUSR1` to the controller
 `kubectl exec -it <controller pod> -- kill -SIGUSR1 1`
-2. Label the current latest key as compromised (anything no active)
-`kubectl label secrets <keyname> sealed-secrets-key=compromised`
+2. Label the current latest key as compromised (any value other than active)
+`kubectl label secrets <keyname> sealed-secrets-key=compromised`.
 
-**NOTE** Sealed secrets currently does not automtically pick up
-relabelled keys, you must restart the controller before the effect
+**NOTE** Sealed secrets currently does not automatically pick up
+relabelled keys, an admin must restart the controller before the effect
 will apply.
 
 Labelling a secret with anything other than `active` effectively deletes
-the key from the sealed secrets controller, but it is still available for
+the key from the sealed secrets controller, but it is still available in k8s for
 manual encryption/decryption if need be.
 
 ## Developing
