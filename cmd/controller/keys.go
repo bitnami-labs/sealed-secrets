@@ -16,7 +16,7 @@ import (
 	certUtil "k8s.io/client-go/util/cert"
 )
 
-const SealedSecretsKeyLabel = "sealed-secrets-key"
+const SealedSecretsKeyLabel = "sealedsecrets.bitnami.com/sealed-secrets-key"
 
 var (
 	ErrKeyBlacklisted   = errors.New("Key is blacklisted")
@@ -64,7 +64,7 @@ func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Ce
 			Namespace:    namespace,
 			GenerateName: prefix,
 			Labels: map[string]string{
-				label: "active", // Value is not currently used to find keys
+				label: "active",
 			},
 		},
 		Data: map[string][]byte{

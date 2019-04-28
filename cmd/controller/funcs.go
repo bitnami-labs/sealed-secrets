@@ -71,8 +71,5 @@ func validateKeyPrefix(name string) (string, error) {
 			return "", fmt.Errorf("name contains illegal character %c", char)
 		}
 	}
-	if name[len(name)-1] != '-' {
-		return name + "-", nil
-	}
 	return name, nil
 }

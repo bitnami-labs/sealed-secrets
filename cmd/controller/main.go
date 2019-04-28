@@ -16,6 +16,7 @@ import (
 
 	flag "github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -24,8 +25,7 @@ import (
 )
 
 var (
-	keyLabelName    = flag.String("key-label", "sealed-secrets-key", "Label used to identify public/private key pairs in k8s.")
-	keyPrefix       = flag.String("key-prefix", "", "Prefix used to name keys. Defaults to label name.")
+	keyPrefix       = flag.String("key-prefix", "sealed-secrets-key-", "Prefix used to name keys. Defaults to label name.")
 	keySize         = flag.Int("key-size", 4096, "Size of encryption key.")
 	validFor        = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")
@@ -36,7 +36,7 @@ var (
 	VERSION = "UNKNOWN"
 
 	// Selector used to find existing public/private key pairs on startup
-	keySelector = SealedSecretsKeyLabel + "=" + "active"
+	keySelector = fields.OneTermEqualSelector(SealedSecretsKeyLabel, "active")
 )
 
 func init() {
@@ -52,25 +52,18 @@ type controller struct {
 	clientset kubernetes.Interface
 }
 
-func initNames(prefix, label *string) (string, string, error) {
-	if *prefix == "" {
-		*prefix = *label
-	}
-	var err error
-	*prefix, err = validateKeyPrefix(*keyPrefix) // if valid, appends '-' to prefix
+func initKeyPrefix(keyPrefix string) (string, error) {
+	prefix, err := validateKeyPrefix(keyPrefix)
 	if err != nil {
-		return "", "", err
+		return "", err
 	}
-	if _, err := validateKeyPrefix(*keyLabelName); err != nil {
-		return "", "", err
-	}
-	return *prefix, *label, err
+	return prefix, err
 }
 
 func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, label, prefix string, keysize int) (*KeyRegistry, error) {
 	log.Printf("Searching for existing private keys")
 	secretList, err := client.Core().Secrets(namespace).List(metav1.ListOptions{
-		LabelSelector: keySelector,
+		LabelSelector: keySelector.String(),
 	})
 	if err != nil {
 		return nil, err
@@ -140,12 +133,12 @@ func main2() error {
 
 	myNs := myNamespace()
 
-	prefix, label, err := initNames(keyPrefix, keyLabelName)
+	prefix, err := initKeyPrefix(*keyPrefix)
 	if err != nil {
 		return err
 	}
 
-	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, prefix, label, *keySize)
+	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, *keySize)
 	if err != nil {
 		return err
 	}
