@@ -259,7 +259,7 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 }
 
 // Rotate takes a sealed secret and returns a sealed secret that has been encrypted
-// with the latest private key. If the secret is already encryptes with the latest,
+// with the latest private key. If the secret is already encrypted with the latest,
 // returns the input.
 func (c *Controller) Rotate(content []byte) ([]byte, error) {
 	object, err := runtime.Decode(scheme.Codecs.UniversalDecoder(ssv1alpha1.SchemeGroupVersion), content)
