@@ -14,13 +14,11 @@
 .glide/
 
 /controller
-/ssadmin
 /kubeseal
 /controller.image
 /*-static
 /controller.yaml
 /sealedsecret-crd.yaml
 /docker/controller
-/docker/ssadmin
 *.iml
 .idea

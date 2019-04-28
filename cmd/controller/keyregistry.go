@@ -46,19 +46,6 @@ func (kr *KeyRegistry) generateKey() (string, error) {
 	return generatedName, nil
 }
 
-// blacklistKey deletes a key from the local store and marks the corresponding k8s secret
-// as compromised. This effectively deletes the key from the sealedsecrets controller
-// while the key is still available to admins if need be
-func (kr *KeyRegistry) blacklistKey(keyname string) error {
-	if err := blacklistKey(kr.client, kr.namespace, keyname); err != nil {
-		return err
-	}
-	// Only delete if modifying the k8s secret succeeded
-	delete(kr.keys, keyname)
-	delete(kr.certs, keyname)
-	return nil
-}
-
 func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate) {
 	kr.keys[keyName] = privKey
 	kr.certs[keyName] = cert
