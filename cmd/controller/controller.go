@@ -291,7 +291,7 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 		}
 		return data, nil
 	default:
-		return nil, fmt.Errorf("Unexpected resoure type: %s", s.GetObjectKind().GroupVersionKind().String())
+		return nil, fmt.Errorf("Unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
 	}
 }
 
