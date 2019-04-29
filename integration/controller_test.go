@@ -14,6 +14,7 @@ import (
 	"k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	certUtil "k8s.io/client-go/util/cert"
@@ -26,22 +27,37 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var keySelector = fields.OneTermEqualSelector("sealedsecrets.bitnami.com/sealed-secrets-key", "active").String()
+
 func getData(s *v1.Secret) map[string][]byte {
 	return s.Data
 }
 
 func fetchKeys(c corev1.SecretsGetter) (*rsa.PrivateKey, []*x509.Certificate, error) {
-	s, err := c.Secrets("kube-system").Get("sealed-secrets-key", metav1.GetOptions{})
+	list, err := c.Secrets("kube-system").List(metav1.ListOptions{
+		LabelSelector: keySelector,
+	})
 	if err != nil {
 		return nil, nil, err
 	}
 
-	privKey, err := certUtil.ParsePrivateKeyPEM(s.Data[v1.TLSPrivateKeyKey])
+	// find the latest key
+	var latestKey *v1.Secret
+	timestamp := int64(0)
+	for _, key := range list.Items {
+		keyCreationTime := key.CreationTimestamp.Unix()
+		if key.CreationTimestamp.Unix() > timestamp {
+			latestKey = &key
+			timestamp = keyCreationTime
+		}
+	}
+
+	privKey, err := certUtil.ParsePrivateKeyPEM(latestKey.Data[v1.TLSPrivateKeyKey])
 	if err != nil {
 		return nil, nil, err
 	}
 
-	certs, err := certUtil.ParseCertsPEM(s.Data[v1.TLSCertKey])
+	certs, err := certUtil.ParseCertsPEM(latestKey.Data[v1.TLSCertKey])
 	if err != nil {
 		return nil, nil, err
 	}
@@ -131,7 +147,7 @@ var _ = Describe("create", func() {
 				}
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
-				}, 5 * time.Second).Should(WithTransform(getData, Equal(expected)))
+				}, 5*time.Second).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
 
