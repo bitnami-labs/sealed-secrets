@@ -104,7 +104,7 @@ func TestOpenCertFile(t *testing.T) {
 		*certFile = ""
 	}()
 
-	f, _, err := openCert()
+	f, err := openCert()
 	if err != nil {
 		t.Fatalf("Error reading test cert file: %v", err)
 	}
@@ -148,7 +148,7 @@ func TestSeal(t *testing.T) {
 	t.Logf("input is: %s", string(inbuf.Bytes()))
 
 	outbuf := bytes.Buffer{}
-	if err := seal(&inbuf, &outbuf, scheme.Codecs, key, "keyname"); err != nil {
+	if err := seal(&inbuf, &outbuf, scheme.Codecs, key); err != nil {
 		t.Fatalf("seal() returned error: %v", err)
 	}
 

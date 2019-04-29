@@ -44,17 +44,17 @@ func TestReadKey(t *testing.T) {
 		Type: v1.SecretTypeTLS,
 	}
 
-	client := fake.NewSimpleClientset(&secret)
-
-	key2, _, err := readKey(client, "myns", "mykey")
+	key2, cert2, err := readKey(secret)
 	if err != nil {
 		t.Errorf("readKey() failed with: %v", err)
 	}
 
-	t.Logf("actions: %v", client.Actions())
-
 	if !reflect.DeepEqual(key, key2) {
-		t.Errorf("Fetched key != original key: %v != %v", key, key2)
+		t.Errorf("Extracted key != original key")
+	}
+
+	if !reflect.DeepEqual(cert, cert2[0]) {
+		t.Errorf("Extracted cert != original cert")
 	}
 }
 
@@ -72,7 +72,7 @@ func TestWriteKey(t *testing.T) {
 
 	client := fake.NewSimpleClientset()
 
-	_, err = writeKey(client, key, []*x509.Certificate{cert}, "myns", "mykey")
+	_, err = writeKey(client, key, []*x509.Certificate{cert}, "myns", "label", "mykey")
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
 	}

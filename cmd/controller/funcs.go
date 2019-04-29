@@ -60,8 +60,6 @@ const (
 	maxNameLength = 245                                     // Max resource name length is 253, leave some room for a suffix
 )
 
-// validateKeyName is used to validate whether a string can be used as part of a keyname in kubernetes
-// if input name does not have a '-' at the end, will append one and return the new prefix
 func validateKeyPrefix(name string) (string, error) {
 	if len(name) > maxNameLength {
 		return "", fmt.Errorf("name is too long, must be shorter than %d, got %d", maxNameLength, len(name))
