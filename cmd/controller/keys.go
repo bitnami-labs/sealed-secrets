@@ -58,7 +58,6 @@ func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Ce
 	for _, cert := range certs {
 		certbytes = append(certbytes, certUtil.EncodeCertPEM(cert)...)
 	}
-
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Namespace:    namespace,

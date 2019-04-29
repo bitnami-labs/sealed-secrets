@@ -25,7 +25,7 @@ func TestInitKeyRegistry(t *testing.T) {
 	rand := testRand()
 	client := fake.NewSimpleClientset()
 
-	registry, err := initKeyRegistry(client, rand, "testns", "testlabel", "testkeylist", 1024)
+	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -37,24 +37,21 @@ func TestInitKeyRegistry(t *testing.T) {
 	}
 	client.ClearActions()
 
-	_, err = initKeyRegistry(client, rand, "testns", "testlabel", "testkeylist", 1024)
+	// Due to limitations of the fake client, we cannot test whether initKeyRegistry is able
+	// to pick up existing keys
+	_, err = initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 	if !hasAction(client, "list", "secrets") {
 		t.Errorf("initKeyRegistry() failed to read existing keys")
 	}
-	// following check should pick up existing secret, test does not work for some reason
-	// but functionality works in practice
-	// if !reflect.DeepEqual(registry, registry2) {
-	// 	t.Errorf("Failed to find same keylist")
-	// }
 }
 
 func TestInitKeyRotation(t *testing.T) {
 	rand := testRand()
 	client := fake.NewSimpleClientset()
-	registry, err := initKeyRegistry(client, rand, "namespace", "label", "listname", 1024)
+	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -69,9 +66,20 @@ func TestInitKeyRotation(t *testing.T) {
 
 	client.ClearActions()
 
+	// Test the trigger function
+	// Activates trigger and polls client every 50 ms up to 10s for the appropriate action
 	keyGenTrigger()
-	time.Sleep(50 * time.Millisecond) // TODO: investigate if testing the trigger function can be improved
-	if !hasAction(client, "create", "secrets") {
+	maxWait := 10 * time.Second
+	endTime := time.Now().Add(maxWait)
+	successful := false
+	for time.Now().Before(endTime) {
+		time.Sleep(50 * time.Millisecond)
+		if hasAction(client, "create", "secrets") {
+			successful = true
+			break
+		}
+	}
+	if !successful {
 		t.Errorf("trigger function failed to activate early key generation")
 	}
 }
