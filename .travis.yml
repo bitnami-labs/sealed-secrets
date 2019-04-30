@@ -93,7 +93,7 @@ script:
       while ! kubectl cluster-info; do sleep 3; done
       kubectl create -f $INT_SSC_CONF
       sleep 10
-      kubectl get pod | grep sealed-secrets-controller
+      kubectl get pod -n kube-system | grep sealed-secrets-controller
       kubectl rollout status deployment/sealed-secrets-controller -n kube-system -w
       make integrationtest CONTROLLER_IMAGE=$CONTROLLER_IMAGE
     fi
