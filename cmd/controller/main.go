@@ -25,7 +25,7 @@ import (
 )
 
 var (
-	keyPrefix       = flag.String("key-prefix", "sealed-secrets-key-", "Prefix used to name keys. Defaults to label name.")
+	keyPrefix       = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
 	keySize         = flag.Int("key-size", 4096, "Size of encryption key.")
 	validFor        = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")

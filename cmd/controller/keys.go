@@ -19,7 +19,6 @@ import (
 const SealedSecretsKeyLabel = "sealedsecrets.bitnami.com/sealed-secrets-key"
 
 var (
-	ErrKeyBlacklisted   = errors.New("Key is blacklisted")
 	ErrPrivateKeyNotRSA = errors.New("Private key is not an rsa key")
 )
 
@@ -109,17 +108,4 @@ func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
 	}
 
 	return x509.ParseCertificate(data)
-}
-
-func blacklistKey(client kubernetes.Interface, namespace, keyname string) error {
-	keySecret, err := client.Core().Secrets(namespace).Get(keyname, metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-	blacklistedKey := keySecret.DeepCopy()
-	blacklistedKey.Labels[SealedSecretsKeyLabel] = compromised
-	if _, err := client.Core().Secrets(namespace).Update(blacklistedKey); err != nil {
-		return err
-	}
-	return nil
 }

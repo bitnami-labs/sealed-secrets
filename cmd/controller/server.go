@@ -15,7 +15,6 @@ import (
 )
 
 var (
-	localAddr    = flag.String("local-addr", ":8081", "trigger rpc serving address.")
 	listenAddr   = flag.String("listen-addr", ":8080", "HTTP serving address.")
 	readTimeout  = flag.Duration("read-timeout", 2*time.Minute, "HTTP request timeout.")
 	writeTimeout = flag.Duration("write-timeout", 2*time.Minute, "HTTP response timeout.")
