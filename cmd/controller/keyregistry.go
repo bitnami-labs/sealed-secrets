@@ -4,8 +4,10 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
+	"log"
 
 	"k8s.io/client-go/kubernetes"
+	certUtil "k8s.io/client-go/util/cert"
 )
 
 type KeyRegistry struct {
@@ -16,7 +18,7 @@ type KeyRegistry struct {
 	keysize        int
 	currentKeyName string
 	keys           map[string]*rsa.PrivateKey
-	certs          map[string]*x509.Certificate
+	cert           *x509.Certificate
 }
 
 func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel string, keysize int) *KeyRegistry {
@@ -26,8 +28,7 @@ func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel 
 		keyPrefix: keyPrefix,
 		keysize:   keysize,
 		keyLabel:  keyLabel,
-		keys:      make(map[string]*rsa.PrivateKey),
-		certs:     make(map[string]*x509.Certificate),
+		keys:      map[string]*rsa.PrivateKey{},
 	}
 }
 
@@ -41,14 +42,16 @@ func (kr *KeyRegistry) generateKey() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// Only store key to local store if write to k8s worked
+	// Only store key to local store if write to k8s workedk
 	kr.registerNewKey(generatedName, key, cert)
+	log.Printf("New key written to %s/%s\n", kr.namespace, generatedName)
+	log.Printf("Certificate is \n%s\n", certUtil.EncodeCertPEM(cert))
 	return generatedName, nil
 }
 
 func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate) {
 	kr.keys[keyName] = privKey
-	kr.certs[keyName] = cert
+	kr.cert = cert
 	kr.currentKeyName = keyName
 }
 
@@ -65,9 +68,5 @@ func (kr *KeyRegistry) getPrivateKey(keyname string) (*rsa.PrivateKey, error) {
 }
 
 func (kr *KeyRegistry) getCert(keyname string) (*x509.Certificate, error) {
-	cert, ok := kr.certs[keyname]
-	if !ok {
-		return nil, fmt.Errorf("No key with name %s", keyname)
-	}
-	return cert, nil
+	return kr.cert, nil
 }

@@ -95,13 +95,18 @@ func myNamespace() string {
 	return metav1.NamespaceDefault
 }
 
+// Initialises the first key and starts the rotation job. returns an early trigger function
 func initKeyRotation(registry *KeyRegistry, period time.Duration) (func(), error) {
-	keyGenFunc := createKeyGenJob(registry)
-	if err := keyGenFunc(); err != nil { // create the first key
+	if _, err := registry.generateKey(); err != nil { // create the first key
 		return nil, err
 	}
-	keyRotationJob := rotationErrorLogger(keyGenFunc)
-	return ScheduleJobWithTrigger(period, keyRotationJob), nil
+	// wrapper function to log error thrown by generateKey function
+	keyGenFunc := func() {
+		if _, err := registry.generateKey(); err != nil {
+			log.Printf("Failed to generate new key : %v\n", err)
+		}
+	}
+	return ScheduleJobWithTrigger(period, keyGenFunc), nil
 }
 
 func initKeyGenSignalListener(trigger func()) {
@@ -159,8 +164,7 @@ func main2() error {
 	go controller.Run(stop)
 
 	cp := func() []*x509.Certificate {
-		cert := keyRegistry.certs[keyRegistry.currentKeyName]
-		return []*x509.Certificate{cert}
+		return []*x509.Certificate{keyRegistry.cert}
 	}
 
 	go httpserver(cp, controller.AttemptUnseal, controller.Rotate)

@@ -2,11 +2,8 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"strings"
 	"time"
-
-	certUtil "k8s.io/client-go/util/cert"
 )
 
 const (
@@ -32,26 +29,6 @@ func ScheduleJobWithTrigger(period time.Duration, job func()) func() {
 	}()
 	return func() {
 		trigger <- struct{}{}
-	}
-}
-
-func rotationErrorLogger(rotateKey func() error) func() {
-	return func() {
-		if err := rotateKey(); err != nil {
-			log.Printf("Failed to generate new key : %v\n", err)
-		}
-	}
-}
-
-func createKeyGenJob(keyRegistry *KeyRegistry) func() error {
-	return func() error {
-		generatedName, err := keyRegistry.generateKey()
-		if err != nil {
-			return err
-		}
-		log.Printf("New key written to %s/%s\n", keyRegistry.namespace, generatedName)
-		log.Printf("Certificate is \n%s\n", certUtil.EncodeCertPEM(keyRegistry.certs[generatedName]))
-		return nil
 	}
 }
 
