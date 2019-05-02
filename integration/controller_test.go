@@ -9,6 +9,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
+	"sort"
 	"time"
 
 	"k8s.io/api/core/v1"
@@ -41,15 +42,11 @@ func fetchKeys(c corev1.SecretsGetter) (*rsa.PrivateKey, []*x509.Certificate, er
 		return nil, nil, err
 	}
 
-	// find the latest key
-	var latestKey *v1.Secret
-	timestamp := int64(0)
+	sort.Sort(ssv1alpha1.ByCreationTimestamp(list.Items))
+	latestKey := &list.Items[len(list.Items)-1]
+
 	for _, key := range list.Items {
-		keyCreationTime := key.CreationTimestamp.Unix()
-		if key.CreationTimestamp.Unix() > timestamp {
-			latestKey = &key
-			timestamp = keyCreationTime
-		}
+		fmt.Println(key.GetCreationTimestamp())
 	}
 
 	privKey, err := certUtil.ParsePrivateKeyPEM(latestKey.Data[v1.TLSPrivateKeyKey])

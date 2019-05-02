@@ -10,6 +10,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
@@ -20,6 +21,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
 )
@@ -69,6 +71,7 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix
 		return nil, err
 	}
 	keyRegistry := NewKeyRegistry(client, namespace, prefix, label, keysize)
+	sort.Sort(ssv1alpha1.ByCreationTimestamp(secretList.Items))
 	for _, secret := range secretList.Items {
 		key, certs, err := readKey(secret)
 		if err != nil {
