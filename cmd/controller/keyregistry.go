@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/rsa"
 	"crypto/x509"
-	"fmt"
 	"log"
 
 	"k8s.io/client-go/kubernetes"
@@ -11,24 +10,23 @@ import (
 )
 
 type KeyRegistry struct {
-	client         kubernetes.Interface
-	namespace      string
-	keyPrefix      string
-	keyLabel       string
-	keysize        int
-	currentKeyName string
-	keys           map[string]*rsa.PrivateKey
-	cert           *x509.Certificate
+	client      kubernetes.Interface
+	namespace   string
+	keyPrefix   string
+	keyLabel    string
+	keysize     int
+	privateKeys []*rsa.PrivateKey
+	cert        *x509.Certificate
 }
 
 func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel string, keysize int) *KeyRegistry {
 	return &KeyRegistry{
-		client:    client,
-		namespace: namespace,
-		keyPrefix: keyPrefix,
-		keysize:   keysize,
-		keyLabel:  keyLabel,
-		keys:      map[string]*rsa.PrivateKey{},
+		client:      client,
+		namespace:   namespace,
+		keyPrefix:   keyPrefix,
+		keysize:     keysize,
+		keyLabel:    keyLabel,
+		privateKeys: []*rsa.PrivateKey{},
 	}
 }
 
@@ -50,21 +48,12 @@ func (kr *KeyRegistry) generateKey() (string, error) {
 }
 
 func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate) {
-	kr.keys[keyName] = privKey
+	kr.privateKeys = append(kr.privateKeys, privKey)
 	kr.cert = cert
-	kr.currentKeyName = keyName
 }
 
-func (kr *KeyRegistry) latestKeyName() string {
-	return kr.currentKeyName
-}
-
-func (kr *KeyRegistry) getPrivateKey(keyname string) (*rsa.PrivateKey, error) {
-	key, ok := kr.keys[keyname]
-	if !ok {
-		return nil, fmt.Errorf("No key exists with name %s", keyname)
-	}
-	return key, nil
+func (kr *KeyRegistry) latestPrivateKey() *rsa.PrivateKey {
+	return kr.privateKeys[len(kr.privateKeys)-1]
 }
 
 func (kr *KeyRegistry) getCert(keyname string) (*x509.Certificate, error) {

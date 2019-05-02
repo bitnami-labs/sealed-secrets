@@ -42,7 +42,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 	objName := fmt.Sprintf("%s/%s", ssecret.GetObjectMeta().GetNamespace(), ssecret.GetObjectMeta().GetName())
 	log.Printf("Updating %s", objName)
 
-	secret, _, err := attemptUnseal(ssecret, keyRegistry)
+	secret, err := attemptUnseal(ssecret, keyRegistry)
 	if err != nil {
 		// TODO: Add error event
 		return err
@@ -185,7 +185,7 @@ func (c *Controller) unseal(key string) error {
 	ssecret := obj.(*ssv1alpha1.SealedSecret)
 	log.Printf("Updating %s", key)
 
-	secret, _, err := c.attemptUnseal(ssecret)
+	secret, err := c.attemptUnseal(ssecret)
 	if err != nil {
 		return err
 	}
@@ -248,7 +248,7 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 
 	switch s := object.(type) {
 	case *ssv1alpha1.SealedSecret:
-		if _, _, err := c.attemptUnseal(s); err != nil {
+		if _, err := c.attemptUnseal(s); err != nil {
 			return false, nil
 		}
 		return true, nil
@@ -269,18 +269,11 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 
 	switch s := object.(type) {
 	case *ssv1alpha1.SealedSecret:
-		secret, keyName, err := c.attemptUnseal(s)
+		secret, err := c.attemptUnseal(s)
 		if err != nil {
 			return nil, fmt.Errorf("Error decrypting secret. %v", err)
 		}
-		latestKeyName := c.keyRegistry.latestKeyName()
-		if keyName == latestKeyName {
-			return content, nil // Already encrypted with latest secret, return input
-		}
-		latestPrivKey, err := c.keyRegistry.getPrivateKey(latestKeyName)
-		if err != nil {
-			return nil, fmt.Errorf("Error getting latest private key. %v", err)
-		}
+		latestPrivKey := c.keyRegistry.latestPrivateKey()
 		resealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, &latestPrivKey.PublicKey, secret)
 		if err != nil {
 			return nil, fmt.Errorf("Error creating new sealed secret. %v", err)
@@ -295,15 +288,15 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 	}
 }
 
-func (c *Controller) attemptUnseal(ss *ssv1alpha1.SealedSecret) (*apiv1.Secret, string, error) {
+func (c *Controller) attemptUnseal(ss *ssv1alpha1.SealedSecret) (*apiv1.Secret, error) {
 	return attemptUnseal(ss, c.keyRegistry)
 }
 
-func attemptUnseal(ss *ssv1alpha1.SealedSecret, keyRegistry *KeyRegistry) (*apiv1.Secret, string, error) {
-	for keyName, privKey := range keyRegistry.keys {
+func attemptUnseal(ss *ssv1alpha1.SealedSecret, keyRegistry *KeyRegistry) (*apiv1.Secret, error) {
+	for _, privKey := range keyRegistry.privateKeys {
 		if secret, err := ss.Unseal(scheme.Codecs, privKey); err == nil {
-			return secret, keyName, nil
+			return secret, nil
 		}
 	}
-	return nil, "", fmt.Errorf("No key could decrypt secret")
+	return nil, fmt.Errorf("No key could decrypt secret")
 }

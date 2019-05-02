@@ -45,10 +45,6 @@ func fetchKeys(c corev1.SecretsGetter) (*rsa.PrivateKey, []*x509.Certificate, er
 	sort.Sort(ssv1alpha1.ByCreationTimestamp(list.Items))
 	latestKey := &list.Items[len(list.Items)-1]
 
-	for _, key := range list.Items {
-		fmt.Println(key.GetCreationTimestamp())
-	}
-
 	privKey, err := certUtil.ParsePrivateKeyPEM(latestKey.Data[v1.TLSPrivateKeyKey])
 	if err != nil {
 		return nil, nil, err
