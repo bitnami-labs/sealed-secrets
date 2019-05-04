@@ -172,6 +172,8 @@ used by Kubernetes
 * Rebuild the binaries for your OS - `make`
 * Run the integration tests - `make integrationtest`
 
+## Helm Chart
+Sealed Secret helm charts can be found on this [link](https://github.com/helm/charts/tree/master/stable/sealed-secrets)
 
 ## FAQ
 
