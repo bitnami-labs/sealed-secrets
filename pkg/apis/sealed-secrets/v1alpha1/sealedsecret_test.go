@@ -161,6 +161,109 @@ func TestSealRoundTrip(t *testing.T) {
 	}
 }
 
+func TestSealRoundTripWithJenkinsClusterWideAnnotationAndLabel(t *testing.T) {
+	scheme := runtime.NewScheme()
+	codecs := serializer.NewCodecFactory(scheme)
+
+	SchemeBuilder.AddToScheme(scheme)
+	v1.SchemeBuilder.AddToScheme(scheme)
+
+	rand := testRand()
+	key, err := rsa.GenerateKey(rand, 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+			Annotations: map[string]string{
+				SealedSecretClusterWideAnnotation:             "true",
+				JenkinsKubernetesCredentialProviderAnnotation: "test description",
+			},
+			Labels: map[string]string{
+				JenkinsKubernetesCredentialProviderLabel: "secretText",
+			},
+		},
+		Data: map[string][]byte{
+			"foo": []byte("bar"),
+		},
+	}
+
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
+	if err != nil {
+		t.Fatalf("NewSealedSecret returned error: %v", err)
+	}
+
+	secret2, err := ssecret.Unseal(codecs, key)
+	if err != nil {
+		t.Fatalf("Unseal returned error: %v", err)
+	}
+
+	if !reflect.DeepEqual(secret.Annotations[JenkinsKubernetesCredentialProviderAnnotation], secret2.Annotations[JenkinsKubernetesCredentialProviderAnnotation]) {
+		t.Errorf("Unsealed secret jenkins annotations != original secret jenkins annotations: %v != %v", secret, secret2)
+	}
+	if !reflect.DeepEqual(secret.Labels[JenkinsKubernetesCredentialProviderLabel], secret2.Labels[JenkinsKubernetesCredentialProviderLabel]) {
+		t.Errorf("Unsealed secret jenkins labels != original secret jenkins labels: %v != %v", secret, secret2)
+	}
+
+	if !reflect.DeepEqual(secret.Data, secret2.Data) {
+		t.Errorf("Unsealed secret != original secret: %v != %v", secret, secret2)
+	}
+}
+
+func TestSealRoundTripWithJenkinsAnnotationAndLabel(t *testing.T) {
+	scheme := runtime.NewScheme()
+	codecs := serializer.NewCodecFactory(scheme)
+
+	SchemeBuilder.AddToScheme(scheme)
+	v1.SchemeBuilder.AddToScheme(scheme)
+
+	rand := testRand()
+	key, err := rsa.GenerateKey(rand, 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+			Annotations: map[string]string{
+				JenkinsKubernetesCredentialProviderAnnotation: "test description",
+			},
+			Labels: map[string]string{
+				JenkinsKubernetesCredentialProviderLabel: "secretText",
+			},
+		},
+		Data: map[string][]byte{
+			"foo": []byte("bar"),
+		},
+	}
+
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
+	if err != nil {
+		t.Fatalf("NewSealedSecret returned error: %v", err)
+	}
+
+	secret2, err := ssecret.Unseal(codecs, key)
+	if err != nil {
+		t.Fatalf("Unseal returned error: %v", err)
+	}
+
+	if !reflect.DeepEqual(secret.Annotations[JenkinsKubernetesCredentialProviderAnnotation], secret2.Annotations[JenkinsKubernetesCredentialProviderAnnotation]) {
+		t.Errorf("Unsealed secret jenkins annotations != original secret jenkins annotations: %v != %v", secret, secret2)
+	}
+	if !reflect.DeepEqual(secret.Labels[JenkinsKubernetesCredentialProviderLabel], secret2.Labels[JenkinsKubernetesCredentialProviderLabel]) {
+		t.Errorf("Unsealed secret jenkins labels != original secret jenkins labels: %v != %v", secret, secret2)
+	}
+
+	if !reflect.DeepEqual(secret.Data, secret2.Data) {
+		t.Errorf("Unsealed secret != original secret: %v != %v", secret, secret2)
+	}
+}
+
 func TestSealRoundTripWithClusterWide(t *testing.T) {
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)

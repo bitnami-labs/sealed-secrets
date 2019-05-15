@@ -16,6 +16,12 @@ const (
 	// SealedSecretClusterWideAnnotation is the name for the annotation for
 	// setting the secret to be availible cluster wide.
 	SealedSecretClusterWideAnnotation = annoNs + "cluster-wide"
+
+	// jenkinsKubernetesCredentialProvider is the name for the annotation and label for
+	// setting the secret with jenkins annotation and label for kubernetes credentials provider in
+	// order to be able to scan credentials and dynamically add those to jenkins
+	JenkinsKubernetesCredentialProviderAnnotation = "jenkins.io/credentials-description"
+	JenkinsKubernetesCredentialProviderLabel      = "jenkins.io/credentials-type"
 )
 
 // SealedSecretSpec is the specification of a SealedSecret

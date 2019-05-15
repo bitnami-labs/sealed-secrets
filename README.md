@@ -244,3 +244,26 @@ To restore from a backup after some disaster, just put that secret back before s
 
 `kubectl replace secret -n kube-system sealed-secrets-key master.key`
 `kubectl delete pod -n kube-system -l name=sealed-secrets-controller`
+
+
+# Jenkins kubernetes credential provider support
+
+This version supports these annotations & labels
+https://jenkinsci.github.io/kubernetes-credentials-provider-plugin/
+````
+apiVersion: v1
+kind: Secret
+metadata:
+# this is the jenkins id.
+  name: "another-test-usernamepass"
+  labels:
+# so we know what type it is.
+    "jenkins.io/credentials-type": "usernamePassword"
+  annotations:
+# description - can not be a label as spaces are not allowed
+    "jenkins.io/credentials-description" : "credentials from Kubernetes"
+type: Opaque
+stringData:
+  username: myUsername
+  password: 'Pa$$word'
+````

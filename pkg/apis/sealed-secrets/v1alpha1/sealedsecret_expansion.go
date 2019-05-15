@@ -22,6 +22,22 @@ func labelFor(o metav1.Object) ([]byte, bool) {
 	return []byte(label), false
 }
 
+// check if jenkins annotation exists
+func jenkinsKubernetesCredentialProviderAnnotationExist(o metav1.Object) (string, bool) {
+	if val, ok := o.GetAnnotations()[JenkinsKubernetesCredentialProviderAnnotation]; ok {
+		return val, ok
+	}
+	return "", false
+}
+
+// check if jenkins label exists
+func jenkinsKubernetesCredentialProviderLabelExist(o metav1.Object) (string, bool) {
+	if val, ok := o.GetLabels()[JenkinsKubernetesCredentialProviderLabel]; ok {
+		return val, ok
+	}
+	return "", false
+}
+
 // NewSealedSecretV1 creates a new SealedSecret object wrapping the
 // provided secret. This encrypts all the secrets into a single encrypted
 // blob and stores it in the `Data` attribute. Keeping this for backward
@@ -64,6 +80,7 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 	if clusterWide {
 		s.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
 	}
+
 	return s, nil
 }
 
@@ -89,6 +106,8 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 	// during decryption.
 	label, clusterWide := labelFor(secret)
 
+	jenkinsAnnotationKey, jenkinsAnnotationExists := jenkinsKubernetesCredentialProviderAnnotationExist(secret)
+	jenkinsLabelKey, jenkinsLabelExists := jenkinsKubernetesCredentialProviderLabelExist(secret)
 	for key, value := range secret.Data {
 		ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, value, label)
 		if err != nil {
@@ -100,6 +119,22 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 	if clusterWide {
 		s.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
 	}
+
+	if jenkinsAnnotationExists {
+		// add jenkins kubernetes-credential-provider annotation
+		if len(s.Annotations) == 0 {
+			s.Annotations = map[string]string{JenkinsKubernetesCredentialProviderAnnotation: jenkinsAnnotationKey}
+		} else {
+			s.Annotations[JenkinsKubernetesCredentialProviderAnnotation] = jenkinsAnnotationKey
+		}
+
+	}
+
+	if jenkinsLabelExists {
+		// add jenkins kubernetes-credential-provider label
+		s.Labels = map[string]string{JenkinsKubernetesCredentialProviderLabel: jenkinsLabelKey}
+	}
+
 	return s, nil
 }
 
@@ -139,6 +174,12 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 	// Ensure these are set to what we expect
 	secret.SetNamespace(smeta.GetNamespace())
 	secret.SetName(smeta.GetName())
+	if _, ok := s.GetAnnotations()[JenkinsKubernetesCredentialProviderAnnotation]; ok {
+		secret.SetAnnotations(map[string]string{JenkinsKubernetesCredentialProviderAnnotation: smeta.GetAnnotations()[JenkinsKubernetesCredentialProviderAnnotation]})
+	}
+	if _, ok := s.GetLabels()[JenkinsKubernetesCredentialProviderLabel]; ok {
+		secret.SetLabels(map[string]string{JenkinsKubernetesCredentialProviderLabel: smeta.GetLabels()[JenkinsKubernetesCredentialProviderLabel]})
+	}
 
 	// This is sometimes empty?  Fine - we know what the answer is
 	// going to be anyway.
