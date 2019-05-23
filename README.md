@@ -114,13 +114,13 @@ only change from existing Kubernetes is that the *contents* of the
 
 ## Details
 
-This controller adds a new `SealedSecret` custom resource.  The
+This controller adds a new `SealedSecret` custom resource. The
 interesting part of a `SealedSecret` is a base64-encoded
 asymmetrically encrypted `Secret`.
 
 The controller maintains a set of private/public key pairs as kubernetes
-secrets. These secrets are labelled as sealed secrets keys and
-identified in the label as either active or compromised. On startup,
+secrets. Keys are labelled with `sealedsecrets.bitnami.com/sealed-secrets-key`
+and identified in the label as either `active` or `compromised`. On startup,
 The sealed secrets controller will...
 1. Search for these keys and add them to its local store if they are
 labelled as active.
@@ -130,17 +130,17 @@ labelled as active.
 #### Key rotation
 
 Keys are automatically rotated. This can be configured on controller startup with
-the `--rotate-period=<value>` flag. The `value` field can be given as golang duration flag (eg: `720h30m`).
+the `--rotate-period=<value>` flag. The `value` field can be given as golang
+duration flag (eg: `720h30m`).
 
 A key can be generated early in two ways
 1. Send `SIGUSR1` to the controller
 `kubectl exec -it <controller pod> -- kill -SIGUSR1 1`
 2. Label the current latest key as compromised (any value other than active)
-`kubectl label secrets <keyname> sealed-secrets-key=compromised`.
+`kubectl label secrets <keyname> sealedsecrets.bitnami.com/sealed-secrets-key=compromised`.
 
-**NOTE** Sealed secrets currently does not automatically pick up
-relabelled keys, an admin must restart the controller before the effect
-will apply.
+**NOTE** Sealed secrets currently does not automatically pick up relabelled
+keys, an admin must restart the controller before the effect will apply.
 
 Labelling a secret with anything other than `active` effectively deletes
 the key from the sealed secrets controller, but it is still available in k8s for

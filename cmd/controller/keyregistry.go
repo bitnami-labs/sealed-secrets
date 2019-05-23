@@ -40,7 +40,7 @@ func (kr *KeyRegistry) generateKey() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// Only store key to local store if write to k8s workedk
+	// Only store key to local store if write to k8s worked
 	kr.registerNewKey(generatedName, key, cert)
 	log.Printf("New key written to %s/%s\n", kr.namespace, generatedName)
 	log.Printf("Certificate is \n%s\n", certUtil.EncodeCertPEM(cert))
