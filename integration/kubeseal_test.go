@@ -227,7 +227,7 @@ var _ = Describe("kubeseal --version", func() {
 })
 
 var _ = Describe("kubeseal --verify", func() {
-	var c corev1.CoreV1Interface
+	//var c corev1.CoreV1Interface
 	const secretName = "testSecret"
 	const testNs = "testverifyns"
 	var input io.Reader
@@ -237,7 +237,7 @@ var _ = Describe("kubeseal --verify", func() {
 	var err error
 
 	BeforeEach(func() {
-		c = corev1.NewForConfigOrDie(clusterConfigOrDie())
+		//c = corev1.NewForConfigOrDie(clusterConfigOrDie())
 		args = append(args, "--validate")
 		output = &bytes.Buffer{}
 	})

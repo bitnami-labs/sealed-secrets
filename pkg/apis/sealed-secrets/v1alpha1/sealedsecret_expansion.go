@@ -3,9 +3,10 @@ package v1alpha1
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"errors"
 	"fmt"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
@@ -125,7 +126,15 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 	// during encryption.  This check ensures that we can't be
 	// tricked into decrypting a sealed secret into an unexpected
 	// namespace/name.
-	label, _ := labelFor(smeta)
+	label, clusterWide := labelFor(smeta)
+
+	if !clusterWide && s.Spec.Template.Name != "" && s.Spec.Template.Name != smeta.GetName() {
+		return nil, errors.New("spec.template.name must match metadata.name")
+	}
+
+	if !clusterWide && s.Spec.Template.Namespace != "" && s.Spec.Template.Namespace != smeta.GetNamespace() {
+		return nil, errors.New("spec.template.namespace must match metadata.namespace")
+	}
 
 	var secret v1.Secret
 	if len(s.Spec.EncryptedData) > 0 {

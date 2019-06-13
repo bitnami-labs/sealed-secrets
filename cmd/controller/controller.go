@@ -3,9 +3,10 @@ package main
 import (
 	"crypto/rsa"
 	"fmt"
-	"k8s.io/apimachinery/pkg/runtime"
 	"log"
 	"time"
+
+	"k8s.io/apimachinery/pkg/runtime"
 
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -16,7 +17,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
+	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
@@ -225,6 +226,11 @@ func (c *Controller) unseal(key string) error {
 
 	secret, err := c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Get(newSecret.GetObjectMeta().GetName(), metav1.GetOptions{})
 	if errors.IsNotFound(err) {
+		log.Printf("secret doesn't exist, will attempt to create one.")
+		secret.Name = ssecret.Name
+		gvk := ssv1alpha1.SchemeGroupVersion.WithKind("SealedSecret")
+		ownerReference := metav1.NewControllerRef(ssecret, gvk)
+		secret.OwnerReferences = append(secret.OwnerReferences, *ownerReference)
 		secret, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(secret)
 	}
 	if err != nil {

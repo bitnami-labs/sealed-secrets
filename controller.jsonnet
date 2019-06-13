@@ -12,12 +12,17 @@ controller + {
       {
         apiGroups: ["bitnami.com"],
         resources: ["sealedsecrets"],
-        verbs: ["get", "list", "watch"],
+        verbs: ["get", "list", "watch", "update"],
       },
       {
         apiGroups: [""],
         resources: ["secrets"],
-        verbs: ["create", "update", "delete"],  // don't need get
+        verbs: ["get", "create", "update", "delete"],
+      },
+      {
+        apiGroups: [""],
+        resources: ["events"],
+        verbs: ["create", "patch"],
       },
     ],
   },
