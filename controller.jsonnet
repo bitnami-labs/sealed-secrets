@@ -17,7 +17,7 @@ controller + {
       {
         apiGroups: [""],
         resources: ["secrets"],
-        verbs: ["get", "create", "update", "delete"],
+        verbs: ["create", "update", "delete", "get"],
       },
       {
         apiGroups: [""],

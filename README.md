@@ -16,9 +16,6 @@ original Secret from the SealedSecret.
 See https://github.com/bitnami-labs/sealed-secrets/releases for the latest
 release.
 
-**See additional TPR->CRD migration section below if updating an
-existing Sealed Secrets installation from Kubernetes <= 1.7**
-
 ```sh
 $ release=$(curl --silent "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
 
@@ -28,19 +25,17 @@ $ GOARCH=$(go env GOARCH)
 $ wget https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/kubeseal-$GOOS-$GOARCH
 $ sudo install -m 755 kubeseal-$GOOS-$GOARCH /usr/local/bin/kubeseal
 
-# Install SealedSecret TPR (for k8s < 1.7)
-$ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-tpr.yaml
+# Note:  If installing on a GKE cluster, a ClusterRoleBinding may be needed to successfully deploy the controller in the final command.  Replace <your-email> with a valid email, and then deploy the cluster role binding:
+$ USER_EMAIL=<your-email>
+$ kubectl create clusterrolebinding $USER-cluster-admin-binding --clusterrole=cluster-admin --user=$USER_EMAIL
 
-# Install SealedSecret CRD (for k8s >= 1.7)
-$ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
-
-# Install server-side controller into kube-system namespace (by default)
-$ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
+# Install SealedSecret CRD, server-side controller into kube-system namespace (by default)
+# Note the second sealedsecret-crd.yaml file is not necessary for releases >= 0.8.0
+$ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
+$ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
 ```
 
-After the `SealedSecret` resource is created with either
-`sealedsecret-tpr.yaml` or `sealedsecret-crd.yaml` (depending on
-Kubernetes version), `controller.yaml` will install the controller
+`controller.yaml` will create the `SealedSecret` resource and install the controller
 into `kube-system` namespace, create a service account and necessary
 RBAC roles.
 
@@ -81,88 +76,9 @@ use the Makefile:
 % make
 ```
 
-### Migration from SealedSecret TPR to CRD (ie: K8s <1.7 to >1.7)
-
-Kubernetes migrated the way custom resources are declared from TPR
-(ThirdPartyResource) to CRD (CustomResourceDefinition).  The migration
-has a number of steps, but is easy, and preserves existing
-SealedSecrets.
-
-- The controller is temporarily disabled during the migration, so
-changes to SealedSecrets will not propagate to Secrets until the
-controller is restored.
-- Existing (decrypted) Secrets remain available throughout.
-- This only affects the way the custom resource is _defined_, and API
-clients are able to interact with both versions of SealedSecrets
-without requiring changes.
-
-The following is an adaption
-of [the generic migration doc][tpr-migration] for Sealed Secrets.  See
-the generic documentation for more information on the process.
-
-[tpr-migration]: https://kubernetes.io/docs/tasks/access-kubernetes-api/migrate-third-party-resource/
-
-1. Be running k8s 1.7.x.  Kubernetes 1.7.x is the only Kubernetes
-   release that simultaneously supports both TPRs and CRDs.
-
-2. Install the CRD definition.
-   ```
-   $ release=$(curl --silent "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
-   $ kubectl create -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
-   ```
-
-   Wait until the CRD _Established_ condition becomes True.
-   ```
-   $ kubectl get crd sealedsecrets.bitnami.com -o 'jsonpath={.status.conditions[?(@.type=="Established")].status}'
-   ```
-
-   At this point the TPR is still authoritative.  NB: The CRD name is
-   `sealedsecrets.bitnami.com`, whereas the TPR name is
-   `sealed-secret.bitnami.com`.
-
-3. Stop controller.  For maximum safety, also pause any other
-   processes you have that might modify SealedSecrets during the
-   following steps.
-   ```
-   $ kubectl scale --replicas=0 -n kube-system deployment/sealed-secrets-controller
-   ```
-
-4. Back up existing SealedSecrets data and TPR definition, just in case.
-   ```
-   $ kubectl get sealedsecrets --all-namespaces -o yaml > sealedsecrets.yaml
-   $ kubectl get thirdpartyresource sealed-secret.bitnami.com -o yaml --export > tpr.yaml
-   ```
-
-5. Delete TPR definition.
-   ```
-   $ kubectl delete thirdpartyresource sealed-secret.bitnami.com
-   ```
-
-   NB: The CRD name is `sealedsecrets.bitnami.com`, whereas the TPR
-   name is `sealed-secret.bitnami.com`.
-
-   This will trigger the Kubernetes TPR controller to migrate existing
-   SealedSecrets to the CRD.
-
-6. Once the migration completes, the resources will be available via
-   the CRD.
-
-   ```
-   $ kubectl get sealedsecrets --all-namespaces -o yaml
-   ```
-
-   If the copy fails for some reason and needs to be reverted, the TPR
-   definition can be restored with:
-   ```
-   $ kubectl create -f tpr.yaml
-   ```
-
-7. Restore controller, and any other paused processes.
-   ```
-   $ kubectl scale --replicas=1 -n kube-system deployment/sealed-secrets-controller
-   ```
-
 ## Usage
+
+**WARNING**: A bug in the current version is limiting secrets to use the "opaque" type. If you need to use another secret type (eg: `kubernetes.io/dockerconfigjson`), please use kubeseal from release 0.5.1 until [#86](https://github.com/bitnami-labs/sealed-secrets/issues/86) and [#92](https://github.com/bitnami-labs/sealed-secrets/issues/92) are resolved.
 
 ```sh
 # Create a json/yaml-encoded Secret somehow:
@@ -230,7 +146,7 @@ will be garbage collected if the `SealedSecret` is deleted.
 To be able to develop on this project, you need to have the following tools installed:
 * make
 * [Ginkgo](https://onsi.github.io/ginkgo/)
-* [Minikuke](https://github.com/kubernetes/minikube)
+* [Minikube](https://github.com/kubernetes/minikube)
 * [kubecfg](https://github.com/ksonnet/kubecfg)
 * Go
 
@@ -247,15 +163,17 @@ $ make test
 To run the integration tests:
 * Start Minikube
 * Build the controller for Linux, so that it can be run within a Docker image - edit the Makefile to add 
-`GOOS=linux GOARCH=amd64` to `%-static`, and then run `make controller.yaml sealedsecret-crd.yaml`
+`GOOS=linux GOARCH=amd64` to `%-static`, and then run `make controller.yaml `
 * Alter `controller.yaml` so that `imagePullPolicy: Never`, to ensure that the image you've just built will be
 used by Kubernetes
-* Add the sealed-secret CRD and controller to Kubernetes - `kubectl apply -f sealedsecret-crd.yaml,controller.yaml`
+* Add the sealed-secret CRD and controller to Kubernetes - `kubectl apply -f controller.yaml`
 * Revert any changes made to the Makefile to build the Linux controller
 * Remove the binaries which were possibly built for another OS - `make clean`
 * Rebuild the binaries for your OS - `make`
 * Run the integration tests - `make integrationtest`
 
+## Helm Chart
+Sealed Secret helm charts can be found on this [link](https://github.com/helm/charts/tree/master/stable/sealed-secrets)
 
 ## FAQ
 

@@ -6,7 +6,7 @@ import (
 )
 
 const (
-	// SealedSecretName is the name used in SealedSecret TPR
+	// SealedSecretName is the name used in SealedSecret CRD
 	SealedSecretName = "sealed-secret." + GroupName
 	// SealedSecretPlural is the collection plural used with SealedSecret API
 	SealedSecretPlural = "sealedsecrets"
@@ -15,8 +15,12 @@ const (
 	annoNs = "sealedsecrets." + GroupName + "/"
 
 	// SealedSecretClusterWideAnnotation is the name for the annotation for
-	// setting the secret to be availible cluster wide.
+	// setting the secret to be available cluster wide.
 	SealedSecretClusterWideAnnotation = annoNs + "cluster-wide"
+
+	// SealedSecretNamespaceWideAnnotation is the name for the annotation for
+	// setting the secret to be available namespace wide.
+	SealedSecretNamespaceWideAnnotation = annoNs + "namespace-wide"
 )
 
 // SecretTemplateSpec describes the structure a Secret should have

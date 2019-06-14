@@ -114,7 +114,7 @@ func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
 			CommonName: *myCN,
 		},
 		BasicConstraintsValid: true,
-		IsCA: true,
+		IsCA:                  true,
 	}
 
 	data, err := x509.CreateCertificate(r, &cert, &cert, &key.PublicKey, key)
