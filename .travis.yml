@@ -88,9 +88,10 @@ script:
     fi
   - |
     if [ "$INT_KVERS" != "" ]; then
-      eval $(minikube docker-env)
       minikube update-context
       minikube status
+      minikube docker-env
+      eval $(minikube docker-env)
       while ! kubectl cluster-info; do sleep 3; done
       kubectl create -f $INT_SSC_CONF
       kubectl rollout status deployment/sealed-secrets-controller -n kube-system -w
