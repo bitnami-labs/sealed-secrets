@@ -13,6 +13,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/onsi/gomega/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -30,6 +31,11 @@ import (
 )
 
 var keySelector = fields.OneTermEqualSelector("sealedsecrets.bitnami.com/sealed-secrets-key", "active").String()
+
+const (
+	Timeout         = 15 * time.Second
+	PollingInterval = "100ms"
+)
 
 func getData(s *v1.Secret) map[string][]byte {
 	return s.Data
@@ -135,15 +141,15 @@ var _ = Describe("create", func() {
 				}
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
-				}).Should(WithTransform(getData, Equal(expected)))
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
-				}).Should(WithTransform(metav1.Object.GetLabels,
+				}, Timeout, PollingInterval).Should(WithTransform(metav1.Object.GetLabels,
 					HaveKeyWithValue("mylabel", "myvalue")))
 
 				Eventually(func() (*v1.EventList, error) {
 					return c.Events(ns).Search(scheme.Scheme, ss)
-				}).Should(
+				}, Timeout, PollingInterval).Should(
 					containEventWithReason(Equal("Unsealed")),
 				)
 			})
@@ -187,7 +193,7 @@ var _ = Describe("create", func() {
 				}
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
-				}).Should(WithTransform(getData, Equal(expected)))
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
 
@@ -206,7 +212,7 @@ var _ = Describe("create", func() {
 				}
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
-				}).Should(WithTransform(getData, Equal(expected)))
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
 	})
@@ -234,7 +240,7 @@ var _ = Describe("create", func() {
 			// SealedSecret
 			Eventually(func() (*v1.EventList, error) {
 				return c.Events(ns).Search(scheme.Scheme, ss)
-			}).Should(
+			}, Timeout, PollingInterval).Should(
 				containEventWithReason(Equal("ErrUnsealFailed")),
 			)
 		})
@@ -258,7 +264,7 @@ var _ = Describe("create", func() {
 				// SealedSecret
 				Eventually(func() (*v1.EventList, error) {
 					return c.Events(ns).Search(scheme.Scheme, ss)
-				}).Should(
+				}, Timeout, PollingInterval).Should(
 					containEventWithReason(Equal("ErrUnsealFailed")),
 				)
 			})
@@ -286,7 +292,7 @@ var _ = Describe("create", func() {
 				// SealedSecret
 				Eventually(func() (*v1.EventList, error) {
 					return c.Events(ns2).Search(scheme.Scheme, ss)
-				}).Should(
+				}, Timeout, PollingInterval).Should(
 					containEventWithReason(Equal("ErrUnsealFailed")),
 				)
 			})
@@ -314,7 +320,7 @@ var _ = Describe("create", func() {
 				}
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
-				}).Should(WithTransform(getData, Equal(expected)))
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
 
@@ -344,7 +350,7 @@ var _ = Describe("create", func() {
 				}
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns2).Get(secretName, metav1.GetOptions{})
-				}).Should(WithTransform(getData, Equal(expected)))
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
 
@@ -370,7 +376,7 @@ var _ = Describe("create", func() {
 				}
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
-				}).Should(WithTransform(getData, Equal(expected)))
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
 
