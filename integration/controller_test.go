@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	Timeout = 10 * time.Second
+	Timeout = 15 * time.Second
 	PollingInterval = "100ms"
 )
 
@@ -132,10 +132,10 @@ var _ = Describe("create", func() {
 				}
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
-				}).Should(WithTransform(getData, Equal(expected)))
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
-				}).Should(WithTransform(metav1.Object.GetLabels,
+				}, Timeout, PollingInterval).Should(WithTransform(metav1.Object.GetLabels,
 					HaveKeyWithValue("mylabel", "myvalue")))
 
 				Eventually(func() (*v1.EventList, error) {
@@ -184,7 +184,7 @@ var _ = Describe("create", func() {
 				}
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
-				}).Should(WithTransform(getData, Equal(expected)))
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
 
