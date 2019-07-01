@@ -1,7 +1,7 @@
 language: go
 
 go:
-  - '1.10'
+  - '1.12'
   - '1.9'
 
 services:
@@ -74,8 +74,6 @@ install:
       chmod +x $GOPATH/bin/kubecfg-$v
     fi
     ln -sf kubecfg-$v $GOPATH/bin/kubecfg
-  - git clone --depth=1 https://github.com/ksonnet/ksonnet-lib.git
-  - export KUBECFG_JPATH=$PWD/ksonnet-lib
 
 script:
   - make
@@ -107,7 +105,7 @@ after_success:
     if [[ "$TRAVIS_OS_NAME" == linux && \
           "$TRAVIS_BRANCH" == master && \
           "$TRAVIS_PULL_REQUEST" == false && \
-          "$TRAVIS_GO_VERSION.0" =~ ^1\.10\. ]]; then
+          "$TRAVIS_GO_VERSION.0" =~ ^1\.12\. ]]; then
       echo "Pushing :latest..."
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
       docker tag $CONTROLLER_IMAGE ${CONTROLLER_IMAGE_NAME}:latest

@@ -9,8 +9,7 @@ GINKGO = ginkgo -p
 CONTROLLER_IMAGE = sealed-secrets-controller:latest
 KUBECONFIG ?= $(HOME)/.kube/config
 
-# TODO: Simplify this once ./... ignores ./vendor
-GO_PACKAGES = ./cmd/... ./pkg/...
+GO_PACKAGES = ./...
 GO_FILES := $(shell find $(shell $(GO) list -f '{{.Dir}}' $(GO_PACKAGES)) -name \*.go)
 
 COMMIT = $(shell git rev-parse HEAD)
