@@ -1,18 +1,11 @@
 package main
 
 import (
-	"crypto/rsa"
-	"crypto/x509"
-	"io"
-	mathrand "math/rand"
-	"reflect"
 	"testing"
+	"time"
 
-	"k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
-	certUtil "k8s.io/client-go/util/cert"
 )
 
 func findAction(fake *fake.Clientset, verb, resource string) ktesting.Action {
@@ -28,120 +21,65 @@ func hasAction(fake *fake.Clientset, verb, resource string) bool {
 	return findAction(fake, verb, resource) != nil
 }
 
-// This is omg-not safe for real crypto use!
-func testRand() io.Reader {
-	return mathrand.New(mathrand.NewSource(42))
-}
-
-func TestReadKey(t *testing.T) {
-	rand := testRand()
-
-	key, err := rsa.GenerateKey(rand, 512)
-	if err != nil {
-		t.Fatalf("Failed to generate test key: %v", err)
-	}
-
-	cert, err := signKey(rand, key)
-	if err != nil {
-		t.Fatalf("Failed to self-sign key: %v", err)
-	}
-
-	secret := v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "mykey",
-			Namespace: "myns",
-		},
-		Data: map[string][]byte{
-			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
-			v1.TLSCertKey:       certUtil.EncodeCertPEM(cert),
-		},
-		Type: v1.SecretTypeTLS,
-	}
-
-	client := fake.NewSimpleClientset(&secret)
-
-	key2, _, err := readKey(client, "myns", "mykey")
-	if err != nil {
-		t.Errorf("readKey() failed with: %v", err)
-	}
-
-	t.Logf("actions: %v", client.Actions())
-
-	if !reflect.DeepEqual(key, key2) {
-		t.Errorf("Fetched key != original key: %v != %v", key, key2)
-	}
-}
-
-func TestWriteKey(t *testing.T) {
-	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 512)
-	if err != nil {
-		t.Fatalf("Failed to generate test key: %v", err)
-	}
-
-	cert, err := signKey(rand, key)
-	if err != nil {
-		t.Fatalf("signKey failed: %v", err)
-	}
-
-	client := fake.NewSimpleClientset()
-
-	if err := writeKey(client, key, []*x509.Certificate{cert}, "myns", "mykey"); err != nil {
-		t.Errorf("writeKey() failed with: %v", err)
-	}
-
-	t.Logf("actions: %v", client.Actions())
-
-	if a := findAction(client, "create", "secrets"); a == nil {
-		t.Errorf("writeKey didn't create a secret")
-	} else if a.GetNamespace() != "myns" {
-		t.Errorf("writeKey() created key in wrong namespace!")
-	}
-}
-
-func TestSignKey(t *testing.T) {
-	rand := testRand()
-
-	key, err := rsa.GenerateKey(rand, 512)
-	if err != nil {
-		t.Fatalf("Failed to generate test key: %v", err)
-	}
-
-	cert, err := signKey(rand, key)
-	if err != nil {
-		t.Errorf("signKey() returned error: %v", err)
-	}
-
-	if !reflect.DeepEqual(cert.PublicKey, &key.PublicKey) {
-		t.Errorf("cert pubkey != original pubkey")
-	}
-}
-
-func TestInitKey(t *testing.T) {
+func TestInitKeyRegistry(t *testing.T) {
 	rand := testRand()
 	client := fake.NewSimpleClientset()
 
-	key, certs, err := initKey(client, rand, 1024, "testns", "testkey")
+	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
-		t.Fatalf("initKey returned err: %v", err)
+		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
+	// Add a key to the controller for second test
+	registry.generateKey()
 	if !hasAction(client, "create", "secrets") {
-		t.Errorf("initKey() failed to create secret")
+		t.Fatalf("Error adding initial key to registry")
+	}
+	client.ClearActions()
+
+	// Due to limitations of the fake client, we cannot test whether initKeyRegistry is able
+	// to pick up existing keys
+	_, err = initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
+	if err != nil {
+		t.Fatalf("initKeyRegistry() returned err: %v", err)
+	}
+	if !hasAction(client, "list", "secrets") {
+		t.Errorf("initKeyRegistry() failed to read existing keys")
+	}
+}
+
+func TestInitKeyRotation(t *testing.T) {
+	rand := testRand()
+	client := fake.NewSimpleClientset()
+	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
+	if err != nil {
+		t.Fatalf("initKeyRegistry() returned err: %v", err)
+	}
+
+	keyGenTrigger, err := initKeyRotation(registry, time.Hour)
+	if err != nil {
+		t.Fatalf("initKeyRotation() returned err: %v", err)
+	}
+	if !hasAction(client, "create", "secrets") {
+		t.Errorf("initKeyRotation() failed to generate an initial key")
 	}
 
 	client.ClearActions()
 
-	key2, certs2, err := initKey(client, rand, 1024, "testns", "testkey")
-	if err != nil {
-		t.Fatalf("initKey returned err: %v", err)
+	// Test the trigger function
+	// Activates trigger and polls client every 50 ms up to 10s for the appropriate action
+	keyGenTrigger()
+	maxWait := 10 * time.Second
+	endTime := time.Now().Add(maxWait)
+	successful := false
+	for time.Now().Before(endTime) {
+		time.Sleep(50 * time.Millisecond)
+		if hasAction(client, "create", "secrets") {
+			successful = true
+			break
+		}
 	}
-
-	if !reflect.DeepEqual(key, key2) {
-		t.Errorf("Failed to find same key")
-	}
-
-	if !reflect.DeepEqual(certs, certs2) {
-		t.Errorf("Failed to find same certs")
+	if !successful {
+		t.Errorf("trigger function failed to activate early key generation")
 	}
 }

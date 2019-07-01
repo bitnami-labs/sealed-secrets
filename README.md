@@ -114,33 +114,37 @@ only change from existing Kubernetes is that the *contents* of the
 
 ## Details
 
-This controller adds a new `SealedSecret` custom resource.  The
+This controller adds a new `SealedSecret` custom resource. The
 interesting part of a `SealedSecret` is a base64-encoded
 asymmetrically encrypted `Secret`.
 
-The controller looks for a cluster-wide private/public key pair on
-startup, and generates a new 4096 bit (by default) RSA key pair if not found.  The key is
-persisted in a regular `Secret` in the same namespace as the
-controller.  The public key portion of this (in the form of a
-self-signed certificate) should be made publicly available to anyone
-wanting to use `SealedSecret`s with this cluster.  The certificate is
-printed to the controller log at startup, and available via an HTTP
-GET to `/v1/cert.pem` on the controller.
+The controller maintains a set of private/public key pairs as kubernetes
+secrets. Keys are labelled with `sealedsecrets.bitnami.com/sealed-secrets-key`
+and identified in the label as either `active` or `compromised`. On startup,
+The sealed secrets controller will...
+1. Search for these keys and add them to its local store if they are
+labelled as active.
+2. Create a new key
+3. Start the key rotation cycle
 
-During encryption, each value in the original `Secret` is
-symmetrically encrypted using AES-GCM (AES-256) with a randomly-generated
-single-use 32 byte session key.  The session key is then asymmetrically
-encrypted with the controller's public key using RSA-OAEP (using SHA256), and the
-original `Secret`'s namespace/name as the OAEP input parameter (aka
-label).  The final output is: 2 byte encrypted session key length ||
-encrypted session key || encrypted Secret.
+#### Key rotation
 
-Note that during decryption by the controller, the `SealedSecret`'s
-namespace/name is used as the OAEP input parameter, ensuring that the
-`SealedSecret` and `Secret` are tied to the same namespace and name.
+Keys are automatically rotated. This can be configured on controller startup with
+the `--rotate-period=<value>` flag. The `value` field can be given as golang
+duration flag (eg: `720h30m`).
 
-The generated `Secret` is marked as "owned" by the `SealedSecret` and
-will be garbage collected if the `SealedSecret` is deleted.
+A key can be generated early in two ways
+1. Send `SIGUSR1` to the controller
+`kubectl exec -it <controller pod> -- kill -SIGUSR1 1`
+2. Label the current latest key as compromised (any value other than active)
+`kubectl label secrets <keyname> sealedsecrets.bitnami.com/sealed-secrets-key=compromised`.
+
+**NOTE** Sealed secrets currently does not automatically pick up relabelled
+keys, an admin must restart the controller before the effect will apply.
+
+Labelling a secret with anything other than `active` effectively deletes
+the key from the sealed secrets controller, but it is still available in k8s for
+manual encryption/decryption if need be.
 
 ## Developing
 To be able to develop on this project, you need to have the following tools installed:
@@ -162,7 +166,7 @@ $ make test
 
 To run the integration tests:
 * Start Minikube
-* Build the controller for Linux, so that it can be run within a Docker image - edit the Makefile to add 
+* Build the controller for Linux, so that it can be run within a Docker image - edit the Makefile to add
 `GOOS=linux GOARCH=amd64` to `%-static`, and then run `make controller.yaml `
 * Alter `controller.yaml` so that `imagePullPolicy: Never`, to ensure that the image you've just built will be
 used by Kubernetes

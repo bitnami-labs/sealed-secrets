@@ -55,3 +55,18 @@ type SealedSecretList struct {
 
 	Items []SealedSecret `json:"items"`
 }
+
+// ByCreationTimestamp is used to sort a list of secrets
+type ByCreationTimestamp []apiv1.Secret
+
+func (s ByCreationTimestamp) Len() int {
+	return len(s)
+}
+
+func (s ByCreationTimestamp) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
+}
+
+func (s ByCreationTimestamp) Less(i, j int) bool {
+	return s[i].GetCreationTimestamp().Unix() < s[j].GetCreationTimestamp().Unix()
+}

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"crypto/rsa"
+	"encoding/json"
 	"fmt"
 	"log"
 	"time"
@@ -28,13 +28,13 @@ const maxRetries = 5
 
 // Controller implements the main sealed-secrets-controller loop.
 type Controller struct {
-	queue    workqueue.RateLimitingInterface
-	informer cache.SharedIndexInformer
-	sclient  v1.SecretsGetter
-	privKey  *rsa.PrivateKey
+	queue       workqueue.RateLimitingInterface
+	informer    cache.SharedIndexInformer
+	sclient     v1.SecretsGetter
+	keyRegistry *KeyRegistry
 }
 
-func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key *rsa.PrivateKey, ssecret *ssv1alpha1.SealedSecret) error {
+func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, keyRegistry *KeyRegistry, ssecret *ssv1alpha1.SealedSecret) error {
 	// Important: Be careful not to reveal the namespace/name of
 	// the *decrypted* Secret (or any other detail) in error/log
 	// messages.
@@ -42,7 +42,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 	objName := fmt.Sprintf("%s/%s", ssecret.GetObjectMeta().GetNamespace(), ssecret.GetObjectMeta().GetName())
 	log.Printf("Updating %s", objName)
 
-	secret, err := ssecret.Unseal(codecs, key)
+	secret, err := attemptUnseal(ssecret, keyRegistry)
 	if err != nil {
 		// TODO: Add error event
 		return err
@@ -62,7 +62,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 }
 
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssinformer ssinformer.SharedInformerFactory, privKey *rsa.PrivateKey) *Controller {
+func NewController(clientset kubernetes.Interface, ssinformer ssinformer.SharedInformerFactory, keyRegistry *KeyRegistry) *Controller {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
 	informer := ssinformer.Bitnami().V1alpha1().
@@ -91,10 +91,10 @@ func NewController(clientset kubernetes.Interface, ssinformer ssinformer.SharedI
 	})
 
 	return &Controller{
-		informer: informer,
-		queue:    queue,
-		sclient:  clientset.Core(),
-		privKey:  privKey,
+		informer:    informer,
+		queue:       queue,
+		sclient:     clientset.Core(),
+		keyRegistry: keyRegistry,
 	}
 }
 
@@ -185,7 +185,7 @@ func (c *Controller) unseal(key string) error {
 	ssecret := obj.(*ssv1alpha1.SealedSecret)
 	log.Printf("Updating %s", key)
 
-	secret, err := ssecret.Unseal(scheme.Codecs, c.privKey)
+	secret, err := c.attemptUnseal(ssecret)
 	if err != nil {
 		return err
 	}
@@ -248,7 +248,7 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 
 	switch s := object.(type) {
 	case *ssv1alpha1.SealedSecret:
-		if _, err := s.Unseal(scheme.Codecs, c.privKey); err != nil {
+		if _, err := c.attemptUnseal(s); err != nil {
 			return false, nil
 		}
 		return true, nil
@@ -256,4 +256,47 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 		return false, fmt.Errorf("Unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
 
 	}
+}
+
+// Rotate takes a sealed secret and returns a sealed secret that has been encrypted
+// with the latest private key. If the secret is already encrypted with the latest,
+// returns the input.
+func (c *Controller) Rotate(content []byte) ([]byte, error) {
+	object, err := runtime.Decode(scheme.Codecs.UniversalDecoder(ssv1alpha1.SchemeGroupVersion), content)
+	if err != nil {
+		return nil, err
+	}
+
+	switch s := object.(type) {
+	case *ssv1alpha1.SealedSecret:
+		secret, err := c.attemptUnseal(s)
+		if err != nil {
+			return nil, fmt.Errorf("Error decrypting secret. %v", err)
+		}
+		latestPrivKey := c.keyRegistry.latestPrivateKey()
+		resealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, &latestPrivKey.PublicKey, secret)
+		if err != nil {
+			return nil, fmt.Errorf("Error creating new sealed secret. %v", err)
+		}
+		data, err := json.Marshal(resealedSecret)
+		if err != nil {
+			return nil, fmt.Errorf("Error marshalling new secret to json. %v", err)
+		}
+		return data, nil
+	default:
+		return nil, fmt.Errorf("Unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
+	}
+}
+
+func (c *Controller) attemptUnseal(ss *ssv1alpha1.SealedSecret) (*apiv1.Secret, error) {
+	return attemptUnseal(ss, c.keyRegistry)
+}
+
+func attemptUnseal(ss *ssv1alpha1.SealedSecret, keyRegistry *KeyRegistry) (*apiv1.Secret, error) {
+	for _, privKey := range keyRegistry.privateKeys {
+		if secret, err := ss.Unseal(scheme.Codecs, privKey); err == nil {
+			return secret, nil
+		}
+	}
+	return nil, fmt.Errorf("No key could decrypt secret")
 }

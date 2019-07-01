@@ -2,42 +2,43 @@ package main
 
 import (
 	"crypto/rand"
-	"crypto/rsa"
 	"crypto/x509"
-	"crypto/x509/pkix"
 	goflag "flag"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
-	"math/big"
 	"os"
 	"os/signal"
+	"sort"
 	"strings"
 	"syscall"
 	"time"
 
 	flag "github.com/spf13/pflag"
-	"k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	certUtil "k8s.io/client-go/util/cert"
 
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
 )
 
 var (
-	keyName      = flag.String("key-name", "sealed-secrets-key", "Name of Secret containing public/private key.")
-	keySize      = flag.Int("key-size", 4096, "Size of encryption key.")
-	validFor     = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
-	myCN         = flag.String("my-cn", "", "CN to use in generated certificate.")
-	printVersion = flag.Bool("version", false, "Print version information and exit")
+	keyPrefix       = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
+	keySize         = flag.Int("key-size", 4096, "Size of encryption key.")
+	validFor        = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
+	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")
+	printVersion    = flag.Bool("version", false, "Print version information and exit")
+	keyRotatePeriod = flag.Duration("rotate-period", 30*24*time.Hour, "New key generation period")
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
+
+	// Selector used to find existing public/private key pairs on startup
+	keySelector = fields.OneTermEqualSelector(SealedSecretsKeyLabel, "active")
 )
 
 func init() {
@@ -53,108 +54,33 @@ type controller struct {
 	clientset kubernetes.Interface
 }
 
-func readKey(client kubernetes.Interface, namespace, keyName string) (*rsa.PrivateKey, []*x509.Certificate, error) {
-	secret, err := client.Core().Secrets(namespace).Get(keyName, metav1.GetOptions{})
+func initKeyPrefix(keyPrefix string) (string, error) {
+	prefix, err := validateKeyPrefix(keyPrefix)
 	if err != nil {
-		return nil, nil, err
+		return "", err
 	}
-
-	key, err := certUtil.ParsePrivateKeyPEM(secret.Data[v1.TLSPrivateKeyKey])
-	if err != nil {
-		return nil, nil, err
-	}
-
-	certs, err := certUtil.ParseCertsPEM(secret.Data[v1.TLSCertKey])
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return key.(*rsa.PrivateKey), certs, nil
+	return prefix, err
 }
 
-func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, keyName string) error {
-	certbytes := []byte{}
-	for _, cert := range certs {
-		certbytes = append(certbytes, certUtil.EncodeCertPEM(cert)...)
-	}
-
-	secret := v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      keyName,
-			Namespace: namespace,
-		},
-		Data: map[string][]byte{
-			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
-			v1.TLSCertKey:       certbytes,
-		},
-		Type: v1.SecretTypeTLS,
-	}
-
-	_, err := client.Core().Secrets(namespace).Create(&secret)
-	return err
-}
-
-func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
-	// TODO: use certificates API to get this signed by the cluster root CA
-	// See https://kubernetes.io/docs/tasks/tls/managing-tls-in-a-cluster/
-
-	notBefore := time.Now()
-
-	serialNo, err := rand.Int(r, new(big.Int).Lsh(big.NewInt(1), 128))
+func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
+	log.Printf("Searching for existing private keys")
+	secretList, err := client.Core().Secrets(namespace).List(metav1.ListOptions{
+		LabelSelector: keySelector.String(),
+	})
 	if err != nil {
 		return nil, err
 	}
-
-	cert := x509.Certificate{
-		SerialNumber: serialNo,
-		KeyUsage:     x509.KeyUsageEncipherOnly,
-		NotBefore:    notBefore.UTC(),
-		NotAfter:     notBefore.Add(*validFor).UTC(),
-		Subject: pkix.Name{
-			CommonName: *myCN,
-		},
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-	}
-
-	data, err := x509.CreateCertificate(r, &cert, &cert, &key.PublicKey, key)
-	if err != nil {
-		return nil, err
-	}
-
-	return x509.ParseCertificate(data)
-}
-
-func initKey(client kubernetes.Interface, r io.Reader, keySize int, namespace, keyName string) (*rsa.PrivateKey, []*x509.Certificate, error) {
-	privKey, certs, err := readKey(client, namespace, keyName)
-	if err != nil {
-		if errors.IsNotFound(err) {
-			log.Printf("Key %s/%s not found, generating new %d bit key", namespace, keyName, keySize)
-			privKey, err = rsa.GenerateKey(r, keySize)
-			if err != nil {
-				return nil, nil, err
-			}
-
-			cert, err := signKey(r, privKey)
-			if err != nil {
-				return nil, nil, err
-			}
-			certs = []*x509.Certificate{cert}
-
-			if err = writeKey(client, privKey, certs, namespace, keyName); err != nil {
-				return nil, nil, err
-			}
-			log.Printf("New key written to %s/%s", namespace, keyName)
-		} else {
-			return nil, nil, err
+	keyRegistry := NewKeyRegistry(client, namespace, prefix, label, keysize)
+	sort.Sort(ssv1alpha1.ByCreationTimestamp(secretList.Items))
+	for _, secret := range secretList.Items {
+		key, certs, err := readKey(secret)
+		if err != nil {
+			log.Printf("Error reading key %s: %v", secret.Name, err)
 		}
+		keyRegistry.registerNewKey(secret.Name, key, certs[0])
+		log.Printf("----- %s", secret.Name)
 	}
-
-	for _, cert := range certs {
-		log.Printf("Certificate is:\n%s\n", certUtil.EncodeCertPEM(cert))
-	}
-
-	return privKey, certs, nil
+	return keyRegistry, nil
 }
 
 func myNamespace() string {
@@ -170,6 +96,31 @@ func myNamespace() string {
 	}
 
 	return metav1.NamespaceDefault
+}
+
+// Initialises the first key and starts the rotation job. returns an early trigger function
+func initKeyRotation(registry *KeyRegistry, period time.Duration) (func(), error) {
+	if _, err := registry.generateKey(); err != nil { // create the first key
+		return nil, err
+	}
+	// wrapper function to log error thrown by generateKey function
+	keyGenFunc := func() {
+		if _, err := registry.generateKey(); err != nil {
+			log.Printf("Failed to generate new key : %v\n", err)
+		}
+	}
+	return ScheduleJobWithTrigger(period, keyGenFunc), nil
+}
+
+func initKeyGenSignalListener(trigger func()) {
+	sigChannel := make(chan os.Signal)
+	signal.Notify(sigChannel, syscall.SIGUSR1)
+	go func() {
+		for {
+			<-sigChannel
+			trigger()
+		}
+	}()
 }
 
 func main2() error {
@@ -190,20 +141,36 @@ func main2() error {
 
 	myNs := myNamespace()
 
-	privKey, certs, err := initKey(clientset, rand.Reader, *keySize, myNs, *keyName)
+	prefix, err := initKeyPrefix(*keyPrefix)
 	if err != nil {
 		return err
 	}
 
+	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, *keySize)
+	if err != nil {
+		return err
+	}
+
+	trigger, err := initKeyRotation(keyRegistry, *keyRotatePeriod)
+	if err != nil {
+		return err
+	}
+
+	initKeyGenSignalListener(trigger)
+
 	ssinformer := ssinformers.NewSharedInformerFactory(ssclient, 0)
-	controller := NewController(clientset, ssinformer, privKey)
+	controller := NewController(clientset, ssinformer, keyRegistry)
 
 	stop := make(chan struct{})
 	defer close(stop)
 
 	go controller.Run(stop)
 
-	go httpserver(func() ([]*x509.Certificate, error) { return certs, nil }, controller.AttemptUnseal)
+	cp := func() []*x509.Certificate {
+		return []*x509.Certificate{keyRegistry.cert}
+	}
+
+	go httpserver(cp, controller.AttemptUnseal, controller.Rotate)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)

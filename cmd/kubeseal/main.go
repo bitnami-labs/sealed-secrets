@@ -2,12 +2,12 @@ package main
 
 import (
 	"crypto/rsa"
+	"encoding/json"
 	"errors"
 	goflag "flag"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"k8s.io/apimachinery/pkg/util/net"
 	"net/http"
 	"os"
 	"strings"
@@ -17,6 +17,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
+	"k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
@@ -36,7 +37,8 @@ var (
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.String("format", "json", "Output format for sealed secret. Either json or yaml")
-	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout.  Useful for later use with --cert")
+	rotate         = flag.Bool("rotate", false, "Re-encrypt the given sealed secret to use the latest cluster key.")
+	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
 
@@ -189,30 +191,9 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 	if err != nil {
 		return err
 	}
-
-	var contentType string
-	switch strings.ToLower(*outputFormat) {
-	case "json", "":
-		contentType = runtime.ContentTypeJSON
-	case "yaml":
-		contentType = "application/yaml"
-	default:
-		return fmt.Errorf("unsupported output format: %s", *outputFormat)
-
-	}
-	prettyEnc, err := prettyEncoder(codecs, contentType, ssv1alpha1.SchemeGroupVersion)
-	if err != nil {
+	if err = sealedSecretOutput(out, codecs, ssecret); err != nil {
 		return err
 	}
-
-	buf, err := runtime.Encode(prettyEnc, ssecret)
-	if err != nil {
-		return err
-	}
-
-	out.Write(buf)
-	fmt.Fprint(out, "\n")
-
 	return nil
 }
 
@@ -250,6 +231,76 @@ func validateSealedSecret(in io.Reader, namespace, name string) error {
 	return nil
 }
 
+func rotateSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, namespace, name string) error {
+	conf, err := clientConfig.ClientConfig()
+	if err != nil {
+		return err
+	}
+	restClient, err := corev1.NewForConfig(conf)
+	if err != nil {
+		return err
+	}
+
+	content, err := ioutil.ReadAll(in)
+	if err != nil {
+		return err
+	}
+
+	req := restClient.RESTClient().Post().
+		Namespace(namespace).
+		Resource("services").
+		SubResource("proxy").
+		Name(net.JoinSchemeNamePort("http", name, "")).
+		Suffix("/v1/rotate")
+
+	req.Body(content)
+	res := req.Do()
+	if err := res.Error(); err != nil {
+		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
+			return fmt.Errorf("Unable to rotate secret")
+		}
+		return fmt.Errorf("Error occurred while rotating secret")
+	}
+	body, err := res.Raw()
+	if err != nil {
+		return err
+	}
+	ssecret := &ssv1alpha1.SealedSecret{}
+	if err = json.Unmarshal(body, ssecret); err != nil {
+		return err
+	}
+	ssecret.SetCreationTimestamp(metav1.Time{})
+	ssecret.SetDeletionTimestamp(nil)
+	ssecret.Generation = 0
+	if err = sealedSecretOutput(out, codecs, ssecret); err != nil {
+		return err
+	}
+	return nil
+}
+
+func sealedSecretOutput(out io.Writer, codecs runtimeserializer.CodecFactory, ssecret *ssv1alpha1.SealedSecret) error {
+	var contentType string
+	switch strings.ToLower(*outputFormat) {
+	case "json", "":
+		contentType = runtime.ContentTypeJSON
+	case "yaml":
+		contentType = "application/yaml"
+	default:
+		return fmt.Errorf("unsupported output format: %s", *outputFormat)
+	}
+	prettyEnc, err := prettyEncoder(codecs, contentType, ssv1alpha1.SchemeGroupVersion)
+	if err != nil {
+		return err
+	}
+	buf, err := runtime.Encode(prettyEnc, ssecret)
+	if err != nil {
+		return err
+	}
+	out.Write(buf)
+	fmt.Fprint(out, "\n")
+	return nil
+}
+
 func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
@@ -262,6 +313,13 @@ func main() {
 	if *validateSecret {
 		err := validateSealedSecret(os.Stdin, *controllerNs, *controllerName)
 		if err != nil {
+			panic(err.Error())
+		}
+		return
+	}
+
+	if *rotate {
+		if err := rotateSealedSecret(os.Stdin, os.Stdout, scheme.Codecs, *controllerNs, *controllerName); err != nil {
 			panic(err.Error())
 		}
 		return

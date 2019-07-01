@@ -27,14 +27,8 @@ controller + {
       {
         apiGroups: [""],
         resources: ["secrets"],
-        resourceNames: ["sealed-secrets-key"],
-        verbs: ["get"],
-      },
-      {
-        apiGroups: [""],
-        resources: ["secrets"],
-        // Can't limit create by resourceName, because there's no resource yet
-        verbs: ["create"],
+        // Can't limit create by resource name as keys are produced on the fly
+        verbs: ["create", "list"],
       },
     ],
   },
