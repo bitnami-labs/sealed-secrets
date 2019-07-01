@@ -2,6 +2,10 @@ cloud.google.com/go v0.0.0-20170810012647-4226ba9d76a5 h1:OWj2PAv4/CgesL9RAtEReT
 cloud.google.com/go v0.0.0-20170810012647-4226ba9d76a5/go.mod h1:aQUYkXzVsufM+DwF1aE+0xfcU+56JwCaLick0ClmMTw=
 github.com/Azure/go-autorest v9.5.2+incompatible h1:9o7ArGExIBzf3xR/FTe2+HtQViHlk8CgjAK3Cm0PP5g=
 github.com/Azure/go-autorest v9.5.2+incompatible/go.mod h1:r+4oMnoxhatjLLJ6zxSWATqVooLgysK6ZNox3g/xq24=
+github.com/bitnami-labs/flagenv v0.0.0-20190607135054-a87af7a1d6fc h1:wJ3FbsBkJwfAwhvEfV9EbTCZxxukd3kvuLT0yOSWZoc=
+github.com/bitnami-labs/flagenv v0.0.0-20190607135054-a87af7a1d6fc/go.mod h1:OeW4NPgFPO7+t8q1Vn2Yv+rkO+4kEQzlDskwm7C7PXs=
+github.com/bitnami-labs/pflagenv v0.0.0-20190702160147-b4d9f048d98f h1:FiYyJvRfqfM1kSqYZ+OCRIBi7udnR0wMa2HStMGvFic=
+github.com/bitnami-labs/pflagenv v0.0.0-20190702160147-b4d9f048d98f/go.mod h1:Lw3ejf6HTt4DqBIAXlkOIvFjnpj8Zq+zD/UtH29ILFA=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dgrijalva/jwt-go v3.1.0+incompatible h1:FFziAwDQQ2dz1XClWMkwvukur3evtZx7x/wMHKM1i20=
