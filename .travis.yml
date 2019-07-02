@@ -2,7 +2,7 @@ language: go
 
 go:
   - '1.12'
-  - '1.9'
+  - '1.11'
 
 services:
   - docker
