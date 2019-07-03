@@ -5,6 +5,10 @@ github.com/Azure/go-autorest/autorest
 github.com/Azure/go-autorest/autorest/adal
 github.com/Azure/go-autorest/autorest/azure
 github.com/Azure/go-autorest/autorest/date
+# github.com/bitnami-labs/flagenv v0.0.0-20190607135054-a87af7a1d6fc
+github.com/bitnami-labs/flagenv
+# github.com/bitnami-labs/pflagenv v0.0.0-20190702160147-b4d9f048d98f
+github.com/bitnami-labs/pflagenv
 # github.com/davecgh/go-spew v1.1.0
 github.com/davecgh/go-spew/spew
 # github.com/dgrijalva/jwt-go v3.1.0+incompatible
@@ -174,6 +178,7 @@ k8s.io/api/storage/v1beta1
 # k8s.io/apimachinery v0.0.0-20180619225948-e386b2658ed2
 k8s.io/apimachinery/pkg/api/errors
 k8s.io/apimachinery/pkg/apis/meta/v1
+k8s.io/apimachinery/pkg/fields
 k8s.io/apimachinery/pkg/runtime
 k8s.io/apimachinery/pkg/runtime/serializer
 k8s.io/apimachinery/pkg/util/runtime
@@ -187,7 +192,6 @@ k8s.io/apimachinery/pkg/api/resource
 k8s.io/apimachinery/pkg/util/intstr
 k8s.io/apimachinery/pkg/util/validation/field
 k8s.io/apimachinery/pkg/conversion
-k8s.io/apimachinery/pkg/fields
 k8s.io/apimachinery/pkg/selection
 k8s.io/apimachinery/pkg/conversion/queryparams
 k8s.io/apimachinery/pkg/util/errors

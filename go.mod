@@ -5,6 +5,8 @@ go 1.12
 require (
 	cloud.google.com/go v0.0.0-20170810012647-4226ba9d76a5 // indirect
 	github.com/Azure/go-autorest v9.5.2+incompatible // indirect
+	github.com/bitnami-labs/flagenv v0.0.0-20190607135054-a87af7a1d6fc
+	github.com/bitnami-labs/pflagenv v0.0.0-20190702160147-b4d9f048d98f
 	github.com/dgrijalva/jwt-go v3.1.0+incompatible // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/gogo/protobuf v0.0.0-20171204084257-41168f6614b7 // indirect

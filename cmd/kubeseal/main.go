@@ -13,7 +13,7 @@ import (
 	"strings"
 
 	flag "github.com/spf13/pflag"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
@@ -28,7 +28,13 @@ import (
 	// Register Auth providers
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
+	"github.com/bitnami-labs/flagenv"
+	"github.com/bitnami-labs/pflagenv"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+)
+
+const (
+	flagEnvPrefix = "SEALED_SECRETS"
 )
 
 var (
@@ -49,6 +55,8 @@ var (
 )
 
 func init() {
+	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
+
 	// The "usual" clientcmd/kubectl flags
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
@@ -57,6 +65,8 @@ func init() {
 	flag.StringVar(&loadingRules.ExplicitPath, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
 	clientcmd.BindOverrideFlags(&overrides, flag.CommandLine, kflags)
 	clientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &overrides, os.Stdin)
+
+	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
 
 	// Standard goflags (glog in particular)
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
