@@ -1,6 +1,7 @@
 GO = go
 GO_FLAGS =
 GOFMT = gofmt
+# goreleaser >= v0.105.0 required for multiple id support
 GORELEASER = goreleaser
 
 KUBECFG = kubecfg -U https://github.com/bitnami-labs/kube-libsonnet/raw/52ba963ca44f7a4960aeae9ee0fbee44726e481f

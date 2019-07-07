@@ -1,11 +1,13 @@
+---
 ## Bitnami Sealed Secrets
 
 release:
-  # Comment out to enable publishing
-  # disable: true
+# # Comment out to enable publishing
+# # disable: true
 
 builds:
-- binary: controller
+- id: controller
+  binary: controller
   main: ./cmd/controller/
   env:
   - CGO_ENABLED=0
@@ -18,7 +20,8 @@ builds:
   ldflags: -X main.VERSION={{.Version}}
   hooks:
     post: make -B controller.yaml controller-norbac.yaml
-- binary: kubeseal
+- id: kubeseal
+  binary: kubeseal
   main: ./cmd/kubeseal/
   env:
   - CGO_ENABLED=0
@@ -56,7 +59,10 @@ dockers:
   # Comment below out to push to configured repository
   # skip_push: true
 
-archive:
+archives:
+- id: kubeseal
+  builds:
+  - kubeseal
   replacements:
     darwin: Darwin
     linux: Linux
