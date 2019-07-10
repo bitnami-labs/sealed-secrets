@@ -66,7 +66,7 @@ func containEventWithReason(matcher types.GomegaMatcher) types.GomegaMatcher {
 	return WithTransform(
 		func(l *v1.EventList) []v1.Event { return l.Items },
 		ContainElement(WithTransform(
-			func(e *v1.Event) string { return e.Reason },
+			func(e v1.Event) string { return e.Reason },
 			matcher,
 		)),
 	)
