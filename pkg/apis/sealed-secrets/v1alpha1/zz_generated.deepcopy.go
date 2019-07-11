@@ -116,14 +116,9 @@ func (in *SealedSecretSpec) DeepCopyInto(out *SealedSecretSpec) {
 	}
 	if in.EncryptedData != nil {
 		in, out := &in.EncryptedData, &out.EncryptedData
-		*out = make(map[string][]byte, len(*in))
+		*out = make(map[string]string, len(*in))
 		for key, val := range *in {
-			if val == nil {
-				(*out)[key] = nil
-			} else {
-				(*out)[key] = make([]byte, len(val))
-				copy((*out)[key], val)
-			}
+			(*out)[key] = val
 		}
 	}
 	return

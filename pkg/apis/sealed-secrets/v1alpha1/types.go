@@ -45,7 +45,7 @@ type SealedSecretSpec struct {
 
 	// Data is deprecated and will be removed eventually. Use per-value EncryptedData instead.
 	Data          []byte            `json:"data,omitempty"`
-	EncryptedData map[string][]byte `json:"encryptedData"`
+	EncryptedData map[string]string `json:"encryptedData"`
 }
 
 // SealedSecretConditionType describes the type of SealedSecret condition
