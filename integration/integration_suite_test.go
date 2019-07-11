@@ -146,7 +146,7 @@ func runKubesealWith(flags []string, input runtime.Object) (runtime.Object, erro
 		return nil, err
 	}
 
-	fmt.Fprintf(GinkgoWriter, "kubeseal input:\n%s", indata)
+	fmt.Fprintf(GinkgoWriter, "kubeseal input:\n%s\n", indata)
 
 	outbuf := bytes.Buffer{}
 
@@ -154,7 +154,7 @@ func runKubesealWith(flags []string, input runtime.Object) (runtime.Object, erro
 		return nil, err
 	}
 
-	fmt.Fprintf(GinkgoWriter, "kubeseal output:\n%s", outbuf.Bytes())
+	fmt.Fprintf(GinkgoWriter, "kubeseal output:\n%s\n", outbuf.Bytes())
 
 	outputObj, err := runtime.Decode(scheme.Codecs.UniversalDecoder(ssv1alpha1.SchemeGroupVersion), outbuf.Bytes())
 	if err != nil {
