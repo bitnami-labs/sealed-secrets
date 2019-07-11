@@ -85,7 +85,7 @@ script:
   - ./$EXE_NAME --help || test $? -eq 2
   - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then
-      make controller.yaml controller-norbac.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
+      make controller.yaml controller-norbac.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE IMAGE_PULL_POLICY=Never
     fi
   - |
     if [ "$INT_KVERS" != "" ]; then

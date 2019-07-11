@@ -167,9 +167,7 @@ $ make test
 To run the integration tests:
 * Start Minikube
 * Build the controller for Linux, so that it can be run within a Docker image - edit the Makefile to add
-`GOOS=linux GOARCH=amd64` to `%-static`, and then run `make controller.yaml `
-* Alter `controller.yaml` so that `imagePullPolicy: Never`, to ensure that the image you've just built will be
-used by Kubernetes
+`GOOS=linux GOARCH=amd64` to `%-static`, and then run `make controller.yaml IMAGE_PULL_POLICY=Never`
 * Add the sealed-secret CRD and controller to Kubernetes - `kubectl apply -f controller.yaml`
 * Revert any changes made to the Makefile to build the Linux controller
 * Remove the binaries which were possibly built for another OS - `make clean`
