@@ -41,6 +41,10 @@ func getData(s *v1.Secret) map[string][]byte {
 	return s.Data
 }
 
+func getSecretType(s *v1.Secret) v1.SecretType {
+	return s.Type
+}
+
 func fetchKeys(c corev1.SecretsGetter) (*rsa.PrivateKey, []*x509.Certificate, error) {
 	list, err := c.Secrets("kube-system").List(metav1.ListOptions{
 		LabelSelector: keySelector,
@@ -117,7 +121,7 @@ var _ = Describe("create", func() {
 		Expect(err).NotTo(HaveOccurred())
 		pubKey = certs[0].PublicKey.(*rsa.PublicKey)
 
-		fmt.Fprintf(GinkgoWriter, "Sealing Secret %#v", s)
+		fmt.Fprintf(GinkgoWriter, "Sealing Secret %#v\n", s)
 		ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -128,7 +132,7 @@ var _ = Describe("create", func() {
 
 	JustBeforeEach(func() {
 		var err error
-		fmt.Fprintf(GinkgoWriter, "Creating SealedSecret: %#v", ss)
+		fmt.Fprintf(GinkgoWriter, "Creating SealedSecret: %#v\n", ss)
 		ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Create(ss)
 		Expect(err).NotTo(HaveOccurred())
 	})
@@ -165,7 +169,7 @@ var _ = Describe("create", func() {
 				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
 				ss.ResourceVersion = resVer
 
-				fmt.Fprintf(GinkgoWriter, "Updating to SealedSecret: %#v", ss)
+				fmt.Fprintf(GinkgoWriter, "Updating to SealedSecret: %#v\n", ss)
 				ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Update(ss)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -223,7 +227,7 @@ var _ = Describe("create", func() {
 			wrongkey, err := rsa.GenerateKey(rand.Reader, 1024)
 			Expect(err).NotTo(HaveOccurred())
 
-			fmt.Fprintf(GinkgoWriter, "Resealing with wrong key")
+			fmt.Fprintf(GinkgoWriter, "Resealing with wrong key\n")
 			ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, &wrongkey.PublicKey, s)
 			Expect(err).NotTo(HaveOccurred())
 		})
@@ -242,6 +246,36 @@ var _ = Describe("create", func() {
 				return c.Events(ns).Search(scheme.Scheme, ss)
 			}, Timeout, PollingInterval).Should(
 				containEventWithReason(Equal("ErrUnsealFailed")),
+			)
+		})
+	})
+
+	Describe("Custom Secret Type", func() {
+		BeforeEach(func() {
+			label := fmt.Sprintf("%s/%s", s.Namespace, s.Name)
+			ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, []byte("{\"auths\": {\"https://index.docker.io/v1/\": {\"auth\": \"c3R...zE2\"}}}"), []byte(label))
+			Expect(err).NotTo(HaveOccurred())
+
+			ss.Spec.EncryptedData[".dockerconfigjson"] = ciphertext
+			delete(ss.Spec.EncryptedData, "foo")
+			ss.Spec.Template.Type = "kubernetes.io/dockerconfigjson"
+		})
+		It("should produce expected Secret", func() {
+			expected := map[string][]byte{
+				".dockerconfigjson": []byte("{\"auths\": {\"https://index.docker.io/v1/\": {\"auth\": \"c3R...zE2\"}}}"),
+			}
+			var expectedType v1.SecretType = "kubernetes.io/dockerconfigjson"
+
+			Eventually(func() (*v1.Secret, error) {
+				return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+			}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+			Eventually(func() (*v1.Secret, error) {
+				return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+			}, Timeout, PollingInterval).Should(WithTransform(getSecretType, Equal(expectedType)))
+			Eventually(func() (*v1.EventList, error) {
+				return c.Events(ns).Search(scheme.Scheme, ss)
+			}, Timeout, PollingInterval).Should(
+				containEventWithReason(Equal("Unsealed")),
 			)
 		})
 	})
@@ -307,7 +341,7 @@ var _ = Describe("create", func() {
 					ssv1alpha1.SealedSecretClusterWideAnnotation: "true",
 				}
 
-				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v", s)
+				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v\n", s)
 				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -336,7 +370,7 @@ var _ = Describe("create", func() {
 					ssv1alpha1.SealedSecretClusterWideAnnotation: "true",
 				}
 
-				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v", s)
+				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v\n", s)
 				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
 				ss.Namespace = ns2
 				Expect(err).NotTo(HaveOccurred())
@@ -363,7 +397,7 @@ var _ = Describe("create", func() {
 					ssv1alpha1.SealedSecretNamespaceWideAnnotation: "true",
 				}
 
-				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v", s)
+				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v\n", s)
 				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -392,7 +426,7 @@ var _ = Describe("create", func() {
 					ssv1alpha1.SealedSecretNamespaceWideAnnotation: "true",
 				}
 
-				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v", s)
+				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v\n", s)
 				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
 				ss.Namespace = ns2
 				Expect(err).NotTo(HaveOccurred())
