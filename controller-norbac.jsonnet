@@ -12,6 +12,7 @@ local trim = function(str) (
 
 local namespace = "kube-system";
 local controllerImage = std.extVar("CONTROLLER_IMAGE");
+local imagePullPolicy = std.extVar("IMAGE_PULL_POLICY");
 
 // This is a bit odd: Downgrade to apps/v1beta1 so we can continue
 // to support k8s v1.6.
@@ -38,6 +39,7 @@ local v1beta1_Deployment(name) = kube.Deployment(name) {
           containers_+: {
             controller: kube.Container("sealed-secrets-controller") {
               image: controllerImage,
+              imagePullPolicy: imagePullPolicy,
               command: ["controller"],
               readinessProbe: {
                 httpGet: {path: "/healthz", port: "http"},

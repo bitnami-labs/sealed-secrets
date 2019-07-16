@@ -7,6 +7,7 @@ DOCKER = docker
 GINKGO = ginkgo -p
 
 CONTROLLER_IMAGE = sealed-secrets-controller:latest
+IMAGE_PULL_POLICY = Always
 KUBECONFIG ?= $(HOME)/.kube/config
 
 GO_PACKAGES = ./...
@@ -53,7 +54,7 @@ controller.image: docker/Dockerfile docker/controller
 	mv $@.tmp $@
 
 %.yaml: %.jsonnet
-	$(KUBECFG) show -V CONTROLLER_IMAGE=$(CONTROLLER_IMAGE) -o yaml $< > $@.tmp
+	$(KUBECFG) show -V CONTROLLER_IMAGE=$(CONTROLLER_IMAGE) -V IMAGE_PULL_POLICY=$(IMAGE_PULL_POLICY) -o yaml $< > $@.tmp
 	mv $@.tmp $@
 
 controller.yaml: controller.jsonnet controller.image controller-norbac.jsonnet
