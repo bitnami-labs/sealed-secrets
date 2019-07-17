@@ -6,7 +6,7 @@ KUBECFG = kubecfg -U https://github.com/bitnami-labs/kube-libsonnet/raw/52ba963c
 DOCKER = docker
 GINKGO = ginkgo -p
 
-CONTROLLER_IMAGE = sealed-secrets-controller:latest
+CONTROLLER_IMAGE = quay.io/bitnami/sealed-secrets-controller:latest
 IMAGE_PULL_POLICY = Always
 KUBECONFIG ?= $(HOME)/.kube/config
 
