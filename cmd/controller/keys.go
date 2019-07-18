@@ -5,15 +5,17 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/pem"
 	"errors"
 	"io"
 	"math/big"
 	"time"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	certUtil "k8s.io/client-go/util/cert"
+	"k8s.io/client-go/util/keyutil"
 )
 
 const SealedSecretsKeyLabel = "sealedsecrets.bitnami.com/sealed-secrets-key"
@@ -36,7 +38,7 @@ func generatePrivateKeyAndCert(keySize int) (*rsa.PrivateKey, *x509.Certificate,
 }
 
 func readKey(secret v1.Secret) (*rsa.PrivateKey, []*x509.Certificate, error) {
-	key, err := certUtil.ParsePrivateKeyPEM(secret.Data[v1.TLSPrivateKeyKey])
+	key, err := keyutil.ParsePrivateKeyPEM(secret.Data[v1.TLSPrivateKeyKey])
 	if err != nil {
 		return nil, nil, err
 	}
@@ -55,7 +57,7 @@ func readKey(secret v1.Secret) (*rsa.PrivateKey, []*x509.Certificate, error) {
 func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, label, prefix string) (string, error) {
 	certbytes := []byte{}
 	for _, cert := range certs {
-		certbytes = append(certbytes, certUtil.EncodeCertPEM(cert)...)
+		certbytes = append(certbytes, pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw})...)
 	}
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -66,13 +68,13 @@ func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Ce
 			},
 		},
 		Data: map[string][]byte{
-			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
+			v1.TLSPrivateKeyKey: pem.EncodeToMemory(&pem.Block{Type: keyutil.RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)}),
 			v1.TLSCertKey:       certbytes,
 		},
 		Type: v1.SecretTypeTLS,
 	}
 
-	createdSecret, err := client.Core().Secrets(namespace).Create(&secret)
+	createdSecret, err := client.CoreV1().Secrets(namespace).Create(&secret)
 	if err != nil {
 		return "", err
 	}

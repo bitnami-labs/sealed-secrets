@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/pem"
 	"io"
 	"io/ioutil"
 	"os"
@@ -13,7 +14,7 @@ import (
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -159,7 +160,7 @@ var _ = Describe("kubeseal", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, cert := range certs {
-				certfile.Write(certUtil.EncodeCertPEM(cert))
+				certfile.Write(pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
 			}
 			certfile.Close()
 

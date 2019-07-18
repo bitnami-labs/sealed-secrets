@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/pem"
 	"log"
 
 	"k8s.io/client-go/kubernetes"
@@ -43,7 +44,7 @@ func (kr *KeyRegistry) generateKey() (string, error) {
 	// Only store key to local store if write to k8s worked
 	kr.registerNewKey(generatedName, key, cert)
 	log.Printf("New key written to %s/%s\n", kr.namespace, generatedName)
-	log.Printf("Certificate is \n%s\n", certUtil.EncodeCertPEM(cert))
+	log.Printf("Certificate is \n%s\n", pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
 	return generatedName, nil
 }
 

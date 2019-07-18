@@ -65,7 +65,7 @@ func initKeyPrefix(keyPrefix string) (string, error) {
 
 func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
 	log.Printf("Searching for existing private keys")
-	secretList, err := client.Core().Secrets(namespace).List(metav1.ListOptions{
+	secretList, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{
 		LabelSelector: keySelector.String(),
 	})
 	if err != nil {
@@ -73,7 +73,7 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix
 	}
 	items := secretList.Items
 	if len(items) == 0 {
-		s, err := client.Core().Secrets(namespace).Get(prefix, metav1.GetOptions{})
+		s, err := client.CoreV1().Secrets(namespace).Get(prefix, metav1.GetOptions{})
 		if !errors.IsNotFound(err) {
 			if err != nil {
 				return nil, err

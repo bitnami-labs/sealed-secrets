@@ -1,4 +1,41 @@
-## HEAD
+## 1.4.3
+
+### Fixes:
+
+- ensure file name and line numbers are correctly reported for XUnit [6fff58f]
+- Fixed matcher for content-type (#305) [69d9b43]
+
+## 1.4.2
+
+### Fixes:
+
+- Add go.mod and go.sum files to define the gomega go module [f3de367, a085d30]
+- Work around go vet issue with Go v1.11 (#300) [40dd6ad]
+- Better output when using with go XUnit-style tests, fixes #255 (#297) [29a4b97]
+- Fix MatchJSON fail to parse json.RawMessage (#298) [ae19f1b]
+- show threshold in failure message of BeNumericallyMatcher (#293) [4bbecc8]
+
+## 1.4.1
+
+### Fixes:
+
+- Update documentation formatting and examples (#289) [9be8410]
+- allow 'Receive' matcher to be used with concrete types (#286) [41673fd]
+- Fix data race in ghttp server (#283) [7ac6b01]
+- Travis badge should only show master [cc102ab]
+
+## 1.4.0
+
+### Features
+- Make string pretty diff user configurable (#273) [eb112ce, 649b44d]
+
+### Fixes
+- Use httputil.DumpRequest to pretty-print unhandled requests (#278) [a4ff0fc, b7d1a52]
+- fix typo floa32 > float32 (#272) [041ae3b, 6e33911]
+- Fix link to documentation on adding your own matchers (#270) [bb2c830, fcebc62]
+- Use setters and getters to avoid race condition (#262) [13057c3, a9c79f1]
+- Avoid sending a signal if the process is not alive (#259) [b8043e5, 4fc1762]
+- Improve message from AssignableToTypeOf when expected value is nil (#281) [9c1fb20]
 
 ## 1.3.0
 
