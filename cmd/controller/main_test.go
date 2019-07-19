@@ -6,8 +6,12 @@ import (
 	"testing"
 	"time"
 
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
+	certUtil "k8s.io/client-go/util/cert"
 )
 
 func findAction(fake *fake.Clientset, verb, resource string) ktesting.Action {
@@ -133,6 +137,65 @@ func TestReuseKey(t *testing.T) {
 
 	client := fake.NewSimpleClientset()
 	_, err = writeKey(client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix")
+	if err != nil {
+		t.Errorf("writeKey() failed with: %v", err)
+	}
+
+	client.ClearActions()
+
+	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
+	if err != nil {
+		t.Fatalf("initKeyRegistry() returned err: %v", err)
+	}
+
+	_, err = initKeyRotation(registry, 0)
+	if err != nil {
+		t.Fatalf("initKeyRotation() returned err: %v", err)
+	}
+	if hasAction(client, "create", "secrets") {
+		t.Errorf("initKeyRotation() should not create a new secret when one already exist and rotation is disabled")
+	}
+}
+
+func writeLegacyKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, name string) (string, error) {
+	certbytes := []byte{}
+	for _, cert := range certs {
+		certbytes = append(certbytes, certUtil.EncodeCertPEM(cert)...)
+	}
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: namespace,
+			Name:      name,
+		},
+		Data: map[string][]byte{
+			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
+			v1.TLSCertKey:       certbytes,
+		},
+		Type: v1.SecretTypeTLS,
+	}
+
+	createdSecret, err := client.Core().Secrets(namespace).Create(&secret)
+	if err != nil {
+		return "", err
+	}
+	return createdSecret.Name, nil
+}
+
+func TestLegacySecret(t *testing.T) {
+	rand := testRand()
+	key, err := rsa.GenerateKey(rand, 512)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	cert, err := signKey(rand, key)
+	if err != nil {
+		t.Fatalf("signKey failed: %v", err)
+	}
+
+	client := fake.NewSimpleClientset()
+
+	_, err = writeLegacyKey(client, key, []*x509.Certificate{cert}, "namespace", "prefix")
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
