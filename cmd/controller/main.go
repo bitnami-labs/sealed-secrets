@@ -16,6 +16,7 @@ import (
 	"time"
 
 	flag "github.com/spf13/pflag"
+	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
@@ -70,9 +71,20 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix
 	if err != nil {
 		return nil, err
 	}
+	items := secretList.Items
+	if len(items) == 0 {
+		s, err := client.Core().Secrets(namespace).Get(prefix, metav1.GetOptions{})
+		if !errors.IsNotFound(err) {
+			if err != nil {
+				return nil, err
+			}
+			items = append(items, *s)
+			// TODO(mkm): add the label to the legacy secret
+		}
+	}
 	keyRegistry := NewKeyRegistry(client, namespace, prefix, label, keysize)
-	sort.Sort(ssv1alpha1.ByCreationTimestamp(secretList.Items))
-	for _, secret := range secretList.Items {
+	sort.Sort(ssv1alpha1.ByCreationTimestamp(items))
+	for _, secret := range items {
 		key, certs, err := readKey(secret)
 		if err != nil {
 			log.Printf("Error reading key %s: %v", secret.Name, err)
