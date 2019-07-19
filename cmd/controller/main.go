@@ -98,10 +98,19 @@ func myNamespace() string {
 	return metav1.NamespaceDefault
 }
 
-// Initialises the first key and starts the rotation job. returns an early trigger function
+// Initialises the first key and starts the rotation job. returns an early trigger function.
+// A period of 0 disables automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
+// is still honoured.
 func initKeyRotation(registry *KeyRegistry, period time.Duration) (func(), error) {
-	if _, err := registry.generateKey(); err != nil { // create the first key
-		return nil, err
+	// Create a new key only if it's the first key or if we have automatic key rotation.
+	// Since the rotation period might be longer than the average pod run time (eviction, updates, crashes etc)
+	// we err on the side of increased rotation frequency rather than overshooting the rotation goals.
+	//
+	// TODO(mkm): implement rotation cadence based on resource times rather than just an in-process timer.
+	if period != 0 || len(registry.privateKeys) == 0 {
+		if _, err := registry.generateKey(); err != nil {
+			return nil, err
+		}
 	}
 	// wrapper function to log error thrown by generateKey function
 	keyGenFunc := func() {
