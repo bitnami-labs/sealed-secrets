@@ -78,7 +78,7 @@ install:
 script:
   - make
   - make test
-  - if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.10\. ]]; then make vet; fi
+  - if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.12\. ]]; then make vet; fi
   - make kubeseal-static
   - EXE_NAME=kubeseal-$(go env GOOS)-$(go env GOARCH)
   - cp kubeseal-static $EXE_NAME
@@ -127,7 +127,7 @@ deploy:
     - controller.yaml
     - controller-norbac.yaml
   on:
-    condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.10\.
+    condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.12\.
     tags: true
   provider: releases
   skip_cleanup: true
