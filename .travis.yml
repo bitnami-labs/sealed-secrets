@@ -96,6 +96,13 @@ script:
       kubectl rollout status deployment/sealed-secrets-controller -n kube-system -w
       make integrationtest CONTROLLER_IMAGE=$CONTROLLER_IMAGE GINKGO="ginkgo -v --randomizeSuites --failOnPending --trace --progress --compilers=2 --nodes=4"
     fi
+  # integration tests required Never pull policy, but release artifacts can't have that
+  # TODO(mkm): cleanup this.
+  - |
+    if [ "$TRAVIS_OS_NAME" = linux ]; then
+      rm -f controller.yaml controller-norbac.yaml
+      make controller.yaml controller-norbac.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
+    fi
 
 after_script: set +e
 
