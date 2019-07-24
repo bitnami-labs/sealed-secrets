@@ -68,7 +68,7 @@ install:
       go get github.com/onsi/ginkgo/ginkgo
     fi
   - |
-    v=0.8.0
+    v=0.12.0
     if ! which kubecfg-$v; then
       wget -O $GOPATH/bin/kubecfg-$v https://github.com/ksonnet/kubecfg/releases/download/v$v/kubecfg-$(go env GOOS)-$(go env GOARCH)
       chmod +x $GOPATH/bin/kubecfg-$v
