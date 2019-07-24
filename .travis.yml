@@ -103,6 +103,9 @@ script:
       rm -f controller.yaml controller-norbac.yaml
       make controller.yaml controller-norbac.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
     fi
+  - rm -f kubeseal-static
+  - GOOS=windows GOARCH=amd64 make kubeseal-static
+  - cp kubeseal-static kubeseal.exe
 
 after_script: set +e
 
@@ -131,6 +134,7 @@ deploy:
     secure: Q+/wLh9Qbe3dMmmBF1x2Qt5PqdHyHD+wjiRX0fV+leFtNjWEAgcSBrnPxhQVYrvL/tk/In/r9NlvO3VrCv7C11nkYEn5S7RJLIq6+v37Q789hBLchs5dH2FAwNyjA2Sezaf6ulYgqtouuy6Pt0ZY18/rjMcdKl1bYS+TeQU63eRWENgoHI0/yU6fR7w0q0Hjin+a1HCtn0K6YNxc51A0Rc/7TnYgDBSq74cpq+1xsazLrtDXrbtv6+WND5Oe702fwDM/C1b7k8jbmGPstVIWGKA0lfmzaTZUvuNyXbBzz76yBLXrDo41VhS9aBwWoIshTJhVGIl0rr8hy4K0J+MExsmUpp9ZLTwPXd4kFrEWPHFzA6oMNQknO0Lw92O85YpyJ9Jq8c2gPB+/syurhgKjmOHr+x/uGUUlXrYRnuaL/4Wqz5r+UiGcBGGiU9DLn1K8emgChf2FjkA009T/0o0cvUAS3c9WAeqv7P37EJUxpjL3+LrGlaKZaAAo/xAIO100YJ12SAfo0e8TSiMUQ2dngsWxDfWw5Yj90iyx9QE0XswkR5cKU6hsDzRR1xTmtv/jwyMrlgg7/UIQUkvQFZvC7NlkNcEMGCUCIE+Uc41Hh5L6OFqUvb7f/ULQ6D+vJ0wEMteIQolJh7mWSAUUmTiYKYKMR+RikEUtlJg5+TUZ+Y4=
   file:
     - $EXE_NAME
+    - kubeseal.exe
     - controller.yaml
     - controller-norbac.yaml
   on:
