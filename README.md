@@ -150,7 +150,7 @@ To be able to develop on this project, you need to have the following tools inst
 * make
 * [Ginkgo](https://onsi.github.io/ginkgo/)
 * [Minikube](https://github.com/kubernetes/minikube)
-* [kubecfg](https://github.com/ksonnet/kubecfg)
+* [kubecfg](https://github.com/bitnami/kubecfg)
 * Go
 
 To build the `kubeseal` and controller binaries, run:
