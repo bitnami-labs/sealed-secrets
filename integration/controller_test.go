@@ -21,6 +21,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	certUtil "k8s.io/client-go/util/cert"
+	"k8s.io/client-go/util/keyutil"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	ssclient "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
@@ -53,10 +54,14 @@ func fetchKeys(c corev1.SecretsGetter) (*rsa.PrivateKey, []*x509.Certificate, er
 		return nil, nil, err
 	}
 
+	if len(list.Items) == 0 {
+		return nil, nil, fmt.Errorf("found 0 keys")
+	}
+
 	sort.Sort(ssv1alpha1.ByCreationTimestamp(list.Items))
 	latestKey := &list.Items[len(list.Items)-1]
 
-	privKey, err := certUtil.ParsePrivateKeyPEM(latestKey.Data[v1.TLSPrivateKeyKey])
+	privKey, err := keyutil.ParsePrivateKeyPEM(latestKey.Data[v1.TLSPrivateKeyKey])
 	if err != nil {
 		return nil, nil, err
 	}

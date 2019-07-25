@@ -20,10 +20,10 @@ import (
 	"encoding/xml"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"reflect"
-	"sort"
 	"strings"
 
 	"github.com/Azure/go-autorest/autorest/adal"
@@ -195,30 +195,6 @@ func queryEscape(s string) string {
 	return url.QueryEscape(s)
 }
 
-// This method is same as Encode() method of "net/url" go package,
-// except it does not encode the query parameters because they
-// already come encoded. It formats values map in query format (bar=foo&a=b).
-func createQuery(v url.Values) string {
-	var buf bytes.Buffer
-	keys := make([]string, 0, len(v))
-	for k := range v {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		vs := v[k]
-		prefix := url.QueryEscape(k) + "="
-		for _, v := range vs {
-			if buf.Len() > 0 {
-				buf.WriteByte('&')
-			}
-			buf.WriteString(prefix)
-			buf.WriteString(v)
-		}
-	}
-	return buf.String()
-}
-
 // ChangeToGet turns the specified http.Request into a GET (it assumes it wasn't).
 // This is mainly useful for long-running operations that use the Azure-AsyncOperation
 // header, so we change the initial PUT into a GET to retrieve the final result.
@@ -238,6 +214,15 @@ func IsTokenRefreshError(err error) bool {
 	}
 	if de, ok := err.(DetailedError); ok {
 		return IsTokenRefreshError(de.Original)
+	}
+	return false
+}
+
+// IsTemporaryNetworkError returns true if the specified error is a temporary network error or false
+// if it's not.  If the error doesn't implement the net.Error interface the return value is true.
+func IsTemporaryNetworkError(err error) bool {
+	if netErr, ok := err.(net.Error); !ok || (ok && netErr.Temporary()) {
+		return true
 	}
 	return false
 }

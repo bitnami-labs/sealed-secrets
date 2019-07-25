@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/x509"
+	"encoding/pem"
 	"io"
 	"io/ioutil"
 	"log"
@@ -85,7 +86,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) {
 		certs := cp()
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		for _, cert := range certs {
-			w.Write(certUtil.EncodeCertPEM(cert))
+			w.Write(pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
 		}
 	})
 

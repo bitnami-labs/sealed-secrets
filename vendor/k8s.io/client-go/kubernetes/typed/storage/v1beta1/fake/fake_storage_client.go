@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors.
+Copyright The Kubernetes Authors.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,6 +26,14 @@ import (
 
 type FakeStorageV1beta1 struct {
 	*testing.Fake
+}
+
+func (c *FakeStorageV1beta1) CSIDrivers() v1beta1.CSIDriverInterface {
+	return &FakeCSIDrivers{c}
+}
+
+func (c *FakeStorageV1beta1) CSINodes() v1beta1.CSINodeInterface {
+	return &FakeCSINodes{c}
 }
 
 func (c *FakeStorageV1beta1) StorageClasses() v1beta1.StorageClassInterface {

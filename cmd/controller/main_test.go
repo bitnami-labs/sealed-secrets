@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/pem"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
 	certUtil "k8s.io/client-go/util/cert"
+	"k8s.io/client-go/util/keyutil"
 )
 
 func findAction(fake *fake.Clientset, verb, resource string) ktesting.Action {
@@ -160,7 +162,7 @@ func TestReuseKey(t *testing.T) {
 func writeLegacyKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, name string) (string, error) {
 	certbytes := []byte{}
 	for _, cert := range certs {
-		certbytes = append(certbytes, certUtil.EncodeCertPEM(cert)...)
+		certbytes = append(certbytes, pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw})...)
 	}
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -168,13 +170,13 @@ func writeLegacyKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x
 			Name:      name,
 		},
 		Data: map[string][]byte{
-			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
+			v1.TLSPrivateKeyKey: pem.EncodeToMemory(&pem.Block{Type: keyutil.RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)}),
 			v1.TLSCertKey:       certbytes,
 		},
 		Type: v1.SecretTypeTLS,
 	}
 
-	createdSecret, err := client.Core().Secrets(namespace).Create(&secret)
+	createdSecret, err := client.CoreV1().Secrets(namespace).Create(&secret)
 	if err != nil {
 		return "", err
 	}

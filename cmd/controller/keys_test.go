@@ -3,15 +3,17 @@ package main
 import (
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/pem"
 	"io"
 	mathrand "math/rand"
 	"reflect"
 	"testing"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
 	certUtil "k8s.io/client-go/util/cert"
+	"k8s.io/client-go/util/keyutil"
 )
 
 // This is omg-not safe for real crypto use!
@@ -38,8 +40,8 @@ func TestReadKey(t *testing.T) {
 			Namespace: "myns",
 		},
 		Data: map[string][]byte{
-			v1.TLSPrivateKeyKey: certUtil.EncodePrivateKeyPEM(key),
-			v1.TLSCertKey:       certUtil.EncodeCertPEM(cert),
+			v1.TLSPrivateKeyKey: pem.EncodeToMemory(&pem.Block{Type: keyutil.RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)}),
+			v1.TLSCertKey:       pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}),
 		},
 		Type: v1.SecretTypeTLS,
 	}
