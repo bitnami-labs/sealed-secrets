@@ -1,52 +1,52 @@
 // Minimal required deployment for a functional controller.
-local kube = import "kube.libsonnet";
+local kube = import 'kube.libsonnet';
 
 local trim = function(str) (
-  if std.startsWith(str, " ") || std.startsWith(str, "\n") then
-  trim(std.substr(str, 1, std.length(str) - 1))
-  else if std.endsWith(str, " ") || std.endsWith(str, "\n") then
-  trim(std.substr(str, 0, std.length(str) - 1))
+  if std.startsWith(str, ' ') || std.startsWith(str, '\n') then
+    trim(std.substr(str, 1, std.length(str) - 1))
+  else if std.endsWith(str, ' ') || std.endsWith(str, '\n') then
+    trim(std.substr(str, 0, std.length(str) - 1))
   else
     str
 );
 
-local namespace = "kube-system";
-local controllerImage = std.extVar("CONTROLLER_IMAGE");
-local imagePullPolicy = std.extVar("IMAGE_PULL_POLICY");
+local namespace = 'kube-system';
+local controllerImage = std.extVar('CONTROLLER_IMAGE');
+local imagePullPolicy = std.extVar('IMAGE_PULL_POLICY');
 
 // This is a bit odd: Downgrade to apps/v1beta1 so we can continue
 // to support k8s v1.6.
 // TODO: re-evaluate sealed-secrets support timeline and/or
 // kube.libsonnet versioned API support.
 local v1beta1_Deployment(name) = kube.Deployment(name) {
-  assert std.assertEqual(super.apiVersion, "apps/v1beta2"),
-  apiVersion: "apps/v1beta1",
+  assert std.assertEqual(super.apiVersion, 'apps/v1beta2'),
+  apiVersion: 'apps/v1beta1',
 };
 
 {
-  crd: kube.CustomResourceDefinition("bitnami.com", "v1alpha1", "SealedSecret"),
+  crd: kube.CustomResourceDefinition('bitnami.com', 'v1alpha1', 'SealedSecret'),
 
-  namespace:: {metadata+: {namespace: namespace}},
+  namespace:: { metadata+: { namespace: namespace } },
 
-  service: kube.Service("sealed-secrets-controller") + $.namespace {
+  service: kube.Service('sealed-secrets-controller') + $.namespace {
     target_pod: $.controller.spec.template,
   },
 
-  controller: v1beta1_Deployment("sealed-secrets-controller") + $.namespace {
+  controller: v1beta1_Deployment('sealed-secrets-controller') + $.namespace {
     spec+: {
       template+: {
         spec+: {
           containers_+: {
-            controller: kube.Container("sealed-secrets-controller") {
+            controller: kube.Container('sealed-secrets-controller') {
               image: controllerImage,
               imagePullPolicy: imagePullPolicy,
-              command: ["controller"],
+              command: ['controller'],
               readinessProbe: {
-                httpGet: {path: "/healthz", port: "http"},
+                httpGet: { path: '/healthz', port: 'http' },
               },
               livenessProbe: self.readinessProbe,
               ports_+: {
-                http: {containerPort: 8080},
+                http: { containerPort: 8080 },
               },
               securityContext+: {
                 readOnlyRootFilesystem: true,
