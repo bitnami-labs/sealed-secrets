@@ -53,6 +53,16 @@ local v1beta1_Deployment(name) = kube.Deployment(name) {
                 runAsNonRoot: true,
                 runAsUser: 1001,
               },
+              volumeMounts_+: {
+                tmp: {
+                  mountPath: '/tmp',
+                },
+              },
+            },
+          },
+          volumes_+: {
+            tmp: {
+              emptyDir: {},
             },
           },
         },
