@@ -76,9 +76,18 @@ install:
     ln -sf kubecfg-$v $GOPATH/bin/kubecfg
 
 script:
+  # We want to support both go.mod aware builds and legacy builds.
+  # Instead of adding more combinations to the build matrix,
+  # we're going to use go 1.12 for the go.mod aware build
+  # and test the legacy build with go 1.11
+  - export USE_GO_MOD=no
+  - |
+    if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.12\. ]]; then
+      export USE_GO_MOD=yes
+      make vet
+    fi
   - make
   - make test
-  - if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.12\. ]]; then make vet; fi
   - make kubeseal-static
   - EXE_NAME=kubeseal-$(go env GOOS)-$(go env GOARCH)
   - cp kubeseal-static $EXE_NAME
