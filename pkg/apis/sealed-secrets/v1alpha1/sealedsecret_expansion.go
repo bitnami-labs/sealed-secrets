@@ -3,7 +3,7 @@ package v1alpha1
 import (
 	"crypto/rand"
 	"crypto/rsa"
-	b64 "encoding/base64"
+	"encoding/base64"
 	"fmt"
 
 	v1 "k8s.io/api/core/v1"
@@ -112,7 +112,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		if err != nil {
 			return nil, err
 		}
-		s.Spec.EncryptedData[key] = b64.StdEncoding.EncodeToString(ciphertext)
+		s.Spec.EncryptedData[key] = base64.StdEncoding.EncodeToString(ciphertext)
 	}
 
 	if clusterWide {
@@ -145,7 +145,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 
 		secret.Data = map[string][]byte{}
 		for key, value := range s.Spec.EncryptedData {
-			valueBytes, err := b64.StdEncoding.DecodeString(value)
+			valueBytes, err := base64.StdEncoding.DecodeString(value)
 			if err != nil {
 				return nil, err
 			}
