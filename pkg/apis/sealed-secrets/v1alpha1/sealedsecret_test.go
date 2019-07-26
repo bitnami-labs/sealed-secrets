@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	"bytes"
 	"crypto/rsa"
+	"encoding/base64"
 	"io"
 	mathrand "math/rand"
 	"reflect"
@@ -111,9 +112,9 @@ func TestSerialize(t *testing.T) {
 			Namespace: "myns",
 		},
 		Spec: SealedSecretSpec{
-			EncryptedData: map[string][]byte{
-				"foo": []byte("secret1"),
-				"bar": []byte("secret2"),
+			EncryptedData: map[string]string{
+				"foo": base64.StdEncoding.EncodeToString([]byte("secret1")),
+				"bar": base64.StdEncoding.EncodeToString([]byte("secret2")),
 			},
 		},
 	}

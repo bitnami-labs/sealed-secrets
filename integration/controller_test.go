@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"sort"
@@ -191,7 +192,7 @@ var _ = Describe("create", func() {
 
 		Context("With renamed encrypted keys", func() {
 			BeforeEach(func() {
-				ss.Spec.EncryptedData = map[string][]byte{
+				ss.Spec.EncryptedData = map[string]string{
 					"xyzzy": ss.Spec.EncryptedData["foo"],
 				}
 			})
@@ -212,7 +213,7 @@ var _ = Describe("create", func() {
 				ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, []byte("new!"), []byte(label))
 				Expect(err).NotTo(HaveOccurred())
 
-				ss.Spec.EncryptedData["foo2"] = ciphertext
+				ss.Spec.EncryptedData["foo2"] = base64.StdEncoding.EncodeToString(ciphertext)
 			})
 			It("should produce expected Secret", func() {
 				expected := map[string][]byte{
@@ -261,7 +262,7 @@ var _ = Describe("create", func() {
 			ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, []byte("{\"auths\": {\"https://index.docker.io/v1/\": {\"auth\": \"c3R...zE2\"}}}"), []byte(label))
 			Expect(err).NotTo(HaveOccurred())
 
-			ss.Spec.EncryptedData[".dockerconfigjson"] = ciphertext
+			ss.Spec.EncryptedData[".dockerconfigjson"] = base64.StdEncoding.EncodeToString(ciphertext)
 			delete(ss.Spec.EncryptedData, "foo")
 			ss.Spec.Template.Type = "kubernetes.io/dockerconfigjson"
 		})
