@@ -1,6 +1,14 @@
 GO = go
-GO_FLAGS =
 GOFMT = gofmt
+
+USE_GO_MOD := $(shell echo $${USE_GO_MOD:-yes})
+ifeq ($(USE_GO_MOD),yes)
+export GO111MODULE = on
+GO_FLAGS = -mod=vendor
+else
+export GO111MODULE = off
+GO_FLAGS =
+endif
 
 KUBECFG = kubecfg -U https://github.com/bitnami-labs/kube-libsonnet/raw/52ba963ca44f7a4960aeae9ee0fbee44726e481f
 DOCKER = docker
