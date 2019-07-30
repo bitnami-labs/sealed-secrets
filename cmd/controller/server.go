@@ -26,6 +26,9 @@ type certProvider func() []*x509.Certificate
 type secretChecker func([]byte) (bool, error)
 type secretRotator func([]byte) ([]byte, error)
 
+// httpserver starts an HTTP that exposes core functionality like serving the public key
+// or secret rotation and validation. This endpoint is designed to be accessible by
+// all users of a given cluster. It must not leak any secret material.
 func httpserver(cp certProvider, sc secretChecker, sr secretRotator) {
 	httpRateLimiter := rateLimter()
 
