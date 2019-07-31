@@ -38,6 +38,26 @@ controller {
     ],
   },
 
+  serviceProxierRole: kube.Role('sealed-secrets-service-proxier') + $.namespace {
+    rules: [
+      {
+        apiGroups: [
+          '',
+        ],
+        resources: [
+          'services/proxy',
+        ],
+        resourceNames: [
+          'http:sealed-secrets-controller:',  // kubeseal uses net.JoinSchemeNamePort when crafting proxy subresource URLs
+          'sealed-secrets-controller',  // but often services are referred by name only, let's not make it unnecessarily cryptic
+        ],
+        verbs: [
+          'get',
+        ],
+      },
+    ],
+  },
+
   unsealerBinding: kube.ClusterRoleBinding('sealed-secrets-controller') {
     roleRef_: $.unsealerRole,
     subjects_+: [$.account],
@@ -46,6 +66,13 @@ controller {
   unsealKeyBinding: kube.RoleBinding('sealed-secrets-controller') + $.namespace {
     roleRef_: $.unsealKeyRole,
     subjects_+: [$.account],
+  },
+
+  serviceProxierBinding: kube.RoleBinding('sealed-secrets-service-proxier') + $.namespace {
+    roleRef_: $.serviceProxierRole,
+    // kube.libsonnet assumes object here have a namespace, but system groups don't
+    // thus are not supposed to use the magic "_" here.
+    subjects+: [kube.Group('system:authenticated')],
   },
 
   controller+: {
