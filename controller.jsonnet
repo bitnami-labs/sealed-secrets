@@ -2,9 +2,10 @@
 // See controller-norbac.jsonnet for the bare minimum functionality.
 
 local controller = import 'controller-norbac.jsonnet';
-local kube = import 'kube.libsonnet';
 
 controller {
+  local kube = self.kube,
+
   account: kube.ServiceAccount('sealed-secrets-controller') + $.namespace,
 
   unsealerRole: kube.ClusterRole('secrets-unsealer') {

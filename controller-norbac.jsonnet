@@ -1,9 +1,11 @@
 // Minimal required deployment for a functional controller.
-local kube = import 'kube.libsonnet';
 
 local namespace = 'kube-system';
 
 {
+  kube:: import 'https://github.com/bitnami-labs/kube-libsonnet/raw/52ba963ca44f7a4960aeae9ee0fbee44726e481f/kube.libsonnet',
+  local kube = self.kube,
+
   controllerImage:: std.extVar('CONTROLLER_IMAGE'),
   imagePullPolicy:: std.extVar('IMAGE_PULL_POLICY'),
 

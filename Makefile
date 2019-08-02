@@ -10,7 +10,7 @@ export GO111MODULE = off
 GO_FLAGS =
 endif
 
-KUBECFG = kubecfg -U https://github.com/bitnami-labs/kube-libsonnet/raw/52ba963ca44f7a4960aeae9ee0fbee44726e481f
+KUBECFG = kubecfg
 DOCKER = docker
 GINKGO = ginkgo -p
 
