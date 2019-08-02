@@ -12,15 +12,6 @@ local trim = function(str) (
 
 local namespace = 'kube-system';
 
-// This is a bit odd: Downgrade to apps/v1beta1 so we can continue
-// to support k8s v1.6.
-// TODO: re-evaluate sealed-secrets support timeline and/or
-// kube.libsonnet versioned API support.
-local v1beta1_Deployment(name) = kube.Deployment(name) {
-  assert std.assertEqual(super.apiVersion, 'apps/v1beta2'),
-  apiVersion: 'apps/v1beta1',
-};
-
 {
   controllerImage:: std.extVar('CONTROLLER_IMAGE'),
   imagePullPolicy:: std.extVar('IMAGE_PULL_POLICY'),
@@ -33,7 +24,7 @@ local v1beta1_Deployment(name) = kube.Deployment(name) {
     target_pod: $.controller.spec.template,
   },
 
-  controller: v1beta1_Deployment('sealed-secrets-controller') + $.namespace {
+  controller: kube.Deployment('sealed-secrets-controller') + $.namespace {
     spec+: {
       template+: {
         spec+: {
