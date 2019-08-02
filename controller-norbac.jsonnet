@@ -1,15 +1,6 @@
 // Minimal required deployment for a functional controller.
 local kube = import 'kube.libsonnet';
 
-local trim = function(str) (
-  if std.startsWith(str, ' ') || std.startsWith(str, '\n') then
-    trim(std.substr(str, 1, std.length(str) - 1))
-  else if std.endsWith(str, ' ') || std.endsWith(str, '\n') then
-    trim(std.substr(str, 0, std.length(str) - 1))
-  else
-    str
-);
-
 local namespace = 'kube-system';
 
 // This is a bit odd: Downgrade to apps/v1beta1 so we can continue
