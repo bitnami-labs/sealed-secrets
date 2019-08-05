@@ -8,6 +8,8 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+
+	"golang.org/x/crypto/ssh"
 )
 
 const (
@@ -16,6 +18,15 @@ const (
 
 // ErrTooShort indicates the provided data is too short to be valid
 var ErrTooShort = errors.New("SealedSecret data is too short")
+
+// PublicKeyFingerprint returns a fingerprint for a public key.
+func PublicKeyFingerprint(rp *rsa.PublicKey) (string, error) {
+	sp, err := ssh.NewPublicKey(rp)
+	if err != nil {
+		return "", err
+	}
+	return ssh.FingerprintSHA256(sp), nil
+}
 
 // HybridEncrypt performs a regular AES-GCM + RSA-OAEP encryption.
 // The output bytestring is:

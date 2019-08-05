@@ -89,7 +89,10 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix
 		if err != nil {
 			log.Printf("Error reading key %s: %v", secret.Name, err)
 		}
-		keyRegistry.registerNewKey(secret.Name, key, certs[0])
+		ct := secret.CreationTimestamp
+		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], ct.Time); err != nil {
+			return nil, err
+		}
 		log.Printf("----- %s", secret.Name)
 	}
 	return keyRegistry, nil
@@ -119,7 +122,7 @@ func initKeyRotation(registry *KeyRegistry, period time.Duration) (func(), error
 	// we err on the side of increased rotation frequency rather than overshooting the rotation goals.
 	//
 	// TODO(mkm): implement rotation cadence based on resource times rather than just an in-process timer.
-	if period != 0 || len(registry.privateKeys) == 0 {
+	if period != 0 || len(registry.keys) == 0 {
 		if _, err := registry.generateKey(); err != nil {
 			return nil, err
 		}
@@ -133,7 +136,7 @@ func initKeyRotation(registry *KeyRegistry, period time.Duration) (func(), error
 	if period == 0 {
 		return keyGenFunc, nil
 	}
-	return ScheduleJobWithTrigger(period, keyGenFunc), nil
+	return ScheduleJobWithTrigger(period, period, keyGenFunc), nil
 }
 
 func initKeyGenSignalListener(trigger func()) {
@@ -190,8 +193,12 @@ func main2() error {
 
 	go controller.Run(stop)
 
+	cert, err := keyRegistry.getCert()
+	if err != nil {
+		return err
+	}
 	cp := func() []*x509.Certificate {
-		return []*x509.Certificate{keyRegistry.cert}
+		return []*x509.Certificate{cert}
 	}
 
 	go httpserver(cp, controller.AttemptUnseal, controller.Rotate)
