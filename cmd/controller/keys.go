@@ -54,7 +54,19 @@ func readKey(secret v1.Secret) (*rsa.PrivateKey, []*x509.Certificate, error) {
 	}
 }
 
-func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, label, prefix string) (string, error) {
+type writeKeyOpt func(*writeKeyOpts)
+type writeKeyOpts struct{ creationTime metav1.Time }
+
+func writeKeyWithCreationTime(t metav1.Time) writeKeyOpt {
+	return func(opts *writeKeyOpts) { opts.creationTime = t }
+}
+
+func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, label, prefix string, optSetters ...writeKeyOpt) (string, error) {
+	var opts writeKeyOpts
+	for _, o := range optSetters {
+		o(&opts)
+	}
+
 	certbytes := []byte{}
 	for _, cert := range certs {
 		certbytes = append(certbytes, pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw})...)
@@ -66,6 +78,7 @@ func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Ce
 			Labels: map[string]string{
 				label: "active",
 			},
+			CreationTimestamp: opts.creationTime,
 		},
 		Data: map[string][]byte{
 			v1.TLSPrivateKeyKey: pem.EncodeToMemory(&pem.Block{Type: keyutil.RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)}),
