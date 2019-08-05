@@ -159,6 +159,60 @@ func TestReuseKey(t *testing.T) {
 	}
 }
 
+func TestRotateStaleKey(t *testing.T) {
+	rand := testRand()
+	key, err := rsa.GenerateKey(rand, 512)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	cert, err := signKey(rand, key)
+	if err != nil {
+		t.Fatalf("signKey failed: %v", err)
+	}
+
+	// we'll simulate the existence of a secret that is about to expire
+	// by making it old enough so that it's just "staleness" short of using
+	// the full rotation "period".
+	const (
+		period    = 20 * time.Second
+		staleness = 100 * time.Millisecond
+		oldAge    = period - staleness
+	)
+	client := fake.NewSimpleClientset()
+	_, err = writeKey(client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix",
+		writeKeyWithCreationTime(metav1.NewTime(time.Now().Add(-oldAge))))
+	if err != nil {
+		t.Errorf("writeKey() failed with: %v", err)
+	}
+
+	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
+	if err != nil {
+		t.Fatalf("initKeyRegistry() returned err: %v", err)
+	}
+
+	_, err = initKeyRotation(registry, period)
+	if err != nil {
+		t.Fatalf("initKeyRotation() returned err: %v", err)
+	}
+
+	client.ClearActions()
+
+	maxWait := 1 * time.Second
+	endTime := time.Now().Add(maxWait)
+	successful := false
+	for time.Now().Before(endTime) {
+		time.Sleep(50 * time.Millisecond)
+		if hasAction(client, "create", "secrets") {
+			successful = true
+			break
+		}
+	}
+	if !successful {
+		t.Errorf("trigger function failed to activate early key generation")
+	}
+}
+
 func writeLegacyKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, name string) (string, error) {
 	certbytes := []byte{}
 	for _, cert := range certs {

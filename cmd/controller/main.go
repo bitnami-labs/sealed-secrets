@@ -117,12 +117,8 @@ func myNamespace() string {
 // A period of 0 disables automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
 // is still honoured.
 func initKeyRotation(registry *KeyRegistry, period time.Duration) (func(), error) {
-	// Create a new key only if it's the first key or if we have automatic key rotation.
-	// Since the rotation period might be longer than the average pod run time (eviction, updates, crashes etc)
-	// we err on the side of increased rotation frequency rather than overshooting the rotation goals.
-	//
-	// TODO(mkm): implement rotation cadence based on resource times rather than just an in-process timer.
-	if period != 0 || len(registry.keys) == 0 {
+	// Create a new key only if it's the first key.
+	if len(registry.keys) == 0 {
 		if _, err := registry.generateKey(); err != nil {
 			return nil, err
 		}
@@ -136,7 +132,15 @@ func initKeyRotation(registry *KeyRegistry, period time.Duration) (func(), error
 	if period == 0 {
 		return keyGenFunc, nil
 	}
-	return ScheduleJobWithTrigger(period, period, keyGenFunc), nil
+
+	// If key rotation is enabled, we'll rotate the key when the most recent
+	// key becomes stale (older than period).
+	mostRecentKeyAge := time.Since(registry.mostRecentKey.creationTime)
+	initialDelay := period - mostRecentKeyAge
+	if initialDelay < 0 {
+		initialDelay = 0
+	}
+	return ScheduleJobWithTrigger(initialDelay, period, keyGenFunc), nil
 }
 
 func initKeyGenSignalListener(trigger func()) {
