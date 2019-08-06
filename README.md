@@ -179,6 +179,12 @@ To run the integration tests:
 * Rebuild the binaries for your OS - `make`
 * Run the integration tests - `make integrationtest`
 
+To update the jsonnet dependencies:
+
+```
+$ jb install --jsonnetpkg-home=jsonnet_vendor
+```
+
 ## Helm Chart
 Sealed Secret helm charts can be found on this [link](https://github.com/helm/charts/tree/master/stable/sealed-secrets)
 
