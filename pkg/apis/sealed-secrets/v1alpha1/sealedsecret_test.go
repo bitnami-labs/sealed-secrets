@@ -11,6 +11,7 @@ import (
 
 	fuzz "github.com/google/gofuzz"
 
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
 	rttesting "k8s.io/apimachinery/pkg/api/apitesting/roundtrip"
@@ -170,6 +171,19 @@ func testRand() io.Reader {
 	return mathrand.New(mathrand.NewSource(42))
 }
 
+func generateTestKey(t *testing.T, rand io.Reader, bits int) (*rsa.PrivateKey, map[string]*rsa.PrivateKey) {
+	key, err := rsa.GenerateKey(rand, 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+	fingerprint, err := crypto.PublicKeyFingerprint(&key.PublicKey)
+	if err != nil {
+		t.Fatalf("Failed to generate fingerprint: %v", err)
+	}
+	keys := map[string]*rsa.PrivateKey{fingerprint: key}
+	return key, keys
+}
+
 func TestSealRoundTrip(t *testing.T) {
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)
@@ -177,11 +191,7 @@ func TestSealRoundTrip(t *testing.T) {
 	SchemeBuilder.AddToScheme(scheme)
 	v1.SchemeBuilder.AddToScheme(scheme)
 
-	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate test key: %v", err)
-	}
+	key, keys := generateTestKey(t, testRand(), 2048)
 
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -198,7 +208,7 @@ func TestSealRoundTrip(t *testing.T) {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
 
-	secret2, err := ssecret.Unseal(codecs, key)
+	secret2, err := ssecret.Unseal(codecs, keys)
 	if err != nil {
 		t.Fatalf("Unseal returned error: %v", err)
 	}
@@ -215,11 +225,7 @@ func TestSealRoundTripStringDataConversion(t *testing.T) {
 	SchemeBuilder.AddToScheme(scheme)
 	v1.SchemeBuilder.AddToScheme(scheme)
 
-	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate test key: %v", err)
-	}
+	key, keys := generateTestKey(t, testRand(), 2048)
 
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -251,7 +257,7 @@ func TestSealRoundTripStringDataConversion(t *testing.T) {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
 
-	secret2, err := ssecret.Unseal(codecs, key)
+	secret2, err := ssecret.Unseal(codecs, keys)
 	if err != nil {
 		t.Fatalf("Unseal returned error: %v", err)
 	}
@@ -268,11 +274,7 @@ func TestSealRoundTripWithClusterWide(t *testing.T) {
 	SchemeBuilder.AddToScheme(scheme)
 	v1.SchemeBuilder.AddToScheme(scheme)
 
-	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate test key: %v", err)
-	}
+	key, keys := generateTestKey(t, testRand(), 2048)
 
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -292,7 +294,7 @@ func TestSealRoundTripWithClusterWide(t *testing.T) {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
 
-	secret2, err := ssecret.Unseal(codecs, key)
+	secret2, err := ssecret.Unseal(codecs, keys)
 	if err != nil {
 		t.Fatalf("Unseal returned error: %v", err)
 	}
@@ -309,11 +311,7 @@ func TestSealRoundTripWithMisMatchClusterWide(t *testing.T) {
 	SchemeBuilder.AddToScheme(scheme)
 	v1.SchemeBuilder.AddToScheme(scheme)
 
-	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate test key: %v", err)
-	}
+	key, keys := generateTestKey(t, testRand(), 2048)
 
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -335,7 +333,7 @@ func TestSealRoundTripWithMisMatchClusterWide(t *testing.T) {
 
 	ssecret.ObjectMeta.Annotations[SealedSecretClusterWideAnnotation] = "false"
 
-	_, err = ssecret.Unseal(codecs, key)
+	_, err = ssecret.Unseal(codecs, keys)
 	if err == nil {
 		t.Fatalf("Unseal did not return expected error: %v", err)
 	}
@@ -348,11 +346,7 @@ func TestSealRoundTripWithNamespaceWide(t *testing.T) {
 	SchemeBuilder.AddToScheme(scheme)
 	v1.SchemeBuilder.AddToScheme(scheme)
 
-	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate test key: %v", err)
-	}
+	key, keys := generateTestKey(t, testRand(), 2048)
 
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -372,7 +366,7 @@ func TestSealRoundTripWithNamespaceWide(t *testing.T) {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
 
-	secret2, err := ssecret.Unseal(codecs, key)
+	secret2, err := ssecret.Unseal(codecs, keys)
 	if err != nil {
 		t.Fatalf("Unseal returned error: %v", err)
 	}
@@ -389,11 +383,7 @@ func TestSealRoundTripWithMisMatchNamespaceWide(t *testing.T) {
 	SchemeBuilder.AddToScheme(scheme)
 	v1.SchemeBuilder.AddToScheme(scheme)
 
-	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate test key: %v", err)
-	}
+	key, keys := generateTestKey(t, testRand(), 2048)
 
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -415,7 +405,7 @@ func TestSealRoundTripWithMisMatchNamespaceWide(t *testing.T) {
 
 	ssecret.ObjectMeta.Annotations[SealedSecretNamespaceWideAnnotation] = "false"
 
-	_, err = ssecret.Unseal(codecs, key)
+	_, err = ssecret.Unseal(codecs, keys)
 	if err == nil {
 		t.Fatalf("Unseal did not return expected error: %v", err)
 	}
@@ -453,7 +443,11 @@ func TestUnsealingV1Format(t *testing.T) {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}
 
-	secret2, err := ssecret.Unseal(codecs, key)
+	fp, err := crypto.PublicKeyFingerprint(&key.PublicKey)
+	if err != nil {
+		t.Fatalf("cannot compute fingerprint: %v", err)
+	}
+	secret2, err := ssecret.Unseal(codecs, map[string]*rsa.PrivateKey{fp: key})
 	if err != nil {
 		t.Fatalf("Unseal returned error: %v", err)
 	}

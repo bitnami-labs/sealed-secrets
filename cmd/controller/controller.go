@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -360,11 +361,9 @@ func (c *Controller) attemptUnseal(ss *ssv1alpha1.SealedSecret) (*corev1.Secret,
 }
 
 func attemptUnseal(ss *ssv1alpha1.SealedSecret, keyRegistry *KeyRegistry) (*corev1.Secret, error) {
-	// TODO(mkm): embed the pubkey fingerprint in each sealed item so we can fetch the right key
-	for _, key := range keyRegistry.keys {
-		if secret, err := ss.Unseal(scheme.Codecs, key.private); err == nil {
-			return secret, nil
-		}
+	privateKeys := map[string]*rsa.PrivateKey{}
+	for k, v := range keyRegistry.keys {
+		privateKeys[k] = v.private
 	}
-	return nil, fmt.Errorf("No key could decrypt secret")
+	return ss.Unseal(scheme.Codecs, privateKeys)
 }

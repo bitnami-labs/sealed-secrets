@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
 
 	"golang.org/x/crypto/ssh"
@@ -69,8 +70,20 @@ func HybridEncrypt(rnd io.Reader, pubKey *rsa.PublicKey, plaintext, label []byte
 	return ciphertext, nil
 }
 
-// HybridDecrypt performs a regular AES-GCM + RSA-OAEP decryption
-func HybridDecrypt(rnd io.Reader, privKey *rsa.PrivateKey, ciphertext, label []byte) ([]byte, error) {
+// HybridDecrypt performs a regular AES-GCM + RSA-OAEP decryption.
+// The private keys map has a fingerprint of each public key as the map key.
+func HybridDecrypt(rnd io.Reader, privKeys map[string]*rsa.PrivateKey, ciphertext, label []byte) ([]byte, error) {
+	// TODO(mkm): use the key fingerprint encoded in ciphertext (if present) instead of trying all the possible keys
+	for _, privKey := range privKeys {
+		if secret, err := singleDecrypt(rnd, privKey, ciphertext, label); err == nil {
+			return secret, nil
+		}
+	}
+	return nil, fmt.Errorf("no key could decrypt secret")
+}
+
+// singleDecrypt performs a regular AES-GCM + RSA-OAEP decryption
+func singleDecrypt(rnd io.Reader, privKey *rsa.PrivateKey, ciphertext, label []byte) ([]byte, error) {
 	if len(ciphertext) < 2 {
 		return nil, ErrTooShort
 	}

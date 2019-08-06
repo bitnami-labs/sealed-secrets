@@ -32,7 +32,7 @@ var _ = Describe("kubeseal", func() {
 	var input *v1.Secret
 	var ss *ssv1alpha1.SealedSecret
 	var args []string
-	var privKey *rsa.PrivateKey
+	var privKeys map[string]*rsa.PrivateKey
 	var certs []*x509.Certificate
 	var config *clientcmdapi.Config
 	var kubeconfigFile string
@@ -80,7 +80,7 @@ var _ = Describe("kubeseal", func() {
 		}
 
 		var err error
-		privKey, certs, err = fetchKeys(c)
+		privKeys, certs, err = fetchKeys(c)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -103,7 +103,7 @@ var _ = Describe("kubeseal", func() {
 		})
 
 		It("should contain the right value", func() {
-			s, err := ss.Unseal(scheme.Codecs, privKey)
+			s, err := ss.Unseal(scheme.Codecs, privKeys)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(s.Data).To(HaveKeyWithValue("foo", []byte("bar")))
 		})
@@ -122,7 +122,7 @@ var _ = Describe("kubeseal", func() {
 		})
 
 		It("should qualify the Secret", func() {
-			s, err := ss.Unseal(scheme.Codecs, privKey)
+			s, err := ss.Unseal(scheme.Codecs, privKeys)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(s.GetNamespace()).To(Equal(testNs))
 		})
@@ -139,7 +139,7 @@ var _ = Describe("kubeseal", func() {
 		})
 
 		It("should qualify the Secret", func() {
-			s, err := ss.Unseal(scheme.Codecs, privKey)
+			s, err := ss.Unseal(scheme.Codecs, privKeys)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(s.GetNamespace()).To(Equal(testNs))
 		})
@@ -174,7 +174,7 @@ var _ = Describe("kubeseal", func() {
 		})
 
 		It("should output the right value", func() {
-			s, err := ss.Unseal(scheme.Codecs, privKey)
+			s, err := ss.Unseal(scheme.Codecs, privKeys)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(s.Data).To(HaveKeyWithValue("foo", []byte("bar")))
 		})

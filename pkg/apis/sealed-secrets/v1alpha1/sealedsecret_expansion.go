@@ -16,7 +16,7 @@ import (
 
 // SealedSecretExpansion has methods to work with SealedSecrets resources.
 type SealedSecretExpansion interface {
-	Unseal(codecs runtimeserializer.CodecFactory, privKey *rsa.PrivateKey) (*v1.Secret, error)
+	Unseal(codecs runtimeserializer.CodecFactory, privKeys map[string]*rsa.PrivateKey) (*v1.Secret, error)
 }
 
 // Returns labels followed by clusterWide followed by namespaceWide.
@@ -136,7 +136,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 }
 
 // Unseal decrypts and returns the embedded v1.Secret.
-func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rsa.PrivateKey) (*v1.Secret, error) {
+func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys map[string]*rsa.PrivateKey) (*v1.Secret, error) {
 	boolTrue := true
 	smeta := s.GetObjectMeta()
 
@@ -157,7 +157,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 			if err != nil {
 				return nil, err
 			}
-			plaintext, err := crypto.HybridDecrypt(rand.Reader, privKey, valueBytes, label)
+			plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, valueBytes, label)
 			if err != nil {
 				return nil, err
 			}
@@ -165,7 +165,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 		}
 
 	} else { // Support decrypting old secrets for backward compatibility
-		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKey, s.Spec.Data, label)
+		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, s.Spec.Data, label)
 		if err != nil {
 			return nil, err
 		}
