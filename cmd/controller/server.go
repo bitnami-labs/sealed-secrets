@@ -22,14 +22,15 @@ var (
 )
 
 // Called on every request to /cert.  Errors will be logged and return a 500.
-type certProvider func() []*x509.Certificate
+type certProvider func() ([]*x509.Certificate, error)
 type secretChecker func([]byte) (bool, error)
 type secretRotator func([]byte) ([]byte, error)
 
 // httpserver starts an HTTP that exposes core functionality like serving the public key
 // or secret rotation and validation. This endpoint is designed to be accessible by
 // all users of a given cluster. It must not leak any secret material.
-func httpserver(cp certProvider, sc secretChecker, sr secretRotator) {
+// The server is started in the background and a handle to it returned so it can be shut down.
+func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Server {
 	httpRateLimiter := rateLimter()
 
 	mux := http.NewServeMux()
@@ -86,7 +87,13 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) {
 	})
 
 	mux.HandleFunc("/v1/cert.pem", func(w http.ResponseWriter, r *http.Request) {
-		certs := cp()
+		certs, err := cp()
+		if err != nil {
+			log.Printf("cannot get certificates: %v", err)
+			http.Error(w, "cannot get certificate", http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		for _, cert := range certs {
 			w.Write(pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
@@ -101,8 +108,11 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) {
 	}
 
 	log.Printf("HTTP server serving on %s", server.Addr)
-	err := server.ListenAndServe()
-	log.Printf("HTTP server exiting: %v", err)
+	go func() {
+		err := server.ListenAndServe()
+		log.Printf("HTTP server exiting: %v", err)
+	}()
+	return &server
 }
 
 func rateLimter() throttled.HTTPRateLimiter {
