@@ -10,10 +10,10 @@ const (
 	compromised = "compromised"
 )
 
-// ScheduleJobWithTrigger creates a long-running loop that runs a job each
-// loop
-// returns a trigger function that runs the job early when called
-func ScheduleJobWithTrigger(period time.Duration, job func()) func() {
+// ScheduleJobWithTrigger creates a long-running loop that runs a job after an initialDelay
+// and then after each period duration.
+// It returns a trigger function that runs the job early when called.
+func ScheduleJobWithTrigger(initialDelay, period time.Duration, job func()) func() {
 	trigger := make(chan struct{})
 	go func() {
 		for {
@@ -22,9 +22,10 @@ func ScheduleJobWithTrigger(period time.Duration, job func()) func() {
 		}
 	}()
 	go func() {
+		time.Sleep(initialDelay)
 		for {
-			time.Sleep(period)
 			trigger <- struct{}{}
+			time.Sleep(period)
 		}
 	}()
 	return func() {

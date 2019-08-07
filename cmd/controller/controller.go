@@ -360,8 +360,9 @@ func (c *Controller) attemptUnseal(ss *ssv1alpha1.SealedSecret) (*corev1.Secret,
 }
 
 func attemptUnseal(ss *ssv1alpha1.SealedSecret, keyRegistry *KeyRegistry) (*corev1.Secret, error) {
-	for _, privKey := range keyRegistry.privateKeys {
-		if secret, err := ss.Unseal(scheme.Codecs, privKey); err == nil {
+	// TODO(mkm): embed the pubkey fingerprint in each sealed item so we can fetch the right key
+	for _, key := range keyRegistry.keys {
+		if secret, err := ss.Unseal(scheme.Codecs, key.private); err == nil {
 			return secret, nil
 		}
 	}
