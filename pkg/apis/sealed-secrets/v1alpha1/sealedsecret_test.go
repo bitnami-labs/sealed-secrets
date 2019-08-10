@@ -208,6 +208,59 @@ func TestSealRoundTrip(t *testing.T) {
 	}
 }
 
+func TestSealRoundTripStringDataConversion(t *testing.T) {
+	scheme := runtime.NewScheme()
+	codecs := serializer.NewCodecFactory(scheme)
+
+	SchemeBuilder.AddToScheme(scheme)
+	v1.SchemeBuilder.AddToScheme(scheme)
+
+	rand := testRand()
+	key, err := rsa.GenerateKey(rand, 2048)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+		},
+		Data: map[string][]byte{
+			"foo": []byte("bar"),
+			"fss": []byte("brr"),
+		},
+		StringData: map[string]string{
+			"fss": "baa",
+		},
+	}
+
+	unsealed := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+		},
+		Data: map[string][]byte{
+			"foo": []byte("bar"),
+			"fss": []byte("baa"),
+		},
+	}
+
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
+	if err != nil {
+		t.Fatalf("NewSealedSecret returned error: %v", err)
+	}
+
+	secret2, err := ssecret.Unseal(codecs, key)
+	if err != nil {
+		t.Fatalf("Unseal returned error: %v", err)
+	}
+
+	if !reflect.DeepEqual(unsealed.Data, secret2.Data) {
+		t.Errorf("Unsealed secret != original secret: %v != %v", unsealed, secret2)
+	}
+}
+
 func TestSealRoundTripWithClusterWide(t *testing.T) {
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)

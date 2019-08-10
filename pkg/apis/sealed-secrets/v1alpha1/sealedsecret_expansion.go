@@ -115,6 +115,14 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		s.Spec.EncryptedData[key] = base64.StdEncoding.EncodeToString(ciphertext)
 	}
 
+	for key, value := range secret.StringData {
+		ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, []byte(value), label)
+		if err != nil {
+			return nil, err
+		}
+		s.Spec.EncryptedData[key] = base64.StdEncoding.EncodeToString(ciphertext)
+	}
+
 	if clusterWide {
 		if s.Annotations == nil {
 			s.Annotations = map[string]string{}

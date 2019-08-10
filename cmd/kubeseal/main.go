@@ -167,7 +167,7 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 		return err
 	}
 
-	if len(secret.Data) == 0 {
+	if len(secret.Data) == 0 && len(secret.StringData) == 0 {
 		// No data. This is _theoretically_ just fine, but
 		// almost certainly indicates a misuse of the tools.
 		// If you _really_ want to encrypt an empty secret,
