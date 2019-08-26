@@ -133,6 +133,9 @@ func TestSeal(t *testing.T) {
 		Data: map[string][]byte{
 			"foo": []byte("sekret"),
 		},
+		StringData: map[string]string{
+			"foos": string("stringsekret"),
+		},
 	}
 
 	info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
@@ -168,6 +171,9 @@ func TestSeal(t *testing.T) {
 		t.Errorf("Unexpected namespace: %v", smeta.GetNamespace())
 	}
 	if len(result.Spec.EncryptedData["foo"]) < 100 {
+		t.Errorf("Encrypted data is implausibly short: %v", result.Spec.EncryptedData)
+	}
+	if len(result.Spec.EncryptedData["foos"]) < 100 {
 		t.Errorf("Encrypted data is implausibly short: %v", result.Spec.EncryptedData)
 	}
 	// NB: See sealedsecret_test.go for e2e crypto test
