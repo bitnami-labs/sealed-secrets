@@ -6,6 +6,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
@@ -21,6 +22,7 @@ type Key struct {
 }
 
 type KeyRegistry struct {
+	sync.Mutex
 	client        kubernetes.Interface
 	namespace     string
 	keyPrefix     string
@@ -85,7 +87,11 @@ func (kr *KeyRegistry) latestPrivateKey() *rsa.PrivateKey {
 	return kr.mostRecentKey.private
 }
 
+// getCert returns the current certificate. This method can be called by another goroutine.
 func (kr *KeyRegistry) getCert() (*x509.Certificate, error) {
+	kr.Lock()
+	defer kr.Unlock()
+
 	if kr.mostRecentKey == nil {
 		return nil, fmt.Errorf("key registry has no keys")
 	}

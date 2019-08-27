@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"crypto/x509"
 	goflag "flag"
@@ -197,21 +198,21 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	cert, err := keyRegistry.getCert()
-	if err != nil {
-		return err
-	}
-	cp := func() []*x509.Certificate {
-		return []*x509.Certificate{cert}
+	cp := func() ([]*x509.Certificate, error) {
+		cert, err := keyRegistry.getCert()
+		if err != nil {
+			return nil, err
+		}
+		return []*x509.Certificate{cert}, nil
 	}
 
-	go httpserver(cp, controller.AttemptUnseal, controller.Rotate)
+	server := httpserver(cp, controller.AttemptUnseal, controller.Rotate)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
 	<-sigterm
 
-	return nil
+	return server.Shutdown(context.Background())
 }
 
 func main() {
