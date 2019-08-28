@@ -10,6 +10,9 @@ import (
 	"io/ioutil"
 	"os"
 
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,11 +22,6 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	certUtil "k8s.io/client-go/util/cert"
-
-	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("kubeseal", func() {
@@ -44,9 +42,7 @@ var _ = Describe("kubeseal", func() {
 			&clientcmd.ConfigOverrides{})
 		rawconf, err := clientConfig.RawConfig()
 		Expect(err).NotTo(HaveOccurred())
-		tmp, err := clientcmdlatest.Scheme.Copy(&rawconf)
-		Expect(err).NotTo(HaveOccurred())
-		config = tmp.(*clientcmdapi.Config)
+		config = rawconf.DeepCopy()
 	})
 
 	JustBeforeEach(func() {
@@ -208,4 +204,84 @@ var _ = Describe("kubeseal --fetch-cert", func() {
 		Expect(certUtil.ParseCertsPEM(output.Bytes())).
 			Should(Equal(certs))
 	})
+})
+
+var _ = Describe("kubeseal --version", func() {
+	var input io.Reader
+	var output *bytes.Buffer
+	var args []string
+
+	BeforeEach(func() {
+		args = []string{"--version"}
+		output = &bytes.Buffer{}
+	})
+
+	JustBeforeEach(func() {
+		err := runKubeseal(args, input, output)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should produce the version", func() {
+		Expect(output.String()).Should(MatchRegexp("^kubeseal version: (v[0-9]+\\.[0-9]+\\.[0-9]+|[0-9a-f]{40})(\\+dirty)?"))
+	})
+})
+
+var _ = Describe("kubeseal --verify", func() {
+	var c corev1.CoreV1Interface
+	const secretName = "testSecret"
+	const testNs = "testverifyns"
+	var input io.Reader
+	var output *bytes.Buffer
+	var ss *ssv1alpha1.SealedSecret
+	var args []string
+	var err error
+
+	BeforeEach(func() {
+		c = corev1.NewForConfigOrDie(clusterConfigOrDie())
+		args = append(args, "--validate")
+		output = &bytes.Buffer{}
+	})
+
+	BeforeEach(func() {
+		input := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: testNs,
+				Name:      secretName,
+			},
+			Data: map[string][]byte{
+				"foo": []byte("bar"),
+			},
+		}
+		outobj, err := runKubesealWith([]string{}, input)
+		Expect(err).NotTo(HaveOccurred())
+		ss = outobj.(*ssv1alpha1.SealedSecret)
+	})
+
+	JustBeforeEach(func() {
+		enc := scheme.Codecs.LegacyCodec(ssv1alpha1.SchemeGroupVersion)
+		indata, err := runtime.Encode(enc, ss)
+		Expect(err).NotTo(HaveOccurred())
+		input = bytes.NewReader(indata)
+	})
+
+	JustBeforeEach(func() {
+		err = runKubeseal(args, input, output)
+	})
+
+	Context("valid sealed secret", func() {
+		It("should see the sealed secret as valid", func() {
+			Expect(err).NotTo(HaveOccurred())
+		})
+	})
+
+	Context("invalid sealed secret", func() {
+		BeforeEach(func() {
+			ss.Name = "a-completely-different-name"
+		})
+
+		It("should see the sealed secret as invalid", func() {
+			Expect(err).To(HaveOccurred())
+		})
+	})
+
 })

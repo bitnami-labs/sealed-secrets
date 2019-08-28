@@ -2,11 +2,10 @@ GO = go
 GO_FLAGS =
 GOFMT = gofmt
 
-KUBECFG = kubecfg
+KUBECFG = kubecfg -U https://github.com/bitnami-labs/kube-libsonnet/raw/52ba963ca44f7a4960aeae9ee0fbee44726e481f
 DOCKER = docker
 GINKGO = ginkgo -p
 
-DOCKER_USE_SHA = 0
 CONTROLLER_IMAGE = sealed-secrets-controller:latest
 KUBECONFIG ?= $(HOME)/.kube/config
 
@@ -14,34 +13,48 @@ KUBECONFIG ?= $(HOME)/.kube/config
 GO_PACKAGES = ./cmd/... ./pkg/...
 GO_FILES := $(shell find $(shell $(GO) list -f '{{.Dir}}' $(GO_PACKAGES)) -name \*.go)
 
+COMMIT = $(shell git rev-parse HEAD)
+TAG = $(shell git describe --exact-match --abbrev=0 --tags '$(COMMIT)' 2> /dev/null || true)
+DIRTY = $(shell git diff --shortstat 2> /dev/null | tail -n1)
+
+# Use a tag if set, otherwise use the commit hash
+ifeq ($(TAG),)
+VERSION := $(COMMIT)
+else
+VERSION := $(TAG)
+endif
+
+# Check for changed files
+ifneq ($(DIRTY),)
+VERSION := $(VERSION)+dirty
+endif
+
+GO_LD_FLAGS = -X main.VERSION=$(VERSION)
+
 all: controller kubeseal
 
 generate: $(GO_FILES)
 	$(GO) generate $(GO_PACKAGES)
 
 controller: $(GO_FILES)
-	$(GO) build -o $@ $(GO_FLAGS) ./cmd/controller
+	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/controller
 
 kubeseal: $(GO_FILES)
-	$(GO) build -o $@ $(GO_FLAGS) ./cmd/kubeseal
+	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/kubeseal
 
 %-static: $(GO_FILES)
-	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) ./cmd/$*
+	CGO_ENABLED=0 $(GO) build -o $@ -installsuffix cgo $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/$*
 
 docker/controller: controller-static
 	cp $< $@
 
 controller.image: docker/Dockerfile docker/controller
 	$(DOCKER) build -t $(CONTROLLER_IMAGE) docker/
-ifeq ($(DOCKER_USE_SHA),1)
-	$(DOCKER) image inspect $(CONTROLLER_IMAGE) -f '$(shell echo $(CONTROLLER_IMAGE) | cut -d: -f1)@{{.Id}}' > $@.tmp
-else
 	echo $(CONTROLLER_IMAGE) >$@.tmp
-endif
 	mv $@.tmp $@
 
 %.yaml: %.jsonnet
-	$(KUBECFG) show -o yaml $< > $@.tmp
+	$(KUBECFG) show -V CONTROLLER_IMAGE=$(CONTROLLER_IMAGE) -o yaml $< > $@.tmp
 	mv $@.tmp $@
 
 controller.yaml: controller.jsonnet controller.image controller-norbac.jsonnet
@@ -51,9 +64,9 @@ controller-norbac.yaml: controller-norbac.jsonnet controller.image
 test:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
 
-integrationtest: kubeseal
+integrationtest: kubeseal controller
 	# Assumes a k8s cluster exists, with controller already installed
-	$(GINKGO) -tags 'integration' integration -- -kubeconfig $(KUBECONFIG) -kubeseal-bin $(abspath $<)
+	$(GINKGO) -tags 'integration' integration -- -kubeconfig $(KUBECONFIG) -kubeseal-bin $(abspath $<) -controller-bin $(abspath $(word 2,$^))
 
 vet:
 	# known issue:
@@ -69,4 +82,4 @@ clean:
 	$(RM) controller*.yaml
 	$(RM) docker/controller
 
-.PHONY: all test clean vet fmt
+.PHONY: all kubeseal controller test clean vet fmt

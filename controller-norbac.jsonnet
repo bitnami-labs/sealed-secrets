@@ -1,11 +1,5 @@
 // Minimal required deployment for a functional controller.
-local k = import "ksonnet.beta.1/k.libsonnet";
-
-local deployment = k.apps.v1beta1.deployment;
-local container = k.core.v1.container;
-local probe = k.core.v1.probe;
-local service = k.core.v1.service;
-local servicePort = k.core.v1.servicePort;
+local kube = import "kube.libsonnet";
 
 local trim = function(str) (
   if std.startsWith(str, " ") || std.startsWith(str, "\n") then
@@ -17,40 +11,50 @@ local trim = function(str) (
 );
 
 local namespace = "kube-system";
+local controllerImage = std.extVar("CONTROLLER_IMAGE");
 
-local controllerImage = trim(importstr "controller.image");
-local controllerPort = 8080;
-
-local controllerProbe =
-  probe.default() +
-  probe.mixin.httpGet.path("/healthz") +
-  probe.mixin.httpGet.port(controllerPort);
-
-local controllerContainer =
-  container.default("sealed-secrets-controller", controllerImage) +
-  container.command(["controller"]) +
-  container.livenessProbe(controllerProbe) +
-  container.readinessProbe(controllerProbe) +
-  container.securityContext(k.core.v1.podSecurityContext.default()) +
-  container.mixin.securityContext.readOnlyRootFilesystem(true) +
-  container.mixin.securityContext.runAsNonRoot(true) +
-  {securityContext+: {runAsUser: 1001}} +
-  container.helpers.namedPort("http", controllerPort);
-
-local labels = {name: "sealed-secrets-controller"};
-
-local controllerDeployment =
-  deployment.default("sealed-secrets-controller", controllerContainer, namespace) +
-  {spec+: {template+: {metadata: {labels: labels}}}};
-
-local controllerSvc =
-  service.default("sealed-secrets-controller", namespace) +
-  service.spec(k.core.v1.serviceSpec.default()) +
-  service.mixin.spec.selector(labels) +
-  service.mixin.spec.ports([servicePort.default(controllerPort)]);
+// This is a bit odd: Downgrade to apps/v1beta1 so we can continue
+// to support k8s v1.6.
+// TODO: re-evaluate sealed-secrets support timeline and/or
+// kube.libsonnet versioned API support.
+local v1beta1_Deployment(name) = kube.Deployment(name) {
+  assert std.assertEqual(super.apiVersion, "apps/v1beta2"),
+  apiVersion: "apps/v1beta1",
+};
 
 {
-  namespace:: namespace,
-  controller: k.util.prune(controllerDeployment),
-  service: k.util.prune(controllerSvc),
+  crd: kube.CustomResourceDefinition("bitnami.com", "v1alpha1", "SealedSecret"),
+
+  namespace:: {metadata+: {namespace: namespace}},
+
+  service: kube.Service("sealed-secrets-controller") + $.namespace {
+    target_pod: $.controller.spec.template,
+  },
+
+  controller: v1beta1_Deployment("sealed-secrets-controller") + $.namespace {
+    spec+: {
+      template+: {
+        spec+: {
+          containers_+: {
+            controller: kube.Container("sealed-secrets-controller") {
+              image: controllerImage,
+              command: ["controller"],
+              readinessProbe: {
+                httpGet: {path: "/healthz", port: "http"},
+              },
+              livenessProbe: self.readinessProbe,
+              ports_+: {
+                http: {containerPort: 8080},
+              },
+              securityContext+: {
+                readOnlyRootFilesystem: true,
+                runAsNonRoot: true,
+                runAsUser: 1001,
+              },
+            },
+          },
+        },
+      },
+    },
+  },
 }

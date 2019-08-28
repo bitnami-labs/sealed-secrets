@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	goflag "flag"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -29,10 +30,14 @@ import (
 )
 
 var (
-	keyName  = flag.String("key-name", "sealed-secrets-key", "Name of Secret containing public/private key.")
-	keySize  = flag.Int("key-size", 4096, "Size of encryption key.")
-	validFor = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
-	myCN     = flag.String("my-cn", "", "CN to use in generated certificate.")
+	keyName      = flag.String("key-name", "sealed-secrets-key", "Name of Secret containing public/private key.")
+	keySize      = flag.Int("key-size", 4096, "Size of encryption key.")
+	validFor     = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
+	myCN         = flag.String("my-cn", "", "CN to use in generated certificate.")
+	printVersion = flag.Bool("version", false, "Print version information and exit")
+
+	// VERSION set from Makefile
+	VERSION = "UNKNOWN"
 )
 
 func init() {
@@ -109,7 +114,7 @@ func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
 			CommonName: *myCN,
 		},
 		BasicConstraintsValid: true,
-		IsCA: true,
+		IsCA:                  true,
 	}
 
 	data, err := x509.CreateCertificate(r, &cert, &cert, &key.PublicKey, key)
@@ -198,7 +203,7 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	go httpserver(func() ([]*x509.Certificate, error) { return certs, nil })
+	go httpserver(func() ([]*x509.Certificate, error) { return certs, nil }, controller.AttemptUnseal)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
@@ -210,6 +215,13 @@ func main2() error {
 func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
+
+	if *printVersion {
+		fmt.Printf("controller version: %s\n", VERSION)
+		return
+	}
+
+	log.Printf("Starting sealed-secrets controller version: %s\n", VERSION)
 
 	if err := main2(); err != nil {
 		panic(err.Error())

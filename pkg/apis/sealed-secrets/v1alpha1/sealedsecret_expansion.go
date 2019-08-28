@@ -13,13 +13,17 @@ import (
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 )
 
-func labelFor(o metav1.Object) ([]byte, bool) {
-	label := o.GetAnnotations()[SealedSecretClusterWideAnnotation]
-	if label == "true" {
-		return []byte(""), true
+// Returns labels followed by clusterWide followed by namespaceWide.
+func labelFor(o metav1.Object) ([]byte, bool, bool) {
+	clusterWide := o.GetAnnotations()[SealedSecretClusterWideAnnotation]
+	if clusterWide == "true" {
+		return []byte(""), true, false
 	}
-	label = fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())
-	return []byte(label), false
+	namespaceWide := o.GetAnnotations()[SealedSecretNamespaceWideAnnotation]
+	if namespaceWide == "true" {
+        return []byte(o.GetNamespace()), false, true
+	}
+	return []byte(fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())), false, false
 }
 
 // check if jenkins annotation exists
@@ -60,7 +64,7 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
 	// during decryption.
-	label, clusterWide := labelFor(secret)
+	label, clusterWide, namespaceWide := labelFor(secret)
 
 	ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, plaintext, label)
 	if err != nil {
@@ -80,7 +84,9 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 	if clusterWide {
 		s.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
 	}
-
+	if namespaceWide {
+		s.Annotations = map[string]string{SealedSecretNamespaceWideAnnotation: "true"}
+	}
 	return s, nil
 }
 
@@ -100,11 +106,12 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		Spec: SealedSecretSpec{
 			EncryptedData: map[string][]byte{},
 		},
+		Type: secret.Type,
 	}
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
 	// during decryption.
-	label, clusterWide := labelFor(secret)
+	label, clusterWide, namespaceWide := labelFor(secret)
 
 	jenkinsAnnotationKey, jenkinsAnnotationExists := jenkinsKubernetesCredentialProviderAnnotationExist(secret)
 	jenkinsLabelKey, jenkinsLabelExists := jenkinsKubernetesCredentialProviderLabelExist(secret)
@@ -118,6 +125,9 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 
 	if clusterWide {
 		s.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
+	}
+	if namespaceWide {
+		s.Annotations = map[string]string{SealedSecretNamespaceWideAnnotation: "true"}
 	}
 
 	if jenkinsAnnotationExists {
@@ -134,11 +144,10 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		// add jenkins kubernetes-credential-provider label
 		s.Labels = map[string]string{JenkinsKubernetesCredentialProviderLabel: jenkinsLabelKey}
 	}
-
 	return s, nil
 }
 
-// Unseal decypts and returns the embedded v1.Secret.
+// Unseal decrypts and returns the embedded v1.Secret.
 func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rsa.PrivateKey) (*v1.Secret, error) {
 	boolTrue := true
 	smeta := s.GetObjectMeta()
@@ -147,7 +156,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 	// during encryption.  This check ensures that we can't be
 	// tricked into decrypting a sealed secret into an unexpected
 	// namespace/name.
-	label, _ := labelFor(smeta)
+	label, _, _ := labelFor(smeta)
 
 	var secret v1.Secret
 	if len(s.Spec.EncryptedData) > 0 {
@@ -159,6 +168,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKey *rs
 			}
 			secret.Data[key] = plaintext
 		}
+		secret.Type = s.Type
 	} else { // Support decrypting old secrets for backward compatibility
 		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKey, s.Spec.Data, label)
 		if err != nil {
