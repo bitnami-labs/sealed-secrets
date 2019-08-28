@@ -47,7 +47,7 @@ func getSecretType(s *v1.Secret) v1.SecretType {
 	return s.Type
 }
 
-func fetchKeys(c corev1.SecretsGetter) (*rsa.PrivateKey, []*x509.Certificate, error) {
+func fetchKeys(c corev1.SecretsGetter) (map[string]*rsa.PrivateKey, []*x509.Certificate, error) {
 	list, err := c.Secrets("kube-system").List(metav1.ListOptions{
 		LabelSelector: keySelector,
 	})
@@ -76,7 +76,10 @@ func fetchKeys(c corev1.SecretsGetter) (*rsa.PrivateKey, []*x509.Certificate, er
 		return nil, nil, fmt.Errorf("Failed to read any certificates")
 	}
 
-	return privKey.(*rsa.PrivateKey), certs, nil
+	rsaPrivKey := privKey.(*rsa.PrivateKey)
+	fp, err := crypto.PublicKeyFingerprint(&rsaPrivKey.PublicKey)
+	privKeys := map[string]*rsa.PrivateKey{fp: rsaPrivKey}
+	return privKeys, certs, nil
 }
 
 func containEventWithReason(matcher types.GomegaMatcher) types.GomegaMatcher {
