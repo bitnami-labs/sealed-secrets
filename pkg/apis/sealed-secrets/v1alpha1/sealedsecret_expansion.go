@@ -80,6 +80,19 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 	return s, nil
 }
 
+func StripLastAppliedAnnotations(annotations map[string]string) {
+	if annotations == nil {
+		return
+	}
+	keys := []string{
+		"kubectl.kubernetes.io/last-applied-configuration",
+		"kubecfg.ksonnet.io/last-applied-configuration",
+	}
+	for _, k := range keys {
+		delete(annotations, k)
+	}
+}
+
 // NewSealedSecret creates a new SealedSecret object wrapping the
 // provided secret. This encrypts only the values of each secrets
 // individually, so secrets can be updated one by one.
@@ -102,6 +115,13 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		},
 	}
 	secret.ObjectMeta.DeepCopyInto(&s.Spec.Template.ObjectMeta)
+
+	// the input secret could come from a real secret object applied with `kubectl apply` or similar tools
+	// which put a copy of the object version at application time in an annotation in order to support
+	// strategic merge patch in subsequent updates. We need to strip those annotations or else we would
+	// be leaking secrets in clear in a way that might be non obvious to users.
+	// See https://github.com/bitnami-labs/sealed-secrets/issues/227
+	StripLastAppliedAnnotations(s.Spec.Template.ObjectMeta.Annotations)
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
 	// during decryption.
