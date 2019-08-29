@@ -17,23 +17,91 @@ original Secret from the SealedSecret.
 See https://github.com/bitnami-labs/sealed-secrets/releases for the latest
 release.
 
-```sh
+
+### GKE Requirements
+
+If installing on a GKE cluster, a ClusterRoleBinding may be needed to successfully deploy the controller in the final command.  Replace <your-email> with a valid email, and then deploy the cluster role binding:
+ 
+```bash
+USER_EMAIL=<your-email>
+kubectl create clusterrolebinding $USER-cluster-admin-binding --clusterrole=cluster-admin --user=$USER_EMAIL
+```
+ 
+If you are using a **private GKE cluster**, you are required to create a Master-to-Node firewall rule to allow GKE to communicate to the kubeseal container endpoint port tcp/8080.
+ 
+```bash
+CLUSTER_NAME=foo-cluster
+gcloud config set compute/zone your-zone-or-region
+```
+
+Get the `MASTER_IPV4_CIDR`.
+
+```bash
+MASTER_IPV4_CIDR=$(gcloud container clusters describe $CLUSTER_NAME \
+  | grep "masterIpv4CidrBlock: " \
+  | awk '{print $2}')
+```
+
+Get the `NETWORK`.
+
+```bash
+NETWORK=$(gcloud container clusters describe $CLUSTER_NAME \
+  | grep "^network: " \
+  | awk '{print $2}')
+```
+
+Get the `NETWORK_TARGET_TAG`.
+
+```bash
+NETWORK_TARGET_TAG=$(gcloud compute firewall-rules list \
+  --filter network=$NETWORK --format json \
+  | jq ".[] | select(.name | contains(\"$CLUSTER_NAME\"))" \
+  | jq -r '.targetTags[0]' | head -1)
+```
+
+Check the values.
+
+```bash
+echo $MASTER_IPV4_CIDR $NETWORK $NETWORK_TARGET_TAG
+
+# example output
+10.0.0.0/28 foo-network gke-foo-cluster-c1ecba83-node
+```
+
+Create the firewall rule.
+
+```bash
+gcloud compute firewall-rules create gke-to-kubeseal-8080 \
+  --network "$NETWORK" \
+  --allow "tcp:8443" \
+  --source-ranges "$MASTER_IPV4_CIDR" \
+  --target-tags "$NETWORK_TARGET_TAG" \
+  --priority 1000
+```
+
+### Installing the cli
+
+Install the kubeseal cli into `/usr/local/bin/kubeseal`.
+
+```bash
 $ release=$(curl --silent "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
 
-# Install client-side tool into /usr/local/bin/
-$ GOOS=$(go env GOOS)
-$ GOARCH=$(go env GOARCH)
-$ wget https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/kubeseal-$GOOS-$GOARCH
-$ sudo install -m 755 kubeseal-$GOOS-$GOARCH /usr/local/bin/kubeseal
+# See the release binary versions at https://github.com/bitnami-labs/sealed-secrets/releases/
+RELEASE_BIN_URL=https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.8.3/kubeseal-linux-amd64
 
-# Note:  If installing on a GKE cluster, a ClusterRoleBinding may be needed to successfully deploy the controller in the final command.  Replace <your-email> with a valid email, and then deploy the cluster role binding:
-$ USER_EMAIL=<your-email>
-$ kubectl create clusterrolebinding $USER-cluster-admin-binding --clusterrole=cluster-admin --user=$USER_EMAIL
+curl -fsSL -o /usr/local/bin/kubeseal "$RELEASE_BIN_URL" && chmod +x /usr/local/bin/kubeseal
+```
 
+### Installing the Kubernetes controller
+
+Apply the manifest into your cluster.
+
+```bash
 # Install SealedSecret CRD, server-side controller into kube-system namespace (by default)
+kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
+
 # Note the second sealedsecret-crd.yaml file is not necessary for releases >= 0.8.0
-$ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
-$ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
+kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
 ```
 
 `controller.yaml` will create the `SealedSecret` resource and install the controller
