@@ -73,7 +73,7 @@ Create the firewall rule.
 ```bash
 gcloud compute firewall-rules create gke-to-kubeseal-8080 \
   --network "$NETWORK" \
-  --allow "tcp:8443" \
+  --allow "tcp:8080" \
   --source-ranges "$MASTER_IPV4_CIDR" \
   --target-tags "$NETWORK_TARGET_TAG" \
   --priority 1000
