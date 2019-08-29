@@ -411,6 +411,49 @@ func TestSealRoundTripWithMisMatchNamespaceWide(t *testing.T) {
 	}
 }
 
+func TestSealMetadataPreservation(t *testing.T) {
+	scheme := runtime.NewScheme()
+	codecs := serializer.NewCodecFactory(scheme)
+
+	SchemeBuilder.AddToScheme(scheme)
+	v1.SchemeBuilder.AddToScheme(scheme)
+
+	key, _ := generateTestKey(t, testRand(), 2048)
+
+	testCases := []struct {
+		key       string
+		preserved bool
+	}{
+		{"foo", true},
+		{"foo.bar.io/foo-bar-baz", true},
+		{"kubectl.kubernetes.io/last-applied-configuration", false},
+		{"kubecfg.ksonnet.io/last-applied-configuration", false},
+	}
+
+	for _, tc := range testCases {
+		secret := v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:        "myname",
+				Namespace:   "myns",
+				Annotations: map[string]string{tc.key: "test value"},
+			},
+			Data: map[string][]byte{
+				"foo": []byte("bar"),
+			},
+		}
+
+		ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
+		if err != nil {
+			t.Fatalf("NewSealedSecret returned error: %v", err)
+		}
+
+		_, got := ssecret.Spec.Template.Annotations[tc.key]
+		if want := tc.preserved; got != want {
+			t.Errorf("key %q: exists: %v, expected to exist: %v", tc.key, got, want)
+		}
+	}
+}
+
 func TestUnsealingV1Format(t *testing.T) {
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)
