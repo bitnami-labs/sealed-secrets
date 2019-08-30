@@ -26,8 +26,10 @@ import (
 
 // Scheme scheme.
 var Scheme = runtime.NewScheme()
+
 // Codecs is a codec factory for the scheme.
 var Codecs = serializer.NewCodecFactory(Scheme)
+
 // ParameterCodec is the parameter codec.
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 
