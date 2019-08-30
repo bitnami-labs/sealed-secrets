@@ -2,7 +2,7 @@
 
 ## Install
 
-If installing on a GKE cluster, a ClusterRoleBinding may be needed to successfully deploy the controller in the final command.  Replace <your-email> with a valid email, and then deploy the cluster role binding:
+If installing on a GKE cluster you don't have admin rights, a ClusterRoleBinding may be needed to successfully deploy the controller in the final command.  Replace <your-email> with a valid email, and then deploy the cluster role binding:
 
 ```bash
 USER_EMAIL=<your-email>
