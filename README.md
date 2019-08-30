@@ -190,17 +190,6 @@ go: extracting github.com/bitnami-labs/sealed-secrets v0.8.1-0.20190724082116-38
 
 You can specify a release tag or a commit SHA instead of `master`.
 
-For a more complete development environment, clone the repository and
-use the Makefile:
-
-```sh
-% git clone https://github.com/bitnami-labs/sealed-secrets.git
-% cd sealed-secrets
-
-# Build client-side tool and controller binaries
-% make
-```
-
 ## Usage
 
 ```sh
