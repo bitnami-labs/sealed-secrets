@@ -22,17 +22,19 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-type FakeBitnamiV1alpha1 struct {
+// BitnamiV1alpha1 is a fake BitnamiV1alpha1 impl.
+type BitnamiV1alpha1 struct {
 	*testing.Fake
 }
 
-func (c *FakeBitnamiV1alpha1) SealedSecrets(namespace string) v1alpha1.SealedSecretInterface {
-	return &FakeSealedSecrets{c, namespace}
+// SealedSecrets returns a SealedSecretInterface for a given namespace.
+func (c *BitnamiV1alpha1) SealedSecrets(namespace string) v1alpha1.SealedSecretInterface {
+	return &SealedSecrets{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
-func (c *FakeBitnamiV1alpha1) RESTClient() rest.Interface {
+func (c *BitnamiV1alpha1) RESTClient() rest.Interface {
 	var ret *rest.RESTClient
 	return ret
 }

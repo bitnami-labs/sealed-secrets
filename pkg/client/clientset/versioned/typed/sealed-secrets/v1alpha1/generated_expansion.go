@@ -16,4 +16,5 @@ limitations under the License.
 
 package v1alpha1
 
+// SealedSecretExpansion has methods to work with SealedSecrets resources.
 type SealedSecretExpansion interface{}

@@ -14,5 +14,5 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// This package has the automatically generated typed clients.
+// Package v1alpha1 has the automatically generated typed clients.
 package v1alpha1

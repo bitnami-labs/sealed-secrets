@@ -23,6 +23,7 @@ import (
 	rest "k8s.io/client-go/rest"
 )
 
+// BitnamiV1alpha1Interface defines basic API methods for the BitnamiV1alpha1 kind.
 type BitnamiV1alpha1Interface interface {
 	RESTClient() rest.Interface
 	SealedSecretsGetter
@@ -33,6 +34,7 @@ type BitnamiV1alpha1Client struct {
 	restClient rest.Interface
 }
 
+// SealedSecrets returns a SealedSecretInterface client for a given namespace.
 func (c *BitnamiV1alpha1Client) SealedSecrets(namespace string) SealedSecretInterface {
 	return newSealedSecrets(c, namespace)
 }

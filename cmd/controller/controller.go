@@ -308,6 +308,7 @@ func (c *Controller) updateOwnerReferences(existing, new *corev1.Secret) {
 	existing.SetOwnerReferences(ownerRefs)
 }
 
+// AttemptUnseal tries to unseal a secret.
 func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 	object, err := runtime.Decode(scheme.Codecs.UniversalDecoder(ssv1alpha1.SchemeGroupVersion), content)
 	if err != nil {
@@ -322,7 +323,6 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 		return true, nil
 	default:
 		return false, fmt.Errorf("Unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
-
 	}
 }
 

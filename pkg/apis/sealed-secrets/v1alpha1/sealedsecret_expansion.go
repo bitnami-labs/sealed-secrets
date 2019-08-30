@@ -80,6 +80,10 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 	return s, nil
 }
 
+// StripLastAppliedAnnotations strips annotations added by tools such as kubectl and kubecfg
+// that contain a full copy of the original object kept in the annotation for strategic-merge-patch
+// purposes. We need to remove these annotations when sealing an existing secret otherwise we'd leak
+// the secrets.
 func StripLastAppliedAnnotations(annotations map[string]string) {
 	if annotations == nil {
 		return

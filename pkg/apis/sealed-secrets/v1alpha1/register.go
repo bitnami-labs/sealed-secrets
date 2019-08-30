@@ -16,7 +16,6 @@ var (
 
 	// SchemeBuilder adds this group to scheme
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
-	AddToScheme   = SchemeBuilder.AddToScheme
 )
 
 func init() {
