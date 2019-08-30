@@ -1,8 +1,10 @@
 # "Sealed Secrets" for Kubernetes
 
+[![](https://img.shields.io/badge/install-docs-brightgreen.svg)](#Installation)
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 [![Build Status](https://travis-ci.org/bitnami-labs/sealed-secrets.svg?branch=master)](https://travis-ci.org/bitnami-labs/sealed-secrets)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bitnami-labs/sealed-secrets)](https://goreportcard.com/report/github.com/bitnami-labs/sealed-secrets)
+![Downloads](https://img.shields.io/github/downloads/bitnami-labs/sealed-secrets/total.svg)
 
 **Problem:** "I can manage all my K8s config in git, except Secrets."
 
