@@ -14,6 +14,21 @@ kubectl create clusterrolebinding $USER-cluster-admin-binding --clusterrole=clus
 If you are using a **private GKE cluster**, `kubeseal` won't be able to fetch the public key from the controller
 because there is firewall that prevents the master to talk directly to the nodes.
 
+There are currently two workarounds:
+
+## Offline sealing
+
+If you have the public key for your controller, you can seal secrets without talking to the controller.
+Normally `kubeseal --fetch-cert` can be used to obtain the certificate for later use, but in this case the firewall prevents us from doing it.
+
+The controller outputs the certificate to the logs so you can copy paste it from there.
+
+Once you have the cert this is how you seal secrets:
+
+```bash
+kubeseal --cert=cert.pem <secret.yaml
+```
+
 ## Master-to-Node firewall
 
 You are required to create a Master-to-Node firewall rule to allow GKE to communicate to the kubeseal container endpoint port tcp/8080.
