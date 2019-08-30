@@ -125,7 +125,7 @@ ensure you are using the correct one.
 `kubeseal` will fetch the certificate from the controller at runtime
 (requires secure access to the Kubernetes API server), which is
 convenient for interactive use, but it's known to be brittle when users
-have clusters with special configurations such as *private GKE clusters* that have
+have clusters with special configurations such as [private GKE clusters](docs/GKE.md#private-gke-clusters) that have
 firewalls between master and nodes.
 
 An alternative workflow
@@ -141,6 +141,9 @@ The certificate is also printed to the controller log on startup.
 
 See https://github.com/bitnami-labs/sealed-secrets/releases for the latest
 release and detailed installation instructions.
+
+Cloud platform specific notes and instructions:
+* [GKE](docs/GKE.md)
 
 ### Controller
 
