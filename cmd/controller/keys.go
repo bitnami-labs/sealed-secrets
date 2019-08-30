@@ -18,10 +18,12 @@ import (
 	"k8s.io/client-go/util/keyutil"
 )
 
+// SealedSecretsKeyLabel is that label used to locate active key pairs used to decrypt sealed secrets.
 const SealedSecretsKeyLabel = "sealedsecrets.bitnami.com/sealed-secrets-key"
 
 var (
-	ErrPrivateKeyNotRSA = errors.New("Private key is not an rsa key")
+	// ErrPrivateKeyNotRSA is returned when the private key is not a valid RSA key.
+	ErrPrivateKeyNotRSA = errors.New("Private key is not an RSA key")
 )
 
 func generatePrivateKeyAndCert(keySize int) (*rsa.PrivateKey, *x509.Certificate, error) {

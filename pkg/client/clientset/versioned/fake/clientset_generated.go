@@ -54,6 +54,7 @@ type Clientset struct {
 	discovery *fakediscovery.FakeDiscovery
 }
 
+// Discovery returns the discovery interface.
 func (c *Clientset) Discovery() discovery.DiscoveryInterface {
 	return c.discovery
 }
@@ -62,10 +63,10 @@ var _ clientset.Interface = &Clientset{}
 
 // BitnamiV1alpha1 retrieves the BitnamiV1alpha1Client
 func (c *Clientset) BitnamiV1alpha1() bitnamiv1alpha1.BitnamiV1alpha1Interface {
-	return &fakebitnamiv1alpha1.FakeBitnamiV1alpha1{Fake: &c.Fake}
+	return &fakebitnamiv1alpha1.BitnamiV1alpha1{Fake: &c.Fake}
 }
 
 // Bitnami retrieves the BitnamiV1alpha1Client
 func (c *Clientset) Bitnami() bitnamiv1alpha1.BitnamiV1alpha1Interface {
-	return &fakebitnamiv1alpha1.FakeBitnamiV1alpha1{Fake: &c.Fake}
+	return &fakebitnamiv1alpha1.BitnamiV1alpha1{Fake: &c.Fake}
 }

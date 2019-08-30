@@ -24,8 +24,11 @@ import (
 	serializer "k8s.io/apimachinery/pkg/runtime/serializer"
 )
 
+// Scheme scheme.
 var Scheme = runtime.NewScheme()
+// Codecs is a codec factory for the scheme.
 var Codecs = serializer.NewCodecFactory(Scheme)
+// ParameterCodec is the parameter codec.
 var ParameterCodec = runtime.NewParameterCodec(Scheme)
 
 func init() {
@@ -48,6 +51,5 @@ func init() {
 // After this, RawExtensions in Kubernetes types will serialize kube-aggregator types
 // correctly.
 func AddToScheme(scheme *runtime.Scheme) {
-	bitnamiv1alpha1.AddToScheme(scheme)
-
+	bitnamiv1alpha1.SchemeBuilder.AddToScheme(scheme)
 }

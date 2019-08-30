@@ -26,9 +26,9 @@ import (
 	testing "k8s.io/client-go/testing"
 )
 
-// FakeSealedSecrets implements SealedSecretInterface
-type FakeSealedSecrets struct {
-	Fake *FakeBitnamiV1alpha1
+// SealedSecrets implements a fake SealedSecretInterface
+type SealedSecrets struct {
+	Fake *BitnamiV1alpha1
 	ns   string
 }
 
@@ -37,7 +37,7 @@ var sealedsecretsResource = schema.GroupVersionResource{Group: "bitnami.com", Ve
 var sealedsecretsKind = schema.GroupVersionKind{Group: "bitnami.com", Version: "v1alpha1", Kind: "SealedSecret"}
 
 // Get takes name of the sealedSecret, and returns the corresponding sealedSecret object, and an error if there is any.
-func (c *FakeSealedSecrets) Get(name string, options v1.GetOptions) (result *v1alpha1.SealedSecret, err error) {
+func (c *SealedSecrets) Get(name string, options v1.GetOptions) (result *v1alpha1.SealedSecret, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(sealedsecretsResource, c.ns, name), &v1alpha1.SealedSecret{})
 
@@ -48,7 +48,7 @@ func (c *FakeSealedSecrets) Get(name string, options v1.GetOptions) (result *v1a
 }
 
 // List takes label and field selectors, and returns the list of SealedSecrets that match those selectors.
-func (c *FakeSealedSecrets) List(opts v1.ListOptions) (result *v1alpha1.SealedSecretList, err error) {
+func (c *SealedSecrets) List(opts v1.ListOptions) (result *v1alpha1.SealedSecretList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(sealedsecretsResource, sealedsecretsKind, c.ns, opts), &v1alpha1.SealedSecretList{})
 
@@ -70,14 +70,14 @@ func (c *FakeSealedSecrets) List(opts v1.ListOptions) (result *v1alpha1.SealedSe
 }
 
 // Watch returns a watch.Interface that watches the requested sealedSecrets.
-func (c *FakeSealedSecrets) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *SealedSecrets) Watch(opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(sealedsecretsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a sealedSecret and creates it.  Returns the server's representation of the sealedSecret, and an error, if there is any.
-func (c *FakeSealedSecrets) Create(sealedSecret *v1alpha1.SealedSecret) (result *v1alpha1.SealedSecret, err error) {
+func (c *SealedSecrets) Create(sealedSecret *v1alpha1.SealedSecret) (result *v1alpha1.SealedSecret, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(sealedsecretsResource, c.ns, sealedSecret), &v1alpha1.SealedSecret{})
 
@@ -88,7 +88,7 @@ func (c *FakeSealedSecrets) Create(sealedSecret *v1alpha1.SealedSecret) (result 
 }
 
 // Update takes the representation of a sealedSecret and updates it. Returns the server's representation of the sealedSecret, and an error, if there is any.
-func (c *FakeSealedSecrets) Update(sealedSecret *v1alpha1.SealedSecret) (result *v1alpha1.SealedSecret, err error) {
+func (c *SealedSecrets) Update(sealedSecret *v1alpha1.SealedSecret) (result *v1alpha1.SealedSecret, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(sealedsecretsResource, c.ns, sealedSecret), &v1alpha1.SealedSecret{})
 
@@ -99,7 +99,7 @@ func (c *FakeSealedSecrets) Update(sealedSecret *v1alpha1.SealedSecret) (result 
 }
 
 // Delete takes name of the sealedSecret and deletes it. Returns an error if one occurs.
-func (c *FakeSealedSecrets) Delete(name string, options *v1.DeleteOptions) error {
+func (c *SealedSecrets) Delete(name string, options *v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(sealedsecretsResource, c.ns, name), &v1alpha1.SealedSecret{})
 
@@ -107,7 +107,7 @@ func (c *FakeSealedSecrets) Delete(name string, options *v1.DeleteOptions) error
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeSealedSecrets) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *SealedSecrets) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
 	action := testing.NewDeleteCollectionAction(sealedsecretsResource, c.ns, listOptions)
 
 	_, err := c.Fake.Invokes(action, &v1alpha1.SealedSecretList{})
@@ -115,7 +115,7 @@ func (c *FakeSealedSecrets) DeleteCollection(options *v1.DeleteOptions, listOpti
 }
 
 // Patch applies the patch and returns the patched sealedSecret.
-func (c *FakeSealedSecrets) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.SealedSecret, err error) {
+func (c *SealedSecrets) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1alpha1.SealedSecret, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(sealedsecretsResource, c.ns, name, pt, data, subresources...), &v1alpha1.SealedSecret{})
 

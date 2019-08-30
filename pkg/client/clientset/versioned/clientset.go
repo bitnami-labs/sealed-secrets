@@ -24,6 +24,7 @@ import (
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
 )
 
+// Interface defines our CRDs clientset interface.
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	BitnamiV1alpha1() bitnamiv1alpha1.BitnamiV1alpha1Interface
@@ -43,8 +44,10 @@ func (c *Clientset) BitnamiV1alpha1() bitnamiv1alpha1.BitnamiV1alpha1Interface {
 	return c.bitnamiV1alpha1
 }
 
-// Deprecated: Bitnami retrieves the default version of BitnamiClient.
+// Bitnami retrieves the default version of BitnamiClient.
 // Please explicitly pick a version.
+//
+// DEPRECATED
 func (c *Clientset) Bitnami() bitnamiv1alpha1.BitnamiV1alpha1Interface {
 	return c.bitnamiV1alpha1
 }

@@ -14,6 +14,7 @@ import (
 	certUtil "k8s.io/client-go/util/cert"
 )
 
+// A Key holds the cryptographic key pair and some metadata about it.
 type Key struct {
 	private      *rsa.PrivateKey
 	cert         *x509.Certificate
@@ -21,6 +22,7 @@ type Key struct {
 	creationTime time.Time
 }
 
+// A KeyRegistry manages the key pairs used to (un)seal secrets.
 type KeyRegistry struct {
 	sync.Mutex
 	client        kubernetes.Interface
@@ -32,6 +34,7 @@ type KeyRegistry struct {
 	mostRecentKey *Key
 }
 
+// NewKeyRegistry creates a new KeyRegistry.
 func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel string, keysize int) *KeyRegistry {
 	return &KeyRegistry{
 		client:    client,
