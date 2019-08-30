@@ -12,50 +12,162 @@ decrypted only by the controller running in the target cluster and
 nobody else (not even the original author) is able to obtain the
 original Secret from the SealedSecret.
 
+## Overview
+
+Sealed Secrets is composed of two parts:
+
+* A cluster-side controller / operator
+* A client-side utility: `kubeseal`
+
+The `kubeseal` utility uses asymmetric crypto to encrypt secrets that only the controller can decrypt.
+
+These encrypted secrets are encoded in a `SealedSecret` resource, which you can see as a recipe for creating
+a secret. Here is how it looks:
+
+```yaml
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: mysecret
+  namespace: mynamespace
+spec:
+  encryptedData:
+    foo: AgBy3i4OJSWK+PiTySYZZA9rO43cGDEq.....
+```
+
+Once unsealed this will produce a secret equivalent to this:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysecret
+  namespace: mynamespace
+data:
+  foo: bar  # <- base64 encoded "bar"
+```
+
+This normal [kubernetes secret](https://kubernetes.io/docs/concepts/configuration/secret/) will appear in the cluster
+after a few seconds and you can use it as you would use any secret that you would have created directly (e.g. reference it from a `Pod`).
+
+Jump to the [Installation](#installation) section to get up and running.
+
+The [Usage](#usage) section explores in more detail how you craft `SealedSecret` resources.
+
+### SealedSecrets as templates for secrets
+
+The previous example only focused on the encrypted secret items themselves, but the relationship between a `SealedSecret` custom resource and the `Secret` it unseals into is similar in many ways (but not in all of them) to the familiar `Deployment` vs `Pod`.
+
+In particular, the annotations and labels of a `SealedSecret` resource are not the same as the annotations of the `Secret` that gets generated out of it.
+
+To capture this distinction, the `SealedSecret` object has a `template` section which encodes all the fields you want the controller to put in the unsealed `Secret`.
+
+This includes metadata such as labels or annotations, but also things like the `type` of the secret.
+
+```yaml
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: mysecret
+  namespace: mynamespace
+  annotation:
+    "kubectl.kubernetes.io/last-applied-configuration": ....
+spec:
+  encryptedData:
+    .dockercfg: AgBy3i4OJSWK+PiTySYZZA9rO43cGDEq.....
+  template:
+    type: kubernetes.io/dockercfg
+    # this is an example of labels and annotations that will be added to the output secret
+    metadata:
+      labels:
+        "jenkins.io/credentials-type": usernamePassword
+      annotations:
+        "jenkins.io/credentials-description": credentials from Kubernetes
+```
+
+The controller would unseal that into something like:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysecret
+  namespace: mynamespace
+  labels:
+    "jenkins.io/credentials-type": usernamePassword
+  annotations:
+    "jenkins.io/credentials-description": credentials from Kubernetes
+  ownerReferences:
+  - apiVersion: bitnami.com/v1alpha1
+    controller: true
+    kind: SealedSecret
+    name: mysecret
+    uid: 5caff6a0-c9ac-11e9-881e-42010aac003e
+type: kubernetes.io/dockercfg
+data:
+  .dockercfg: ewogICJjcmVk...
+```
+
+As you can see, the generated `Secret` resource is a "dependent object" of the `SealedSecret` and as such
+it will be updated and deleted whenever the `SealedSecret` object gets updated or deleted.
+
+
+### Public key / Certificate
+
+The key certificate (public key portion) is used for sealing secrets,
+and needs to be available wherever `kubeseal` is going to be
+used. The certificate is not secret information, although you need to
+ensure you are using the correct one.
+
+`kubeseal` will fetch the certificate from the controller at runtime
+(requires secure access to the Kubernetes API server), which is
+convenient for interactive use, but it's known to be brittle when users
+have clusters with special configurations such as *private GKE clusters* that have
+firewalls between master and nodes.
+
+An alternative workflow
+is to store the certificate somewhere (e.g. local disk) with
+`kubeseal --fetch-cert >mycert.pem`,
+and use it offline with `kubeseal --cert mycert.pem`.
+The certificate is also printed to the controller log on startup.
+
+
+> **NOTE**: we are working on providing key management mechanisms that offload the encryption to HSM based modules or managed cloud crypto solutions such as KMS.
+
 ## Installation
 
 See https://github.com/bitnami-labs/sealed-secrets/releases for the latest
-release.
+release and detailed installation instructions.
 
-```sh
-$ release=$(curl --silent "https://api.github.com/repos/bitnami-labs/sealed-secrets/releases/latest" | sed -n 's/.*"tag_name": *"\([^"]*\)".*/\1/p')
+### Controller
 
-# Install client-side tool into /usr/local/bin/
-$ GOOS=$(go env GOOS)
-$ GOARCH=$(go env GOARCH)
-$ wget https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/kubeseal-$GOOS-$GOARCH
-$ sudo install -m 755 kubeseal-$GOOS-$GOARCH /usr/local/bin/kubeseal
-
-# Note:  If installing on a GKE cluster, a ClusterRoleBinding may be needed to successfully deploy the controller in the final command.  Replace <your-email> with a valid email, and then deploy the cluster role binding:
-$ USER_EMAIL=<your-email>
-$ kubectl create clusterrolebinding $USER-cluster-admin-binding --clusterrole=cluster-admin --user=$USER_EMAIL
-
-# Install SealedSecret CRD, server-side controller into kube-system namespace (by default)
-# Note the second sealedsecret-crd.yaml file is not necessary for releases >= 0.8.0
-$ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/controller.yaml
-$ kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/$release/sealedsecret-crd.yaml
-```
-
-`controller.yaml` will create the `SealedSecret` resource and install the controller
-into `kube-system` namespace, create a service account and necessary
-RBAC roles.
+Once you deploy the manifest it will create the `SealedSecret` resource
+and install the controller into `kube-system` namespace, create a service
+account and necessary RBAC roles.
 
 After a few moments, the controller will start, generate a key pair,
 and be ready for operation.  If it does not, check the controller
 logs.
 
-The key certificate (public key portion) is used for sealing secrets,
-and needs to be available wherever `kubeseal` is going to be
-used. The certificate is not secret information, although you need to
-ensure you are using the correct file.
+### Kustomize
 
-`kubeseal` will fetch the certificate from the controller at runtime
-(requires secure access to the Kubernetes API server), which is
-convenient for interactive use.  The recommended automation workflow
-is to store the certificate to local disk with
-`kubeseal --fetch-cert >mycert.pem`,
-and use it offline with `kubeseal --cert mycert.pem`.
-The certificate is also printed to the controller log on startup.
+The official controller manifest installation mechanism is just a YAML file.
+
+In some cases you might need to apply your own customizations, like set a custom namespace or set some env variables.
+
+`kubectl` has native support for that, see [kustomize](https://kustomize.io/).
+
+### Helm Chart
+
+Sealed Secret helm charts can be found on this [link](https://github.com/helm/charts/tree/master/stable/sealed-secrets). It's maintained independently and it might lag a bit behind the latest release.
+
+### Homebrew
+
+The `kubeseal` client is also available on [homebrew](https://formulae.brew.sh/formula/kubeseal):
+
+```
+$ brew install kubeseal
+```
 
 ### Installation from source
 
@@ -184,9 +296,6 @@ To update the jsonnet dependencies:
 ```
 $ jb install --jsonnetpkg-home=jsonnet_vendor
 ```
-
-## Helm Chart
-Sealed Secret helm charts can be found on this [link](https://github.com/helm/charts/tree/master/stable/sealed-secrets)
 
 ## FAQ
 
