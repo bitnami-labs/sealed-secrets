@@ -23,9 +23,15 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
+	"github.com/bitnami-labs/flagenv"
+	"github.com/bitnami-labs/pflagenv"
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
+)
+
+const (
+	flagEnvPrefix = "SEALED_SECRETS"
 )
 
 var (
@@ -44,6 +50,9 @@ var (
 )
 
 func init() {
+	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
+	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
+
 	// Standard goflags (glog in particular)
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if f := flag.CommandLine.Lookup("logtostderr"); f != nil {
