@@ -4,6 +4,30 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.9.0 (DRAFT)
+
+## Announcement
+
+### Pre-v0.7.0 clients
+
+If you are using kubeseal clients older than v0.7.0, please upgrade. Since this release the controller
+will no longer accept the "v1" format of the encrypted "data" field and instead it will only support the
+"encryptedData" field.
+
+If you have old sealed secret resources lying around, you can easily upgrade them by invoking:
+
+```bash
+kubeseal --rotate <old.yaml >new.yaml
+```
+
+## Changelog
+
+* Key rotation is enabled by default every 30 days (#236)
+* You can now use env vars such as SEALED_SECRETS_FOO_BAR to customize the controller (#234)
+* Disabling by default deprecated "v1" encrypted data format (used by pre-v0.7.0 clients) (#235)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/1?closed=1
+
 # v0.8.3
 
 ## Announcement
