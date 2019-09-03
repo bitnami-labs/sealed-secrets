@@ -190,6 +190,12 @@ go: extracting github.com/bitnami-labs/sealed-secrets v0.8.1-0.20190724082116-38
 
 You can specify a release tag or a commit SHA instead of `master`.
 
+## Upgrade
+
+Don't forget to check the [release notes](RELEASE-NOTES.md) for guidance about
+possible breaking changes when you upgrade the client tool
+and/or the controller.
+
 ## Usage
 
 ```sh
