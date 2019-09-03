@@ -7,6 +7,7 @@ import (
 	"io"
 	mathrand "math/rand"
 	"reflect"
+	"strings"
 	"testing"
 
 	fuzz "github.com/google/gofuzz"
@@ -455,6 +456,16 @@ func TestSealMetadataPreservation(t *testing.T) {
 }
 
 func TestUnsealingV1Format(t *testing.T) {
+	testUnsealingV1Format(t, true)
+	testUnsealingV1Format(t, false)
+}
+
+func testUnsealingV1Format(t *testing.T, acceptDeprecated bool) {
+	defer func(saved bool) {
+		AcceptDeprecatedV1Data = saved
+	}(AcceptDeprecatedV1Data)
+	AcceptDeprecatedV1Data = acceptDeprecated
+
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)
 
@@ -491,11 +502,17 @@ func TestUnsealingV1Format(t *testing.T) {
 		t.Fatalf("cannot compute fingerprint: %v", err)
 	}
 	secret2, err := ssecret.Unseal(codecs, map[string]*rsa.PrivateKey{fp: key})
-	if err != nil {
-		t.Fatalf("Unseal returned error: %v", err)
-	}
+	if acceptDeprecated {
+		if err != nil {
+			t.Fatalf("Unseal returned error: %v", err)
+		}
 
-	if !reflect.DeepEqual(secret.Data, secret2.Data) {
-		t.Errorf("Unsealed secret != original secret: %v != %v", secret, secret2)
+		if !reflect.DeepEqual(secret.Data, secret2.Data) {
+			t.Errorf("Unsealed secret != original secret: %v != %v", secret, secret2)
+		}
+	} else {
+		if needle := "deprecated"; err == nil || !strings.Contains(err.Error(), needle) {
+			t.Fatalf("Expecting error: %v to contain %q", err, needle)
+		}
 	}
 }
