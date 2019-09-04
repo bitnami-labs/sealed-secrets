@@ -14,6 +14,11 @@ import (
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 )
 
+var (
+	// TODO(mkm): remove after a release
+	AcceptDeprecatedV1Data = false
+)
+
 // SealedSecretExpansion has methods to work with SealedSecrets resources.
 type SealedSecretExpansion interface {
 	Unseal(codecs runtimeserializer.CodecFactory, privKeys map[string]*rsa.PrivateKey) (*v1.Secret, error)
@@ -188,7 +193,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 			secret.Data[key] = plaintext
 		}
 
-	} else { // Support decrypting old secrets for backward compatibility
+	} else if AcceptDeprecatedV1Data { // Support decrypting old secrets for backward compatibility
 		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, s.Spec.Data, label)
 		if err != nil {
 			return nil, err
@@ -197,6 +202,10 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 		dec := codecs.UniversalDecoder(secret.GroupVersionKind().GroupVersion())
 		if err = runtime.DecodeInto(dec, plaintext, &secret); err != nil {
 			return nil, err
+		}
+	} else {
+		if s.Spec.Data != nil {
+			return nil, fmt.Errorf("using deprecated 'data' field, use 'encryptedData' or flip the feature flag")
 		}
 	}
 

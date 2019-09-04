@@ -41,6 +41,7 @@ var (
 	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")
 	printVersion    = flag.Bool("version", false, "Print version information and exit")
 	keyRotatePeriod = flag.Duration("rotate-period", 0, "New key generation period (automatic rotation disabled if 0)")
+	acceptV1Data    = flag.Bool("accept-deprecated-v1-data", false, "Accept deprecated V1 data field")
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
@@ -227,6 +228,8 @@ func main2() error {
 func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
+
+	ssv1alpha1.AcceptDeprecatedV1Data = *acceptV1Data
 
 	if *printVersion {
 		fmt.Printf("controller version: %s\n", VERSION)
