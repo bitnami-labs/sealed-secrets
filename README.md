@@ -230,6 +230,85 @@ that only the intended `SealedSecret` is uploaded to the cluster.  The
 only change from existing Kubernetes is that the *contents* of the
 `Secret` are now hidden while outside the cluster.
 
+## Secret Rotation
+
+You should always rotate your secrets. But since your secrets are encrypted with another secret,
+you need to understand how these two layers relate in order to take the right.
+
+TL;DR:
+
+> If a *sealing* private key is compromised, you need to follow the instructions below in "Early key renewal"
+> section before rotating any of your actual secret values.
+>
+> SealedSecret key renewal and re-encryption features are **not a substitute** for periodical rotation of your actual secret values.
+
+### Key renewal
+
+Keys are automatically renewed every 30 days. This can be configured on controller startup with
+the `--rotate-period=<value>` flag. The `value` field can be given as golang
+duration flag (eg: `720h30m`).
+
+> Unfortunately you cannot use e.g. "d" as a unit for days because that's not supported by the Go stdlib. Instead of hitting your face with a palm, take this as an opportunity to meditate on the [falsehoods programmers believe about time](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time).
+
+The feature has been historically called "key rotation" but this term can be confusing.
+Sealed secrets are not automatically rotated and old keys are not deleted
+when new keys are generated. Old sealed secrets resources can be still decrypted.
+
+### User secret rotation
+
+The *sealing key* renewal and SealedSecret rotation are **not a substitute** for rotating your actual secrets.
+
+A core value proposition of this tool is:
+
+> Encrypt your Secret into a SealedSecret, which *is* safe to store - even to a public repository.
+
+If you store anything in a version control storage, and in a public one in particular, you must assume
+you cannot ever delete that information.
+
+*If* a sealing key somehow leaks out of the cluster you must consider all your SealedSecret resources
+encrypted with that key as compromised. No amount of sealing key rotation in the cluster or even re-encryption of existing SealedSecrets files can change that.
+
+The best practice is to periodically rotate all your actual secrets (e.g. change the password) **and** craft new
+SealedSecret resource with those new secrets.
+
+But if the sealed secrets controller were not renewing the *sealing key* that rotation would be moot,
+since the attacker could just decrypt the new secrets as well. Thus you need to do both: periodically renew the sealing key and rotate your actual secrets!
+
+### Early key renewal
+
+If you know or suspect a *sealing key* has been compromised you should renew the key ASAP before you
+start sealing your new rotated secrets, otherwise you'll be giving attackers access to your new secrets as well.
+
+A key can be generated early in two ways
+1. Label the current latest key as compromised (any value other than active)
+`kubectl label secrets <keyname> sealedsecrets.bitnami.com/sealed-secrets-key=compromised`.
+2. Send `SIGUSR1` to the controller
+`kubectl exec -it <controller pod> -- kill -SIGUSR1 1`
+
+**NOTE** Sealed secrets currently does not automatically pick up relabelled
+keys, an admin must restart the controller before the effect will apply.
+
+Labelling a secret with anything other than `active` effectively deletes
+the key from the sealed secrets controller, but it is still available in k8s for
+manual encryption/decryption if need be.
+
+### Re-encryption
+
+Before you can get rid of some old sealing keys you need to re-encrypt your SealedSecrets with with the latest private key).
+
+```bash
+kubeseal --rotate <my_sealed_secret.yaml >tmp.yaml \
+  && mv tmp.yaml my_sealed_secret.yaml
+```
+
+The invocation above will produce a new sealed secret file freshly encrypted with
+the latest key, without making the secrets leave the cluster to the client. You can then save that file
+in your version control system (`kubeseal --rotate` doesn't update the in-cluster object).
+
+Currently old keys are not garbage collected automatically.
+
+It's a good idea to periodically re-encrypt your SealedSecrets. But as mentioned above, don't lull yourself in a false sense of security: you must assume the old version of the SealedSecret (the one encrypted with a key you think of as dead) is still potentially around and accessible to attackers. I.e. re-encryption is not a substitute for periodically rotating your actual secrets.
+
 ## Details
 
 This controller adds a new `SealedSecret` custom resource. The
@@ -244,25 +323,6 @@ The sealed secrets controller will...
 labelled as active.
 2. Create a new key
 3. Start the key rotation cycle
-
-#### Key rotation
-
-Keys are automatically rotated. This can be configured on controller startup with
-the `--rotate-period=<value>` flag. The `value` field can be given as golang
-duration flag (eg: `720h30m`).
-
-A key can be generated early in two ways
-1. Send `SIGUSR1` to the controller
-`kubectl exec -it <controller pod> -- kill -SIGUSR1 1`
-2. Label the current latest key as compromised (any value other than active)
-`kubectl label secrets <keyname> sealedsecrets.bitnami.com/sealed-secrets-key=compromised`.
-
-**NOTE** Sealed secrets currently does not automatically pick up relabelled
-keys, an admin must restart the controller before the effect will apply.
-
-Labelling a secret with anything other than `active` effectively deletes
-the key from the sealed secrets controller, but it is still available in k8s for
-manual encryption/decryption if need be.
 
 ## Developing
 To be able to develop on this project, you need to have the following tools installed:

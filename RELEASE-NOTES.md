@@ -8,6 +8,17 @@ Latest release:
 
 ## Announcement
 
+### Private key renewal
+
+This realease turns on an important security feature: a new private key will be now created every 30 days by default.
+Existing sealed-secrets resources will still be decrypted until the keys are manually phased out.
+
+You can read more about this feature and the problem of **secret rotation** and how it interacts with Sealed Secrets in this [README section](https://github.com/bitnami-labs/sealed-secrets#secret-rotation) or in the original GH issue #137.
+
+This feature alone is not technically a breaking change for people who use the offline workflow with `kubeseal --cert`, since old keys are not rotated out automatically. Users would be required to update their offline certs only when they purge old keys manually (we might introduce automatic purging in the future).
+
+That said, to reap the benefits of key renewal, users of the offline workflow are encouraged to update their offline certificates every time a new key is generated (by default every 30 days).
+
 ### Pre-v0.7.0 clients
 
 If you are using kubeseal clients older than v0.7.0, please upgrade. Since this release the controller
