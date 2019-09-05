@@ -10,7 +10,7 @@ Latest release:
 
 ### Private key renewal
 
-This realease turns on an important security feature: a new private key will be now created every 30 days by default.
+This release turns on an important security feature: a new private key will be now created every 30 days by default.
 Existing sealed-secrets resources will still be decrypted until the keys are manually phased out.
 
 You can read more about this feature and the problem of **secret rotation** and how it interacts with Sealed Secrets in this [README section](https://github.com/bitnami-labs/sealed-secrets#secret-rotation) or in the original GH issue #137.
