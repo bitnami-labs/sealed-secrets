@@ -233,7 +233,7 @@ only change from existing Kubernetes is that the *contents* of the
 ## Secret Rotation
 
 You should always rotate your secrets. But since your secrets are encrypted with another secret,
-you need to understand how these two layers relate in order to take the right.
+you need to understand how these two layers relate in order to take the right decisions.
 
 TL;DR:
 
@@ -294,7 +294,7 @@ manual encryption/decryption if need be.
 
 ### Re-encryption
 
-Before you can get rid of some old sealing keys you need to re-encrypt your SealedSecrets with with the latest private key).
+Before you can get rid of some old sealing keys you need to re-encrypt your SealedSecrets with the latest private key).
 
 ```bash
 kubeseal --rotate <my_sealed_secret.yaml >tmp.yaml \
