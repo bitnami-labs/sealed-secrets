@@ -53,6 +53,7 @@ controller {
           'sealed-secrets-controller',  // but often services are referred by name only, let's not make it unnecessarily cryptic
         ],
         verbs: [
+          'create',  // rotate and validate endpoints expect POST, see https://kubernetes.io/docs/reference/access-authn-authz/authorization/#determine-the-request-verb
           'get',
         ],
       },
