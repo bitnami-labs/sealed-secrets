@@ -437,6 +437,13 @@ func TestSealMetadataPreservation(t *testing.T) {
 				Name:        "myname",
 				Namespace:   "myns",
 				Annotations: map[string]string{tc.key: "test value"},
+				OwnerReferences: []metav1.OwnerReference{
+					{
+						APIVersion: "foo/v1",
+						Kind:       "Foo",
+						Name:       "foo",
+					},
+				},
 			},
 			Data: map[string][]byte{
 				"foo": []byte("bar"),
@@ -451,6 +458,10 @@ func TestSealMetadataPreservation(t *testing.T) {
 		_, got := ssecret.Spec.Template.Annotations[tc.key]
 		if want := tc.preserved; got != want {
 			t.Errorf("key %q: exists: %v, expected to exist: %v", tc.key, got, want)
+		}
+
+		if got, want := len(ssecret.Spec.Template.OwnerReferences), 0; got != want {
+			t.Errorf("got: %d, want: %d", got, want)
 		}
 	}
 }
