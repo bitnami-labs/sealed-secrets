@@ -139,7 +139,7 @@ func openCertHTTP(c corev1.CoreV1Interface, namespace, name string) (io.ReadClos
 		ProxyGet("http", name, "", "/v1/cert.pem", nil).
 		Stream()
 	if err != nil {
-		return nil, fmt.Errorf("Error fetching certificate: %v", err)
+		return nil, fmt.Errorf("cannot fetch certificate: %v", err)
 	}
 	return f, nil
 }
@@ -233,9 +233,9 @@ func validateSealedSecret(in io.Reader, namespace, name string) error {
 	res := req.Do()
 	if err := res.Error(); err != nil {
 		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
-			return fmt.Errorf("Unable to decrypt sealed secret")
+			return fmt.Errorf("unable to decrypt sealed secret")
 		}
-		return fmt.Errorf("Error occurred while validating sealed secret")
+		return fmt.Errorf("cannot validate sealed secret: %v", err)
 	}
 
 	return nil
@@ -267,9 +267,9 @@ func rotateSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer.Co
 	res := req.Do()
 	if err := res.Error(); err != nil {
 		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
-			return fmt.Errorf("Unable to rotate secret")
+			return fmt.Errorf("unable to rotate secret")
 		}
-		return fmt.Errorf("Error occurred while rotating secret")
+		return fmt.Errorf("cannot rotate secret: %v", err)
 	}
 	body, err := res.Raw()
 	if err != nil {
