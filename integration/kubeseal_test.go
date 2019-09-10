@@ -284,3 +284,23 @@ var _ = Describe("kubeseal --verify", func() {
 	})
 
 })
+
+var _ = Describe("kubeseal --cert", func() {
+	var input io.Reader
+	var output *bytes.Buffer
+	var args []string
+
+	BeforeEach(func() {
+		args = []string{"--cert", "/?this/file/cannot/possibly/exist/right?"}
+		output = &bytes.Buffer{}
+	})
+
+	JustBeforeEach(func() {
+		err := runKubeseal(args, input, ioutil.Discard, runAppWithStderr(output))
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("should return an error", func() {
+		Expect(output.String()).Should(MatchRegexp("^error:.*no such file or directory"))
+	})
+})

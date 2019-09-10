@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -98,13 +98,9 @@ func TestParseKey(t *testing.T) {
 }
 
 func TestOpenCertFile(t *testing.T) {
-	*certFile = tmpfile(t, []byte(testCert))
-	defer func() {
-		os.Remove(*certFile)
-		*certFile = ""
-	}()
+	certFile := tmpfile(t, []byte(testCert))
 
-	f, err := openCert()
+	f, err := openCert(certFile)
 	if err != nil {
 		t.Fatalf("Error reading test cert file: %v", err)
 	}
@@ -177,4 +173,25 @@ func TestSeal(t *testing.T) {
 		t.Errorf("Encrypted data is implausibly short: %v", result.Spec.EncryptedData)
 	}
 	// NB: See sealedsecret_test.go for e2e crypto test
+}
+
+func TestVersion(t *testing.T) {
+	var buf strings.Builder
+	err := run(&buf, "", "", "", true, false, false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := buf.String(), "kubeseal version: UNKNOWN\n"; got != want {
+		t.Errorf("got: %q, want: %q", got, want)
+	}
+}
+
+func TestMainError(t *testing.T) {
+	const badFileName = "/?this/file/cannot/possibly/exist/can/it?"
+	err := run(ioutil.Discard, "", "", badFileName, false, false, false, false)
+
+	if err == nil || !os.IsNotExist(err) {
+		t.Fatalf("expecting not exist error, got: %v", err)
+	}
 }

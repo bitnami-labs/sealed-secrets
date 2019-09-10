@@ -12,7 +12,7 @@ import (
 	"os/exec"
 	"testing"
 
-	"k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -80,14 +80,14 @@ func containsString(haystack []string, needle string) bool {
 	return false
 }
 
-func runKubeseal(flags []string, input io.Reader, output io.Writer) error {
+func runKubeseal(flags []string, input io.Reader, output io.Writer, opts ...runAppOpt) error {
 	args := []string{}
 	if *kubeconfig != "" && !containsString(flags, "--kubeconfig") {
 		args = append(args, "--kubeconfig", *kubeconfig)
 	}
 	args = append(args, flags...)
 
-	return runApp(*kubesealBin, args, input, output)
+	return runApp(*kubesealBin, args, input, output, opts...)
 }
 
 type interruptableReader struct {
@@ -129,17 +129,34 @@ func runController(flags []string, input io.Reader, output io.Writer) error {
 	return runApp(*controllerBin, flags, input, output)
 }
 
-func runApp(app string, flags []string, input io.Reader, output io.Writer) error {
+type runAppOpt func(*runAppOpts)
+
+type runAppOpts struct {
+	stderr io.Writer
+}
+
+func runAppWithStderr(w io.Writer) runAppOpt {
+	return func(o *runAppOpts) { o.stderr = w }
+}
+
+func runApp(app string, flags []string, input io.Reader, output io.Writer, opts ...runAppOpt) error {
+	options := runAppOpts{
+		stderr: GinkgoWriter,
+	}
+	for _, o := range opts {
+		o(&options)
+	}
+
 	fmt.Fprintf(GinkgoWriter, "Running %q %q\n", app, flags)
 	cmd := exec.Command(app, flags...)
 	cmd.Stdin = input
 	cmd.Stdout = output
-	cmd.Stderr = GinkgoWriter
+	cmd.Stderr = options.stderr
 
 	return cmd.Run()
 }
 
-func runKubesealWith(flags []string, input runtime.Object) (runtime.Object, error) {
+func runKubesealWith(flags []string, input runtime.Object, opts ...runAppOpt) (runtime.Object, error) {
 	enc := scheme.Codecs.LegacyCodec(v1.SchemeGroupVersion)
 	indata, err := runtime.Encode(enc, input)
 	if err != nil {
@@ -150,7 +167,7 @@ func runKubesealWith(flags []string, input runtime.Object) (runtime.Object, erro
 
 	outbuf := bytes.Buffer{}
 
-	if err := runKubeseal(flags, bytes.NewReader(indata), &outbuf); err != nil {
+	if err := runKubeseal(flags, bytes.NewReader(indata), &outbuf, opts...); err != nil {
 		return nil, err
 	}
 

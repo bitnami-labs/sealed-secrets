@@ -128,7 +128,7 @@ func prettyEncoder(codecs runtimeserializer.CodecFactory, mediaType string, gv r
 func openCertFile(certFile string) (io.ReadCloser, error) {
 	f, err := os.Open(certFile)
 	if err != nil {
-		return nil, fmt.Errorf("Error reading %s: %v", certFile, err)
+		return nil, err
 	}
 	return f, nil
 }
@@ -139,14 +139,14 @@ func openCertHTTP(c corev1.CoreV1Interface, namespace, name string) (io.ReadClos
 		ProxyGet("http", name, "", "/v1/cert.pem", nil).
 		Stream()
 	if err != nil {
-		return nil, fmt.Errorf("Error fetching certificate: %v", err)
+		return nil, fmt.Errorf("cannot fetch certificate: %v", err)
 	}
 	return f, nil
 }
 
-func openCert() (io.ReadCloser, error) {
-	if *certFile != "" {
-		return openCertFile(*certFile)
+func openCert(certFile string) (io.ReadCloser, error) {
+	if certFile != "" {
+		return openCertFile(certFile)
 	}
 
 	conf, err := clientConfig.ClientConfig()
@@ -233,9 +233,9 @@ func validateSealedSecret(in io.Reader, namespace, name string) error {
 	res := req.Do()
 	if err := res.Error(); err != nil {
 		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
-			return fmt.Errorf("Unable to decrypt sealed secret")
+			return fmt.Errorf("unable to decrypt sealed secret")
 		}
-		return fmt.Errorf("Error occurred while validating sealed secret")
+		return fmt.Errorf("cannot validate sealed secret: %v", err)
 	}
 
 	return nil
@@ -267,9 +267,9 @@ func rotateSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer.Co
 	res := req.Do()
 	if err := res.Error(); err != nil {
 		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
-			return fmt.Errorf("Unable to rotate secret")
+			return fmt.Errorf("unable to rotate secret")
 		}
-		return fmt.Errorf("Error occurred while rotating secret")
+		return fmt.Errorf("cannot rotate secret: %v", err)
 	}
 	body, err := res.Raw()
 	if err != nil {
@@ -311,49 +311,45 @@ func sealedSecretOutput(out io.Writer, codecs runtimeserializer.CodecFactory, ss
 	return nil
 }
 
-func main() {
-	flag.Parse()
-	goflag.CommandLine.Parse([]string{})
-
-	if *printVersion {
-		fmt.Printf("kubeseal version: %s\n", VERSION)
-		return
+func run(w io.Writer, controllerNs, controllerName, certFile string, printVersion, validateSecret, rotate, dumpCert bool) error {
+	if printVersion {
+		fmt.Fprintf(w, "kubeseal version: %s\n", VERSION)
+		return nil
 	}
 
-	if *validateSecret {
-		err := validateSealedSecret(os.Stdin, *controllerNs, *controllerName)
-		if err != nil {
-			panic(err.Error())
-		}
-		return
+	if validateSecret {
+		return validateSealedSecret(os.Stdin, controllerNs, controllerName)
 	}
 
-	if *rotate {
-		if err := rotateSealedSecret(os.Stdin, os.Stdout, scheme.Codecs, *controllerNs, *controllerName); err != nil {
-			panic(err.Error())
-		}
-		return
+	if rotate {
+		return rotateSealedSecret(os.Stdin, os.Stdout, scheme.Codecs, controllerNs, controllerName)
 	}
 
-	f, err := openCert()
+	f, err := openCert(certFile)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 	defer f.Close()
 
-	if *dumpCert {
-		if _, err := io.Copy(os.Stdout, f); err != nil {
-			panic(err.Error())
-		}
-		return
+	if dumpCert {
+		_, err := io.Copy(os.Stdout, f)
+		return err
 	}
 
 	pubKey, err := parseKey(f)
 	if err != nil {
-		panic(err.Error())
+		return err
 	}
 
-	if err := seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey); err != nil {
-		panic(err.Error())
+	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey)
+}
+
+func main() {
+	flag.Parse()
+	goflag.CommandLine.Parse([]string{})
+
+	if err := run(os.Stdout, *controllerNs, *controllerName, *certFile, *printVersion, *validateSecret, *rotate, *dumpCert); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
 	}
 }
