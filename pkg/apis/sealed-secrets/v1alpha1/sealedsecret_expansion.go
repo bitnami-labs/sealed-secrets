@@ -132,6 +132,9 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 	// See https://github.com/bitnami-labs/sealed-secrets/issues/227
 	StripLastAppliedAnnotations(s.Spec.Template.ObjectMeta.Annotations)
 
+	// Cleanup ownerReference (See #243)
+	s.Spec.Template.ObjectMeta.OwnerReferences = nil
+
 	// RSA-OAEP will fail to decrypt unless the same label is used
 	// during decryption.
 	label, clusterWide, namespaceWide := labelFor(secret)
