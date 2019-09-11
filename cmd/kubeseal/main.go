@@ -43,10 +43,10 @@ var (
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.String("format", "json", "Output format for sealed secret. Either json or yaml")
-	rotate         = flag.Bool("rotate", false, "Re-encrypt the given sealed secret to use the latest cluster key.")
 	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
+	reEncrypt      bool // re-encrypt command
 
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
@@ -55,6 +55,10 @@ var (
 )
 
 func init() {
+	flag.BoolVar(&reEncrypt, "rotate", false, "")
+	flag.BoolVar(&reEncrypt, "re-encrypt", false, "Re-encrypt the given sealed secret to use the latest cluster key.")
+	flag.CommandLine.MarkDeprecated("rotate", "please use --re-encrypt instead")
+
 	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
 
 	// The "usual" clientcmd/kubectl flags
@@ -241,7 +245,7 @@ func validateSealedSecret(in io.Reader, namespace, name string) error {
 	return nil
 }
 
-func rotateSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, namespace, name string) error {
+func reEncryptSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, namespace, name string) error {
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -269,7 +273,7 @@ func rotateSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer.Co
 		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
 			return fmt.Errorf("unable to rotate secret")
 		}
-		return fmt.Errorf("cannot rotate secret: %v", err)
+		return fmt.Errorf("cannot re-encrypt secret: %v", err)
 	}
 	body, err := res.Raw()
 	if err != nil {
@@ -311,7 +315,7 @@ func sealedSecretOutput(out io.Writer, codecs runtimeserializer.CodecFactory, ss
 	return nil
 }
 
-func run(w io.Writer, controllerNs, controllerName, certFile string, printVersion, validateSecret, rotate, dumpCert bool) error {
+func run(w io.Writer, controllerNs, controllerName, certFile string, printVersion, validateSecret, reEncrypt, dumpCert bool) error {
 	if printVersion {
 		fmt.Fprintf(w, "kubeseal version: %s\n", VERSION)
 		return nil
@@ -321,8 +325,8 @@ func run(w io.Writer, controllerNs, controllerName, certFile string, printVersio
 		return validateSealedSecret(os.Stdin, controllerNs, controllerName)
 	}
 
-	if rotate {
-		return rotateSealedSecret(os.Stdin, os.Stdout, scheme.Codecs, controllerNs, controllerName)
+	if reEncrypt {
+		return reEncryptSealedSecret(os.Stdin, os.Stdout, scheme.Codecs, controllerNs, controllerName)
 	}
 
 	f, err := openCert(certFile)
@@ -348,7 +352,7 @@ func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
-	if err := run(os.Stdout, *controllerNs, *controllerName, *certFile, *printVersion, *validateSecret, *rotate, *dumpCert); err != nil {
+	if err := run(os.Stdout, *controllerNs, *controllerName, *certFile, *printVersion, *validateSecret, reEncrypt, *dumpCert); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
