@@ -1,8 +1,8 @@
 language: go
 
 go:
+  - '1.13'
   - '1.12'
-  - '1.11'
 
 services:
   - docker
@@ -78,11 +78,11 @@ install:
 script:
   # We want to support both go.mod aware builds and legacy builds.
   # Instead of adding more combinations to the build matrix,
-  # we're going to use go 1.12 for the go.mod aware build
-  # and test the legacy build with go 1.11
+  # we're going to use go 1.13 for the go.mod aware build
+  # and test the legacy build with go 1.12
   - export USE_GO_MOD=no
   - |
-    if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.12\. ]]; then
+    if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.13\. ]]; then
       export USE_GO_MOD=yes
       make vet
     fi
@@ -124,7 +124,7 @@ after_success:
     if [[ "$TRAVIS_OS_NAME" == linux && \
           "$TRAVIS_BRANCH" == master && \
           "$TRAVIS_PULL_REQUEST" == false && \
-          "$TRAVIS_GO_VERSION.0" =~ ^1\.12\. ]]; then
+          "$TRAVIS_GO_VERSION.0" =~ ^1\.13\. ]]; then
       echo "Pushing :latest..."
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
       docker tag $CONTROLLER_IMAGE ${CONTROLLER_IMAGE_NAME}:latest
@@ -147,7 +147,7 @@ deploy:
     - controller.yaml
     - controller-norbac.yaml
   on:
-    condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.12\.
+    condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.13\.
     tags: true
   provider: releases
   skip_cleanup: true

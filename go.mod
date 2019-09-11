@@ -1,6 +1,6 @@
 module github.com/bitnami-labs/sealed-secrets
 
-go 1.11
+go 1.12
 
 require (
 	github.com/bitnami-labs/flagenv v0.0.0-20190607135054-a87af7a1d6fc
