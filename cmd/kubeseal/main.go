@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"crypto/rsa"
 	"encoding/json"
 	"errors"
@@ -46,6 +47,7 @@ var (
 	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
+	mergeInto      = flag.String("merge-into", "", "Merge items from secret into an existing sealed secret file, updating the file in-place instead of writing to stdout.")
 	reEncrypt      bool // re-encrypt command
 
 	// VERSION set from Makefile
@@ -315,7 +317,56 @@ func sealedSecretOutput(out io.Writer, codecs runtimeserializer.CodecFactory, ss
 	return nil
 }
 
-func run(w io.Writer, controllerNs, controllerName, certFile string, printVersion, validateSecret, reEncrypt, dumpCert bool) error {
+func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1alpha1.SealedSecret, error) {
+	var ss ssv1alpha1.SealedSecret
+	if err := runtime.DecodeInto(codecs.UniversalDecoder(), b, &ss); err != nil {
+		return nil, err
+	}
+	return &ss, nil
+}
+
+func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey) error {
+	var buf bytes.Buffer
+	if err := seal(in, &buf, codecs, pubKey); err != nil {
+		return err
+	}
+
+	update, err := decodeSealedSecret(codecs, buf.Bytes())
+	if err != nil {
+		return err
+	}
+
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	orig, err := decodeSealedSecret(codecs, b)
+	if err != nil {
+		return err
+	}
+
+	// merge encrypted data and metadata
+	for k, v := range update.Spec.EncryptedData {
+		orig.Spec.EncryptedData[k] = v
+	}
+	for k, v := range update.Spec.Template.Annotations {
+		orig.Spec.Template.Annotations[k] = v
+	}
+	for k, v := range update.Spec.Template.Labels {
+		orig.Spec.Template.Labels[k] = v
+	}
+
+	// updated sealed secret file in-place avoiding clobbering the file upon rendering errors.
+	var out bytes.Buffer
+	if err := sealedSecretOutput(&out, codecs, orig); err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(filename, out.Bytes(), 0)
+}
+
+func run(w io.Writer, controllerNs, controllerName, certFile string, printVersion, validateSecret, reEncrypt, dumpCert bool, mergeInto string) error {
 	if printVersion {
 		fmt.Fprintf(w, "kubeseal version: %s\n", VERSION)
 		return nil
@@ -345,6 +396,10 @@ func run(w io.Writer, controllerNs, controllerName, certFile string, printVersio
 		return err
 	}
 
+	if mergeInto != "" {
+		return sealMergingInto(os.Stdin, mergeInto, scheme.Codecs, pubKey)
+	}
+
 	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey)
 }
 
@@ -352,7 +407,7 @@ func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
-	if err := run(os.Stdout, *controllerNs, *controllerName, *certFile, *printVersion, *validateSecret, reEncrypt, *dumpCert); err != nil {
+	if err := run(os.Stdout, *controllerNs, *controllerName, *certFile, *printVersion, *validateSecret, reEncrypt, *dumpCert, *mergeInto); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

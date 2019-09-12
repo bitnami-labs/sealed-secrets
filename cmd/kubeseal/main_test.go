@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto/rsa"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -175,9 +176,134 @@ func TestSeal(t *testing.T) {
 	// NB: See sealedsecret_test.go for e2e crypto test
 }
 
+func mkTestSecret(t *testing.T, key, value string) []byte {
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "testsecret",
+			Namespace: "testns",
+			Annotations: map[string]string{
+				key: value, // putting secret here just to have a simple way to test annotation merges
+			},
+			Labels: map[string]string{
+				key: value,
+			},
+		},
+		Data: map[string][]byte{
+			key: []byte(value),
+		},
+	}
+
+	info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
+	if !ok {
+		t.Fatalf("binary can't serialize JSON")
+	}
+	enc := scheme.Codecs.EncoderForVersion(info.Serializer, v1.SchemeGroupVersion)
+	var inbuf bytes.Buffer
+	if err := enc.Encode(&secret, &inbuf); err != nil {
+		t.Fatalf("Error encoding: %v", err)
+	}
+	return inbuf.Bytes()
+}
+
+func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string) []byte {
+	inbuf := bytes.NewBuffer(mkTestSecret(t, key, value))
+	var outbuf bytes.Buffer
+	if err := seal(inbuf, &outbuf, scheme.Codecs, pubKey); err != nil {
+		t.Fatalf("seal() returned error: %v", err)
+	}
+
+	return outbuf.Bytes()
+}
+
+func TestMergeInto(t *testing.T) {
+	pubKey, err := parseKey(strings.NewReader(testCert))
+	if err != nil {
+		t.Fatalf("Failed to parse test key: %v", err)
+	}
+
+	merge := func(newSecret, oldSealedSecret []byte) *ssv1alpha1.SealedSecret {
+		f, err := ioutil.TempFile("", "*.json")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.Write(oldSealedSecret); err != nil {
+			t.Fatal(err)
+		}
+		f.Close()
+
+		buf := bytes.NewBuffer(newSecret)
+		if err := sealMergingInto(buf, f.Name(), scheme.Codecs, pubKey); err != nil {
+			t.Fatal(err)
+		}
+
+		b, err := ioutil.ReadFile(f.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		merged, err := decodeSealedSecret(scheme.Codecs, b)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return merged
+	}
+
+	{
+		merged := merge(
+			mkTestSecret(t, "foo", "secret1"),
+			mkTestSealedSecret(t, pubKey, "bar", "secret2"),
+		)
+
+		checkAdded := func(m map[string]string, old, new string) {
+			if got, want := len(m), 2; got != want {
+				t.Fatalf("got: %d, want: %d", got, want)
+			}
+
+			if _, ok := m[old]; !ok {
+				t.Fatalf("cannot find expected key")
+			}
+
+			if _, ok := m[new]; !ok {
+				t.Fatalf("cannot find expected key")
+			}
+		}
+
+		checkAdded(merged.Spec.EncryptedData, "foo", "bar")
+		checkAdded(merged.Spec.Template.Annotations, "foo", "bar")
+		checkAdded(merged.Spec.Template.Labels, "foo", "bar")
+	}
+
+	{
+		origSrc := mkTestSealedSecret(t, pubKey, "foo", "secret2")
+		orig, err := decodeSealedSecret(scheme.Codecs, origSrc)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		merged := merge(
+			mkTestSecret(t, "foo", "secret1"),
+			origSrc,
+		)
+
+		checkUpdated := func(before, after map[string]string, key string) {
+			if got, want := len(after), 1; got != want {
+				t.Fatalf("got: %d, want: %d", got, want)
+			}
+
+			if old, new := before[key], after[key]; old == new {
+				t.Fatalf("expecting %q and %q to be different", old, new)
+			}
+		}
+
+		checkUpdated(orig.Spec.EncryptedData, merged.Spec.EncryptedData, "foo")
+		checkUpdated(orig.Spec.Template.Annotations, merged.Spec.Template.Annotations, "foo")
+		checkUpdated(orig.Spec.Template.Labels, merged.Spec.Template.Labels, "foo")
+	}
+}
+
 func TestVersion(t *testing.T) {
 	var buf strings.Builder
-	err := run(&buf, "", "", "", true, false, false, false)
+	err := run(&buf, "", "", "", true, false, false, false, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +315,7 @@ func TestVersion(t *testing.T) {
 
 func TestMainError(t *testing.T) {
 	const badFileName = "/?this/file/cannot/possibly/exist/can/it?"
-	err := run(ioutil.Discard, "", "", badFileName, false, false, false, false)
+	err := run(ioutil.Discard, "", "", badFileName, false, false, false, false, "")
 
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
