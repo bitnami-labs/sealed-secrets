@@ -31,11 +31,26 @@ If you have old sealed secret resources lying around, you can easily upgrade the
 kubeseal --re-encrypt <old.yaml >new.yaml
 ```
 
+### Update items
+
+Since version v0.7.0 it was possible to update individual items in the `encryptedData` field of the Sealed Secret resource, but you had to manually copy&paste the encrypted items into an existing resource file. The required steps were never spelled out in the documentation and to be fair it always felt quite awkward.
+
+Now `kubectl` has learned how to update an existing secret, whilist preserving the same general operation principles, namely staying out of the business of actually crafting the secret itself (`kubectl create secret ...` and its various flags like `--from-file`, `--from-literal`, etc). Example:
+
+```bash
+$ kubectl create secret generic mysecret --dry-run -o json --from-file=foo=/tmp/foo \
+  | kubeseal >sealed.json
+$ kubectl create secret generic mysecret --dry-run -o json --from-file=bar=/tmp/bar \
+  | kubeseal --merge-into sealed.json
+```
+
 ## Changelog
 
 * Key rotation is enabled by default every 30 days (#236)
 * You can now use env vars such as SEALED_SECRETS_FOO_BAR to customize the controller (#234)
 * Disabling by default deprecated "v1" encrypted data format (used by pre-v0.7.0 clients) (#235)
+* Fix RBAC rules for /v1/rotate and /v1/validate fixing #166 for good (#249)
+* Implement the --merge-into command (#253)
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/1?closed=1
 
