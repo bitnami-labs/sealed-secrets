@@ -28,7 +28,7 @@ will no longer accept the "v1" format of the encrypted "data" field and instead 
 If you have old sealed secret resources lying around, you can easily upgrade them by invoking:
 
 ```bash
-kubeseal --rotate <old.yaml >new.yaml
+kubeseal --re-encrypt <old.yaml >new.yaml
 ```
 
 ## Changelog
