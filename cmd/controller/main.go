@@ -43,6 +43,8 @@ var (
 	keyRotatePeriod = flag.Duration("rotate-period", 30*24*time.Hour, "New key generation period (automatic rotation disabled if 0)")
 	acceptV1Data    = flag.Bool("accept-deprecated-v1-data", false, "Accept deprecated V1 data field")
 
+	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
+
 	// VERSION set from Makefile
 	VERSION = "UNKNOWN"
 
@@ -202,6 +204,7 @@ func main2() error {
 
 	ssinformer := ssinformers.NewSharedInformerFactory(ssclientset, 0)
 	controller := NewController(clientset, ssclientset, ssinformer, keyRegistry)
+	controller.oldGCBehavior = *oldGCBehavior
 
 	stop := make(chan struct{})
 	defer close(stop)
