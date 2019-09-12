@@ -57,6 +57,8 @@ type Controller struct {
 	ssclient    ssv1alpha1client.SealedSecretsGetter
 	recorder    record.EventRecorder
 	keyRegistry *KeyRegistry
+
+	oldGCBehavior bool // feature flag to revert to old behavior where we delete the secrets instead of relying on owners reference.
 }
 
 func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, keyRegistry *KeyRegistry, ssecret *ssv1alpha1.SealedSecret) error {
@@ -203,14 +205,20 @@ func (c *Controller) unseal(key string) error {
 	}
 
 	if !exists {
-		log.Printf("SealedSecret %s has gone, deleting Secret", key)
-		ns, name, err := cache.SplitMetaNamespaceKey(key)
-		if err != nil {
-			return err
-		}
-		err = c.sclient.Secrets(ns).Delete(name, &metav1.DeleteOptions{})
-		if err != nil && !errors.IsNotFound(err) {
-			return err
+		// the dependent secret will be GC: by k8s itself, see:
+		// https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/#owners-and-dependents
+
+		// TODO: remove this feature flag in a subsequent release.
+		if c.oldGCBehavior {
+			log.Printf("SealedSecret %s has gone, deleting Secret", key)
+			ns, name, err := cache.SplitMetaNamespaceKey(key)
+			if err != nil {
+				return err
+			}
+			err = c.sclient.Secrets(ns).Delete(name, &metav1.DeleteOptions{})
+			if err != nil && !errors.IsNotFound(err) {
+				return err
+			}
 		}
 		return nil
 	}
