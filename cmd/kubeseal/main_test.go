@@ -303,7 +303,7 @@ func TestMergeInto(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	var buf strings.Builder
-	err := run(&buf, "", "", "", "", true, false, false, false, false, "")
+	err := run(&buf, "", "", "", "", true, false, false, false, false, nil, "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -315,7 +315,7 @@ func TestVersion(t *testing.T) {
 
 func TestMainError(t *testing.T) {
 	const badFileName = "/?this/file/cannot/possibly/exist/can/it?"
-	err := run(ioutil.Discard, "", "", "", badFileName, false, false, false, false, false, "")
+	err := run(ioutil.Discard, "", "", "", badFileName, false, false, false, false, false, nil, "")
 
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)

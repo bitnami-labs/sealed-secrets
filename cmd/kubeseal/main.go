@@ -51,8 +51,9 @@ var (
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
 	mergeInto      = flag.String("merge-into", "", "Merge items from secret into an existing sealed secret file, updating the file in-place instead of writing to stdout.")
-	raw            = flag.Bool("raw", false, "Encrypt raw value from stdin instead of the whole secret object")
+	raw            = flag.Bool("raw", false, "Encrypt a raw value passed via the --from-* flags instead of the whole secret object")
 	secretName     = flag.String("name", "", "Name of the sealed secret (required with --raw)")
+	fromFile       = flag.StringSlice("from-file", nil, "(required with --raw) Secret items can be source from files. Pro-tip: you can use /dev/stdin to read pipe input. This flag tries to follow the same syntax as in kubectl")
 	sealingScope   ssv1alpha1.SealingScope
 	reEncrypt      bool // re-encrypt command
 
@@ -373,12 +374,7 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	return ioutil.WriteFile(filename, out.Bytes(), 0)
 }
 
-func encryptSecretItem(w io.Writer, secretName, ns string, scope ssv1alpha1.SealingScope, pubKey *rsa.PublicKey) error {
-	data, err := ioutil.ReadAll(os.Stdin)
-	if err != nil {
-		return err
-	}
-
+func encryptSecretItem(w io.Writer, secretName, ns string, data []byte, scope ssv1alpha1.SealingScope, pubKey *rsa.PublicKey) error {
 	// TODO(mkm): refactor cluster-wide/namespace-wide to an actual enum so we can have a simple flag
 	// to refer to the scope mode that is not a tuple of booleans.
 	label := ssv1alpha1.EncryptionLabel(ns, secretName, scope)
@@ -390,7 +386,17 @@ func encryptSecretItem(w io.Writer, secretName, ns string, scope ssv1alpha1.Seal
 	return nil
 }
 
-func run(w io.Writer, secretName, controllerNs, controllerName, certFile string, printVersion, validateSecret, reEncrypt, dumpCert, raw bool, mergeInto string) error {
+// parseFromFile parses a value of the kubectl --from-file flag, which can optionally include an item name
+// preceding the first equals sign.
+func parseFromFile(s string) (string, string) {
+	c := strings.SplitN(s, "=", 2)
+	if len(c) == 1 {
+		return "", c[0]
+	}
+	return c[0], c[1]
+}
+
+func run(w io.Writer, secretName, controllerNs, controllerName, certFile string, printVersion, validateSecret, reEncrypt, dumpCert, raw bool, fromFile []string, mergeInto string) error {
 	if printVersion {
 		fmt.Fprintf(w, "kubeseal version: %s\n", VERSION)
 		return nil
@@ -436,7 +442,20 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certFile string,
 			return fmt.Errorf("must provide the --name flag with --raw")
 		}
 
-		return encryptSecretItem(w, secretName, ns, sealingScope, pubKey)
+		if len(fromFile) == 0 {
+			return fmt.Errorf("must provide the --from-file flag with --raw")
+		}
+		if len(fromFile) > 1 {
+			return fmt.Errorf("must provide only one --from-file when encrypting a single item with --raw")
+		}
+
+		_, filename := parseFromFile(fromFile[0])
+		data, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return err
+		}
+
+		return encryptSecretItem(w, secretName, ns, data, sealingScope, pubKey)
 	}
 
 	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey)
@@ -446,7 +465,7 @@ func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
-	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certFile, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *mergeInto); err != nil {
+	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certFile, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *fromFile, *mergeInto); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
