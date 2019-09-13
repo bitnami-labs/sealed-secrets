@@ -421,12 +421,7 @@ func run(w io.Writer, controllerNs, controllerName, certFile string, printVersio
 			return fmt.Errorf("must provide the --name flag with --raw")
 		}
 
-		toEncrypt := make([]byte, base64.StdEncoding.DecodedLen(len(data)))
-		_, err = base64.StdEncoding.Decode(toEncrypt, data)
-		if err != nil {
-			return err
-		}
-		out, err := crypto.HybridEncrypt(rand.Reader, pubKey, toEncrypt, []byte(fmt.Sprintf("%s/%s", ns, *secretName)))
+		out, err := crypto.HybridEncrypt(rand.Reader, pubKey, data, []byte(fmt.Sprintf("%s/%s", ns, *secretName)))
 		if err != nil {
 			return err
 		}
