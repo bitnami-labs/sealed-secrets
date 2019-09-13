@@ -371,7 +371,21 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	return ioutil.WriteFile(filename, out.Bytes(), 0)
 }
 
-func run(w io.Writer, controllerNs, controllerName, certFile string, printVersion, validateSecret, reEncrypt, dumpCert bool, mergeInto string) error {
+func encryptSecretItem(w io.Writer, secretName, ns string, pubKey *rsa.PublicKey) error {
+	data, err := ioutil.ReadAll(os.Stdin)
+	if err != nil {
+		return err
+	}
+
+	out, err := crypto.HybridEncrypt(rand.Reader, pubKey, data, []byte(fmt.Sprintf("%s/%s", ns, secretName)))
+	if err != nil {
+		return err
+	}
+	fmt.Fprint(w, base64.StdEncoding.EncodeToString(out))
+	return nil
+}
+
+func run(w io.Writer, secretName, controllerNs, controllerName, certFile string, printVersion, validateSecret, reEncrypt, dumpCert, raw bool, mergeInto string) error {
 	if printVersion {
 		fmt.Fprintf(w, "kubeseal version: %s\n", VERSION)
 		return nil
@@ -405,11 +419,7 @@ func run(w io.Writer, controllerNs, controllerName, certFile string, printVersio
 		return sealMergingInto(os.Stdin, mergeInto, scheme.Codecs, pubKey)
 	}
 
-	if *raw {
-		data, err := ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			return err
-		}
+	if raw {
 		ns, _, err := clientConfig.Namespace()
 		if err != nil {
 			return err
@@ -417,16 +427,11 @@ func run(w io.Writer, controllerNs, controllerName, certFile string, printVersio
 		if ns == "" {
 			return fmt.Errorf("must provide the --namespace flag with --raw")
 		}
-		if *secretName == "" {
+		if secretName == "" {
 			return fmt.Errorf("must provide the --name flag with --raw")
 		}
 
-		out, err := crypto.HybridEncrypt(rand.Reader, pubKey, data, []byte(fmt.Sprintf("%s/%s", ns, *secretName)))
-		if err != nil {
-			return err
-		}
-		fmt.Fprint(w, base64.StdEncoding.EncodeToString(out))
-		return nil
+		return encryptSecretItem(w, secretName, ns, pubKey)
 	}
 
 	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey)
@@ -436,7 +441,7 @@ func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
-	if err := run(os.Stdout, *controllerNs, *controllerName, *certFile, *printVersion, *validateSecret, reEncrypt, *dumpCert, *mergeInto); err != nil {
+	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certFile, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *mergeInto); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
