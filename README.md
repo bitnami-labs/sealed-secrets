@@ -246,7 +246,7 @@ TL;DR:
 
 Keys are automatically renewed every 30 days. This can be configured on controller startup with
 the `--rotate-period=<value>` flag. The `value` field can be given as golang
-duration flag (eg: `720h30m`).
+duration flag (eg: `720h30m`). A value of `0` will disable automatic key renewal.
 
 > Unfortunately you cannot use e.g. "d" as a unit for days because that's not supported by the Go stdlib. Instead of hitting your face with a palm, take this as an opportunity to meditate on the [falsehoods programmers believe about time](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time).
 
