@@ -53,6 +53,7 @@ var (
 	mergeInto      = flag.String("merge-into", "", "Merge items from secret into an existing sealed secret file, updating the file in-place instead of writing to stdout.")
 	raw            = flag.Bool("raw", false, "Encrypt raw value from stdin instead of the whole secret object")
 	secretName     = flag.String("name", "", "Name of the sealed secret (required with --raw)")
+	sealingScope   ssv1alpha1.SealingScope
 	reEncrypt      bool // re-encrypt command
 
 	// VERSION set from Makefile
@@ -62,6 +63,7 @@ var (
 )
 
 func init() {
+	flag.Var(&sealingScope, "scope", "set the scope of the sealed secret: strict, namespace-wide, cluster-wide. Mandatory for --raw, otherwise the 'sealedsecrets.bitnami.com/cluster-wide' and 'sealedsecrets.bitnami.com/namespace-wide' annotations on the input secret can be used to select the scope.")
 	flag.BoolVar(&reEncrypt, "rotate", false, "")
 	flag.BoolVar(&reEncrypt, "re-encrypt", false, "Re-encrypt the given sealed secret to use the latest cluster key.")
 	flag.CommandLine.MarkDeprecated("rotate", "please use --re-encrypt instead")
@@ -371,13 +373,16 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	return ioutil.WriteFile(filename, out.Bytes(), 0)
 }
 
-func encryptSecretItem(w io.Writer, secretName, ns string, pubKey *rsa.PublicKey) error {
+func encryptSecretItem(w io.Writer, secretName, ns string, scope ssv1alpha1.SealingScope, pubKey *rsa.PublicKey) error {
 	data, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {
 		return err
 	}
 
-	out, err := crypto.HybridEncrypt(rand.Reader, pubKey, data, []byte(fmt.Sprintf("%s/%s", ns, secretName)))
+	// TODO(mkm): refactor cluster-wide/namespace-wide to an actual enum so we can have a simple flag
+	// to refer to the scope mode that is not a tuple of booleans.
+	label := ssv1alpha1.EncryptionLabel(ns, secretName, scope)
+	out, err := crypto.HybridEncrypt(rand.Reader, pubKey, data, label)
 	if err != nil {
 		return err
 	}
@@ -431,7 +436,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certFile string,
 			return fmt.Errorf("must provide the --name flag with --raw")
 		}
 
-		return encryptSecretItem(w, secretName, ns, pubKey)
+		return encryptSecretItem(w, secretName, ns, sealingScope, pubKey)
 	}
 
 	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey)
