@@ -8,7 +8,7 @@ controller {
 
   account: kube.ServiceAccount('sealed-secrets-controller') + $.namespace,
 
-  unsealerRole: kube.ClusterRole('secrets-unsealer') {
+  unsealerRole: kube.ClusterRole('sealed-secrets-unsealer') {
     rules: [
       {
         apiGroups: ['bitnami.com'],
