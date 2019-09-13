@@ -2,7 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/rsa"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	goflag "flag"
@@ -13,6 +15,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -48,6 +51,8 @@ var (
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
 	mergeInto      = flag.String("merge-into", "", "Merge items from secret into an existing sealed secret file, updating the file in-place instead of writing to stdout.")
+	raw            = flag.Bool("raw", false, "Encrypt raw value from stdin instead of the whole secret object")
+	secretName     = flag.String("name", "", "Name of the sealed secret (required with --raw)")
 	reEncrypt      bool // re-encrypt command
 
 	// VERSION set from Makefile
@@ -398,6 +403,35 @@ func run(w io.Writer, controllerNs, controllerName, certFile string, printVersio
 
 	if mergeInto != "" {
 		return sealMergingInto(os.Stdin, mergeInto, scheme.Codecs, pubKey)
+	}
+
+	if *raw {
+		data, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			return err
+		}
+		ns, _, err := clientConfig.Namespace()
+		if err != nil {
+			return err
+		}
+		if ns == "" {
+			return fmt.Errorf("must provide the --namespace flag with --raw")
+		}
+		if *secretName == "" {
+			return fmt.Errorf("must provide the --name flag with --raw")
+		}
+
+		toEncrypt := make([]byte, base64.StdEncoding.DecodedLen(len(data)))
+		_, err = base64.StdEncoding.Decode(toEncrypt, data)
+		if err != nil {
+			return err
+		}
+		out, err := crypto.HybridEncrypt(rand.Reader, pubKey, toEncrypt, []byte(fmt.Sprintf("%s/%s", ns, *secretName)))
+		if err != nil {
+			return err
+		}
+		fmt.Fprint(w, base64.StdEncoding.EncodeToString(out))
+		return nil
 	}
 
 	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey)
