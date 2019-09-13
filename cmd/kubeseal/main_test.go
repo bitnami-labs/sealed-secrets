@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/rsa"
+	"encoding/base64"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -18,6 +19,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	"github.com/spf13/pflag"
 )
 
 const testCert = `
@@ -62,6 +64,12 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func TestMain(m *testing.M) {
+	// otherwise we'd require a working KUBECONFIG file when calling `run`.
+	pflag.CommandLine.Parse([]string{"-n", "default"})
+	os.Exit(m.Run())
 }
 
 // This is omg-not safe for real crypto use!
@@ -319,5 +327,51 @@ func TestMainError(t *testing.T) {
 
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
+	}
+}
+
+func TestRaw(t *testing.T) {
+	const (
+		secretName  = "mysecret"
+		secretValue = "supersecret"
+	)
+	certFile, err := ioutil.TempFile("", "*.pem")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(certFile.Name())
+	fmt.Fprintln(certFile, testCert)
+	certFile.Close()
+
+	if got, want := run(ioutil.Discard, "", "", "", certFile.Name(), false, false, false, false, true, nil, ""), "must provide the --name flag with --raw"; got == nil || got.Error() != want {
+		t.Fatalf("want matching: %q, got: %q", want, got.Error())
+	}
+
+	if got, want := run(ioutil.Discard, secretName, "", "", certFile.Name(), false, false, false, false, true, nil, ""), "must provide the --from-file flag with --raw"; got == nil || got.Error() != want {
+		t.Fatalf("want matching: %q, got: %q", want, got.Error())
+	}
+
+	dataFile, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(dataFile.Name())
+	fmt.Fprintf(dataFile, secretValue)
+	dataFile.Close()
+
+	fromFile := []string{dataFile.Name()}
+
+	var buf bytes.Buffer
+	if err := run(&buf, secretName, "", "", certFile.Name(), false, false, false, false, true, fromFile, ""); err != nil {
+		t.Fatal(err)
+	}
+
+	// we cannot really test decrypting here so let's just check that it did produce some output that looks right
+	if len(buf.Bytes()) == 0 {
+		t.Fatalf("didn't produce output")
+	}
+
+	if _, err := base64.StdEncoding.DecodeString(buf.String()); err != nil {
+		t.Fatal(err)
 	}
 }

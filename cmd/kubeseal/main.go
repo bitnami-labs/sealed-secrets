@@ -53,7 +53,7 @@ var (
 	mergeInto      = flag.String("merge-into", "", "Merge items from secret into an existing sealed secret file, updating the file in-place instead of writing to stdout.")
 	raw            = flag.Bool("raw", false, "Encrypt a raw value passed via the --from-* flags instead of the whole secret object")
 	secretName     = flag.String("name", "", "Name of the sealed secret (required with --raw)")
-	fromFile       = flag.StringSlice("from-file", nil, "(required with --raw) Secret items can be source from files. Pro-tip: you can use /dev/stdin to read pipe input. This flag tries to follow the same syntax as in kubectl")
+	fromFile       = flag.StringSlice("from-file", nil, "(only with --raw) Secret items can be source from files. Pro-tip: you can use /dev/stdin to read pipe input. This flag tries to follow the same syntax as in kubectl")
 	sealingScope   ssv1alpha1.SealingScope
 	reEncrypt      bool // re-encrypt command
 
@@ -64,7 +64,7 @@ var (
 )
 
 func init() {
-	flag.Var(&sealingScope, "scope", "set the scope of the sealed secret: strict, namespace-wide, cluster-wide. Mandatory for --raw, otherwise the 'sealedsecrets.bitnami.com/cluster-wide' and 'sealedsecrets.bitnami.com/namespace-wide' annotations on the input secret can be used to select the scope.")
+	flag.Var(&sealingScope, "scope", "Set the scope of the sealed secret: strict, namespace-wide, cluster-wide. Mandatory for --raw, otherwise the 'sealedsecrets.bitnami.com/cluster-wide' and 'sealedsecrets.bitnami.com/namespace-wide' annotations on the input secret can be used to select the scope.")
 	flag.BoolVar(&reEncrypt, "rotate", false, "")
 	flag.BoolVar(&reEncrypt, "re-encrypt", false, "Re-encrypt the given sealed secret to use the latest cluster key.")
 	flag.CommandLine.MarkDeprecated("rotate", "please use --re-encrypt instead")
@@ -397,6 +397,10 @@ func parseFromFile(s string) (string, string) {
 }
 
 func run(w io.Writer, secretName, controllerNs, controllerName, certFile string, printVersion, validateSecret, reEncrypt, dumpCert, raw bool, fromFile []string, mergeInto string) error {
+	if len(fromFile) != 0 && !raw {
+		return fmt.Errorf("--from-file requires --raw")
+	}
+
 	if printVersion {
 		fmt.Fprintf(w, "kubeseal version: %s\n", VERSION)
 		return nil
