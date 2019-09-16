@@ -51,6 +51,7 @@ $ kubectl create secret generic mysecret --dry-run -o json --from-file=bar=/tmp/
 * Disabling by default deprecated "v1" encrypted data format (used by pre-v0.7.0 clients) (#235)
 * Fix RBAC rules for /v1/rotate and /v1/validate fixing #166 for good (#249)
 * Implement the --merge-into command (#253)
+* add the `-o` alias for `--format` (#261)
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/1?closed=1
 
