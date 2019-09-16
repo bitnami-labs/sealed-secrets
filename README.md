@@ -297,8 +297,8 @@ manual encryption/decryption if need be.
 Before you can get rid of some old sealing keys you need to re-encrypt your SealedSecrets with the latest private key).
 
 ```bash
-kubeseal --rotate <my_sealed_secret.yaml >tmp.yaml \
-  && mv tmp.yaml my_sealed_secret.yaml
+kubeseal --rotate <my_sealed_secret.json >tmp.json \
+  && mv tmp.json my_sealed_secret.json
 ```
 
 The invocation above will produce a new sealed secret file freshly encrypted with
