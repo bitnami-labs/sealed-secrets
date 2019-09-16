@@ -14,6 +14,18 @@ import (
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 )
 
+const (
+	// The StrictScope pins the sealed secret to a specific namespace and a specific name.
+	StrictScope SealingScope = iota
+	// The NamespaceWideScope only pins a sealed secret to a specific namespace.
+	NamespaceWideScope
+	// The ClusterWideScope allows the sealed secret to be unsealed in any namespace of the cluster.
+	ClusterWideScope
+
+	// The DefaultScope is currently the StrictScope.
+	DefaultScope = StrictScope
+)
+
 var (
 	// TODO(mkm): remove after a release
 	AcceptDeprecatedV1Data = false
@@ -24,17 +36,75 @@ type SealedSecretExpansion interface {
 	Unseal(codecs runtimeserializer.CodecFactory, privKeys map[string]*rsa.PrivateKey) (*v1.Secret, error)
 }
 
+// SealingScope is an enum that declares the mobility of a sealed secret by defining
+// in which scopes
+type SealingScope int
+
+func (s *SealingScope) String() string {
+	switch *s {
+	case StrictScope:
+		return "strict"
+	case NamespaceWideScope:
+		return "namespace-wide"
+	case ClusterWideScope:
+		return "cluster-wide"
+	default:
+		return fmt.Sprintf("undefined-%d", *s)
+	}
+}
+
+func (s *SealingScope) Set(v string) error {
+	switch v {
+	case "":
+		*s = DefaultScope
+	case "strict":
+		*s = StrictScope
+	case "namespace-wide":
+		*s = NamespaceWideScope
+	case "cluster-wide":
+		*s = ClusterWideScope
+	default:
+		return fmt.Errorf("must be one of: strict, namespace-wide, cluster-wide")
+	}
+	return nil
+}
+
+// Type implements the pflag.Value interface
+func (s *SealingScope) Type() string { return "string" }
+
+// EncryptionLabel returns the label meant to be ysed for encrypting a sealed secret according to scope.
+func EncryptionLabel(namespace, name string, scope SealingScope) []byte {
+	var l string
+	switch scope {
+	case ClusterWideScope:
+		l = ""
+	case NamespaceWideScope:
+		l = namespace
+	case StrictScope:
+		fallthrough
+	default:
+		l = fmt.Sprintf("%s/%s", namespace, name)
+	}
+	return []byte(l)
+}
+
+func scopeFromLegacy(clusterWide, namespaceWide bool) (SealingScope, bool, bool) {
+	if clusterWide {
+		return ClusterWideScope, true, false
+	}
+	if namespaceWide {
+		return NamespaceWideScope, false, true
+	}
+	return StrictScope, false, false
+}
+
 // Returns labels followed by clusterWide followed by namespaceWide.
 func labelFor(o metav1.Object) ([]byte, bool, bool) {
-	clusterWide := o.GetAnnotations()[SealedSecretClusterWideAnnotation]
-	if clusterWide == "true" {
-		return []byte(""), true, false
-	}
-	namespaceWide := o.GetAnnotations()[SealedSecretNamespaceWideAnnotation]
-	if namespaceWide == "true" {
-		return []byte(o.GetNamespace()), false, true
-	}
-	return []byte(fmt.Sprintf("%s/%s", o.GetNamespace(), o.GetName())), false, false
+	scope, clusterWide, namespaceWide := scopeFromLegacy(
+		o.GetAnnotations()[SealedSecretClusterWideAnnotation] == "true",
+		o.GetAnnotations()[SealedSecretNamespaceWideAnnotation] == "true",
+	)
+	return EncryptionLabel(o.GetNamespace(), o.GetName(), scope), clusterWide, namespaceWide
 }
 
 // NewSealedSecretV1 creates a new SealedSecret object wrapping the

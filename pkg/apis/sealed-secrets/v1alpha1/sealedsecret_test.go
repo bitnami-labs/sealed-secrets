@@ -30,6 +30,55 @@ var _ metav1.ObjectMetaAccessor = &SealedSecret{}
 var _ runtime.Object = &SealedSecretList{}
 var _ metav1.ListMetaAccessor = &SealedSecretList{}
 
+func TestSealingScope(t *testing.T) {
+	testCases := []struct {
+		scope SealingScope
+		name  string
+	}{
+		{StrictScope, "strict"},
+		{NamespaceWideScope, "namespace-wide"},
+		{ClusterWideScope, "cluster-wide"},
+	}
+
+	for _, tc := range testCases {
+		if got, want := tc.scope.String(), tc.name; got != want {
+			t.Errorf("got: %q, want: %q", got, want)
+		}
+
+		var s SealingScope
+		s.Set(tc.name)
+		if got, want := s, tc.scope; got != want {
+			t.Errorf("got: %d, want: %d", got, want)
+		}
+	}
+
+	var s SealingScope
+	s.Set("")
+	if got, want := s, StrictScope; got != want {
+		t.Errorf("got: %d, want: %d", got, want)
+	}
+}
+
+func TestEncryptionLabel(t *testing.T) {
+	const (
+		ns   = "myns"
+		name = "myname"
+	)
+	testCases := []struct {
+		scope SealingScope
+		label string
+	}{
+		{StrictScope, "myns/myname"},
+		{NamespaceWideScope, "myns"},
+		{ClusterWideScope, ""},
+	}
+	for _, tc := range testCases {
+		if got, want := string(EncryptionLabel(ns, name, tc.scope)), tc.label; got != want {
+			t.Errorf("got: %q, want: %q", got, want)
+		}
+	}
+}
+
 func TestLabel(t *testing.T) {
 	s := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
