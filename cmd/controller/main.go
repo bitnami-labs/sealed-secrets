@@ -31,17 +31,18 @@ import (
 )
 
 const (
-	flagEnvPrefix = "SEALED_SECRETS"
+	flagEnvPrefix         = "SEALED_SECRETS"
+	defaultKeyRenewPeriod = 30 * 24 * time.Hour
 )
 
 var (
-	keyPrefix       = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
-	keySize         = flag.Int("key-size", 4096, "Size of encryption key.")
-	validFor        = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
-	myCN            = flag.String("my-cn", "", "CN to use in generated certificate.")
-	printVersion    = flag.Bool("version", false, "Print version information and exit")
-	keyRotatePeriod = flag.Duration("rotate-period", 30*24*time.Hour, "New key generation period (automatic rotation disabled if 0)")
-	acceptV1Data    = flag.Bool("accept-deprecated-v1-data", false, "Accept deprecated V1 data field")
+	keyPrefix      = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
+	keySize        = flag.Int("key-size", 4096, "Size of encryption key.")
+	validFor       = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
+	myCN           = flag.String("my-cn", "", "CN to use in generated certificate.")
+	printVersion   = flag.Bool("version", false, "Print version information and exit")
+	keyRenewPeriod = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation disabled if 0)")
+	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", false, "Accept deprecated V1 data field")
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
@@ -53,6 +54,9 @@ var (
 )
 
 func init() {
+	flag.DurationVar(keyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
+	flag.CommandLine.MarkDeprecated("rotate-period", "please use key-renew-period instead")
+
 	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
 	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
 
@@ -129,7 +133,7 @@ func myNamespace() string {
 // Initialises the first key and starts the rotation job. returns an early trigger function.
 // A period of 0 disables automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
 // is still honoured.
-func initKeyRotation(registry *KeyRegistry, period time.Duration) (func(), error) {
+func initKeyRenewal(registry *KeyRegistry, period time.Duration) (func(), error) {
 	// Create a new key only if it's the first key.
 	if len(registry.keys) == 0 {
 		if _, err := registry.generateKey(); err != nil {
@@ -195,7 +199,7 @@ func main2() error {
 		return err
 	}
 
-	trigger, err := initKeyRotation(keyRegistry, *keyRotatePeriod)
+	trigger, err := initKeyRenewal(keyRegistry, *keyRenewPeriod)
 	if err != nil {
 		return err
 	}

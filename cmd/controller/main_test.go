@@ -64,12 +64,12 @@ func TestInitKeyRotation(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	keyGenTrigger, err := initKeyRotation(registry, 0)
+	keyGenTrigger, err := initKeyRenewal(registry, 0)
 	if err != nil {
-		t.Fatalf("initKeyRotation() returned err: %v", err)
+		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
 	if !hasAction(client, "create", "secrets") {
-		t.Errorf("initKeyRotation() failed to generate an initial key")
+		t.Errorf("initKeyRenewal() failed to generate an initial key")
 	}
 
 	client.ClearActions()
@@ -100,12 +100,12 @@ func TestInitKeyRotationTick(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRotation(registry, 100*time.Millisecond)
+	_, err = initKeyRenewal(registry, 100*time.Millisecond)
 	if err != nil {
-		t.Fatalf("initKeyRotation() returned err: %v", err)
+		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
 	if !hasAction(client, "create", "secrets") {
-		t.Errorf("initKeyRotation() failed to generate an initial key")
+		t.Errorf("initKeyRenewal() failed to generate an initial key")
 	}
 
 	client.ClearActions()
@@ -150,16 +150,16 @@ func TestReuseKey(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRotation(registry, 0)
+	_, err = initKeyRenewal(registry, 0)
 	if err != nil {
-		t.Fatalf("initKeyRotation() returned err: %v", err)
+		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
 	if hasAction(client, "create", "secrets") {
-		t.Errorf("initKeyRotation() should not create a new secret when one already exist and rotation is disabled")
+		t.Errorf("initKeyRenewal() should not create a new secret when one already exist and rotation is disabled")
 	}
 }
 
-func TestRotateStaleKey(t *testing.T) {
+func TestRenewStaleKey(t *testing.T) {
 	rand := testRand()
 	key, err := rsa.GenerateKey(rand, 512)
 	if err != nil {
@@ -191,9 +191,9 @@ func TestRotateStaleKey(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRotation(registry, period)
+	_, err = initKeyRenewal(registry, period)
 	if err != nil {
-		t.Fatalf("initKeyRotation() returned err: %v", err)
+		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
 
 	client.ClearActions()
@@ -263,11 +263,11 @@ func TestLegacySecret(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRotation(registry, 0)
+	_, err = initKeyRenewal(registry, 0)
 	if err != nil {
-		t.Fatalf("initKeyRotation() returned err: %v", err)
+		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
 	if hasAction(client, "create", "secrets") {
-		t.Errorf("initKeyRotation() should not create a new secret when one already exist and rotation is disabled")
+		t.Errorf("initKeyRenewal() should not create a new secret when one already exist and rotation is disabled")
 	}
 }
