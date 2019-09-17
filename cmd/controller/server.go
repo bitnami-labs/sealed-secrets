@@ -64,6 +64,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 		}
 	})))
 
+	// TODO(mkm): rename to re-encrypt
 	mux.HandleFunc("/v1/rotate", func(w http.ResponseWriter, r *http.Request) {
 		content, err := ioutil.ReadAll(r.Body)
 
