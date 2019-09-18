@@ -137,6 +137,50 @@ The certificate is also printed to the controller log on startup.
 
 > **NOTE**: we are working on providing key management mechanisms that offload the encryption to HSM based modules or managed cloud crypto solutions such as KMS.
 
+### Scopes
+
+SealedSecrets are from the POV of an end user a "write only" device.
+
+The idea is that the SealedSecret can be decrypted only by the controller running in the target cluster and
+nobody else (not even the original author) is able to obtain the original Secret from the SealedSecret.
+
+The user may or may not have direct access to the target cluster.
+More specifically, the user might or might not have access to the Secret unsealed by the controller.
+
+There are many ways to configure RBAC on k8s, but it's quite common to forbid low-privilege users
+from reading Secrets. It's also common to give users one or more namespaces where they have higher privileges,
+which would allow them to create and read secrets (and/or create deployments that can reference those secrets).
+
+Encrypted SealedSecret are designed to be safe to be looked at without gaining any knowledge about the secrets it concels. This implies that we cannot allow users to read a SealedSecret meant for a namespace they wouldn't have access to
+and just push a copy of it in a namespace where they can read secrets from.
+
+Sealed-secrets thus behaves *as if* each namespace had its own independent encryption key and thus once you
+seal a secret for a namespace, it cannot be moved in another namespace and decrypted there.
+
+We don't technically use an independent private key for each namespace, but instead we *include* the namespace name
+during the encryption process, effectively achieving the same result.
+
+Furthermore, namespaces are not the only level at which RBAC configurations can decide who can see which secret. In fact, it's possible that users can access a secret called `foo` in a given namespace but not any other secret in the same namespace. We cannot thus by default let users to freely rename SealedSecret resources otherwise a malicious user would be able to decrypt any sealedsecret for that namespace by just renaming it to overwrite the one secret she does have access to. We use the same mechanism used to include the namespace in the encryption key to also include the secret name.
+
+That said, while this is a there are many scenarios where you might not care about this level of protection. For example, the only people who have access to your clusters are either admins or they cannot read any secret resource at all. You might have a use case for moving a sealed secret to other namespaces (e.g. you might not know the namespace name upfront), or you might not know the name of the secret (e.g. it could contain a unique suffix based on the hash of the contents etc).
+
+You can select the "scope":
+
+* strict (default)
+* namespace-wide: you can freely rename the sealed secret within a given namespace
+* cluster-wide: you
+
+The scope is selected with annotations in the input secret you pass to `kubeseal`:
+
+* `sealedsecrets.bitnami.com/namespace-wide: "true" -> for `namespace-wide'
+* `sealedsecrets.bitnami.com/cluster-wide: "true"` -> for `cluster-wide`
+
+The lack of any of such annotations means `strict` mode. If both are set, `cluster-wide` takes precedence.
+
+> NOTE: next release will consolidate this into a single `sealedsecrets.bitnami.com/scope` annotation.
+> NOTE: next release will enhance the kubeseal tooling so you don't have to fiddle with these annotations.
+
+
 ## Installation
 
 See https://github.com/bitnami-labs/sealed-secrets/releases for the latest
@@ -214,10 +258,11 @@ $ kubectl create -f mysealedsecret.json
 $ kubectl get secret mysecret
 ```
 
-Note the `SealedSecret` and `Secret` must have *the same namespace and
-name*.  This is a feature to prevent other users on the same cluster
-from re-using your sealed secrets.  `kubeseal` reads the namespace
-from the input secret, accepts an explicit `--namespace` arg, and uses
+Note the `SealedSecret` and `Secret` must have **the same namespace and
+name**. This is a feature to prevent other users on the same cluster
+from re-using your sealed secrets. See the [Scopes](#scopes) section for more info.
+
+`kubeseal` reads the namespace from the input secret, accepts an explicit `--namespace` arg, and uses
 the `kubectl` default namespace (in that order). Any labels,
 annotations, etc on the original `Secret` are preserved, but not
 automatically reflected in the `SealedSecret`.
