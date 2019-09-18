@@ -162,7 +162,7 @@ during the encryption process, effectively achieving the same result.
 
 Furthermore, namespaces are not the only level at which RBAC configurations can decide who can see which secret. In fact, it's possible that users can access a secret called `foo` in a given namespace but not any other secret in the same namespace. We cannot thus by default let users to freely rename SealedSecret resources otherwise a malicious user would be able to decrypt any sealedsecret for that namespace by just renaming it to overwrite the one secret she does have access to. We use the same mechanism used to include the namespace in the encryption key to also include the secret name.
 
-That said, while this is a there are many scenarios where you might not care about this level of protection. For example, the only people who have access to your clusters are either admins or they cannot read any secret resource at all. You might have a use case for moving a sealed secret to other namespaces (e.g. you might not know the namespace name upfront), or you might not know the name of the secret (e.g. it could contain a unique suffix based on the hash of the contents etc).
+That said, there are many scenarios where you might not care about this level of protection. For example, the only people who have access to your clusters are either admins or they cannot read any secret resource at all. You might have a use case for moving a sealed secret to other namespaces (e.g. you might not know the namespace name upfront), or you might not know the name of the secret (e.g. it could contain a unique suffix based on the hash of the contents etc).
 
 You can select the "scope":
 
