@@ -89,16 +89,16 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix
 		return nil, err
 	}
 	items := secretList.Items
-	if len(items) == 0 {
-		s, err := client.CoreV1().Secrets(namespace).Get(prefix, metav1.GetOptions{})
-		if !errors.IsNotFound(err) {
-			if err != nil {
-				return nil, err
-			}
-			items = append(items, *s)
-			// TODO(mkm): add the label to the legacy secret
+
+	s, err := client.CoreV1().Secrets(namespace).Get(prefix, metav1.GetOptions{})
+	if !errors.IsNotFound(err) {
+		if err != nil {
+			return nil, err
 		}
+		items = append(items, *s)
+		// TODO(mkm): add the label to the legacy secret to simplify discovery and backups.
 	}
+
 	keyRegistry := NewKeyRegistry(client, namespace, prefix, label, keysize)
 	sort.Sort(ssv1alpha1.ByCreationTimestamp(items))
 	for _, secret := range items {
