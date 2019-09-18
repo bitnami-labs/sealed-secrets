@@ -201,7 +201,7 @@ and/or the controller.
 ```sh
 # Create a json/yaml-encoded Secret somehow:
 # (note use of `--dry-run` - this is just a local file!)
-$ echo -n bar | kubectl create secret generic mysecret --dry-run --from-literal=foo=/dev/stdin -o json >mysecret.json
+$ echo -n bar | kubectl create secret generic mysecret --dry-run --from-file=foo=/dev/stdin -o json >mysecret.json
 
 # This is the important bit:
 $ kubeseal <mysecret.json >mysealedsecret.json
