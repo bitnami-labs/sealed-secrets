@@ -275,6 +275,42 @@ that only the intended `SealedSecret` is uploaded to the cluster.  The
 only change from existing Kubernetes is that the *contents* of the
 `Secret` are now hidden while outside the cluster.
 
+### Update existing secrets
+
+If you want to add or update exising sealed secrets without having the cleartext for the other items,
+you can just copy&paste the new encrypted data items and merge it into an existing sealed secret.
+
+You must take care of sealing the updated items with a compatible name and namespace (see note about scopes above).
+
+You can use the `--merge-into` command to update an existing sealed secrets if you don't want to copy&paste:
+
+```sh
+$ echo -n bar | kubectl create secret generic mysecret --dry-run --from-file=foo=/dev/stdin -o json \
+  > mysecret.json
+$ echo -n baz | kubectl create secret generic mysecret --dry-run --from-file=bar=/dev/stdin -o json \
+  | kubeseal --merge-into mysecret.json
+```
+
+### Raw mode (experimental)
+
+Creating temporary Secret with the `kubectl' command, only to throw it away once piped to `kubeseal` can
+be a quite unfriendly user experience. We're working on an overhaul of the the CLI experience. In the meantime,
+we offer an alternative mode where kubeseal only cares about encrypting a value to stdout and it's your responsiblity to put it inside a SealedSecret resource (not unlike any of the other k8s resources).
+
+It can also be useful as a building block for editor/IDE integrations.
+
+The downside is that you have to be careful to be consistent with the sealing scope, the namespace and the name.
+See [Scopes](#scopes):
+
+```sh
+$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --name mysecret
+AgBChHUWLMx...
+$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --scope namespace-wide
+AgAbbFNkM54...
+$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --scope cluster-wide
+AgAjLKpIYV+...
+```
+
 ## Secret Rotation
 
 You should always rotate your secrets. But since your secrets are encrypted with another secret,
@@ -290,7 +326,7 @@ TL;DR:
 ### Key renewal
 
 Keys are automatically renewed every 30 days. This can be configured on controller startup with
-the `--rotate-period=<value>` flag. The `value` field can be given as golang
+the `--key-renew-period=<value>` flag. The `value` field can be given as golang
 duration flag (eg: `720h30m`). A value of `0` will disable automatic key renewal.
 
 > Unfortunately you cannot use e.g. "d" as a unit for days because that's not supported by the Go stdlib. Instead of hitting your face with a palm, take this as an opportunity to meditate on the [falsehoods programmers believe about time](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time).
@@ -342,13 +378,13 @@ manual encryption/decryption if need be.
 Before you can get rid of some old sealing keys you need to re-encrypt your SealedSecrets with the latest private key).
 
 ```bash
-kubeseal --rotate <my_sealed_secret.json >tmp.json \
+kubeseal --re-encrypt <my_sealed_secret.json >tmp.json \
   && mv tmp.json my_sealed_secret.json
 ```
 
 The invocation above will produce a new sealed secret file freshly encrypted with
 the latest key, without making the secrets leave the cluster to the client. You can then save that file
-in your version control system (`kubeseal --rotate` doesn't update the in-cluster object).
+in your version control system (`kubeseal --re-encrypt` doesn't update the in-cluster object).
 
 Currently old keys are not garbage collected automatically.
 
