@@ -151,7 +151,7 @@ There are many ways to configure RBAC on k8s, but it's quite common to forbid lo
 from reading Secrets. It's also common to give users one or more namespaces where they have higher privileges,
 which would allow them to create and read secrets (and/or create deployments that can reference those secrets).
 
-Encrypted SealedSecret are designed to be safe to be looked at without gaining any knowledge about the secrets it concels. This implies that we cannot allow users to read a SealedSecret meant for a namespace they wouldn't have access to
+Encrypted SealedSecret are designed to be safe to be looked at without gaining any knowledge about the secrets it conceals. This implies that we cannot allow users to read a SealedSecret meant for a namespace they wouldn't have access to
 and just push a copy of it in a namespace where they can read secrets from.
 
 Sealed-secrets thus behaves *as if* each namespace had its own independent encryption key and thus once you
@@ -160,7 +160,7 @@ seal a secret for a namespace, it cannot be moved in another namespace and decry
 We don't technically use an independent private key for each namespace, but instead we *include* the namespace name
 during the encryption process, effectively achieving the same result.
 
-Furthermore, namespaces are not the only level at which RBAC configurations can decide who can see which secret. In fact, it's possible that users can access a secret called `foo` in a given namespace but not any other secret in the same namespace. We cannot thus by default let users to freely rename SealedSecret resources otherwise a malicious user would be able to decrypt any sealedsecret for that namespace by just renaming it to overwrite the one secret she does have access to. We use the same mechanism used to include the namespace in the encryption key to also include the secret name.
+Furthermore, namespaces are not the only level at which RBAC configurations can decide who can see which secret. In fact, it's possible that users can access a secret called `foo` in a given namespace but not any other secret in the same namespace. We cannot thus by default let users freely rename SealedSecret resources otherwise a malicious user would be able to decrypt any SealedSecret for that namespace by just renaming it to overwrite the one secret she does have access to. We use the same mechanism used to include the namespace in the encryption key to also include the secret name.
 
 That said, there are many scenarios where you might not care about this level of protection. For example, the only people who have access to your clusters are either admins or they cannot read any secret resource at all. You might have a use case for moving a sealed secret to other namespaces (e.g. you might not know the namespace name upfront), or you might not know the name of the secret (e.g. it could contain a unique suffix based on the hash of the contents etc).
 
