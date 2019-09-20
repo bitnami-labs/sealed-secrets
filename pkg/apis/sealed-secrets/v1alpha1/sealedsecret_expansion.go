@@ -12,6 +12,7 @@ import (
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	"github.com/mkmik/multierror"
 )
 
 const (
@@ -254,6 +255,8 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 		secret.Type = s.Spec.Template.Type
 
 		secret.Data = map[string][]byte{}
+
+		var errs []error
 		for key, value := range s.Spec.EncryptedData {
 			valueBytes, err := base64.StdEncoding.DecodeString(value)
 			if err != nil {
@@ -261,11 +264,14 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 			}
 			plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, valueBytes, label)
 			if err != nil {
-				return nil, err
+				errs = append(errs, multierror.Tag(key, err))
 			}
 			secret.Data[key] = plaintext
 		}
 
+		if errs != nil {
+			return nil, multierror.Fold(multierror.Uniq(errs))
+		}
 	} else if AcceptDeprecatedV1Data { // Support decrypting old secrets for backward compatibility
 		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, s.Spec.Data, label)
 		if err != nil {
