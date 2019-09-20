@@ -15,6 +15,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
@@ -58,12 +59,14 @@ var (
 	reEncrypt      bool // re-encrypt command
 
 	// VERSION set from Makefile
-	VERSION = "UNKNOWN"
+	VERSION = buildinfo.DefaultVersion
 
 	clientConfig clientcmd.ClientConfig
 )
 
 func init() {
+	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
+
 	flag.Var(&sealingScope, "scope", "Set the scope of the sealed secret: strict, namespace-wide, cluster-wide. Mandatory for --raw, otherwise the 'sealedsecrets.bitnami.com/cluster-wide' and 'sealedsecrets.bitnami.com/namespace-wide' annotations on the input secret can be used to select the scope.")
 	flag.BoolVar(&reEncrypt, "rotate", false, "")
 	flag.BoolVar(&reEncrypt, "re-encrypt", false, "Re-encrypt the given sealed secret to use the latest cluster key.")

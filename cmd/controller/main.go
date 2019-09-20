@@ -26,6 +26,7 @@ import (
 	"github.com/bitnami-labs/flagenv"
 	"github.com/bitnami-labs/pflagenv"
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
 )
@@ -47,13 +48,15 @@ var (
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
 	// VERSION set from Makefile
-	VERSION = "UNKNOWN"
+	VERSION = buildinfo.DefaultVersion
 
 	// Selector used to find existing public/private key pairs on startup
 	keySelector = fields.OneTermEqualSelector(SealedSecretsKeyLabel, "active")
 )
 
 func init() {
+	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
+
 	flag.DurationVar(keyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
 	flag.CommandLine.MarkDeprecated("rotate-period", "please use key-renew-period instead")
 
