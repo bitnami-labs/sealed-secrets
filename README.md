@@ -309,9 +309,9 @@ See [Scopes](#scopes):
 ```sh
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --name mysecret
 AgBChHUWLMx...
-$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --scope namespace-wide
+$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --scope namespace-wide --name mysecret
 AgAbbFNkM54...
-$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --scope cluster-wide
+$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --scope cluster-wide --name mysecret
 AgAjLKpIYV+...
 ```
 
