@@ -3,6 +3,7 @@
 [![](https://img.shields.io/badge/install-docs-brightgreen.svg)](#Installation)
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 [![](https://img.shields.io/homebrew/v/kubeseal)](https://formulae.brew.sh/formula/kubeseal)
+[![](https://img.shields.io/badge/dynamic/json?color=orange&label=helm%20release&query=%24.data.relationships.latestChartVersion.data.app_version&url=https%3A%2F%2Fhub.kubeapps.com%2Fapi%2Fchartsvc%2Fv1%2Fcharts%2Fstable%2Fsealed-secrets)](https://hub.kubeapps.com/charts/stable/sealed-secrets)
 [![Build Status](https://travis-ci.org/bitnami-labs/sealed-secrets.svg?branch=master)](https://travis-ci.org/bitnami-labs/sealed-secrets)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bitnami-labs/sealed-secrets)](https://goreportcard.com/report/github.com/bitnami-labs/sealed-secrets)
 ![Downloads](https://img.shields.io/github/downloads/bitnami-labs/sealed-secrets/total.svg)
@@ -137,6 +138,50 @@ The certificate is also printed to the controller log on startup.
 
 > **NOTE**: we are working on providing key management mechanisms that offload the encryption to HSM based modules or managed cloud crypto solutions such as KMS.
 
+### Scopes
+
+SealedSecrets are from the POV of an end user a "write only" device.
+
+The idea is that the SealedSecret can be decrypted only by the controller running in the target cluster and
+nobody else (not even the original author) is able to obtain the original Secret from the SealedSecret.
+
+The user may or may not have direct access to the target cluster.
+More specifically, the user might or might not have access to the Secret unsealed by the controller.
+
+There are many ways to configure RBAC on k8s, but it's quite common to forbid low-privilege users
+from reading Secrets. It's also common to give users one or more namespaces where they have higher privileges,
+which would allow them to create and read secrets (and/or create deployments that can reference those secrets).
+
+Encrypted SealedSecret are designed to be safe to be looked at without gaining any knowledge about the secrets it conceals. This implies that we cannot allow users to read a SealedSecret meant for a namespace they wouldn't have access to
+and just push a copy of it in a namespace where they can read secrets from.
+
+Sealed-secrets thus behaves *as if* each namespace had its own independent encryption key and thus once you
+seal a secret for a namespace, it cannot be moved in another namespace and decrypted there.
+
+We don't technically use an independent private key for each namespace, but instead we *include* the namespace name
+during the encryption process, effectively achieving the same result.
+
+Furthermore, namespaces are not the only level at which RBAC configurations can decide who can see which secret. In fact, it's possible that users can access a secret called `foo` in a given namespace but not any other secret in the same namespace. We cannot thus by default let users freely rename SealedSecret resources otherwise a malicious user would be able to decrypt any SealedSecret for that namespace by just renaming it to overwrite the one secret she does have access to. We use the same mechanism used to include the namespace in the encryption key to also include the secret name.
+
+That said, there are many scenarios where you might not care about this level of protection. For example, the only people who have access to your clusters are either admins or they cannot read any secret resource at all. You might have a use case for moving a sealed secret to other namespaces (e.g. you might not know the namespace name upfront), or you might not know the name of the secret (e.g. it could contain a unique suffix based on the hash of the contents etc).
+
+You can select the "scope":
+
+* strict (default)
+* namespace-wide: you can freely rename the sealed secret within a given namespace
+* cluster-wide: you
+
+The scope is selected with annotations in the input secret you pass to `kubeseal`:
+
+* `sealedsecrets.bitnami.com/namespace-wide: "true" -> for `namespace-wide'
+* `sealedsecrets.bitnami.com/cluster-wide: "true"` -> for `cluster-wide`
+
+The lack of any of such annotations means `strict` mode. If both are set, `cluster-wide` takes precedence.
+
+> NOTE: next release will consolidate this into a single `sealedsecrets.bitnami.com/scope` annotation.
+> NOTE: next release will enhance the kubeseal tooling so you don't have to fiddle with these annotations.
+
+
 ## Installation
 
 See https://github.com/bitnami-labs/sealed-secrets/releases for the latest
@@ -165,7 +210,10 @@ In some cases you might need to apply your own customizations, like set a custom
 
 ### Helm Chart
 
-Sealed Secret helm charts can be found on this [link](https://github.com/helm/charts/tree/master/stable/sealed-secrets). It's maintained independently and it might lag a bit behind the latest release.
+Sealed Secret helm charts can be found on this [link](https://github.com/helm/charts/tree/master/stable/sealed-secrets). It's maintained independently and it might lag a bit behind the latest release. This badge should indicate the latest helm chart release:
+
+[![](https://img.shields.io/badge/dynamic/json?color=orange&label=helm%20release&query=%24.data.relationships.latestChartVersion.data.app_version&url=https%3A%2F%2Fhub.kubeapps.com%2Fapi%2Fchartsvc%2Fv1%2Fcharts%2Fstable%2Fsealed-secrets)](https://hub.kubeapps.com/charts/stable/sealed-secrets)
+
 
 ### Homebrew
 
@@ -201,7 +249,7 @@ and/or the controller.
 ```sh
 # Create a json/yaml-encoded Secret somehow:
 # (note use of `--dry-run` - this is just a local file!)
-$ kubectl create secret generic mysecret --dry-run --from-literal=foo=bar -o json >mysecret.json
+$ echo -n bar | kubectl create secret generic mysecret --dry-run --from-file=foo=/dev/stdin -o json >mysecret.json
 
 # This is the important bit:
 $ kubeseal <mysecret.json >mysealedsecret.json
@@ -214,10 +262,11 @@ $ kubectl create -f mysealedsecret.json
 $ kubectl get secret mysecret
 ```
 
-Note the `SealedSecret` and `Secret` must have *the same namespace and
-name*.  This is a feature to prevent other users on the same cluster
-from re-using your sealed secrets.  `kubeseal` reads the namespace
-from the input secret, accepts an explicit `--namespace` arg, and uses
+Note the `SealedSecret` and `Secret` must have **the same namespace and
+name**. This is a feature to prevent other users on the same cluster
+from re-using your sealed secrets. See the [Scopes](#scopes) section for more info.
+
+`kubeseal` reads the namespace from the input secret, accepts an explicit `--namespace` arg, and uses
 the `kubectl` default namespace (in that order). Any labels,
 annotations, etc on the original `Secret` are preserved, but not
 automatically reflected in the `SealedSecret`.
@@ -229,6 +278,42 @@ existing config management workflow, cluster RBAC rules, etc to ensure
 that only the intended `SealedSecret` is uploaded to the cluster.  The
 only change from existing Kubernetes is that the *contents* of the
 `Secret` are now hidden while outside the cluster.
+
+### Update existing secrets
+
+If you want to add or update exising sealed secrets without having the cleartext for the other items,
+you can just copy&paste the new encrypted data items and merge it into an existing sealed secret.
+
+You must take care of sealing the updated items with a compatible name and namespace (see note about scopes above).
+
+You can use the `--merge-into` command to update an existing sealed secrets if you don't want to copy&paste:
+
+```sh
+$ echo -n bar | kubectl create secret generic mysecret --dry-run --from-file=foo=/dev/stdin -o json \
+  > mysecret.json
+$ echo -n baz | kubectl create secret generic mysecret --dry-run --from-file=bar=/dev/stdin -o json \
+  | kubeseal --merge-into mysecret.json
+```
+
+### Raw mode (experimental)
+
+Creating temporary Secret with the `kubectl' command, only to throw it away once piped to `kubeseal` can
+be a quite unfriendly user experience. We're working on an overhaul of the the CLI experience. In the meantime,
+we offer an alternative mode where kubeseal only cares about encrypting a value to stdout and it's your responsiblity to put it inside a SealedSecret resource (not unlike any of the other k8s resources).
+
+It can also be useful as a building block for editor/IDE integrations.
+
+The downside is that you have to be careful to be consistent with the sealing scope, the namespace and the name.
+See [Scopes](#scopes):
+
+```sh
+$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --name mysecret
+AgBChHUWLMx...
+$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --scope namespace-wide
+AgAbbFNkM54...
+$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --scope cluster-wide
+AgAjLKpIYV+...
+```
 
 ## Secret Rotation
 
@@ -245,8 +330,8 @@ TL;DR:
 ### Key renewal
 
 Keys are automatically renewed every 30 days. This can be configured on controller startup with
-the `--rotate-period=<value>` flag. The `value` field can be given as golang
-duration flag (eg: `720h30m`).
+the `--key-renew-period=<value>` flag. The `value` field can be given as golang
+duration flag (eg: `720h30m`). A value of `0` will disable automatic key renewal.
 
 > Unfortunately you cannot use e.g. "d" as a unit for days because that's not supported by the Go stdlib. Instead of hitting your face with a palm, take this as an opportunity to meditate on the [falsehoods programmers believe about time](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time).
 
@@ -297,13 +382,13 @@ manual encryption/decryption if need be.
 Before you can get rid of some old sealing keys you need to re-encrypt your SealedSecrets with the latest private key).
 
 ```bash
-kubeseal --rotate <my_sealed_secret.yaml >tmp.yaml \
-  && mv tmp.yaml my_sealed_secret.yaml
+kubeseal --re-encrypt <my_sealed_secret.json >tmp.json \
+  && mv tmp.json my_sealed_secret.json
 ```
 
 The invocation above will produce a new sealed secret file freshly encrypted with
 the latest key, without making the secrets leave the cluster to the client. You can then save that file
-in your version control system (`kubeseal --rotate` doesn't update the in-cluster object).
+in your version control system (`kubeseal --re-encrypt` doesn't update the in-cluster object).
 
 Currently old keys are not garbage collected automatically.
 

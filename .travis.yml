@@ -26,9 +26,11 @@ env:
 
 matrix:
   include:
+    - env: INT_KVERS=v1.16.0 INT_SSC_CONF=controller.yaml
+    - env: INT_KVERS=v1.15.4 INT_SSC_CONF=controller.yaml
     - env: INT_KVERS=v1.14.1 INT_SSC_CONF=controller.yaml
+    # keep 1.13 until kops moves on
     - env: INT_KVERS=v1.13.5 INT_SSC_CONF=controller.yaml
-    - env: INT_KVERS=v1.12.7 INT_SSC_CONF=controller.yaml
 
 addons:
   apt:
@@ -43,7 +45,7 @@ install:
   - go build -i ./...
   - |
     if [ "$INT_KVERS" != "" ]; then
-      v=1.0.0
+      v=1.3.1
       if ! which minikube-$v; then
         wget -O $GOPATH/bin/minikube-$v \
            https://storage.googleapis.com/minikube/releases/v$v/minikube-$(go env GOOS)-$(go env GOARCH)

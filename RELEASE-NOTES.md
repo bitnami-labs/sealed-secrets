@@ -4,7 +4,7 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
-# v0.9.0 (DRAFT)
+# v0.9.0
 
 ## Announcement
 
@@ -46,11 +46,15 @@ $ kubectl create secret generic mysecret --dry-run -o json --from-file=bar=/tmp/
 
 ## Changelog
 
-* Key rotation is enabled by default every 30 days (#236)
+* Doc improvements.
+* Rename "key rotation" to "key renewal" since the terminology was confusing.
+* Key renewal is enabled by default every 30 days (#236)
 * You can now use env vars such as SEALED_SECRETS_FOO_BAR to customize the controller (#234)
 * Disabling by default deprecated "v1" encrypted data format (used by pre-v0.7.0 clients) (#235)
 * Fix RBAC rules for /v1/rotate and /v1/validate fixing #166 for good (#249)
 * Implement the --merge-into command (#253)
+* Add the `-o` alias for `--format` (#261)
+* Add the `--raw` command for only encrypting single items (#257)
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/1?closed=1
 
