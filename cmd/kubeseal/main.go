@@ -442,26 +442,13 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certFile string,
 		if err != nil {
 			return err
 		}
-		
-		switch sealingScope {
-		case ssv1alpha1.ClusterWideScope:
-			if len(secretName) != 0 {
-				fmt.Fprintf(w, "Warning: cluster-wide scope specified, ignoring provided secret name: %s\n", secretName)
-			}
-		case ssv1alpha1.NamespaceWideScope:
-			if ns == "" {
-				return fmt.Errorf("must provide the --namespace flag with --raw and namespace-wide scope")
-			}
-			if len(secretName) != 0 {
-				fmt.Fprintf(w, "Warning: namespace-wide scope specified, ignoring provided secret name: %s\n", secretName)
-			}
-		default:
-			if ns == "" {
-				return fmt.Errorf("must provide the --namespace flag with --raw and default (strict) scope")
-			}
-			if secretName == "" {
-				return fmt.Errorf("must provide the --name flag with --raw and default (strict) scope")
-			}
+
+		if ns == "" && sealingScope < ssv1alpha1.ClusterWideScope {
+			return fmt.Errorf("must provide the --namespace flag with --raw and --scope %s", sealingScope.String())
+		}
+
+		if secretName == "" && sealingScope < ssv1alpha1.NamespaceWideScope {
+			return fmt.Errorf("must provide the --name flag with --raw and --scope %s", sealingScope.String())
 		}
 
 		if len(fromFile) == 0 {

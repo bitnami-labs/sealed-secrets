@@ -343,7 +343,7 @@ func TestRaw(t *testing.T) {
 	fmt.Fprintln(certFile, testCert)
 	certFile.Close()
 
-	if got, want := run(ioutil.Discard, "", "", "", certFile.Name(), false, false, false, false, true, nil, ""), "must provide the --name flag with --raw and default (strict) scope"; got == nil || got.Error() != want {
+	if got, want := run(ioutil.Discard, "", "", "", certFile.Name(), false, false, false, false, true, nil, ""), "must provide the --name flag with --raw and --scope strict"; got == nil || got.Error() != want {
 		t.Fatalf("want matching: %q, got: %q", want, got.Error())
 	}
 
