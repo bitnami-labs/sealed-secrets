@@ -1,5 +1,5 @@
 // Generic stuff is in kube.libsonnet - this file contains
-// additional AWS or Bitnami -specific conventions.
+// bitnami-specific conventions.
 
 local kube = import "kube.libsonnet";
 
@@ -55,9 +55,10 @@ local perCloudSvcSpec(cloud) = (
     paths:: [{ path: "/", backend: ing.target_svc.name_port }],
     secretName:: "%s-cert" % [ing.metadata.name],
     // cert_provider can either be:
-    // - "kcm": uses route53 for ACME dns-01 challenge
-    // - "lego": requires public ingress, uses http for ACME http challenge
-    cert_provider:: "kcm",
+    // - "kcm": DEPRECATED (will be removed in T26526) uses old kube-cert-manager via route53 for ACME dns-01 challenge
+    // - "cm-dns": cert-manager using route53 for ACME dns-01 challenge
+    // - "cm-http": cert-manager using ACME http, requires public ingress (kube-lego already replaced by cert-manager)
+    cert_provider:: "cm-dns",
 
     kcm_metadata:: {
       annotations+: {
@@ -68,20 +69,29 @@ local perCloudSvcSpec(cloud) = (
         "stable.k8s.psg.io/kcm.class": "default",
       },
     },
-    kube_lego_metadata:: {
+    cm_dns_metadata:: {
       annotations+: {
-        "kubernetes.io/tls-acme": "true",
+        "certmanager.k8s.io/cluster-issuer": "letsencrypt-prod-dns",
+        "certmanager.k8s.io/acme-challenge-type": "dns01",
+        "certmanager.k8s.io/acme-dns01-provider": "default",
+      },
+    },
+    cm_http_metadata:: {
+      annotations+: {
+        "certmanager.k8s.io/cluster-issuer": "letsencrypt-prod-http",
       },
     },
 
-    metadata+: if ing.cert_provider == "kcm" then ing.kcm_metadata else ing.kube_lego_metadata,
+    metadata+: {
+      kcm: ing.kcm_metadata,
+      "cm-dns": ing.cm_dns_metadata,
+      "cm-http": ing.cm_http_metadata,
+    }[ing.cert_provider],
     spec+: {
       tls: [
         {
           hosts: std.set([r.host for r in ing.spec.rules]),
           secretName: ing.secretName,
-
-          assert std.length(self.hosts) <= 1 : "kube-cert-manager only supports one host per secret - make a separate Ingress resource",
         },
       ],
 

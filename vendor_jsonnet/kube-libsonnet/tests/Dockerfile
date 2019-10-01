@@ -1,17 +1,20 @@
-FROM debian:8
+FROM bitnami/minideb:buster
 MAINTAINER sre@bitnami.com
 
+ARG jsonnet_version=0.14.0
+ARG kubectl_version=v1.13.0
+ARG kubecfg_version=v0.12.0
+
+RUN install_packages jq make curl ca-certificates
 RUN adduser --home /home/user --disabled-password --gecos User user
 
-RUN apt-get -q update && apt-get -qy install jq make
+RUN curl -sLo /tmp/jsonnet-v${jsonnet_version}.tar.gz https://github.com/google/jsonnet/releases/download/v${jsonnet_version}/jsonnet-bin-v${jsonnet_version}-linux.tar.gz
+RUN tar -zxf /tmp/jsonnet-v${jsonnet_version}.tar.gz -C /tmp && mv /tmp/jsonnet /tmp/jsonnetfmt /usr/local/bin
 
-ADD https://storage.googleapis.com/bitnami-jenkins-tools/jsonnet-0.9.5 /usr/local/bin/jsonnet
-RUN chmod +x /usr/local/bin/jsonnet
-
-ADD https://storage.googleapis.com/kubernetes-release/release/v1.9.0/bin/linux/amd64/kubectl /usr/local/bin/kubectl
+RUN curl -sLo /usr/local/bin/kubectl https://storage.googleapis.com/kubernetes-release/release/${kubectl_version}/bin/linux/amd64/kubectl
 RUN chmod +x /usr/local/bin/kubectl
 
-ADD https://github.com/ksonnet/kubecfg/releases/download/v0.7.2/kubecfg-linux-amd64 /usr/local/bin/kubecfg
+RUN curl -sLo /usr/local/bin/kubecfg https://github.com/bitnami/kubecfg/releases/download/${kubecfg_version}/kubecfg-linux-amd64
 RUN chmod +x /usr/local/bin/kubecfg
 
 USER user

@@ -3,14 +3,7 @@
 local namespace = 'kube-system';
 
 {
-  kube:: (import 'vendor_jsonnet/kube-libsonnet/kube.libsonnet') {
-    // v1beta2 deprecated in k8s 1.16. v1 can be used since 1.9. We currently officially support only >= 1.13
-    // TODO(mkm): remove this override once https://github.com/bitnami-labs/kube-libsonnet/pull/23 lands
-    // and we upgrade kube-libsonnet
-    Deployment(name): super.Deployment(name) {
-      apiVersion: 'apps/v1',
-    },
-  },
+  kube:: (import 'vendor_jsonnet/kube-libsonnet/kube.libsonnet'),
   local kube = self.kube,
 
   controllerImage:: std.extVar('CONTROLLER_IMAGE'),

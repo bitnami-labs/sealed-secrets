@@ -1,4 +1,4 @@
-// Generic library of Kubernetes objects
+// Generic library of Kubernetes objects (https://github.com/bitnami-labs/kube-libsonnet)
 //
 // Objects in this file follow the regular Kubernetes API object
 // schema with two exceptions:
@@ -53,6 +53,13 @@
 // (client-side, and gives better line information).
 
 {
+  // resource contructors will use kinds/versions/fields compatible at least with version:
+  minKubeVersion: {
+    major: 1,
+    minor: 9,
+    version: "%s.%s" % [self.major, self.minor],
+  },
+
   // Returns array of values from given object.  Does not include hidden fields.
   objectValues(o):: [o[field] for field in std.objectFields(o)],
 
@@ -203,6 +210,7 @@
         },
       },
       accessModes: ["ReadWriteOnce"],
+      [if pvc.storageClass != null then "storageClassName"]: pvc.storageClass,
     },
   },
 
@@ -294,7 +302,7 @@
     emptyDir: {},
   },
 
-  HostPathVolume(path, type=null): {
+  HostPathVolume(path, type=""): {
     hostPath: { path: path, type: type },
   },
 
@@ -370,7 +378,7 @@
     },
   },
 
-  Deployment(name): $._Object("apps/v1beta2", "Deployment", name) {
+  Deployment(name): $._Object("apps/v1", "Deployment", name) {
     local deployment = self,
 
     spec: {
@@ -412,8 +420,10 @@
       // NB: Upstream default is 0
       minReadySeconds: 30,
 
+      // NB: Regular k8s default is to keep all revisions
+      revisionHistoryLimit: 10,
+
       replicas: 1,
-      assert self.replicas >= 1,
     },
   },
 
@@ -438,7 +448,7 @@
     },
   },
 
-  StatefulSet(name): $._Object("apps/v1beta2", "StatefulSet", name) {
+  StatefulSet(name): $._Object("apps/v1", "StatefulSet", name) {
     local sset = self,
 
     spec: {
@@ -522,15 +532,11 @@
       },
     },
 
-    selector: {
-      matchLabels: this.template.metadata.labels,
-    },
-
     completions: 1,
     parallelism: 1,
   },
 
-  DaemonSet(name): $._Object("apps/v1beta2", "DaemonSet", name) {
+  DaemonSet(name): $._Object("apps/v1", "DaemonSet", name) {
     local ds = self,
     spec: {
       updateStrategy: {
@@ -697,6 +703,7 @@
       ingress_:: {},
       egress: $.objectValues(self.egress_),
       egress_:: {},
+      podSelector: {},
     },
   },
 }

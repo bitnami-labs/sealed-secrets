@@ -17,9 +17,13 @@ a git submodule, i.e.:
 
 ## Testing
 
-Unit and e2e-ish testing exists at tests/, needs installed `jsonnet`
-and `kubecfg` binaries, as well as a working kubernetes configured
-environment for `kubecfg validate` against kubernetes API endpoint.
+Unit and e2e-ish testing at tests/, needs usable `docker-compose`
+at node, will run a `k3s` "dummy" container to serve Kube API, enough
+to for `kubecfg validate` against it:
 
-Above has some basic Travis CI integration (minikube API still WIP),
-that exercises unit and golden tests.
+    make tests
+
+If you don't want that full kube-api stack (will then use your "local"
+kubernetes configured environment), you can run:
+
+    make -C tests test-srcs test-kube

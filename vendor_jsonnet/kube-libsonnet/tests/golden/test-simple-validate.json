@@ -34,11 +34,6 @@
                "spec": {
                   "completions": 1,
                   "parallelism": 1,
-                  "selector": {
-                     "matchLabels": {
-                        "name": "foo-cronjob"
-                     }
-                  },
                   "template": {
                      "metadata": {
                         "labels": {
@@ -73,7 +68,7 @@
          }
       },
       {
-         "apiVersion": "apps/v1beta2",
+         "apiVersion": "apps/v1",
          "kind": "Deployment",
          "metadata": {
             "annotations": { },
@@ -86,6 +81,7 @@
          "spec": {
             "minReadySeconds": 30,
             "replicas": 1,
+            "revisionHistoryLimit": 10,
             "selector": {
                "matchLabels": {
                   "name": "foo-deploy"
@@ -161,7 +157,7 @@
          }
       },
       {
-         "apiVersion": "apps/v1beta2",
+         "apiVersion": "apps/v1",
          "kind": "DaemonSet",
          "metadata": {
             "annotations": { },
@@ -249,12 +245,12 @@
          "kind": "Ingress",
          "metadata": {
             "annotations": {
-               "stable.k8s.psg.io/kcm.email": "sre@bitnami.com",
-               "stable.k8s.psg.io/kcm.provider": "route53"
+               "certmanager.k8s.io/acme-challenge-type": "dns01",
+               "certmanager.k8s.io/acme-dns01-provider": "default",
+               "certmanager.k8s.io/cluster-issuer": "letsencrypt-prod-dns"
             },
             "labels": {
-               "name": "foo-ingress",
-               "stable.k8s.psg.io/kcm.class": "default"
+               "name": "foo-ingress"
             },
             "name": "foo-ingress",
             "namespace": "foons"
@@ -300,11 +296,6 @@
          "spec": {
             "completions": 1,
             "parallelism": 1,
-            "selector": {
-               "matchLabels": {
-                  "name": "foo-job"
-               }
-            },
             "template": {
                "metadata": {
                   "labels": {
@@ -624,7 +615,7 @@
          }
       },
       {
-         "apiVersion": "apps/v1beta2",
+         "apiVersion": "apps/v1",
          "kind": "StatefulSet",
          "metadata": {
             "annotations": { },

@@ -1,5 +1,5 @@
-local kube = import "../kube.libsonnet";
 local bitnami = import "../bitnami.libsonnet";
+local kube = import "../kube.libsonnet";
 
 local stack = {
   namespace:: "foons",
