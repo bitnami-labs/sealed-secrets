@@ -10,7 +10,25 @@ PHONY_GOLDEN=$(patsubst %.jsonnet,golden/%.json,$(ALL_JSONNET))
 PHONY_DIFF=$(patsubst %.jsonnet,%.diff,$(ALL_JSONNET))
 PHONY_PARSE=$(patsubst %.jsonnet,%.parse,$(ALL_JSONNET))
 
-test: unittests lint parse validate diff
+## These need to be in-sync with docker-compose.yaml
+DOCKER_E2E=e2e-test
+TMP_RANCHER=./tmp-rancher
+PROJECT=kubelibsonnet
+
+tests: docker-compose-tests
+
+docker-compose-tests:
+	install -d $(TMP_RANCHER) $(TMP_RANCHER)/etc && touch $(TMP_RANCHER)/etc/k3s.yaml
+	USERID=$$(id -u) docker-compose -p $(PROJECT) up -d
+	rc=$$(timeout 60s docker wait $(DOCKER_E2E)) || rc=255 ;\
+	   test $$rc -ne 0 && docker logs k3s-api;\
+	   docker logs $(DOCKER_E2E);\
+	   docker-compose -p $(PROJECT) down;\
+	   exit $$rc
+	rm -rf ./$(TMP_RANCHER)
+
+test-srcs: unittests lint parse diff
+test-kube: validate
 
 # NB: unittest jsonnet files are also covered by parse and diff targets,
 #     called out here for convenience
@@ -20,7 +38,7 @@ unittests:
 lint:
 	@set -e; errs=0; \
         for f in $(ALL_JSONNET) $(LIB_JSONNET); do \
-	  if ! jsonnet fmt --test $(JSONNET_FMT) -- $$f; then \
+	  if ! jsonnetfmt --test $(JSONNET_FMT) -- $$f; then \
 	    echo "FAILED lint: $$f" >&2; \
 	    errs=$$(( $$errs + 1 )); \
 	  fi; \
@@ -31,15 +49,14 @@ lint:
 	  exit 1; \
 	fi
 
-
 parse: $(PHONY_PARSE)
+
+diff: diff-help $(PHONY_DIFF)
 
 validate:
 	timeout 10 kubectl api-versions > /dev/null \
 	|| { echo "WARNING: no usable runtime kube context, skipping."; exit 0 ;} \
-	&& kubecfg validate $(ALL_K8S_VALIDATE_JSONNET)
-
-diff: diff-help $(PHONY_DIFF)
+	&& kubectl version --short && kubecfg version && kubecfg validate --ignore-unknown=false $(ALL_K8S_VALIDATE_JSONNET)
 
 %.diff: %.jsonnet
 	diff -u golden/$(*).json <(jsonnet $(<))
@@ -58,8 +75,8 @@ diff-help:
 fix-lint:
 	@set -e; \
 	for f in $(ALL_JSONNET) $(LIB_JSONNET); do \
-	  echo jsonnet fmt -i $(JSONNET_FMT) -- $$f; \
-	  jsonnet fmt -i $(JSONNET_FMT) -- $$f; \
+	  echo jsonnetfmt -i $(JSONNET_FMT) -- $$f; \
+	  jsonnetfmt -i $(JSONNET_FMT) -- $$f; \
 	done
 
 gen-golden: $(PHONY_GOLDEN)
