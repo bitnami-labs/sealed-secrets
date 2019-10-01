@@ -440,7 +440,7 @@ To run the integration tests:
 To update the jsonnet dependencies:
 
 ```
-$ jb install --jsonnetpkg-home=jsonnet_vendor
+$ jb install --jsonnetpkg-home=vendor_jsonnet
 ```
 
 ## FAQ
