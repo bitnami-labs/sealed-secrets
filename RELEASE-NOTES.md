@@ -4,6 +4,13 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.9.1
+
+* Make manifests compatible with k8s 1.16.x (#269)
+* Fix non-strict scopes with --raw (#276)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/7?closed=1
+
 # v0.9.0
 
 ## Announcement
