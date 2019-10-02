@@ -178,7 +178,10 @@ func openCert(certFile string) (io.ReadCloser, error) {
 	return openCertHTTP(restClient, *controllerNs, *controllerName)
 }
 
-func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey) error {
+// Seal reads a k8s Secret resource parsed from an input reader by a given codec, encrypts all its secrets
+// with a given public key, using the name and namespace found in the input secret, unless explicitly overridden
+// by the overrideName and overrideNamespace arguments.
+func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, overrideName, overrideNamespace string) error {
 	secret, err := readSecret(codecs.UniversalDecoder(), in)
 	if err != nil {
 		return err
@@ -193,8 +196,16 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 		return fmt.Errorf("Secret.data is empty in input Secret, assuming this is an error and aborting")
 	}
 
+	if overrideName != "" {
+		secret.Name = overrideName
+	}
+
 	if secret.GetName() == "" {
 		return fmt.Errorf("Missing metadata.name in input Secret")
+	}
+
+	if overrideNamespace != "" {
+		secret.Namespace = overrideNamespace
 	}
 
 	if secret.GetNamespace() == "" {
@@ -337,22 +348,22 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 }
 
 func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey) error {
-	var buf bytes.Buffer
-	if err := seal(in, &buf, codecs, pubKey); err != nil {
-		return err
-	}
-
-	update, err := decodeSealedSecret(codecs, buf.Bytes())
-	if err != nil {
-		return err
-	}
-
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
 
 	orig, err := decodeSealedSecret(codecs, b)
+	if err != nil {
+		return err
+	}
+
+	var buf bytes.Buffer
+	if err := seal(in, &buf, codecs, pubKey, orig.Name, orig.Namespace); err != nil {
+		return err
+	}
+
+	update, err := decodeSealedSecret(codecs, buf.Bytes())
 	if err != nil {
 		return err
 	}
@@ -467,7 +478,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certFile string,
 		return encryptSecretItem(w, secretName, ns, data, sealingScope, pubKey)
 	}
 
-	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey)
+	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey, secretName, "")
 }
 
 func main() {

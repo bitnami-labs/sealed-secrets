@@ -8,7 +8,9 @@ import (
 	mathrand "math/rand"
 	"reflect"
 	"testing"
+	"time"
 
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/fake"
@@ -19,6 +21,10 @@ import (
 // This is omg-not safe for real crypto use!
 func testRand() io.Reader {
 	return mathrand.New(mathrand.NewSource(42))
+}
+
+func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
+	return crypto.SignKey(r, key, time.Hour, "testcn")
 }
 
 func TestReadKey(t *testing.T) {
@@ -85,23 +91,5 @@ func TestWriteKey(t *testing.T) {
 		t.Errorf("writeKey didn't create a secret")
 	} else if a.GetNamespace() != "myns" {
 		t.Errorf("writeKey() created key in wrong namespace!")
-	}
-}
-
-func TestSignKey(t *testing.T) {
-	rand := testRand()
-
-	key, err := rsa.GenerateKey(rand, 512)
-	if err != nil {
-		t.Fatalf("Failed to generate test key: %v", err)
-	}
-
-	cert, err := signKey(rand, key)
-	if err != nil {
-		t.Errorf("signKey() returned error: %v", err)
-	}
-
-	if !reflect.DeepEqual(cert.PublicKey, &key.PublicKey) {
-		t.Errorf("cert pubkey != original pubkey")
 	}
 }
