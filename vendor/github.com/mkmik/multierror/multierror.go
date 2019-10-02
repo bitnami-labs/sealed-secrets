@@ -40,19 +40,55 @@ func (e *Error) Error() string {
 	return f(lines)
 }
 
-// Fold turns a slice of errors into a multierror.
-func Fold(errs []error) error {
-	return &Error{errs: errs}
+type JoinOption func(*joinOptions)
+type joinOptions struct {
+	formatter   Formatter
+	transformer func([]error) []error
 }
 
-// Unfold returns the underlying list of errors wrapped in a multierror.
+func WithFormatter(f Formatter) JoinOption {
+	return func(o *joinOptions) { o.formatter = f }
+}
+
+func WithTransformer(t func([]error) []error) JoinOption {
+	return func(o *joinOptions) { o.transformer = t }
+}
+
+// Join turns a slice of errors into a multierror.
+func Join(errs []error, opts ...JoinOption) error {
+	var o joinOptions
+	for _, opt := range opts {
+		opt(&o)
+	}
+	if o.transformer != nil {
+	errs = o.transformer(errs)
+	}
+	return &Error{errs: errs, formatter: o.formatter}
+}
+
+// Fold is deprecated, use Join instead.
+//
+// Fold turns a slice of errors into a multierror.
+func Fold(errs []error) error {
+	return Join(errs)
+}
+
+// Split returns the underlying list of errors wrapped in a multierror.
 // If err is not a multierror, then a singleton list is returned.
-func Unfold(err error) []error {
+func Split(err error) []error {
 	if me, ok := err.(*Error); ok {
 		return me.errs
 	} else {
 		return []error{err}
 	}
+}
+
+// Unfold is deprecated, use Split instead.
+//
+// Unfold returns the underlying list of errors wrapped in a multierror.
+// If err is not a multierror, then a singleton list is returned.
+func Unfold(err error) []error {
+	return Split(err)
 }
 
 // Append creates a new mutlierror.Error structure or appends the arguments to an existing multierror
