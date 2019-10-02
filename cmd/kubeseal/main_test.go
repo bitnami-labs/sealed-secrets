@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"math/big"
 	mathrand "math/rand"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -109,18 +111,26 @@ func TestParseKey(t *testing.T) {
 func TestOpenCertFile(t *testing.T) {
 	certFile := tmpfile(t, []byte(testCert))
 
-	f, err := openCert(certFile)
-	if err != nil {
-		t.Fatalf("Error reading test cert file: %v", err)
-	}
+	s := httptest.NewServer(http.FileServer(http.Dir("/")))
+	defer s.Close()
 
-	data, err := ioutil.ReadAll(f)
-	if err != nil {
-		t.Fatalf("Error reading from test cert file: %v", err)
-	}
+	testCases := []string{"", "file://", s.URL}
+	for _, prefix := range testCases {
+		certURL := fmt.Sprintf("%s%s", prefix, certFile)
 
-	if string(data) != testCert {
-		t.Errorf("Read incorrect data from cert file?!")
+		f, err := openCert(certURL)
+		if err != nil {
+			t.Fatalf("Error reading test cert file: %v", err)
+		}
+
+		data, err := ioutil.ReadAll(f)
+		if err != nil {
+			t.Fatalf("Error reading from test cert file: %v", err)
+		}
+
+		if string(data) != testCert {
+			t.Errorf("Read incorrect data from cert file?!")
+		}
 	}
 }
 
