@@ -12,6 +12,7 @@ require (
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/google/gofuzz v0.0.0-20170612174753-24818f796faf
 	github.com/googleapis/gnostic v0.0.0-20171211024024-933c109c13ce // indirect
+	github.com/mkmik/multierror v0.2.2
 	github.com/onsi/ginkgo v1.6.0
 	github.com/onsi/gomega v0.0.0-20190113212917-5533ce8a0da3
 	github.com/spf13/pflag v1.0.3
