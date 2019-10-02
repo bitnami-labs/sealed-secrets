@@ -270,7 +270,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 		}
 
 		if errs != nil {
-			return nil, multierror.Fold(multierror.Uniq(errs))
+			return nil, multierror.Join(multierror.Uniq(errs), multierror.WithFormatter(multierror.InlineFormatter))
 		}
 	} else if AcceptDeprecatedV1Data { // Support decrypting old secrets for backward compatibility
 		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, s.Spec.Data, label)
