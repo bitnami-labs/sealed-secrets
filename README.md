@@ -173,7 +173,7 @@ You can select the "scope":
 
 The scope is selected with annotations in the input secret you pass to `kubeseal`:
 
-* `sealedsecrets.bitnami.com/namespace-wide: "true" -> for `namespace-wide`
+* `sealedsecrets.bitnami.com/namespace-wide: "true"` -> for `namespace-wide`
 * `sealedsecrets.bitnami.com/cluster-wide: "true"` -> for `cluster-wide`
 
 The lack of any of such annotations means `strict` mode. If both are set, `cluster-wide` takes precedence.
