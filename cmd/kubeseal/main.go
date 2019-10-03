@@ -12,6 +12,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -44,7 +45,7 @@ const (
 
 var (
 	// TODO: Verify k8s server signature against cert in kube client config.
-	certFile       = flag.String("cert", "", "Certificate / public key to use for encryption. Overrides --controller-*")
+	certURL        = flag.String("cert", "", "Certificate / public key file/URL to use for encryption. Overrides --controller-*")
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.StringP("format", "o", "json", "Output format for sealed secret. Either json or yaml")
@@ -142,15 +143,48 @@ func prettyEncoder(codecs runtimeserializer.CodecFactory, mediaType string, gv r
 	return enc, nil
 }
 
-func openCertFile(certFile string) (io.ReadCloser, error) {
-	f, err := os.Open(certFile)
+func isFilename(name string) (bool, error) {
+	u, err := url.Parse(name)
+	if err != nil {
+		return false, err
+	}
+	return u.Scheme == "", nil
+}
+
+// openCertLocal opens a cert URI or local filename, by fetching it locally from the client
+// (as opposed as openCertCluster which fetches it via HTTP but through the k8s API proxy).
+func openCertLocal(filenameOrURI string) (io.ReadCloser, error) {
+	// detect if a certificate is a local file or an URI.
+	if ok, err := isFilename(filenameOrURI); err != nil {
+		return nil, err
+	} else if ok {
+		return os.Open(filenameOrURI)
+	}
+	return openCertURI(filenameOrURI)
+}
+
+func openCertURI(uri string) (io.ReadCloser, error) {
+	// support file:// scheme. Note: we're opening the file using os.Open rather
+	// than using the file:// scheme below because there is no point in complicating our lives
+	// and escape the filename properly.
+
+	t := &http.Transport{}
+	t.RegisterProtocol("file", http.NewFileTransport(http.Dir("/")))
+	c := &http.Client{Transport: t}
+
+	resp, err := c.Get(uri)
 	if err != nil {
 		return nil, err
 	}
-	return f, nil
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("cannot fetch %q: %s", uri, resp.Status)
+	}
+	return resp.Body, nil
 }
 
-func openCertHTTP(c corev1.CoreV1Interface, namespace, name string) (io.ReadCloser, error) {
+// openCertCluster fetches a certificate by performing an HTTP request to the controller
+// through the k8s API proxy.
+func openCertCluster(c corev1.CoreV1Interface, namespace, name string) (io.ReadCloser, error) {
 	f, err := c.
 		Services(namespace).
 		ProxyGet("http", name, "", "/v1/cert.pem", nil).
@@ -161,9 +195,9 @@ func openCertHTTP(c corev1.CoreV1Interface, namespace, name string) (io.ReadClos
 	return f, nil
 }
 
-func openCert(certFile string) (io.ReadCloser, error) {
-	if certFile != "" {
-		return openCertFile(certFile)
+func openCert(certURL string) (io.ReadCloser, error) {
+	if certURL != "" {
+		return openCertLocal(certURL)
 	}
 
 	conf, err := clientConfig.ClientConfig()
@@ -175,7 +209,7 @@ func openCert(certFile string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return openCertHTTP(restClient, *controllerNs, *controllerName)
+	return openCertCluster(restClient, *controllerNs, *controllerName)
 }
 
 func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey) error {
@@ -399,7 +433,7 @@ func parseFromFile(s string) (string, string) {
 	return c[0], c[1]
 }
 
-func run(w io.Writer, secretName, controllerNs, controllerName, certFile string, printVersion, validateSecret, reEncrypt, dumpCert, raw bool, fromFile []string, mergeInto string) error {
+func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw bool, fromFile []string, mergeInto string) error {
 	if len(fromFile) != 0 && !raw {
 		return fmt.Errorf("--from-file requires --raw")
 	}
@@ -417,7 +451,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certFile string,
 		return reEncryptSealedSecret(os.Stdin, os.Stdout, scheme.Codecs, controllerNs, controllerName)
 	}
 
-	f, err := openCert(certFile)
+	f, err := openCert(certURL)
 	if err != nil {
 		return err
 	}
@@ -474,7 +508,7 @@ func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
-	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certFile, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *fromFile, *mergeInto); err != nil {
+	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *fromFile, *mergeInto); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
