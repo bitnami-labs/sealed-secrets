@@ -14,14 +14,15 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	"github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-
-	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
-	"github.com/spf13/pflag"
 )
 
 const testCert = `
@@ -166,7 +167,7 @@ func TestSeal(t *testing.T) {
 	t.Logf("input is: %s", string(inbuf.Bytes()))
 
 	outbuf := bytes.Buffer{}
-	if err := seal(&inbuf, &outbuf, scheme.Codecs, key); err != nil {
+	if err := seal(&inbuf, &outbuf, scheme.Codecs, key, "", ""); err != nil {
 		t.Fatalf("seal() returned error: %v", err)
 	}
 
@@ -194,11 +195,37 @@ func TestSeal(t *testing.T) {
 	// NB: See sealedsecret_test.go for e2e crypto test
 }
 
-func mkTestSecret(t *testing.T, key, value string) []byte {
+type mkTestSecretOpt func(*mkTestSecretOpts)
+type mkTestSecretOpts struct {
+	secretName      string
+	secretNamespace string
+}
+
+func withSecretName(n string) mkTestSecretOpt {
+	return func(o *mkTestSecretOpts) {
+		o.secretName = n
+	}
+}
+
+func withSecretNamespace(n string) mkTestSecretOpt {
+	return func(o *mkTestSecretOpts) {
+		o.secretNamespace = n
+	}
+}
+
+func mkTestSecret(t *testing.T, key, value string, opts ...mkTestSecretOpt) []byte {
+	o := mkTestSecretOpts{
+		secretName:      "testname",
+		secretNamespace: "testns",
+	}
+	for _, opt := range opts {
+		opt(&o)
+	}
+
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "testsecret",
-			Namespace: "testns",
+			Name:      o.secretName,
+			Namespace: o.secretNamespace,
 			Annotations: map[string]string{
 				key: value, // putting secret here just to have a simple way to test annotation merges
 			},
@@ -223,23 +250,36 @@ func mkTestSecret(t *testing.T, key, value string) []byte {
 	return inbuf.Bytes()
 }
 
-func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string) []byte {
-	inbuf := bytes.NewBuffer(mkTestSecret(t, key, value))
+func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string, opts ...mkTestSecretOpt) []byte {
+	inbuf := bytes.NewBuffer(mkTestSecret(t, key, value, opts...))
 	var outbuf bytes.Buffer
-	if err := seal(inbuf, &outbuf, scheme.Codecs, pubKey); err != nil {
+	if err := seal(inbuf, &outbuf, scheme.Codecs, pubKey, "", ""); err != nil {
 		t.Fatalf("seal() returned error: %v", err)
 	}
 
 	return outbuf.Bytes()
 }
 
-func TestMergeInto(t *testing.T) {
-	pubKey, err := parseKey(strings.NewReader(testCert))
+func newTestKeyPair(t *testing.T) (*rsa.PublicKey, map[string]*rsa.PrivateKey) {
+	privKey, _, err := crypto.GeneratePrivateKeyAndCert(2048, time.Hour, "testcn")
 	if err != nil {
-		t.Fatalf("Failed to parse test key: %v", err)
+		t.Fatal(err)
 	}
+	pubKey := &privKey.PublicKey
 
-	merge := func(newSecret, oldSealedSecret []byte) *ssv1alpha1.SealedSecret {
+	fp, err := crypto.PublicKeyFingerprint(pubKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	privKeys := map[string]*rsa.PrivateKey{fp: privKey}
+
+	return pubKey, privKeys
+}
+
+func TestMergeInto(t *testing.T) {
+	pubKey, privKeys := newTestKeyPair(t)
+
+	merge := func(t *testing.T, newSecret, oldSealedSecret []byte) *ssv1alpha1.SealedSecret {
 		f, err := ioutil.TempFile("", "*.json")
 		if err != nil {
 			t.Fatal(err)
@@ -263,11 +303,17 @@ func TestMergeInto(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		_, err = merged.Unseal(scheme.Codecs, privKeys)
+		if err != nil {
+			t.Fatal(err)
+		}
+
 		return merged
 	}
 
-	{
-		merged := merge(
+	t.Run("added", func(t *testing.T) {
+		merged := merge(t,
 			mkTestSecret(t, "foo", "secret1"),
 			mkTestSealedSecret(t, pubKey, "bar", "secret2"),
 		)
@@ -289,16 +335,16 @@ func TestMergeInto(t *testing.T) {
 		checkAdded(merged.Spec.EncryptedData, "foo", "bar")
 		checkAdded(merged.Spec.Template.Annotations, "foo", "bar")
 		checkAdded(merged.Spec.Template.Labels, "foo", "bar")
-	}
+	})
 
-	{
+	t.Run("updated", func(t *testing.T) {
 		origSrc := mkTestSealedSecret(t, pubKey, "foo", "secret2")
 		orig, err := decodeSealedSecret(scheme.Codecs, origSrc)
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		merged := merge(
+		merged := merge(t,
 			mkTestSecret(t, "foo", "secret1"),
 			origSrc,
 		)
@@ -316,7 +362,17 @@ func TestMergeInto(t *testing.T) {
 		checkUpdated(orig.Spec.EncryptedData, merged.Spec.EncryptedData, "foo")
 		checkUpdated(orig.Spec.Template.Annotations, merged.Spec.Template.Annotations, "foo")
 		checkUpdated(orig.Spec.Template.Labels, merged.Spec.Template.Labels, "foo")
-	}
+	})
+
+	t.Run("bad name", func(t *testing.T) {
+		// should not fail even if input has a bad secret name because the name in existing existing sealed secret
+		// should win (same for namespace).
+		// TODO(mkm): test for case with scope mismatch too.
+		merge(t,
+			mkTestSecret(t, "foo", "secret1", withSecretName("badname"), withSecretNamespace("badns")),
+			mkTestSealedSecret(t, pubKey, "bar", "secret2"),
+		)
+	})
 }
 
 func TestVersion(t *testing.T) {
