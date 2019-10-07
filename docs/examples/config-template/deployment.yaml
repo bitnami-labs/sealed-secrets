@@ -16,7 +16,7 @@ spec:
       - name: inject-secrets
         image: hairyhenderson/gomplate:alpine
         volumeMounts:
-        # The /secrets directory will contain one file per sercret item.
+        # The /secrets directory will contain one file per secret item.
         # The secret item's key will become the file name, while its value goes in the file contents.
         - name: config-secrets-volume
           mountPath: /secrets
