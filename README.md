@@ -445,11 +445,11 @@ $ jb install --jsonnetpkg-home=vendor_jsonnet
 
 ## FAQ
 
-- Will you still be able to decrypt if you no longer have access to your cluster?
+### Will you still be able to decrypt if you no longer have access to your cluster?
 
 No, the private key is only stored in the Secret managed by the controller (unless you have some other backup of your k8s objects). There are no backdoors - without that private key, then you can't decrypt the SealedSecrets. If you can't get to the Secret with the encryption key, and you also can't get to the decrypted versions of your Secrets live in the cluster, then you will need to regenerate new passwords for everything, seal them again with a new sealing key, etc.
 
-- How can I do a backup of my SealedSecrets?
+### How can I do a backup of my SealedSecrets?
 
 If you do want to make a backup of the encryption private key, it's easy to do from an account with suitable access and:
 
@@ -466,9 +466,18 @@ $ kubectl replace -f master.key
 $ kubectl delete pod -n kube-system -l name=sealed-secrets-controller
 ```
 
-- What flags are available for kubeseal?
+### What flags are available for kubeseal?
 
 You can check the flags available using `kubeseal --help`.
+
+### How do I update parts of JSON/YAML/TOML.. file encrypted with sealed secrets?
+
+A kubernetes secret resource contains multiple items, basically a flat map of key/value pairs.
+SealedSecrets operate at that level, and does not care what you put in the values. In other words
+it cannot make sense of any structured configuration file you might have put in a secret and thus
+cannot help you update individual fields in it.
+
+Since this is a common problem, especially when dealing with legacy applications, we do offer an [example](docs/examples/config-template) of a possible workaround.
 
 ## Community
 
