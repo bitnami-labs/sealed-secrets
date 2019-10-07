@@ -135,6 +135,15 @@ is to store the certificate somewhere (e.g. local disk) with
 and use it offline with `kubeseal --cert mycert.pem`.
 The certificate is also printed to the controller log on startup.
 
+Since v0.9.x certificates get automatically renewed every 30 days. It's good practice that you and your team
+update your offline certificate periodically. To help you with that, since v0.9.2 `kubeseal` accepts URLs too. You can setup your internal automation to publish certificates somewhere you trust.
+
+```bash
+kubeseal --cert https://your.intranet.company.com/sealed-secrets/your-cluster.cert
+```
+
+It also recognizes the `SEALED_SECRETS_CERT` env var. (pro-tip: see also (direnv)[https://github.com/direnv/direnv]).
+
 
 > **NOTE**: we are working on providing key management mechanisms that offload the encryption to HSM based modules or managed cloud crypto solutions such as KMS.
 
