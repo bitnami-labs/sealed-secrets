@@ -4,6 +4,28 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.9.2
+
+## Announcements
+
+This release contains only changes in `kubeseal` and `controller` binaries (no k8s manifest changes required).
+
+### Periodic key renewal and offline certificates
+
+A few people have raised concerns of how will automatic key+certificate renewal affect the offline signing workflow.
+First, a clarification: nothing changed. You can keep using your old certificates; it's just that if you do, you won't benefit from the additional security given from the periodic key renewal.
+
+In order to simplify the workflow for those who do want to benefit from the key renewal, but at the same time
+cannot access the target cluster (while not being completely offline), we offer a little feature that will help: `--cert` has learned to accept http(s) URLs. You can point it to a place where you serve up-to-date certificates for your clusters (tip/idea: you can expose the controller's cert.pem files with an Ingress).
+
+## Changelog
+
+* Accept URLs in `--cert` (#281)
+* Improve logs/events in case of decryption error (#274)
+* Reduce likelihood of name/namespace mismatch when using `--merge-into` (#286)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/8?closed=1
+
 # v0.9.1
 
 * Make manifests compatible with k8s 1.16.x (#269)
