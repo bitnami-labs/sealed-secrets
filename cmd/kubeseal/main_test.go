@@ -304,7 +304,7 @@ func TestMergeInto(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err = merged.Unseal(scheme.Codecs, privKeys)
+		_, err = merged.Unseal(scheme.Codecs, "cert", privKeys)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -377,7 +377,7 @@ func TestMergeInto(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	var buf strings.Builder
-	err := run(&buf, "", "", "", "", true, false, false, false, false, nil, "")
+	err := run(&buf, "", "", "", "", true, false, false, false, false, nil, "", "cert", "", "", "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -389,7 +389,7 @@ func TestVersion(t *testing.T) {
 
 func TestMainError(t *testing.T) {
 	const badFileName = "/?this/file/cannot/possibly/exist/can/it?"
-	err := run(ioutil.Discard, "", "", "", badFileName, false, false, false, false, false, nil, "")
+	err := run(ioutil.Discard, "", "", "", badFileName, false, false, false, false, false, nil, "", "cert", "", "", "", "")
 
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
@@ -409,11 +409,11 @@ func TestRaw(t *testing.T) {
 	fmt.Fprintln(certFile, testCert)
 	certFile.Close()
 
-	if got, want := run(ioutil.Discard, "", "", "", certFile.Name(), false, false, false, false, true, nil, ""), "must provide the --name flag with --raw and --scope strict"; got == nil || got.Error() != want {
+	if got, want := run(ioutil.Discard, "", "", "", certFile.Name(), false, false, false, false, true, nil, "", "cert", "", "", "", ""), "must provide the --name flag with --raw and --scope strict"; got == nil || got.Error() != want {
 		t.Fatalf("want matching: %q, got: %q", want, got.Error())
 	}
 
-	if got, want := run(ioutil.Discard, secretName, "", "", certFile.Name(), false, false, false, false, true, nil, ""), "must provide the --from-file flag with --raw"; got == nil || got.Error() != want {
+	if got, want := run(ioutil.Discard, secretName, "", "", certFile.Name(), false, false, false, false, true, nil, "", "cert", "", "", "", ""), "must provide the --from-file flag with --raw"; got == nil || got.Error() != want {
 		t.Fatalf("want matching: %q, got: %q", want, got.Error())
 	}
 
@@ -428,7 +428,7 @@ func TestRaw(t *testing.T) {
 	fromFile := []string{dataFile.Name()}
 
 	var buf bytes.Buffer
-	if err := run(&buf, secretName, "", "", certFile.Name(), false, false, false, false, true, fromFile, ""); err != nil {
+	if err := run(&buf, secretName, "", "", certFile.Name(), false, false, false, false, true, fromFile, "", "cert", "", "", "", ""); err != nil {
 		t.Fatal(err)
 	}
 

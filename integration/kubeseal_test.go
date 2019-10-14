@@ -103,7 +103,7 @@ var _ = Describe("kubeseal", func() {
 		})
 
 		It("should contain the right value", func() {
-			s, err := ss.Unseal(scheme.Codecs, privKeys)
+			s, err := ss.Unseal(scheme.Codecs, "cert", privKeys)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(s.Data).To(HaveKeyWithValue("foo", []byte("bar")))
 		})
@@ -122,7 +122,7 @@ var _ = Describe("kubeseal", func() {
 		})
 
 		It("should qualify the Secret", func() {
-			s, err := ss.Unseal(scheme.Codecs, privKeys)
+			s, err := ss.Unseal(scheme.Codecs, "cert", privKeys)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(s.GetNamespace()).To(Equal(testNs))
 		})
@@ -139,7 +139,7 @@ var _ = Describe("kubeseal", func() {
 		})
 
 		It("should qualify the Secret", func() {
-			s, err := ss.Unseal(scheme.Codecs, privKeys)
+			s, err := ss.Unseal(scheme.Codecs, "cert", privKeys)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(s.GetNamespace()).To(Equal(testNs))
 		})
@@ -174,7 +174,7 @@ var _ = Describe("kubeseal", func() {
 		})
 
 		It("should output the right value", func() {
-			s, err := ss.Unseal(scheme.Codecs, privKeys)
+			s, err := ss.Unseal(scheme.Codecs, "cert", privKeys)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(s.Data).To(HaveKeyWithValue("foo", []byte("bar")))
 		})

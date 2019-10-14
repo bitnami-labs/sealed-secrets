@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -18,6 +19,9 @@ import (
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	log "github.com/hashicorp/go-hclog"
+	"github.com/hashicorp/vault/sdk/helper/logging"
+	"github.com/hashicorp/vault/vault/seal/transit"
 	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -50,6 +54,11 @@ var (
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.StringP("format", "o", "json", "Output format for sealed secret. Either json or yaml")
 	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
+	encryptType    = flag.String("encrypt-type", "cert", "Encrypt and decrypt with method (default is public key/cert)")
+	vaultToken     = flag.String("vault-token", "", "Vault token used to auth to vault")
+	vaultAddress   = flag.String("vault-addr", "http://localhost:8200", "Vault address")
+	vaultPath      = flag.String("vault-path", "transit", "Vault path to transit engine")
+	vaultKeyName   = flag.String("vault-key", "sealed-secrets", "Vault key to use")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
 	mergeInto      = flag.String("merge-into", "", "Merge items from secret into an existing sealed secret file, updating the file in-place instead of writing to stdout.")
@@ -259,7 +268,7 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 	secret.SetDeletionTimestamp(nil)
 	secret.DeletionGracePeriodSeconds = nil
 
-	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, pubKey, secret)
+	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, *encryptType, pubKey, secret)
 	if err != nil {
 		return err
 	}
@@ -444,7 +453,9 @@ func parseFromFile(s string) (string, string) {
 	return c[0], c[1]
 }
 
-func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw bool, fromFile []string, mergeInto string) error {
+func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw bool, fromFile []string, mergeInto string, encryptType string, vaultToken string, vaultAddress string, vaultPath string, vaultKeyName string) error {
+	var pubKey *rsa.PublicKey
+
 	if len(fromFile) != 0 && !raw {
 		return fmt.Errorf("--from-file requires --raw")
 	}
@@ -462,20 +473,22 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 		return reEncryptSealedSecret(os.Stdin, os.Stdout, scheme.Codecs, controllerNs, controllerName)
 	}
 
-	f, err := openCert(certURL)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
+	if strings.ToLower(encryptType) == "cert" {
+		f, err := openCert(certURL)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
 
-	if dumpCert {
-		_, err := io.Copy(os.Stdout, f)
-		return err
-	}
+		if dumpCert {
+			_, err := io.Copy(os.Stdout, f)
+			return err
+		}
 
-	pubKey, err := parseKey(f)
-	if err != nil {
-		return err
+		pubKey, err = parseKey(f)
+		if err != nil {
+			return err
+		}
 	}
 
 	if mergeInto != "" {
@@ -483,6 +496,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 	}
 
 	if raw {
+		out := []byte{}
 		ns, _, err := clientConfig.Namespace()
 		if err != nil {
 			return err
@@ -509,7 +523,41 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 			return err
 		}
 
-		return encryptSecretItem(w, secretName, ns, data, sealingScope, pubKey)
+		label := ssv1alpha1.EncryptionLabel(ns, secretName, sealingScope)
+		switch strings.ToLower(encryptType) {
+		case "cert":
+			enc := encryptData{
+				certConfig: certConfig{
+					pubKey: pubKey,
+					label:  label,
+				},
+				plaintext: data,
+			}
+			s := certEncrypt{}
+			out, err = s.encrypt(enc)
+			if err != nil {
+				return err
+			}
+		case "vault":
+			enc := encryptData{
+				plaintext: data,
+				vaultConfig: vaultConfig{
+					address:   vaultAddress,
+					mountPath: vaultPath,
+					keyName:   vaultKeyName,
+					token:     vaultToken,
+				},
+			}
+			s := vaultEncrypt{}
+			out, err = s.encrypt(enc)
+			if err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unsupported encryption method: %s", encryptType)
+		}
+		fmt.Fprint(w, base64.StdEncoding.EncodeToString(out))
+		return nil
 	}
 
 	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey, secretName, "")
@@ -519,8 +567,63 @@ func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
-	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *fromFile, *mergeInto); err != nil {
+	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *fromFile, *mergeInto, *encryptType, *vaultToken, *vaultAddress, *vaultPath, *vaultKeyName); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+type encryptor interface {
+	encrypt(encryptData) ([]byte, error)
+}
+
+type certEncrypt struct {
+	encryptor
+}
+
+type vaultEncrypt struct {
+	encryptor
+}
+
+type encryptData struct {
+	certConfig  certConfig
+	vaultConfig vaultConfig
+	plaintext   []byte
+}
+
+type certConfig struct {
+	pubKey *rsa.PublicKey
+	label  []byte
+}
+
+type vaultConfig struct {
+	address   string
+	token     string
+	keyName   string
+	mountPath string
+}
+
+func (c certEncrypt) encrypt(d encryptData) ([]byte, error) {
+	out, err := crypto.HybridEncrypt(rand.Reader, d.certConfig.pubKey, d.plaintext, d.certConfig.label)
+	if err != nil {
+		return []byte{}, err
+	}
+	return out, nil
+}
+
+func (c vaultEncrypt) encrypt(d encryptData) ([]byte, error) {
+	s := transit.NewSeal(logging.NewVaultLogger(log.Trace))
+	config := map[string]string{
+		"address":    d.vaultConfig.address,
+		"key_name":   d.vaultConfig.keyName,
+		"token":      d.vaultConfig.token,
+		"mount_path": d.vaultConfig.mountPath,
+	}
+	s.SetConfig(config)
+
+	swi, err := s.Encrypt(context.Background(), d.plaintext)
+	if err != nil {
+		return []byte{}, err
+	}
+	return swi.Ciphertext, nil
 }

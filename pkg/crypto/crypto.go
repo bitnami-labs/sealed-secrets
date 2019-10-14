@@ -3,6 +3,7 @@ package crypto
 import (
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
 	"encoding/binary"
@@ -10,12 +11,53 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/bitnami-labs/sealed-secrets/pkg/vault"
 	"golang.org/x/crypto/ssh"
 )
 
 const (
 	sessionKeyBytes = 32
 )
+
+type Cryptor interface {
+	Encrypt(plaintext []byte) ([]byte, error)
+	Decrypt(encrypted []byte) ([]byte, error)
+}
+
+type Cert struct {
+	Cryptor
+	PubKey      *rsa.PublicKey
+	Label       []byte
+	PrivateKeys map[string]*rsa.PrivateKey
+}
+
+type Vault struct {
+	Cryptor
+}
+
+func (c Vault) Encrypt(d []byte) ([]byte, error) {
+	err := vault.CreateClient()
+	if err != nil {
+		return []byte{}, err
+	}
+	return vault.Encrypt(d)
+}
+
+func (c Vault) Decrypt(e []byte) ([]byte, error) {
+	err := vault.CreateClient()
+	if err != nil {
+		return []byte{}, err
+	}
+	return vault.Decrypt(e)
+}
+
+func (c Cert) Encrypt(d []byte) ([]byte, error) {
+	return HybridEncrypt(rand.Reader, c.PubKey, d, c.Label)
+}
+
+func (c Cert) Decrypt(e []byte) ([]byte, error) {
+	return HybridDecrypt(rand.Reader, c.PrivateKeys, e, c.Label)
+}
 
 // ErrTooShort indicates the provided data is too short to be valid
 var ErrTooShort = errors.New("SealedSecret data is too short")

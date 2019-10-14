@@ -96,9 +96,12 @@ var _ = Describe("create", func() {
 	var c corev1.CoreV1Interface
 	var ssc ssclient.Interface
 	var ns string
-	const secretName = "testsecret"
+	const secretName1 = "testsecret"
+	const secretName2 = "testsecret2"
 	var ss *ssv1alpha1.SealedSecret
+	var ssVault *ssv1alpha1.SealedSecret
 	var s *v1.Secret
+	var s2 *v1.Secret
 	var pubKey *rsa.PublicKey
 	var cancelLog context.CancelFunc
 
@@ -113,10 +116,24 @@ var _ = Describe("create", func() {
 
 		go streamLog(ctx, c, ns, "sealed-secrets-controller", "sealed-secrets-controller", GinkgoWriter, fmt.Sprintf("[%s] ", ns))
 
+		// Cert
 		s = &v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Namespace: ns,
-				Name:      secretName,
+				Name:      secretName1,
+				Labels: map[string]string{
+					"mylabel": "myvalue",
+				},
+			},
+			Data: map[string][]byte{
+				"foo": []byte("bar"),
+			},
+		}
+		// Vault
+		s2 = &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: ns,
+				Name:      secretName2,
 				Labels: map[string]string{
 					"mylabel": "myvalue",
 				},
@@ -131,7 +148,8 @@ var _ = Describe("create", func() {
 		pubKey = certs[0].PublicKey.(*rsa.PublicKey)
 
 		fmt.Fprintf(GinkgoWriter, "Sealing Secret %#v\n", s)
-		ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+		ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, "cert", pubKey, s)
+		ssVault, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, "vault", pubKey, s2)
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
@@ -141,8 +159,10 @@ var _ = Describe("create", func() {
 
 	JustBeforeEach(func() {
 		var err error
-		fmt.Fprintf(GinkgoWriter, "Creating SealedSecret: %#v\n", ss)
+		fmt.Fprintf(GinkgoWriter, "Creating SealedSecrets: %#v\n", ss)
 		ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Create(ss)
+		Expect(err).NotTo(HaveOccurred())
+		ssVault, err = ssc.BitnamiV1alpha1().SealedSecrets(ssVault.Namespace).Create(ssVault)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -153,15 +173,22 @@ var _ = Describe("create", func() {
 					"foo": []byte("bar"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns).Get(secretName1, metav1.GetOptions{})
+					return c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns).Get(secretName1, metav1.GetOptions{})
+					return c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(metav1.Object.GetLabels,
 					HaveKeyWithValue("mylabel", "myvalue")))
 
 				Eventually(func() (*v1.EventList, error) {
 					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ssVault)
 				}, Timeout, PollingInterval).Should(
 					containEventWithReason(Equal("Unsealed")),
 				)
@@ -175,7 +202,7 @@ var _ = Describe("create", func() {
 
 				// update
 				s.Data["foo"] = []byte("baz")
-				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, "cert", pubKey, s)
 				ss.ResourceVersion = resVer
 
 				fmt.Fprintf(GinkgoWriter, "Updating to SealedSecret: %#v\n", ss)
@@ -188,8 +215,8 @@ var _ = Describe("create", func() {
 					"foo": []byte("baz"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
-				}, 5*time.Second).Should(WithTransform(getData, Equal(expected)))
+					return c.Secrets(ns).Get(secretName1, metav1.GetOptions{})
+				}, 15*time.Second).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
 
@@ -205,7 +232,7 @@ var _ = Describe("create", func() {
 					"xyzzy": []byte("bar"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns).Get(secretName1, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
@@ -224,7 +251,7 @@ var _ = Describe("create", func() {
 					"foo2": []byte("new!"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns).Get(secretName1, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
@@ -237,13 +264,13 @@ var _ = Describe("create", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fmt.Fprintf(GinkgoWriter, "Resealing with wrong key\n")
-			ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, &wrongkey.PublicKey, s)
+			ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, "cert", &wrongkey.PublicKey, s)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("should *not* produce a Secret", func() {
 			Consistently(func() error {
-				_, err := c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+				_, err := c.Secrets(ns).Get(secretName1, metav1.GetOptions{})
 				return err
 			}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 		})
@@ -276,10 +303,10 @@ var _ = Describe("create", func() {
 			var expectedType v1.SecretType = "kubernetes.io/dockerconfigjson"
 
 			Eventually(func() (*v1.Secret, error) {
-				return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+				return c.Secrets(ns).Get(secretName1, metav1.GetOptions{})
 			}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			Eventually(func() (*v1.Secret, error) {
-				return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+				return c.Secrets(ns).Get(secretName1, metav1.GetOptions{})
 			}, Timeout, PollingInterval).Should(WithTransform(getSecretType, Equal(expectedType)))
 			Eventually(func() (*v1.EventList, error) {
 				return c.Events(ns).Search(scheme.Scheme, ss)
@@ -291,13 +318,13 @@ var _ = Describe("create", func() {
 
 	Describe("Different name/namespace", func() {
 		Context("With wrong name", func() {
-			const secretName2 = "not-testsecret"
+			const notSecret = "not-testsecret"
 			BeforeEach(func() {
-				ss.Name = secretName2
+				ss.Name = notSecret
 			})
 			It("should *not* produce a Secret", func() {
 				Consistently(func() error {
-					_, err := c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
+					_, err := c.Secrets(ns).Get(notSecret, metav1.GetOptions{})
 					return err
 				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 			})
@@ -325,7 +352,7 @@ var _ = Describe("create", func() {
 
 			It("should *not* produce a Secret", func() {
 				Consistently(func() error {
-					_, err := c.Secrets(ns2).Get(secretName, metav1.GetOptions{})
+					_, err := c.Secrets(ns2).Get(secretName1, metav1.GetOptions{})
 					return err
 				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 			})
@@ -342,7 +369,7 @@ var _ = Describe("create", func() {
 		})
 
 		Context("With wrong name and cluster-wide annotation", func() {
-			const secretName2 = "not-testsecret"
+			const notSecret = "not-testsecret"
 			BeforeEach(func() {
 				var err error
 
@@ -351,18 +378,18 @@ var _ = Describe("create", func() {
 				}
 
 				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v\n", s)
-				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, "cert", pubKey, s)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			BeforeEach(func() {
-				ss.Name = secretName2
+				ss.Name = notSecret
 			})
 			It("should produce expected Secret", func() {
 				expected := map[string][]byte{
 					"foo": []byte("bar"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
+					return c.Secrets(ns).Get(notSecret, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
@@ -380,7 +407,7 @@ var _ = Describe("create", func() {
 				}
 
 				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v\n", s)
-				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, "cert", pubKey, s)
 				ss.Namespace = ns2
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -392,13 +419,13 @@ var _ = Describe("create", func() {
 					"foo": []byte("bar"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns2).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns2).Get(secretName1, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
 
 		Context("With wrong name and namespace-wide annotation", func() {
-			const secretName2 = "not-testsecret"
+			const notSecret = "not-testsecret"
 			BeforeEach(func() {
 				var err error
 
@@ -407,18 +434,18 @@ var _ = Describe("create", func() {
 				}
 
 				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v\n", s)
-				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, "cert", pubKey, s)
 				Expect(err).NotTo(HaveOccurred())
 			})
 			BeforeEach(func() {
-				ss.Name = secretName2
+				ss.Name = notSecret
 			})
 			It("should produce expected Secret", func() {
 				expected := map[string][]byte{
 					"foo": []byte("bar"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
+					return c.Secrets(ns).Get(notSecret, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
@@ -436,7 +463,7 @@ var _ = Describe("create", func() {
 				}
 
 				fmt.Fprintf(GinkgoWriter, "Re-sealing secret %#v\n", s)
-				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, "cert", pubKey, s)
 				ss.Namespace = ns2
 				Expect(err).NotTo(HaveOccurred())
 			})
@@ -446,7 +473,7 @@ var _ = Describe("create", func() {
 
 			It("should *not* produce a Secret", func() {
 				Consistently(func() error {
-					_, err := c.Secrets(ns2).Get(secretName, metav1.GetOptions{})
+					_, err := c.Secrets(ns2).Get(secretName1, metav1.GetOptions{})
 					return err
 				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 			})

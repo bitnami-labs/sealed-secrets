@@ -5,6 +5,7 @@ import (
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -176,7 +177,7 @@ func StripLastAppliedAnnotations(annotations map[string]string) {
 // NewSealedSecret creates a new SealedSecret object wrapping the
 // provided secret. This encrypts only the values of each secrets
 // individually, so secrets can be updated one by one.
-func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
+func NewSealedSecret(codecs runtimeserializer.CodecFactory, cryptoType string, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
 	if secret.GetNamespace() == "" {
 		return nil, fmt.Errorf("Secret must declare a namespace")
 	}
@@ -185,6 +186,9 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secret.GetName(),
 			Namespace: secret.GetNamespace(),
+			Annotations: map[string]string{
+				"encryption-type": cryptoType,
+			},
 		},
 		Spec: SealedSecretSpec{
 			Template: SecretTemplateSpec{
@@ -210,8 +214,21 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 	// during decryption.
 	label, clusterWide, namespaceWide := labelFor(secret)
 
+	var cr crypto.Cryptor
+	switch strings.ToLower(cryptoType) {
+	case "cert":
+		ts := new(crypto.Cert)
+		ts.PubKey = pubKey
+		ts.Label = label
+		cr = ts
+	case "vault":
+		ts := new(crypto.Vault)
+		cr = ts
+	default:
+		return nil, fmt.Errorf("unsupported encryption method: %s", cryptoType)
+	}
 	for key, value := range secret.Data {
-		ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, value, label)
+		ciphertext, err := cr.Encrypt(value)
 		if err != nil {
 			return nil, err
 		}
@@ -219,7 +236,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 	}
 
 	for key, value := range secret.StringData {
-		ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, []byte(value), label)
+		ciphertext, err := cr.Encrypt([]byte(value))
 		if err != nil {
 			return nil, err
 		}
@@ -239,7 +256,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 }
 
 // Unseal decrypts and returns the embedded v1.Secret.
-func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys map[string]*rsa.PrivateKey) (*v1.Secret, error) {
+func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, cryptoType string, privKeys map[string]*rsa.PrivateKey) (*v1.Secret, error) {
 	boolTrue := true
 	smeta := s.GetObjectMeta()
 
@@ -250,6 +267,19 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 	label, _, _ := labelFor(smeta)
 
 	var secret v1.Secret
+	var cr crypto.Cryptor
+	switch strings.ToLower(cryptoType) {
+	case "cert":
+		ts := new(crypto.Cert)
+		ts.PrivateKeys = privKeys
+		ts.Label = label
+		cr = ts
+	case "vault":
+		ts := new(crypto.Vault)
+		cr = ts
+	default:
+		return nil, fmt.Errorf("unsupported encryption method: %s", cryptoType)
+	}
 	if len(s.Spec.EncryptedData) > 0 {
 		s.Spec.Template.ObjectMeta.DeepCopyInto(&secret.ObjectMeta)
 		secret.Type = s.Spec.Template.Type
@@ -260,20 +290,17 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 		for key, value := range s.Spec.EncryptedData {
 			valueBytes, err := base64.StdEncoding.DecodeString(value)
 			if err != nil {
-				return nil, err
-			}
-			plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, valueBytes, label)
-			if err != nil {
 				errs = append(errs, multierror.Tag(key, err))
+			}
+			plaintext, err := cr.Decrypt(valueBytes)
+			if err != nil {
+				return nil, multierror.Fold(multierror.Uniq(errs))
 			}
 			secret.Data[key] = plaintext
 		}
 
-		if errs != nil {
-			return nil, multierror.Join(multierror.Uniq(errs), multierror.WithFormatter(multierror.InlineFormatter))
-		}
 	} else if AcceptDeprecatedV1Data { // Support decrypting old secrets for backward compatibility
-		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, s.Spec.Data, label)
+		plaintext, err := cr.Decrypt(s.Spec.Data)
 		if err != nil {
 			return nil, err
 		}

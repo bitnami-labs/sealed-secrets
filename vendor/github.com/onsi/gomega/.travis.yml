@@ -1,10 +1,12 @@
 language: go
 
 go:
+  - 1.6.x
+  - 1.7.x
+  - 1.8.x
   - 1.9.x
   - 1.10.x
   - 1.11.x
-  - tip
 
 env:
   - GO111MODULE=on
@@ -15,4 +17,7 @@ install:
   - go get github.com/onsi/ginkgo
   - go install github.com/onsi/ginkgo/ginkgo
 
-script: make test
+script: |
+  $HOME/gopath/bin/ginkgo -p -r --randomizeAllSpecs --failOnPending --randomizeSuites --race &&
+  go vet &&
+  [ -z "`gofmt -l -e -s -w .`" ]

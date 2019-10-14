@@ -29,6 +29,7 @@ import (
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
+	"github.com/bitnami-labs/sealed-secrets/pkg/vault"
 )
 
 const (
@@ -38,6 +39,7 @@ const (
 
 var (
 	keyPrefix      = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
+	vaultEnable    = flag.Bool("vault-enable", false, "Use vault transit engine for encryption.")
 	keySize        = flag.Int("key-size", 4096, "Size of encryption key.")
 	validFor       = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN           = flag.String("my-cn", "", "CN to use in generated certificate.")
@@ -205,6 +207,18 @@ func main2() error {
 	trigger, err := initKeyRenewal(keyRegistry, *keyRenewPeriod)
 	if err != nil {
 		return err
+	}
+
+	if *vaultEnable {
+		// Create the API client for Vault and start the renew process for the
+		// token in a new goroutine.
+		err := vault.CreateClient()
+		if err != nil {
+			log.Printf("Error, could not create API client for vault: %s", err.Error())
+			os.Exit(1)
+		}
+
+		go vault.RenewToken()
 	}
 
 	initKeyGenSignalListener(trigger)
