@@ -174,11 +174,13 @@ Furthermore, namespaces are not the only level at which RBAC configurations can 
 
 That said, there are many scenarios where you might not care about this level of protection. For example, the only people who have access to your clusters are either admins or they cannot read any secret resource at all. You might have a use case for moving a sealed secret to other namespaces (e.g. you might not know the namespace name upfront), or you might not know the name of the secret (e.g. it could contain a unique suffix based on the hash of the contents etc).
 
-You can select the "scope":
+These are the possible scopes:
 
-* strict (default)
-* namespace-wide: you can freely rename the sealed secret within a given namespace
-* cluster-wide: you
+* `strict` (default): the secret must be sealed with exactly the same *name* and *namespace*. These attributes become *part of the encrypted data* and thus changing name and/or namespace would lead to "decryption error".
+* `namespace-wide`: you can freely *rename* the sealed secret within a given namespace
+* `cluster-wide`: the secret can be unsealed in *any* namespace and can be given *any* name.
+
+In contrast to the restrictions of *name* and *namespace*, secret *data keys* (e.g. `spec.encryptedData.my-key`) can be renamed at will without losing the ability to decrypt the sealed secret.
 
 The scope is selected with annotations in the input secret you pass to `kubeseal`:
 
