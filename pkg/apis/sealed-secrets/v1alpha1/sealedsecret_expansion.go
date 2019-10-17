@@ -73,7 +73,7 @@ func (s *SealingScope) Set(v string) error {
 // Type implements the pflag.Value interface
 func (s *SealingScope) Type() string { return "string" }
 
-// EncryptionLabel returns the label meant to be ysed for encrypting a sealed secret according to scope.
+// EncryptionLabel returns the label meant to be used for encrypting a sealed secret according to scope.
 func EncryptionLabel(namespace, name string, scope SealingScope) []byte {
 	var l string
 	switch scope {
