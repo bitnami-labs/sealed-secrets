@@ -177,10 +177,10 @@ That said, there are many scenarios where you might not care about this level of
 These are the possible scopes:
 
 * `strict` (default): the secret must be sealed with exactly the same *name* and *namespace*. These attributes become *part of the encrypted data* and thus changing name and/or namespace would lead to "decryption error".
-* `namespace-wide`: you can freely *rename* the sealed secret within a given namespace
+* `namespace-wide`: you can freely *rename* the sealed secret within a given namespace.
 * `cluster-wide`: the secret can be unsealed in *any* namespace and can be given *any* name.
 
-In contrast to the restrictions of *name* and *namespace*, secret *data keys* (e.g. `spec.encryptedData.my-key`) can be renamed at will without losing the ability to decrypt the sealed secret.
+In contrast to the restrictions of *name* and *namespace*, secret *items* (i.e. JSON object keys like `spec.encryptedData.my-key`) can be renamed at will without losing the ability to decrypt the sealed secret.
 
 The scope is selected with annotations in the input secret you pass to `kubeseal`:
 
