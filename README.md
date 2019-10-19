@@ -308,7 +308,7 @@ $ echo -n baz | kubectl create secret generic mysecret --dry-run --from-file=bar
 
 ### Raw mode (experimental)
 
-Creating temporary Secret with the `kubectl' command, only to throw it away once piped to `kubeseal` can
+Creating temporary Secret with the `kubectl` command, only to throw it away once piped to `kubeseal` can
 be a quite unfriendly user experience. We're working on an overhaul of the the CLI experience. In the meantime,
 we offer an alternative mode where kubeseal only cares about encrypting a value to stdout and it's your responsiblity to put it inside a SealedSecret resource (not unlike any of the other k8s resources).
 
