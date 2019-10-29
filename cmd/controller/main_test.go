@@ -235,6 +235,51 @@ func TestRenewStaleKey(t *testing.T) {
 	}
 }
 
+func TestKeyCutoff(t *testing.T) {
+	rand := testRand()
+	key, err := rsa.GenerateKey(rand, 512)
+	if err != nil {
+		t.Fatalf("Failed to generate test key: %v", err)
+	}
+
+	cert, err := signKey(rand, key)
+	if err != nil {
+		t.Fatalf("signKey failed: %v", err)
+	}
+
+	// we'll simulate the existence of a secret that would be still valid
+	// according to our rotation period, if it were not for it being older than the cutoff date.
+	const (
+		period = 24 * time.Hour
+		oldAge = 1 * time.Hour
+	)
+	client := fake.NewSimpleClientset()
+	client.PrependReactor("create", "secrets", generateNameReactor)
+
+	_, err = writeKey(client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix",
+		writeKeyWithCreationTime(metav1.NewTime(time.Now().Add(-oldAge))))
+	if err != nil {
+		t.Errorf("writeKey() failed with: %v", err)
+	}
+
+	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
+	if err != nil {
+		t.Fatalf("initKeyRegistry() returned err: %v", err)
+	}
+
+	client.ClearActions()
+
+	// by setting cutoff to "now" we effectively force the creation of a new key.
+	_, err = initKeyRenewal(registry, period, time.Now())
+	if err != nil {
+		t.Fatalf("initKeyRenewal() returned err: %v", err)
+	}
+
+	if !hasAction(client, "create", "secrets") {
+		t.Errorf("trigger function failed to activate early key generation")
+	}
+}
+
 func writeLegacyKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, name string) (string, error) {
 	certbytes := []byte{}
 	for _, cert := range certs {
