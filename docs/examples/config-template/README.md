@@ -16,3 +16,5 @@ That said, there are circumstances where you just have to provide such a file to
 This example shows a possible approach to split the non-secret part of the config into a ConfigMap, and rely on a simple "Init Container" to merge the actual secret values back into it.
 
 The example here includes an example Secret resource, which since you're reading this as part of the sealed-secrets documentation, you'd probably pass through `kubeseal` before checking it in; that said this approach is not limited to sealed-secrets.
+
+This example uses the [gomplate](https://docs.gomplate.ca/) Go template based utility. We're not affiliated with it, it's just an example, you can use any other similar tool.
