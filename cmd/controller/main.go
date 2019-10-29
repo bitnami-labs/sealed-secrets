@@ -44,6 +44,7 @@ var (
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	keyRenewPeriod = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation disabled if 0)")
 	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", false, "Accept deprecated V1 data field")
+	keyCutoffTime  = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
@@ -136,13 +137,15 @@ func myNamespace() string {
 // Initialises the first key and starts the rotation job. returns an early trigger function.
 // A period of 0 disables automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
 // is still honoured.
-func initKeyRenewal(registry *KeyRegistry, period time.Duration) (func(), error) {
-	// Create a new key only if it's the first key.
-	if len(registry.keys) == 0 {
+func initKeyRenewal(registry *KeyRegistry, period time.Duration, cutoffTime time.Time) (func(), error) {
+	// Create a new key if it's the first key,
+	// or if it's older than cutoff time.
+	if len(registry.keys) == 0 || registry.mostRecentKey.creationTime.Before(cutoffTime) {
 		if _, err := registry.generateKey(); err != nil {
 			return nil, err
 		}
 	}
+
 	// wrapper function to log error thrown by generateKey function
 	keyGenFunc := func() {
 		if _, err := registry.generateKey(); err != nil {
@@ -202,7 +205,16 @@ func main2() error {
 		return err
 	}
 
-	trigger, err := initKeyRenewal(keyRegistry, *keyRenewPeriod)
+	var ct time.Time
+	if *keyCutoffTime != "" {
+		var err error
+		ct, err = time.Parse(time.RFC1123Z, *keyCutoffTime)
+		if err != nil {
+			return err
+		}
+	}
+
+	trigger, err := initKeyRenewal(keyRegistry, *keyRenewPeriod, ct)
 	if err != nil {
 		return err
 	}

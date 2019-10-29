@@ -64,7 +64,7 @@ func TestInitKeyRotation(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	keyGenTrigger, err := initKeyRenewal(registry, 0)
+	keyGenTrigger, err := initKeyRenewal(registry, 0, time.Time{})
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -100,7 +100,7 @@ func TestInitKeyRotationTick(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(registry, 100*time.Millisecond)
+	_, err = initKeyRenewal(registry, 100*time.Millisecond, time.Time{})
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -150,7 +150,7 @@ func TestReuseKey(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(registry, 0)
+	_, err = initKeyRenewal(registry, 0, time.Time{})
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -191,7 +191,7 @@ func TestRenewStaleKey(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(registry, period)
+	_, err = initKeyRenewal(registry, period, time.Time{})
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -263,7 +263,7 @@ func TestLegacySecret(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(registry, 0)
+	_, err = initKeyRenewal(registry, 0, time.Time{})
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
