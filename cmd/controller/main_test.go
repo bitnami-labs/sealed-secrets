@@ -4,11 +4,14 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"fmt"
 	"testing"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	krand "k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 	ktesting "k8s.io/client-go/testing"
@@ -29,9 +32,20 @@ func hasAction(fake *fake.Clientset, verb, resource string) bool {
 	return findAction(fake, verb, resource) != nil
 }
 
+// generateNameReactor implements the logic required for the GenerateName field to work when using
+// the fake client. Add it with client.PrependReactor to your fake client.
+func generateNameReactor(action ktesting.Action) (handled bool, ret runtime.Object, err error) {
+	s := action.(ktesting.CreateAction).GetObject().(*v1.Secret)
+	if s.Name == "" && s.GenerateName != "" {
+		s.Name = fmt.Sprintf("%s-%s", s.GenerateName, krand.String(16))
+	}
+	return false, nil, nil
+}
+
 func TestInitKeyRegistry(t *testing.T) {
 	rand := testRand()
 	client := fake.NewSimpleClientset()
+	client.PrependReactor("create", "secrets", generateNameReactor)
 
 	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
@@ -59,6 +73,8 @@ func TestInitKeyRegistry(t *testing.T) {
 func TestInitKeyRotation(t *testing.T) {
 	rand := testRand()
 	client := fake.NewSimpleClientset()
+	client.PrependReactor("create", "secrets", generateNameReactor)
+
 	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
@@ -95,6 +111,8 @@ func TestInitKeyRotation(t *testing.T) {
 func TestInitKeyRotationTick(t *testing.T) {
 	rand := testRand()
 	client := fake.NewSimpleClientset()
+	client.PrependReactor("create", "secrets", generateNameReactor)
+
 	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
@@ -138,6 +156,8 @@ func TestReuseKey(t *testing.T) {
 	}
 
 	client := fake.NewSimpleClientset()
+	client.PrependReactor("create", "secrets", generateNameReactor)
+
 	_, err = writeKey(client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix")
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
@@ -180,6 +200,8 @@ func TestRenewStaleKey(t *testing.T) {
 		oldAge    = period - staleness
 	)
 	client := fake.NewSimpleClientset()
+	client.PrependReactor("create", "secrets", generateNameReactor)
+
 	_, err = writeKey(client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix",
 		writeKeyWithCreationTime(metav1.NewTime(time.Now().Add(-oldAge))))
 	if err != nil {
@@ -250,6 +272,7 @@ func TestLegacySecret(t *testing.T) {
 	}
 
 	client := fake.NewSimpleClientset()
+	client.PrependReactor("create", "secrets", generateNameReactor)
 
 	_, err = writeLegacyKey(client, key, []*x509.Certificate{cert}, "namespace", "prefix")
 	if err != nil {
