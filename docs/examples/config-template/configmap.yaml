@@ -12,7 +12,7 @@ data:
                            "port": "22",
                            "env": "SOME_ENV",
                            "user": "myuser",
-                           "password": "{{ (ds "secrets").server1 }}",
+                           "password": "{{ (ds "secrets" "server1") }}",
                            "role": "foo"
                    },{
                            "host": "barfoo",
@@ -20,7 +20,7 @@ data:
                            "port": "22",
                            "env": "SOME_OTHER_STUFF",
                            "user": "otheruser",
-                           "password": "{{ (ds "secrets").server2 }}",
+                           "password": "{{ (ds "secrets" "server2") }}",
                            "role": "foo"
                    }
            ],
@@ -31,7 +31,7 @@ data:
                            "sid": "FOO",
                            "env": "BAZ",
                            "user": "abcdefg123",
-                           "password": "{{ (ds "secrets").database1 }}",
+                           "password": "{{ (ds "secrets" "database1") }}",
                            "role": "foo"
                    }
            ]
