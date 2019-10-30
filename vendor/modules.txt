@@ -63,6 +63,8 @@ github.com/hpcloud/tail/winfile
 github.com/imdario/mergo
 # github.com/json-iterator/go v1.1.6
 github.com/json-iterator/go
+# github.com/mattn/go-isatty v0.0.10
+github.com/mattn/go-isatty
 # github.com/mkmik/multierror v0.3.0
 github.com/mkmik/multierror
 # github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd
@@ -131,7 +133,7 @@ golang.org/x/oauth2/google
 golang.org/x/oauth2/internal
 golang.org/x/oauth2/jws
 golang.org/x/oauth2/jwt
-# golang.org/x/sys v0.0.0-20190616124812-15dcb6c0061f
+# golang.org/x/sys v0.0.0-20191008105621-543471e840be
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows
