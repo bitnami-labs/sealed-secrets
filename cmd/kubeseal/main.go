@@ -18,6 +18,7 @@ import (
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	"github.com/mattn/go-isatty"
 	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -444,6 +445,12 @@ func parseFromFile(s string) (string, string) {
 	return c[0], c[1]
 }
 
+func warnTTY() {
+	if isatty.IsTerminal(os.Stdin.Fd()) {
+		fmt.Fprintf(os.Stderr, "(tty detected: expecting json/yaml k8s resource in stdin)\n")
+	}
+}
+
 func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw bool, fromFile []string, mergeInto string) error {
 	if len(fromFile) != 0 && !raw {
 		return fmt.Errorf("--from-file requires --raw")
@@ -452,6 +459,10 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 	if printVersion {
 		fmt.Fprintf(w, "kubeseal version: %s\n", VERSION)
 		return nil
+	}
+
+	if !raw {
+		warnTTY()
 	}
 
 	if validateSecret {
