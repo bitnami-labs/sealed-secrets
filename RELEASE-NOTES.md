@@ -4,7 +4,7 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
-# v0.9.3 (DRAFT)
+# v0.9.3
 
 ## Announcements
 
@@ -13,6 +13,7 @@ This release contains only changes in `kubeseal` and `controller` binaries (no k
 ## Changelog
 
 * Implement `--key-cutoff-time` (#299)
+* Warn if stdin is a terminal (#303)
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/9?closed=1
 
