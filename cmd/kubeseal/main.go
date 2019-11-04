@@ -461,7 +461,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 		return nil
 	}
 
-	if !raw {
+	if !raw && !dumpCert {
 		warnTTY()
 	}
 
