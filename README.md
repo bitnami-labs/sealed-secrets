@@ -419,6 +419,10 @@ labelled as active.
 2. Create a new key
 3. Start the key rotation cycle
 
+### Crypto
+
+More details about crypto can be found [here](docs/crypto.md).
+
 ## Developing
 To be able to develop on this project, you need to have the following tools installed:
 * make
