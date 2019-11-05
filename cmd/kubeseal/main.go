@@ -29,6 +29,7 @@ import (
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
+	"k8s.io/client-go/util/keyutil"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 
@@ -59,6 +60,8 @@ var (
 	fromFile       = flag.StringSlice("from-file", nil, "(only with --raw) Secret items can be sourced from files. Pro-tip: you can use /dev/stdin to read pipe input. This flag tries to follow the same syntax as in kubectl")
 	sealingScope   ssv1alpha1.SealingScope
 	reEncrypt      bool // re-encrypt command
+	unseal         = flag.Bool("recovery-unseal", false, "Decrypt a sealed secrets file obtained from stdin, using the private key passed with --recovery-private-key. Intended to be used in disaster recovery mode.")
+	privKeys       = flag.StringSlice("recovery-private-key", nil, "Private key filename used by the --recovery-unseal command. Multiple files accepted either via comma separated list of by repetition of the flag.")
 
 	// VERSION set from Makefile
 	VERSION = buildinfo.DefaultVersion
@@ -351,7 +354,7 @@ func reEncryptSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer
 	return nil
 }
 
-func sealedSecretOutput(out io.Writer, codecs runtimeserializer.CodecFactory, ssecret *ssv1alpha1.SealedSecret) error {
+func resourceOutput(out io.Writer, codecs runtimeserializer.CodecFactory, gv runtime.GroupVersioner, obj runtime.Object) error {
 	var contentType string
 	switch strings.ToLower(*outputFormat) {
 	case "json", "":
@@ -361,17 +364,21 @@ func sealedSecretOutput(out io.Writer, codecs runtimeserializer.CodecFactory, ss
 	default:
 		return fmt.Errorf("unsupported output format: %s", *outputFormat)
 	}
-	prettyEnc, err := prettyEncoder(codecs, contentType, ssv1alpha1.SchemeGroupVersion)
+	prettyEnc, err := prettyEncoder(codecs, contentType, gv)
 	if err != nil {
 		return err
 	}
-	buf, err := runtime.Encode(prettyEnc, ssecret)
+	buf, err := runtime.Encode(prettyEnc, obj)
 	if err != nil {
 		return err
 	}
 	out.Write(buf)
 	fmt.Fprint(out, "\n")
 	return nil
+}
+
+func sealedSecretOutput(out io.Writer, codecs runtimeserializer.CodecFactory, ssecret *ssv1alpha1.SealedSecret) error {
+	return resourceOutput(out, codecs, ssv1alpha1.SchemeGroupVersion, ssecret)
 }
 
 func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1alpha1.SealedSecret, error) {
@@ -445,13 +452,71 @@ func parseFromFile(s string) (string, string) {
 	return c[0], c[1]
 }
 
+func readPrivKey(filename string) (*rsa.PrivateKey, error) {
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := keyutil.ParsePrivateKeyPEM(b)
+	if err != nil {
+		return nil, err
+	}
+	switch rsaKey := key.(type) {
+	case *rsa.PrivateKey:
+		return rsaKey, nil
+	default:
+		return nil, fmt.Errorf("unexpected private key type %T", key)
+	}
+}
+
+func readPrivKeys(filenames []string) (map[string]*rsa.PrivateKey, error) {
+	res := map[string]*rsa.PrivateKey{}
+	for _, filename := range filenames {
+		pk, err := readPrivKey(filename)
+		if err != nil {
+			return nil, err
+		}
+		fingerprint, err := crypto.PublicKeyFingerprint(&pk.PublicKey)
+		if err != nil {
+			return nil, err
+		}
+
+		res[fingerprint] = pk
+	}
+	return res, nil
+}
+
+func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.CodecFactory, privKeyFilenames []string) error {
+	privKeys, err := readPrivKeys(privKeyFilenames)
+	if err != nil {
+		return err
+	}
+
+	b, err := ioutil.ReadAll(in)
+	if err != nil {
+		return err
+	}
+
+	ss, err := decodeSealedSecret(codecs, b)
+	if err != nil {
+		return err
+	}
+	sec, err := ss.Unseal(codecs, privKeys)
+	if err != nil {
+		return err
+	}
+
+	return resourceOutput(w, codecs, v1.SchemeGroupVersion, sec)
+}
+
 func warnTTY() {
 	if isatty.IsTerminal(os.Stdin.Fd()) {
 		fmt.Fprintf(os.Stderr, "(tty detected: expecting json/yaml k8s resource in stdin)\n")
 	}
 }
 
-func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw bool, fromFile []string, mergeInto string) error {
+func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw bool, fromFile []string, mergeInto string, unseal bool, privKeys []string) error {
 	if len(fromFile) != 0 && !raw {
 		return fmt.Errorf("--from-file requires --raw")
 	}
@@ -493,6 +558,10 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 		return sealMergingInto(os.Stdin, mergeInto, scheme.Codecs, pubKey)
 	}
 
+	if unseal {
+		return unsealSealedSecret(w, os.Stdin, scheme.Codecs, privKeys)
+	}
+
 	if raw {
 		ns, _, err := clientConfig.Namespace()
 		if err != nil {
@@ -530,7 +599,7 @@ func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
-	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *fromFile, *mergeInto); err != nil {
+	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *fromFile, *mergeInto, *unseal, *privKeys); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

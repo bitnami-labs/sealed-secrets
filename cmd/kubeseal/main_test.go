@@ -3,7 +3,9 @@ package main
 import (
 	"bytes"
 	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -23,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/util/keyutil"
 )
 
 const testCert = `
@@ -276,6 +279,43 @@ func newTestKeyPair(t *testing.T) (*rsa.PublicKey, map[string]*rsa.PrivateKey) {
 	return pubKey, privKeys
 }
 
+func TestUnseal(t *testing.T) {
+	pubKey, privKeys := newTestKeyPair(t)
+	pkFile, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(pkFile.Name())
+
+	if len(privKeys) != 1 {
+		t.Fatal("assuming only one test key-pair")
+	}
+	for _, key := range privKeys {
+		pem.Encode(pkFile, &pem.Block{Type: keyutil.RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)})
+	}
+	pkFile.Close()
+
+	const (
+		secretItemKey   = "foo"
+		secretItemValue = "secret1"
+	)
+	ss := mkTestSealedSecret(t, pubKey, secretItemKey, secretItemValue)
+
+	var buf bytes.Buffer
+	if err := unsealSealedSecret(&buf, bytes.NewBuffer(ss), scheme.Codecs, []string{pkFile.Name()}); err != nil {
+		t.Fatal(err)
+	}
+
+	secret, err := readSecret(scheme.Codecs.UniversalDecoder(), &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
+		t.Fatalf("got: %q, want: %q", got, want)
+	}
+}
+
 func TestMergeInto(t *testing.T) {
 	pubKey, privKeys := newTestKeyPair(t)
 
@@ -377,7 +417,7 @@ func TestMergeInto(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	var buf strings.Builder
-	err := run(&buf, "", "", "", "", true, false, false, false, false, nil, "")
+	err := run(&buf, "", "", "", "", true, false, false, false, false, nil, "", false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -389,7 +429,7 @@ func TestVersion(t *testing.T) {
 
 func TestMainError(t *testing.T) {
 	const badFileName = "/?this/file/cannot/possibly/exist/can/it?"
-	err := run(ioutil.Discard, "", "", "", badFileName, false, false, false, false, false, nil, "")
+	err := run(ioutil.Discard, "", "", "", badFileName, false, false, false, false, false, nil, "", false, nil)
 
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
@@ -409,11 +449,11 @@ func TestRaw(t *testing.T) {
 	fmt.Fprintln(certFile, testCert)
 	certFile.Close()
 
-	if got, want := run(ioutil.Discard, "", "", "", certFile.Name(), false, false, false, false, true, nil, ""), "must provide the --name flag with --raw and --scope strict"; got == nil || got.Error() != want {
+	if got, want := run(ioutil.Discard, "", "", "", certFile.Name(), false, false, false, false, true, nil, "", false, nil), "must provide the --name flag with --raw and --scope strict"; got == nil || got.Error() != want {
 		t.Fatalf("want matching: %q, got: %q", want, got.Error())
 	}
 
-	if got, want := run(ioutil.Discard, secretName, "", "", certFile.Name(), false, false, false, false, true, nil, ""), "must provide the --from-file flag with --raw"; got == nil || got.Error() != want {
+	if got, want := run(ioutil.Discard, secretName, "", "", certFile.Name(), false, false, false, false, true, nil, "", false, nil), "must provide the --from-file flag with --raw"; got == nil || got.Error() != want {
 		t.Fatalf("want matching: %q, got: %q", want, got.Error())
 	}
 
@@ -428,7 +468,7 @@ func TestRaw(t *testing.T) {
 	fromFile := []string{dataFile.Name()}
 
 	var buf bytes.Buffer
-	if err := run(&buf, secretName, "", "", certFile.Name(), false, false, false, false, true, fromFile, ""); err != nil {
+	if err := run(&buf, secretName, "", "", certFile.Name(), false, false, false, false, true, fromFile, "", false, nil); err != nil {
 		t.Fatal(err)
 	}
 
