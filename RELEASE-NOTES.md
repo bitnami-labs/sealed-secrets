@@ -4,6 +4,19 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.9.4
+
+## Announcements
+
+This release contains only changes in `kubeseal` and `controller` binaries (no k8s manifest changes required).
+
+## Changelog
+
+* Remove tty warning in `--fetch-cert` (regression caused by #303 released in v0.9.3) (#306)
+* Implement `--recovery-unseal` to help with disaster recovery (#307)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/10?closed=1
+
 # v0.9.3
 
 ## Announcements
