@@ -480,6 +480,13 @@ $ kubectl replace -f master.key
 $ kubectl delete pod -n kube-system -l name=sealed-secrets-controller
 ```
 
+### Can I decrypt my secrets offline with a backup key?
+
+While treating sealed-secrets as long term storage system for secrets is not the recommended use case, some people
+do have a legitimate requirement for being able to recover secrets when the k8s cluster is down and restoring a backup into a new sealed-secrets controller deployment is not practical.
+
+If you have backed up one or more of your private keys (see previous question), you can use the `kubeseal --recovery-unseal --recovery-private-key file1.key,file2.key,...` command to decrypt a sealed secrets file.
+
 ### What flags are available for kubeseal?
 
 You can check the flags available using `kubeseal --help`.
