@@ -301,9 +301,9 @@ You can use the `--merge-into` command to update an existing sealed secrets if y
 
 ```sh
 $ echo -n bar | kubectl create secret generic mysecret --dry-run --from-file=foo=/dev/stdin -o json \
-  > mysecret.json
+  | kubeseal > mysealedsecret.json
 $ echo -n baz | kubectl create secret generic mysecret --dry-run --from-file=bar=/dev/stdin -o json \
-  | kubeseal --merge-into mysecret.json
+  | kubeseal --merge-into mysealedsecret.json
 ```
 
 ### Raw mode (experimental)
