@@ -465,18 +465,21 @@ No, the private key is only stored in the Secret managed by the controller (unle
 
 ### How can I do a backup of my SealedSecrets?
 
-If you do want to make a backup of the encryption private key, it's easy to do from an account with suitable access and:
+If you do want to make a backup of the encryption private keys, it's easy to do from an account with suitable access and:
 
 ```
-$ kubectl get secret -n kube-system sealed-secrets-key -o yaml >master.key
+$ kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >master.key
+$ kubectl get secret -n kube-system sealed-secrets-key -o yaml >>master.key
 ```
 
-NOTE: This is the controller's public + private key and should be kept omg-safe!
+NOTE: you need the second statement only if you ever installed sealed-secrets older than version 0.9.x on your cluster.
 
-To restore from a backup after some disaster, just put that secret back before starting the controller - or if the controller was already started, replace the newly-created secret and restart the controller:
+NOTE: Thos file will contains the controller's public + private keys and should be kept omg-safe!
+
+To restore from a backup after some disaster, just put that secrets back before starting the controller - or if the controller was already started, replace the newly-created secrets and restart the controller:
 
 ```
-$ kubectl replace -f master.key
+$ kubectl apply -f master.key
 $ kubectl delete pod -n kube-system -l name=sealed-secrets-controller
 ```
 
