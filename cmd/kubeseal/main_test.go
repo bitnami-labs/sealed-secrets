@@ -263,6 +263,15 @@ func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string, 
 	return outbuf.Bytes()
 }
 
+func newTestKeyPairSingle(t *testing.T) (*rsa.PublicKey, *rsa.PrivateKey) {
+	privKey, _, err := crypto.GeneratePrivateKeyAndCert(2048, time.Hour, "testcn")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &privKey.PublicKey, privKey
+}
+
+// TODO(mkm): rename newTestKeyPair to newTestKeyPairs
 func newTestKeyPair(t *testing.T) (*rsa.PublicKey, map[string]*rsa.PrivateKey) {
 	privKey, _, err := crypto.GeneratePrivateKeyAndCert(2048, time.Hour, "testcn")
 	if err != nil {
@@ -479,5 +488,68 @@ func TestRaw(t *testing.T) {
 
 	if _, err := base64.StdEncoding.DecodeString(buf.String()); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestReadPrivKeyPEM(t *testing.T) {
+	_, pkw := newTestKeyPairSingle(t)
+
+	b, err := keyutil.MarshalPrivateKeyToPEM(pkw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmp, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmp.Name())
+
+	if _, err := tmp.Write(b); err != nil {
+		t.Fatal(err)
+	}
+	tmp.Close()
+
+	pkr, err := readPrivKey(tmp.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := pkr.D.String(), pkw.D.String(); got != want {
+		t.Errorf("got: %q, want: %q", got, want)
+	}
+}
+
+func TestReadPrivKeySecret(t *testing.T) {
+	_, pkw := newTestKeyPairSingle(t)
+
+	b, err := keyutil.MarshalPrivateKeyToPEM(pkw)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sec := &v1.Secret{
+		Data: map[string][]byte{
+			"tls.key": b,
+		},
+	}
+
+	tmp, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(tmp.Name())
+
+	if err := resourceOutput(tmp, scheme.Codecs, v1.SchemeGroupVersion, sec); err != nil {
+		t.Fatal(err)
+	}
+	tmp.Close()
+
+	pkr, err := readPrivKey(tmp.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := pkr.D.String(), pkw.D.String(); got != want {
+		t.Errorf("got: %q, want: %q", got, want)
 	}
 }
