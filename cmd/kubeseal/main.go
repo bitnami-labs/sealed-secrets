@@ -61,7 +61,7 @@ var (
 	sealingScope   ssv1alpha1.SealingScope
 	reEncrypt      bool // re-encrypt command
 	unseal         = flag.Bool("recovery-unseal", false, "Decrypt a sealed secrets file obtained from stdin, using the private key passed with --recovery-private-key. Intended to be used in disaster recovery mode.")
-	privKeys       = flag.StringSlice("recovery-private-key", nil, "Private key filename used by the --recovery-unseal command. Multiple files accepted either via comma separated list of by repetition of the flag.")
+	privKeys       = flag.StringSlice("recovery-private-key", nil, "Private key filename used by the --recovery-unseal command. Multiple files accepted either via comma separated list of by repetition of the flag. Either PEM encoded private keys or a backup of a json/yaml encoded k8s sealed-secret controller secret are accepted.")
 
 	// VERSION set from Makefile
 	VERSION = buildinfo.DefaultVersion
@@ -458,6 +458,24 @@ func readPrivKey(filename string) (*rsa.PrivateKey, error) {
 		return nil, err
 	}
 
+	res, err := parsePrivKey(b)
+	if err == nil {
+		return res, nil
+	}
+	// try to parse it as json/yaml encoded secret
+	s, err := readSecret(scheme.Codecs.UniversalDecoder(), bytes.NewBuffer(b))
+	if err != nil {
+		return nil, err
+	}
+	tlsKey, ok := s.Data["tls.key"]
+	if !ok {
+		return nil, fmt.Errorf("secret must contain a 'tls.data' key")
+	}
+
+	return parsePrivKey(tlsKey)
+}
+
+func parsePrivKey(b []byte) (*rsa.PrivateKey, error) {
 	key, err := keyutil.ParsePrivateKeyPEM(b)
 	if err != nil {
 		return nil, err
