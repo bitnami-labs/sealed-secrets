@@ -248,7 +248,9 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 
 	if secret.GetNamespace() == "" {
 		ns, _, err := clientConfig.Namespace()
-		if err != nil {
+		if clientcmd.IsEmptyConfig(err) {
+			return fmt.Errorf("input secret has no namespace and cannot infer the namespace automatically when no kube config is available")
+		} else if err != nil {
 			return err
 		}
 		secret.SetNamespace(ns)
