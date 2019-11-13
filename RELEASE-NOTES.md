@@ -4,6 +4,19 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.9.5
+
+## Announcements
+
+This release contains only changes in `kubeseal` binary (no k8s manifest changes required).
+
+## Changelog
+
+* Improve error reporting in case of missing kubeconfig when inferring namespace (#313)
+* Teach kubeseal to decrypt using backed up secrets (#312)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/11?closed=1
+
 # v0.9.4
 
 ## Announcements
