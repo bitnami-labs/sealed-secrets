@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	v1 "k8s.io/api/core/v1"
 	"log"
 	"os"
 	"os/signal"
@@ -43,8 +44,9 @@ var (
 	myCN           = flag.String("my-cn", "", "CN to use in generated certificate.")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	keyRenewPeriod = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation disabled if 0)")
-	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", false, "Accept deprecated V1 data field")
+	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", false, "Accept deprecated V1 data field.")
 	keyCutoffTime  = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
+	namespaceAll   = flag.Bool("namespaceAll", true, "Scan all namespaces or only the current namespace (default=true).")
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
@@ -221,7 +223,12 @@ func main2() error {
 
 	initKeyGenSignalListener(trigger)
 
-	ssinformer := ssinformers.NewSharedInformerFactory(ssclientset, 0)
+	namespace := v1.NamespaceAll
+	if !*namespaceAll {
+		namespace = myNamespace()
+	}
+
+	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, nil)
 	controller := NewController(clientset, ssclientset, ssinformer, keyRegistry)
 	controller.oldGCBehavior = *oldGCBehavior
 
