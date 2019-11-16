@@ -2,9 +2,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	"encoding/base64"
 	"encoding/pem"
 	"fmt"
 	"io"
@@ -25,6 +25,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	certUtil "k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
 )
 
@@ -445,50 +446,182 @@ func TestMainError(t *testing.T) {
 	}
 }
 
+// testingKeypairFiles returns a path to a PEM encoded certificate and a PEM encoded private key
+// along with a function to be called to cleanup those files.
+func testingKeypairFiles(t *testing.T) (string, string, func()) {
+	_, pk := newTestKeyPairSingle(t)
+
+	cert, err := crypto.SignKey(rand.Reader, pk, time.Hour, "testcn")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	certFile, err := writeTempFile(pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pkPEM, err := keyutil.MarshalPrivateKeyToPEM(pk)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pkFile, err := writeTempFile(pkPEM)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return certFile, pkFile, func() {
+		os.RemoveAll(certFile)
+		os.RemoveAll(pkFile)
+	}
+}
+
 func TestRaw(t *testing.T) {
+	certFilename, privKeyFilename, cleanup := testingKeypairFiles(t)
+	defer cleanup()
+
 	const (
+		secretNS    = "myns"
 		secretName  = "mysecret"
+		secretItem  = "foo"
 		secretValue = "supersecret"
 	)
-	certFile, err := ioutil.TempFile("", "*.pem")
+
+	testCases := []struct {
+		ns        string
+		name      string
+		scope     ssv1alpha1.SealingScope
+		sealErr   string
+		unsealErr string
+	}{
+		// strict scope
+		{ns: "", name: "", sealErr: "must provide the --namespace flag with --raw and --scope strict"},
+		{ns: secretNS, name: "", sealErr: "must provide the --name flag with --raw and --scope strict"},
+
+		{ns: secretNS, name: secretName},
+		{ns: "youGiveRest", name: secretName, unsealErr: "no key could decrypt secret"},
+		{ns: secretNS, name: "aBadName", unsealErr: "no key could decrypt secret"},
+
+		// namespace-wide scope
+		{scope: ssv1alpha1.NamespaceWideScope, name: secretName, sealErr: "must provide the --namespace flag with --raw and --scope namespace-wide"},
+
+		{scope: ssv1alpha1.NamespaceWideScope, ns: secretNS, name: secretName},
+		{scope: ssv1alpha1.NamespaceWideScope, ns: "youGiveRest", unsealErr: "no key could decrypt secret"},
+		{scope: ssv1alpha1.NamespaceWideScope, ns: "youGiveRest", name: "aBadName", unsealErr: "no key could decrypt secret"},
+		{scope: ssv1alpha1.NamespaceWideScope, ns: secretNS, name: ""},
+		{scope: ssv1alpha1.NamespaceWideScope, ns: secretNS, name: "aBadName"},
+
+		// cluster-wide scope
+		{scope: ssv1alpha1.ClusterWideScope, ns: secretNS, name: secretName},
+		{scope: ssv1alpha1.ClusterWideScope, ns: "youGiveRest", name: secretName},
+		{scope: ssv1alpha1.ClusterWideScope, ns: secretNS, name: ""},
+		{scope: ssv1alpha1.ClusterWideScope, ns: secretNS, name: "aBadName"},
+		{scope: ssv1alpha1.ClusterWideScope, ns: "", name: ""},
+		{scope: ssv1alpha1.ClusterWideScope, ns: "", name: "aBadName"},
+	}
+
+	for i, tc := range testCases {
+		// encrypt an iteam with data from the testCase and put it
+		// in a sealed secret with the metadata from the constants above
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			enc, err := sealTestItem(certFilename, tc.ns, tc.name, secretValue, tc.scope)
+			if tc.sealErr != "" {
+				if got, want := fmt.Sprint(err), tc.sealErr; !strings.HasPrefix(got, want) {
+					t.Fatalf("got: %v, want: %v", err, want)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			ss := &ssv1alpha1.SealedSecret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace: secretNS,
+					Name:      secretName,
+					Annotations: map[string]string{
+						fmt.Sprintf("sealedsecrets.bitnami.com/%s", tc.scope.String()): "true",
+					},
+				},
+				Spec: ssv1alpha1.SealedSecretSpec{
+					EncryptedData: map[string]string{
+						secretItem: enc,
+					},
+				},
+			}
+
+			privKeys, err := readPrivKeys([]string{privKeyFilename})
+			if err != nil {
+				t.Fatal(err)
+			}
+			sec, err := ss.Unseal(scheme.Codecs, privKeys)
+			if tc.unsealErr != "" {
+				if got, want := err.Error(), tc.unsealErr; !strings.HasPrefix(got, want) {
+					t.Fatalf("got: %v, want: %v", err, want)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if got, want := string(sec.Data[secretItem]), secretValue; got != want {
+				t.Errorf("got: %q, want: %q", got, want)
+			}
+		})
+	}
+}
+
+func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope ssv1alpha1.SealingScope) (string, error) {
+	// we use a global k8s config from which we take the namespace (either default or set by flag).
+	// it's a mess, for now let's hook in a test getter and restore the original getter after the test.
+	defer func(s func() (string, bool, error)) { namespaceFromClientConfig = s }(namespaceFromClientConfig)
+	namespaceFromClientConfig = func() (string, bool, error) { return secretNS, false, nil }
+
+	// sadly, sealingscope is also global
+	// TODO(mkm): refactor this mess
+	defer func(s ssv1alpha1.SealingScope) { sealingScope = s }(sealingScope)
+	sealingScope = scope
+	/*
+		if got, want := run(ioutil.Discard, "", "", "", certFilename, false, false, false, false, true, nil, "", false, nil), "must provide the --name flag with --raw and --scope strict"; got == nil || got.Error() != want {
+			t.Fatalf("want matching: %q, got: %q", want, got.Error())
+		}
+
+		if got, want := run(ioutil.Discard, secretName, "", "", certFilename, false, false, false, false, true, nil, "", false, nil), "must provide the --from-file flag with --raw"; got == nil || got.Error() != want {
+			t.Fatalf("want matching: %q, got: %q", want, got.Error())
+		}
+	*/
+
+	dataFile, err := writeTempFile([]byte(secretValue))
 	if err != nil {
-		t.Fatal(err)
+		return "", err
 	}
-	defer os.RemoveAll(certFile.Name())
-	fmt.Fprintln(certFile, testCert)
-	certFile.Close()
+	defer os.RemoveAll(dataFile)
 
-	if got, want := run(ioutil.Discard, "", "", "", certFile.Name(), false, false, false, false, true, nil, "", false, nil), "must provide the --name flag with --raw and --scope strict"; got == nil || got.Error() != want {
-		t.Fatalf("want matching: %q, got: %q", want, got.Error())
-	}
-
-	if got, want := run(ioutil.Discard, secretName, "", "", certFile.Name(), false, false, false, false, true, nil, "", false, nil), "must provide the --from-file flag with --raw"; got == nil || got.Error() != want {
-		t.Fatalf("want matching: %q, got: %q", want, got.Error())
-	}
-
-	dataFile, err := ioutil.TempFile("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(dataFile.Name())
-	fmt.Fprintf(dataFile, secretValue)
-	dataFile.Close()
-
-	fromFile := []string{dataFile.Name()}
+	fromFile := []string{dataFile}
 
 	var buf bytes.Buffer
-	if err := run(&buf, secretName, "", "", certFile.Name(), false, false, false, false, true, fromFile, "", false, nil); err != nil {
-		t.Fatal(err)
+	if err := run(&buf, secretName, "", "", certFilename, false, false, false, false, true, fromFile, "", false, nil); err != nil {
+		return "", err
 	}
 
-	// we cannot really test decrypting here so let's just check that it did produce some output that looks right
-	if len(buf.Bytes()) == 0 {
-		t.Fatalf("didn't produce output")
+	return buf.String(), nil
+}
+
+// writeTempFile creates a temporary file, writes data into it and closes it.
+func writeTempFile(b []byte) (string, error) {
+	tmp, err := ioutil.TempFile("", "")
+	if err != nil {
+		return "", err
+	}
+	defer tmp.Close()
+
+	if _, err := tmp.Write(b); err != nil {
+		os.RemoveAll(tmp.Name())
+		return "", err
 	}
 
-	if _, err := base64.StdEncoding.DecodeString(buf.String()); err != nil {
-		t.Fatal(err)
-	}
+	return tmp.Name(), nil
 }
 
 func TestReadPrivKeyPEM(t *testing.T) {

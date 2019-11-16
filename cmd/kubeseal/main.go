@@ -67,6 +67,9 @@ var (
 	VERSION = buildinfo.DefaultVersion
 
 	clientConfig clientcmd.ClientConfig
+
+	// testing hook for clientConfig.Namespace()
+	namespaceFromClientConfig = func() (string, bool, error) { return clientConfig.Namespace() }
 )
 
 func init() {
@@ -247,7 +250,7 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 	}
 
 	if secret.GetNamespace() == "" {
-		ns, _, err := clientConfig.Namespace()
+		ns, _, err := namespaceFromClientConfig()
 		if clientcmd.IsEmptyConfig(err) {
 			return fmt.Errorf("input secret has no namespace and cannot infer the namespace automatically when no kube config is available")
 		} else if err != nil {
@@ -583,7 +586,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 	}
 
 	if raw {
-		ns, _, err := clientConfig.Namespace()
+		ns, _, err := namespaceFromClientConfig()
 		if err != nil {
 			return err
 		}
