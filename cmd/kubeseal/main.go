@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
+	"k8s.io/klog"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 
@@ -93,6 +94,8 @@ func init() {
 
 	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
 
+	// add klog flags to goflags flagset
+	klog.InitFlags(nil)
 	// Standard goflags (glog in particular)
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 }
