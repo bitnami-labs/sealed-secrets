@@ -326,6 +326,63 @@ func TestUnseal(t *testing.T) {
 	}
 }
 
+func TestUnsealList(t *testing.T) {
+	pubKey, privKeys := newTestKeyPair(t)
+	pkFile, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(pkFile.Name())
+
+	// encode a v1.List containing all the privKeys into one file.
+	prettyEnc, err := prettyEncoder(scheme.Codecs, runtime.ContentTypeJSON, v1.SchemeGroupVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var secrets [][]byte
+	for _, key := range privKeys {
+		b := pem.EncodeToMemory(&pem.Block{Type: keyutil.RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)})
+		buf, err := runtime.Encode(prettyEnc, &v1.Secret{Data: map[string][]byte{"tls.key": b}})
+		if err != nil {
+			t.Fatal(err)
+		}
+		secrets = append(secrets, buf)
+	}
+	lst := &v1.List{}
+	for _, s := range secrets {
+		lst.Items = append(lst.Items, runtime.RawExtension{Raw: s})
+	}
+	blst, err := runtime.Encode(prettyEnc, lst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pkFile.Write(blst); err != nil {
+		t.Fatal(err)
+	}
+	pkFile.Close()
+
+	const (
+		secretItemKey   = "foo"
+		secretItemValue = "secret1"
+	)
+	ss := mkTestSealedSecret(t, pubKey, secretItemKey, secretItemValue)
+
+	var buf bytes.Buffer
+	if err := unsealSealedSecret(&buf, bytes.NewBuffer(ss), scheme.Codecs, []string{pkFile.Name()}); err != nil {
+		t.Fatal(err)
+	}
+
+	secret, err := readSecret(scheme.Codecs.UniversalDecoder(), &buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
+		t.Fatalf("got: %q, want: %q", got, want)
+	}
+}
+
 func TestMergeInto(t *testing.T) {
 	pubKey, privKeys := newTestKeyPair(t)
 
