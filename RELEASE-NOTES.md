@@ -4,6 +4,30 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.9.6
+
+## Announcements
+
+This release contains only changes in `kubeseal` and `controller` binaries (no k8s manifest changes required).
+
+### Preliminary support for running multiple controllers
+
+It always been possible in theory to run multiple controller instance in multiple namespaces,
+each with their own sealing encryption keys and thus each able to unseal secrets intended for it.
+However, doing so created a lot of noise in the logs, since each controller wouldn't know which
+secrets are meant to be decryptable, but failed to decrypt, and which it ought to ignore.
+
+Since v0.9.6 you can reduce this noise by setting the `--all-namespaces` flag to false (also via the env var `SEALED_SECRETS_ALL_NAMESPACES=false`).
+
+## Changelog
+
+* Give an option to search only the current namespace (#316)
+* Support parsing multiple private keys in --recovery-private-key (#325)
+* Add klog flags so we can troubleshoot k8s client (#320)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/12?closed=1
+
+
 # v0.9.5
 
 ## Announcements
