@@ -62,7 +62,7 @@ var (
 	sealingScope   ssv1alpha1.SealingScope
 	reEncrypt      bool // re-encrypt command
 	unseal         = flag.Bool("recovery-unseal", false, "Decrypt a sealed secrets file obtained from stdin, using the private key passed with --recovery-private-key. Intended to be used in disaster recovery mode.")
-	privKeys       = flag.StringSlice("recovery-private-key", nil, "Private key filename used by the --recovery-unseal command. Multiple files accepted either via comma separated list of by repetition of the flag. Either PEM encoded private keys or a backup of a json/yaml encoded k8s sealed-secret controller secret are accepted.")
+	privKeys       = flag.StringSlice("recovery-private-key", nil, "Private key filename used by the --recovery-unseal command. Multiple files accepted either via comma separated list or by repetition of the flag. Either PEM encoded private keys or a backup of a json/yaml encoded k8s sealed-secret controller secret (and v1.List) are accepted. ")
 
 	// VERSION set from Makefile
 	VERSION = buildinfo.DefaultVersion
@@ -460,7 +460,7 @@ func parseFromFile(s string) (string, string) {
 	return c[0], c[1]
 }
 
-func readPrivKey(filename string) (*rsa.PrivateKey, error) {
+func readPrivKeysFromFile(filename string) ([]*rsa.PrivateKey, error) {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -468,19 +468,52 @@ func readPrivKey(filename string) (*rsa.PrivateKey, error) {
 
 	res, err := parsePrivKey(b)
 	if err == nil {
-		return res, nil
+		return []*rsa.PrivateKey{res}, nil
 	}
-	// try to parse it as json/yaml encoded secret
-	s, err := readSecret(scheme.Codecs.UniversalDecoder(), bytes.NewBuffer(b))
+
+	var secrets []*v1.Secret
+
+	// try to parse it as json/yaml encoded v1.List of secrets
+	var lst v1.List
+	if err = runtime.DecodeInto(scheme.Codecs.UniversalDecoder(), b, &lst); err == nil {
+		for _, r := range lst.Items {
+			s, err := readSecret(scheme.Codecs.UniversalDecoder(), bytes.NewBuffer(r.Raw))
+			if err != nil {
+				return nil, err
+			}
+			secrets = append(secrets, s)
+		}
+	} else {
+		// try to parse it as json/yaml encoded secret
+		s, err := readSecret(scheme.Codecs.UniversalDecoder(), bytes.NewBuffer(b))
+		if err != nil {
+			return nil, err
+		}
+		secrets = append(secrets, s)
+	}
+
+	var keys []*rsa.PrivateKey
+	for _, s := range secrets {
+		tlsKey, ok := s.Data["tls.key"]
+		if !ok {
+			return nil, fmt.Errorf("secret must contain a 'tls.data' key")
+		}
+		pk, err := parsePrivKey(tlsKey)
+		if err != nil {
+			return nil, err
+		}
+		keys = append(keys, pk)
+	}
+
+	return keys, nil
+}
+
+func readPrivKey(filename string) (*rsa.PrivateKey, error) {
+	pks, err := readPrivKeysFromFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	tlsKey, ok := s.Data["tls.key"]
-	if !ok {
-		return nil, fmt.Errorf("secret must contain a 'tls.data' key")
-	}
-
-	return parsePrivKey(tlsKey)
+	return pks[0], nil
 }
 
 func parsePrivKey(b []byte) (*rsa.PrivateKey, error) {
@@ -499,16 +532,18 @@ func parsePrivKey(b []byte) (*rsa.PrivateKey, error) {
 func readPrivKeys(filenames []string) (map[string]*rsa.PrivateKey, error) {
 	res := map[string]*rsa.PrivateKey{}
 	for _, filename := range filenames {
-		pk, err := readPrivKey(filename)
+		pks, err := readPrivKeysFromFile(filename)
 		if err != nil {
 			return nil, err
 		}
-		fingerprint, err := crypto.PublicKeyFingerprint(&pk.PublicKey)
-		if err != nil {
-			return nil, err
-		}
+		for _, pk := range pks {
+			fingerprint, err := crypto.PublicKeyFingerprint(&pk.PublicKey)
+			if err != nil {
+				return nil, err
+			}
 
-		res[fingerprint] = pk
+			res[fingerprint] = pk
+		}
 	}
 	return res, nil
 }
