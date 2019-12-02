@@ -145,58 +145,80 @@ func TestSeal(t *testing.T) {
 		t.Fatalf("Failed to parse test key: %v", err)
 	}
 
-	secret := v1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "mysecret",
-			Namespace: "myns",
+	testCases := []struct {
+		secret v1.Secret
+		want   ssv1alpha1.SealedSecret // partial object
+	}{
+		{
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "myns",
+				},
+				Data: map[string][]byte{
+					"foo": []byte("sekret"),
+				},
+				StringData: map[string]string{
+					"foos": "stringsekret",
+				},
+			},
+			want: ssv1alpha1.SealedSecret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "myns",
+				},
+			},
 		},
-		Data: map[string][]byte{
-			"foo": []byte("sekret"),
-		},
-		StringData: map[string]string{
-			"foos": string("stringsekret"),
-		},
 	}
 
-	info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
-	if !ok {
-		t.Fatalf("binary can't serialize JSON")
-	}
-	enc := scheme.Codecs.EncoderForVersion(info.Serializer, v1.SchemeGroupVersion)
-	inbuf := bytes.Buffer{}
-	if err := enc.Encode(&secret, &inbuf); err != nil {
-		t.Fatalf("Error encoding: %v", err)
-	}
+	for i, tc := range testCases {
+		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
+			if !ok {
+				t.Fatalf("binary can't serialize JSON")
+			}
+			enc := scheme.Codecs.EncoderForVersion(info.Serializer, v1.SchemeGroupVersion)
+			inbuf := bytes.Buffer{}
+			if err := enc.Encode(&tc.secret, &inbuf); err != nil {
+				t.Fatalf("Error encoding: %v", err)
+			}
 
-	t.Logf("input is: %s", string(inbuf.Bytes()))
+			t.Logf("input is: %s", string(inbuf.Bytes()))
 
-	outbuf := bytes.Buffer{}
-	if err := seal(&inbuf, &outbuf, scheme.Codecs, key, "", ""); err != nil {
-		t.Fatalf("seal() returned error: %v", err)
-	}
+			outbuf := bytes.Buffer{}
+			if err := seal(&inbuf, &outbuf, scheme.Codecs, key, "", ""); err != nil {
+				t.Fatalf("seal() returned error: %v", err)
+			}
 
-	outBytes := outbuf.Bytes()
-	t.Logf("output is %s", outBytes)
+			outBytes := outbuf.Bytes()
+			t.Logf("output is %s", outBytes)
 
-	var result ssv1alpha1.SealedSecret
-	if err = runtime.DecodeInto(scheme.Codecs.UniversalDecoder(), outBytes, &result); err != nil {
-		t.Fatalf("Failed to parse result: %v", err)
-	}
+			var result ssv1alpha1.SealedSecret
+			if err = runtime.DecodeInto(scheme.Codecs.UniversalDecoder(), outBytes, &result); err != nil {
+				t.Fatalf("Failed to parse result: %v", err)
+			}
 
-	smeta := result.GetObjectMeta()
-	if smeta.GetName() != "mysecret" {
-		t.Errorf("Unexpected name: %v", smeta.GetName())
+			smeta := result.GetObjectMeta()
+			if got, want := smeta.GetName(), tc.want.GetName(); got != want {
+				t.Errorf("got: %q, want: %q", got, want)
+			}
+			if got, want := smeta.GetNamespace(), tc.want.GetNamespace(); got != want {
+				t.Errorf("got: %q, want: %q", got, want)
+			}
+
+			for n := range tc.secret.Data {
+				if len(result.Spec.EncryptedData[n]) < 100 {
+					t.Errorf("Encrypted data is implausibly short: %v", result.Spec.EncryptedData[n])
+				}
+			}
+			for n := range tc.secret.StringData {
+				if len(result.Spec.EncryptedData[n]) < 100 {
+					t.Errorf("Encrypted data is implausibly short: %v", result.Spec.EncryptedData[n])
+				}
+			}
+			// NB: See sealedsecret_test.go for e2e crypto test
+		})
 	}
-	if smeta.GetNamespace() != "myns" {
-		t.Errorf("Unexpected namespace: %v", smeta.GetNamespace())
-	}
-	if len(result.Spec.EncryptedData["foo"]) < 100 {
-		t.Errorf("Encrypted data is implausibly short: %v", result.Spec.EncryptedData)
-	}
-	if len(result.Spec.EncryptedData["foos"]) < 100 {
-		t.Errorf("Encrypted data is implausibly short: %v", result.Spec.EncryptedData)
-	}
-	// NB: See sealedsecret_test.go for e2e crypto test
 }
 
 type mkTestSecretOpt func(*mkTestSecretOpts)
