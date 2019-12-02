@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	goflag "flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -20,7 +21,7 @@ import (
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
-	"github.com/spf13/pflag"
+	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -74,8 +75,12 @@ func init() {
 }
 
 func TestMain(m *testing.M) {
+	// ensure that the -test.* flags inserted by go test are properly processed
+	// otherwise the pflag.Parse invocation below will interfere with test flags.
+	goflag.Parse()
+
 	// otherwise we'd require a working KUBECONFIG file when calling `run`.
-	pflag.CommandLine.Parse([]string{"-n", "default"})
+	flag.CommandLine.Parse([]string{"-n", "default"})
 	os.Exit(m.Run())
 }
 
