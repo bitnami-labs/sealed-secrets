@@ -89,11 +89,11 @@ func EncryptionLabel(namespace, name string, scope SealingScope) []byte {
 	return []byte(l)
 }
 
-func scopeFromLegacy(clusterWide, namespaceWide bool) (SealingScope, bool, bool) {
-	if clusterWide {
+func scopeFromLegacy(o metav1.Object) (SealingScope, bool, bool) {
+	if o.GetAnnotations()[SealedSecretClusterWideAnnotation] == "true" {
 		return ClusterWideScope, true, false
 	}
-	if namespaceWide {
+	if o.GetAnnotations()[SealedSecretNamespaceWideAnnotation] == "true" {
 		return NamespaceWideScope, false, true
 	}
 	return StrictScope, false, false
@@ -101,11 +101,19 @@ func scopeFromLegacy(clusterWide, namespaceWide bool) (SealingScope, bool, bool)
 
 // Returns labels followed by clusterWide followed by namespaceWide.
 func labelFor(o metav1.Object) ([]byte, bool, bool) {
-	scope, clusterWide, namespaceWide := scopeFromLegacy(
-		o.GetAnnotations()[SealedSecretClusterWideAnnotation] == "true",
-		o.GetAnnotations()[SealedSecretNamespaceWideAnnotation] == "true",
-	)
+	scope, clusterWide, namespaceWide := scopeFromLegacy(o)
 	return EncryptionLabel(o.GetNamespace(), o.GetName(), scope), clusterWide, namespaceWide
+}
+
+// SecretScope returns the scope of a secret to be sealed, as annotated in its metadata.
+func SecretScope(o metav1.Object) SealingScope {
+	scope, _, _ := scopeFromLegacy(o)
+	return scope
+}
+
+// Scope returns the scope of the sealed secret, as annotated in its metadata.
+func (s *SealedSecret) Scope() SealingScope {
+	return SecretScope(&s.Spec.Template)
 }
 
 // NewSealedSecretV1 creates a new SealedSecret object wrapping the
@@ -118,8 +126,8 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 		return nil, fmt.Errorf("binary can't serialize JSON")
 	}
 
-	if secret.GetNamespace() == "" {
-		return nil, fmt.Errorf("Secret must declare a namespace")
+	if SecretScope(secret) != ClusterWideScope && secret.GetNamespace() == "" {
+		return nil, fmt.Errorf("secret must declare a namespace")
 	}
 
 	codec := codecs.EncoderForVersion(info.Serializer, v1.SchemeGroupVersion)
@@ -177,8 +185,8 @@ func StripLastAppliedAnnotations(annotations map[string]string) {
 // provided secret. This encrypts only the values of each secrets
 // individually, so secrets can be updated one by one.
 func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
-	if secret.GetNamespace() == "" {
-		return nil, fmt.Errorf("Secret must declare a namespace")
+	if SecretScope(secret) != ClusterWideScope && secret.GetNamespace() == "" {
+		return nil, fmt.Errorf("secret must declare a namespace")
 	}
 
 	s := &SealedSecret{
