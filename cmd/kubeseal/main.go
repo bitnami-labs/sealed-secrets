@@ -252,7 +252,7 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 		secret.Namespace = overrideNamespace
 	}
 
-	if secret.GetNamespace() == "" {
+	if ssv1alpha1.SecretScope(secret) != ssv1alpha1.ClusterWideScope && secret.GetNamespace() == "" {
 		ns, _, err := namespaceFromClientConfig()
 		if clientcmd.IsEmptyConfig(err) {
 			return fmt.Errorf("input secret has no namespace and cannot infer the namespace automatically when no kube config is available")

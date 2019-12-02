@@ -169,6 +169,91 @@ func TestSeal(t *testing.T) {
 				},
 			},
 		},
+		{
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "mysecret",
+				},
+				Data: map[string][]byte{
+					"foo": []byte("sekret"),
+				},
+			},
+			want: ssv1alpha1.SealedSecret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "default",
+				},
+			},
+		},
+		{
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "",
+					Annotations: map[string]string{
+						ssv1alpha1.SealedSecretNamespaceWideAnnotation: "true",
+					},
+				},
+				Data: map[string][]byte{
+					"foo": []byte("sekret"),
+				},
+			},
+			want: ssv1alpha1.SealedSecret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "default",
+					Annotations: map[string]string{
+						ssv1alpha1.SealedSecretNamespaceWideAnnotation: "true",
+					},
+				},
+			},
+		},
+		{
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "",
+					Annotations: map[string]string{
+						ssv1alpha1.SealedSecretClusterWideAnnotation: "true",
+					},
+				},
+				Data: map[string][]byte{
+					"foo": []byte("sekret"),
+				},
+			},
+			want: ssv1alpha1.SealedSecret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "", // <--- we shouldn't force the default namespace for cluster wide secrets ...
+					Annotations: map[string]string{
+						ssv1alpha1.SealedSecretClusterWideAnnotation: "true",
+					},
+				},
+			},
+		},
+		{
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "myns",
+					Annotations: map[string]string{
+						ssv1alpha1.SealedSecretClusterWideAnnotation: "true",
+					},
+				},
+				Data: map[string][]byte{
+					"foo": []byte("sekret"),
+				},
+			},
+			want: ssv1alpha1.SealedSecret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "myns", // <--- ... but we should preserve one if specified.
+					Annotations: map[string]string{
+						ssv1alpha1.SealedSecretClusterWideAnnotation: "true",
+					},
+				},
+			},
+		},
 	}
 
 	for i, tc := range testCases {
