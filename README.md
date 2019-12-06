@@ -142,7 +142,7 @@ update your offline certificate periodically. To help you with that, since v0.9.
 kubeseal --cert https://your.intranet.company.com/sealed-secrets/your-cluster.cert
 ```
 
-It also recognizes the `SEALED_SECRETS_CERT` env var. (pro-tip: see also (direnv)[https://github.com/direnv/direnv]).
+It also recognizes the `SEALED_SECRETS_CERT` env var. (pro-tip: see also [direnv](https://github.com/direnv/direnv)).
 
 
 > **NOTE**: we are working on providing key management mechanisms that offload the encryption to HSM based modules or managed cloud crypto solutions such as KMS.
