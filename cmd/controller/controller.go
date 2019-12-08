@@ -61,6 +61,10 @@ type Controller struct {
 	oldGCBehavior bool // feature flag to revert to old behavior where we delete the secrets instead of relying on owners reference.
 }
 
+// Annotation flag key that the controller will check on the found Secret
+// objects to decide if it's will take over and manage it or not.
+const ManagedAnnotation = "sealedsecrets.bitnami.com/managed"
+
 func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, keyRegistry *KeyRegistry, ssecret *ssv1alpha1.SealedSecret) error {
 	// Important: Be careful not to reveal the namespace/name of
 	// the *decrypted* Secret (or any other detail) in error/log
@@ -241,7 +245,7 @@ func (c *Controller) unseal(key string) error {
 		return err
 	}
 
-	if !metav1.IsControlledBy(secret, ssecret) {
+	if !metav1.IsControlledBy(secret, ssecret) && !isAnnotatedToBeManaged(secret) {
 		msg := fmt.Sprintf("Resource %q already exists and is not managed by SealedSecret", secret.Name)
 		c.recorder.Event(ssecret, corev1.EventTypeWarning, ErrUpdateFailed, msg)
 		return fmt.Errorf("failed update: %s", msg)
@@ -253,6 +257,7 @@ func (c *Controller) unseal(key string) error {
 	secret.Data = newSecret.Data
 	secret.Type = newSecret.Type
 	secret.ObjectMeta.Annotations = newSecret.ObjectMeta.Annotations
+	secret.ObjectMeta.OwnerReferences = newSecret.ObjectMeta.OwnerReferences
 	secret.ObjectMeta.Labels = newSecret.ObjectMeta.Labels
 
 	if !apiequality.Semantic.DeepEqual(origSecret, secret) {
@@ -314,6 +319,11 @@ func (c *Controller) updateOwnerReferences(existing, new *corev1.Secret) {
 		}
 	}
 	existing.SetOwnerReferences(ownerRefs)
+}
+
+// checks if the annotation equals to "true", and it's case sensitive
+func isAnnotatedToBeManaged(secret *corev1.Secret) bool {
+	return secret.Annotations[ManagedAnnotation] == "true"
 }
 
 // AttemptUnseal tries to unseal a secret.
