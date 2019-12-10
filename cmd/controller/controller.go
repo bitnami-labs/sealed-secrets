@@ -61,10 +61,6 @@ type Controller struct {
 	oldGCBehavior bool // feature flag to revert to old behavior where we delete the secrets instead of relying on owners reference.
 }
 
-// Annotation flag key that the controller will check on the found Secret
-// objects to decide if it's will take over and manage it or not.
-const ManagedAnnotation = "sealedsecrets.bitnami.com/managed"
-
 func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, keyRegistry *KeyRegistry, ssecret *ssv1alpha1.SealedSecret) error {
 	// Important: Be careful not to reveal the namespace/name of
 	// the *decrypted* Secret (or any other detail) in error/log
@@ -323,7 +319,7 @@ func (c *Controller) updateOwnerReferences(existing, new *corev1.Secret) {
 
 // checks if the annotation equals to "true", and it's case sensitive
 func isAnnotatedToBeManaged(secret *corev1.Secret) bool {
-	return secret.Annotations[ManagedAnnotation] == "true"
+	return secret.Annotations[ssv1alpha1.SealedSecretManagedAnnotation] == "true"
 }
 
 // AttemptUnseal tries to unseal a secret.
