@@ -236,7 +236,7 @@ var _ = Describe("create", func() {
 	})
 
 	Describe("Secret already exists", func() {
-		Context("With managed annoation", func() {
+		Context("With managed annotation", func() {
 			BeforeEach(func() {
 				s.Annotations = map[string]string{
 					ssv1alpha1.SealedSecretManagedAnnotation: "true",
