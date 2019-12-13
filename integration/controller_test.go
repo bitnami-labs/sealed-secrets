@@ -43,7 +43,7 @@ func getData(s *v1.Secret) map[string][]byte {
 	return s.Data
 }
 
-// get the first owner name assuming there is only one owner
+// get the first owner name assuming there is only one owner which is the sealed-secret object
 func getFirstOwnerName(s *v1.Secret) string {
 	return s.OwnerReferences[0].Name
 }
@@ -242,7 +242,6 @@ var _ = Describe("create", func() {
 					ssv1alpha1.SealedSecretManagedAnnotation: "true",
 				}
 				c.Secrets(ns).Create(s)
-				
 			})
 			It("should manage existing Secret", func() {
 				expected := map[string][]byte{
@@ -251,6 +250,11 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
