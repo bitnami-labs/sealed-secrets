@@ -21,6 +21,10 @@ const (
 	// SealedSecretNamespaceWideAnnotation is the name for the annotation for
 	// setting the secret to be available namespace wide.
 	SealedSecretNamespaceWideAnnotation = annoNs + "namespace-wide"
+
+	// SealedSecretManagedAnnotation is the name for the annotation for
+	// flaging the existing secrets be managed by SealedSecret controller.
+ 	SealedSecretManagedAnnotation = annoNs + "managed"
 )
 
 // SecretTemplateSpec describes the structure a Secret should have

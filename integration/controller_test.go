@@ -43,6 +43,11 @@ func getData(s *v1.Secret) map[string][]byte {
 	return s.Data
 }
 
+// get the first owner name assuming there is only one owner which is the sealed-secret object
+func getFirstOwnerName(s *v1.Secret) string {
+	return s.OwnerReferences[0].Name
+}
+
 func getSecretType(s *v1.Secret) v1.SecretType {
 	return s.Type
 }
@@ -226,6 +231,33 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+			})
+		})
+	})
+
+	Describe("Secret already exists", func() {
+		Context("With managed annotation", func() {
+			BeforeEach(func() {
+				s.Annotations = map[string]string{
+					ssv1alpha1.SealedSecretManagedAnnotation: "true",
+				}
+				c.Secrets(ns).Create(s)
+			})
+			It("should manage existing Secret", func() {
+				expected := map[string][]byte{
+					"foo": []byte("bar"),
+				}
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
 			})
 		})
 	})

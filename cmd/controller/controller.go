@@ -241,7 +241,7 @@ func (c *Controller) unseal(key string) error {
 		return err
 	}
 
-	if !metav1.IsControlledBy(secret, ssecret) {
+	if !metav1.IsControlledBy(secret, ssecret) && !isAnnotatedToBeManaged(secret) {
 		msg := fmt.Sprintf("Resource %q already exists and is not managed by SealedSecret", secret.Name)
 		c.recorder.Event(ssecret, corev1.EventTypeWarning, ErrUpdateFailed, msg)
 		return fmt.Errorf("failed update: %s", msg)
@@ -253,6 +253,7 @@ func (c *Controller) unseal(key string) error {
 	secret.Data = newSecret.Data
 	secret.Type = newSecret.Type
 	secret.ObjectMeta.Annotations = newSecret.ObjectMeta.Annotations
+	secret.ObjectMeta.OwnerReferences = newSecret.ObjectMeta.OwnerReferences
 	secret.ObjectMeta.Labels = newSecret.ObjectMeta.Labels
 
 	if !apiequality.Semantic.DeepEqual(origSecret, secret) {
@@ -314,6 +315,11 @@ func (c *Controller) updateOwnerReferences(existing, new *corev1.Secret) {
 		}
 	}
 	existing.SetOwnerReferences(ownerRefs)
+}
+
+// checks if the annotation equals to "true", and it's case sensitive
+func isAnnotatedToBeManaged(secret *corev1.Secret) bool {
+	return secret.Annotations[ssv1alpha1.SealedSecretManagedAnnotation] == "true"
 }
 
 // AttemptUnseal tries to unseal a secret.
