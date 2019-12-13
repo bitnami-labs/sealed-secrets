@@ -53,7 +53,7 @@ var (
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.StringP("format", "o", "json", "Output format for sealed secret. Either json or yaml")
 	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
-	forceEmpty     = flag.Bool("force-empty-data", false, "Allow empty data in the secret object")
+	allowEmptyData = flag.Bool("allow-empty-data", false, "Allow empty data in the secret object")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
 	mergeInto      = flag.String("merge-into", "", "Merge items from secret into an existing sealed secret file, updating the file in-place instead of writing to stdout.")
@@ -226,14 +226,14 @@ func openCert(certURL string) (io.ReadCloser, error) {
 // Seal reads a k8s Secret resource parsed from an input reader by a given codec, encrypts all its secrets
 // with a given public key, using the name and namespace found in the input secret, unless explicitly overridden
 // by the overrideName and overrideNamespace arguments.
-func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, forceEmpty bool, overrideName, overrideNamespace string) error {
+func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, allowEmptyData bool, overrideName, overrideNamespace string) error {
 	secret, err := readSecret(codecs.UniversalDecoder(), in)
 	if err != nil {
 		return err
 	}
 
-	if len(secret.Data) == 0 && len(secret.StringData) == 0 && !forceEmpty {
-		return fmt.Errorf("Secret.data is empty in input Secret, assuming this is an error and aborting")
+	if len(secret.Data) == 0 && len(secret.StringData) == 0 && !allowEmptyData {
+		return fmt.Errorf("Secret.data is empty in input Secret, assuming this is an error and aborting. To work with empty data, --allow-empty-data can be used.")
 	}
 
 	if overrideName != "" {
@@ -393,7 +393,7 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 	return &ss, nil
 }
 
-func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, forceEmpty bool) error {
+func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, allowEmptyData bool) error {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
@@ -405,7 +405,7 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	}
 
 	var buf bytes.Buffer
-	if err := seal(in, &buf, codecs, pubKey, forceEmpty, orig.Name, orig.Namespace); err != nil {
+	if err := seal(in, &buf, codecs, pubKey, allowEmptyData, orig.Name, orig.Namespace); err != nil {
 		return err
 	}
 
@@ -573,7 +573,7 @@ func warnTTY() {
 	}
 }
 
-func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw, forceEmpty bool, fromFile []string, mergeInto string, unseal bool, privKeys []string) error {
+func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw, allowEmptyData bool, fromFile []string, mergeInto string, unseal bool, privKeys []string) error {
 	if len(fromFile) != 0 && !raw {
 		return fmt.Errorf("--from-file requires --raw")
 	}
@@ -612,7 +612,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 	}
 
 	if mergeInto != "" {
-		return sealMergingInto(os.Stdin, mergeInto, scheme.Codecs, pubKey, forceEmpty)
+		return sealMergingInto(os.Stdin, mergeInto, scheme.Codecs, pubKey, allowEmptyData)
 	}
 
 	if unseal {
@@ -649,14 +649,14 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 		return encryptSecretItem(w, secretName, ns, data, sealingScope, pubKey)
 	}
 
-	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey, forceEmpty, secretName, "")
+	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey, allowEmptyData, secretName, "")
 }
 
 func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
-	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *forceEmpty, *fromFile, *mergeInto, *unseal, *privKeys); err != nil {
+	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *allowEmptyData, *fromFile, *mergeInto, *unseal, *privKeys); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

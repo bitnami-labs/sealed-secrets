@@ -276,7 +276,7 @@ func TestSeal(t *testing.T) {
 			t.Logf("input is: %s", string(inbuf.Bytes()))
 
 			outbuf := bytes.Buffer{}
-			if err := seal(&inbuf, &outbuf, scheme.Codecs, key, "", ""); err != nil {
+			if err := seal(&inbuf, &outbuf, scheme.Codecs, key,  false,"", ""); err != nil {
 				t.Fatalf("seal() returned error: %v", err)
 			}
 
@@ -369,7 +369,7 @@ func mkTestSecret(t *testing.T, key, value string, opts ...mkTestSecretOpt) []by
 func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string, opts ...mkTestSecretOpt) []byte {
 	inbuf := bytes.NewBuffer(mkTestSecret(t, key, value, opts...))
 	var outbuf bytes.Buffer
-	if err := seal(inbuf, &outbuf, scheme.Codecs, pubKey, "", ""); err != nil {
+	if err := seal(inbuf, &outbuf, scheme.Codecs, pubKey, false, "", ""); err != nil {
 		t.Fatalf("seal() returned error: %v", err)
 	}
 
@@ -509,7 +509,7 @@ func TestMergeInto(t *testing.T) {
 		f.Close()
 
 		buf := bytes.NewBuffer(newSecret)
-		if err := sealMergingInto(buf, f.Name(), scheme.Codecs, pubKey); err != nil {
+		if err := sealMergingInto(buf, f.Name(), scheme.Codecs, pubKey, false); err != nil {
 			t.Fatal(err)
 		}
 
@@ -596,7 +596,7 @@ func TestMergeInto(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	var buf strings.Builder
-	err := run(&buf, "", "", "", "", true, false, false, false, false, nil, "", false, nil)
+	err := run(&buf, "", "", "", "", true, false, false, false, false, false, nil, "", false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -608,7 +608,7 @@ func TestVersion(t *testing.T) {
 
 func TestMainError(t *testing.T) {
 	const badFileName = "/?this/file/cannot/possibly/exist/can/it?"
-	err := run(ioutil.Discard, "", "", "", badFileName, false, false, false, false, false, nil, "", false, nil)
+	err := run(ioutil.Discard, "", "", "", badFileName, false, false, false, false, false, false, nil, "", false, nil)
 
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
@@ -770,7 +770,7 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 	fromFile := []string{dataFile}
 
 	var buf bytes.Buffer
-	if err := run(&buf, secretName, "", "", certFilename, false, false, false, false, true, fromFile, "", false, nil); err != nil {
+	if err := run(&buf, secretName, "", "", certFilename, false, false, false, false, true, false, fromFile, "", false, nil); err != nil {
 		return "", err
 	}
 
