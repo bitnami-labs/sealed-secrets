@@ -295,7 +295,7 @@ If you want `SealedSecret` controller to take management of an existing `Secret`
 
 ### Update existing secrets
 
-If you want to add or update exising sealed secrets without having the cleartext for the other items,
+If you want to add or update existing sealed secrets without having the cleartext for the other items,
 you can just copy&paste the new encrypted data items and merge it into an existing sealed secret.
 
 You must take care of sealing the updated items with a compatible name and namespace (see note about scopes above).
@@ -313,7 +313,7 @@ $ echo -n baz | kubectl create secret generic mysecret --dry-run --from-file=bar
 
 Creating temporary Secret with the `kubectl` command, only to throw it away once piped to `kubeseal` can
 be a quite unfriendly user experience. We're working on an overhaul of the the CLI experience. In the meantime,
-we offer an alternative mode where kubeseal only cares about encrypting a value to stdout and it's your responsiblity to put it inside a SealedSecret resource (not unlike any of the other k8s resources).
+we offer an alternative mode where kubeseal only cares about encrypting a value to stdout and it's your responsibility to put it inside a SealedSecret resource (not unlike any of the other k8s resources).
 
 It can also be useful as a building block for editor/IDE integrations.
 
@@ -477,7 +477,7 @@ $ kubectl get secret -n kube-system sealed-secrets-key -o yaml >>master.key
 
 NOTE: you need the second statement only if you ever installed sealed-secrets older than version 0.9.x on your cluster.
 
-NOTE: Thos file will contains the controller's public + private keys and should be kept omg-safe!
+NOTE: This file will contains the controller's public + private keys and should be kept omg-safe!
 
 To restore from a backup after some disaster, just put that secrets back before starting the controller - or if the controller was already started, replace the newly-created secrets and restart the controller:
 
