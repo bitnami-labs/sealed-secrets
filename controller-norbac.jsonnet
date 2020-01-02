@@ -21,6 +21,9 @@ local namespace = 'kube-system';
     spec+: {
       template+: {
         spec+: {
+          securityContext+: {
+            fsGroup: 65534,
+          },
           containers_+: {
             controller: kube.Container('sealed-secrets-controller') {
               image: $.controllerImage,
