@@ -117,6 +117,10 @@ script:
   - rm -f kubeseal-static
   - GOOS=windows GOARCH=amd64 make kubeseal-static
   - cp kubeseal-static kubeseal.exe
+  - GOOS=linux GOARCH=arm GOARM=7 make kubeseal-static
+  - cp kubeseal-static kubeseal-arm
+  - GOOS=linux GOARCH=arm64 make kubeseal-static
+  - cp kubeseal-static kubeseal-arm64
 
 after_script: set +e
 
@@ -146,6 +150,8 @@ deploy:
   file:
     - $EXE_NAME
     - kubeseal.exe
+    - kubeseal-arm
+    - kubeseal-arm64
     - controller.yaml
     - controller-norbac.yaml
   on:
