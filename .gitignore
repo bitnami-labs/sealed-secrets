@@ -15,6 +15,9 @@
 
 /controller
 /kubeseal
+/kubeseal-arm
+/kubeseal-arm64
+
 /controller.image
 /*-static
 /controller.yaml
