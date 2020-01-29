@@ -4,6 +4,32 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.9.7
+
+## Announcements
+
+This release contains  changes in `kubeseal` and `controller` binaries as well as a minnor change to the k8s manifest (see #33); keep that in mind if you don't rely on the official k8s manifests, including the community-maintained Helm chart.
+
+### Allow overwriting existing secrets
+
+By default, the sealed-secrets controller doesn't unseal a SealedSecret over an existing Secret resource (i.e. a resource that has not been created by the sealed-secrets controller in the first place).
+
+This is an important safeguard, not only to catch accidental overwrites due to typos etc, but also as a security measure: the sealed-secrets controller can create/update Secret resources even if the user who has the RBAC rights to create the SealedSecret resource doesn't have the right to create/update a Secret resource. We didn't want the sealed-secret controller to give its users more effective rights than what they would otherwise have without the sealed-secrets controller. A simple way to achieve that was permit only updates (overwrites) to Secret resources that were already owned by the sealed-secrets controller (which also seemed a sensible thing to do since it protects from accidental overwrites).
+
+However, this behavior gets in the way when you're just starting to use SealedSecrets and want to migrate your existing Secrets into SealedSecrets.
+
+You now can just annotate your `Secret`s with `sealedsecrets.bitnami.com/managed: true` thus indicating that they can be safely overwritten by the sealed-secrets controller. This doesn't loosen our security model since you'd have to have RBAC rights to annotate the existing secrets (e.g. with `kubectl annotate`) or you can ask your friendly admins to do it on your behalf.
+
+## Changelog
+
+* Release includes ARMv7 and ARM64 binaries (although no docker images yet) (#173)
+* Set `fsGroup` to `nobody` in order to support `BoundServiceAccountTokenVolume` (#338)
+* Add `--force-empty-data` flag to allow (un)sealing an empty secret (#334)
+* Avoid forcing the default namespace when sealing a cluster-wide secret (#323)
+* Introduce the `sealedsecrets.bitnami.com/managed: true` annotation which controls overwriting existing secrets (#331)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/13?closed=1
+
 # v0.9.6
 
 ## Announcements
