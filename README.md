@@ -263,6 +263,7 @@ and/or the controller.
 $ echo -n bar | kubectl create secret generic mysecret --dry-run --from-file=foo=/dev/stdin -o json >mysecret.json
 
 # This is the important bit:
+# (note default format is json!)
 $ kubeseal <mysecret.json >mysealedsecret.json
 
 # mysealedsecret.json is safe to upload to github, post to twitter,
