@@ -8,7 +8,7 @@ Latest release:
 
 ## Announcements
 
-This release contains  changes in `kubeseal` and `controller` binaries as well as a minnor change to the k8s manifest (see #33); keep that in mind if you don't rely on the official k8s manifests, including the community-maintained Helm chart.
+This release contains  changes in `kubeseal` and `controller` binaries as well as a minnor change to the k8s manifest (see #338); keep that in mind if you don't rely on the official k8s manifests, including the community-maintained Helm chart.
 
 ### Allow overwriting existing secrets
 
