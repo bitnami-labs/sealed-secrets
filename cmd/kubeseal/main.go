@@ -618,6 +618,9 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 	if unseal {
 		return unsealSealedSecret(w, os.Stdin, scheme.Codecs, privKeys)
 	}
+	if len(privKeys) != 0 && isatty.IsTerminal(os.Stderr.Fd()) {
+		fmt.Fprintf(os.Stderr, "warning: ignoring --recovery-private-key because unseal command not chosen with --recovery-unseal\n")
+	}
 
 	if raw {
 		ns, _, err := namespaceFromClientConfig()
