@@ -16,8 +16,44 @@ decrypted only by the controller running in the target cluster and
 nobody else (not even the original author) is able to obtain the
 original Secret from the SealedSecret.
 
-<!-- START doctoc -->
-<!-- END doctoc -->
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**
+
+- [Overview](#overview)
+  - [SealedSecrets as templates for secrets](#sealedsecrets-as-templates-for-secrets)
+  - [Public key / Certificate](#public-key--certificate)
+  - [Scopes](#scopes)
+- [Installation](#installation)
+  - [Controller](#controller)
+  - [Kustomize](#kustomize)
+  - [Helm Chart](#helm-chart)
+  - [Homebrew](#homebrew)
+  - [Installation from source](#installation-from-source)
+- [Upgrade](#upgrade)
+- [Usage](#usage)
+  - [Managing existing secrets](#managing-existing-secrets)
+  - [Update existing secrets](#update-existing-secrets)
+  - [Raw mode (experimental)](#raw-mode-experimental)
+- [Secret Rotation](#secret-rotation)
+  - [Sealing key renewal](#sealing-key-renewal)
+  - [User secret rotation](#user-secret-rotation)
+  - [Early key renewal](#early-key-renewal)
+  - [Common misconceptions about key renewal](#common-misconceptions-about-key-renewal)
+  - [Manual key management (advanced)](#manual-key-management-advanced)
+  - [Re-encryption (advanced)](#re-encryption-advanced)
+- [Details (advanced)](#details-advanced)
+  - [Crypto](#crypto)
+- [Developing](#developing)
+- [FAQ](#faq)
+  - [Will you still be able to decrypt if you no longer have access to your cluster?](#will-you-still-be-able-to-decrypt-if-you-no-longer-have-access-to-your-cluster)
+  - [How can I do a backup of my SealedSecrets?](#how-can-i-do-a-backup-of-my-sealedsecrets)
+  - [Can I decrypt my secrets offline with a backup key?](#can-i-decrypt-my-secrets-offline-with-a-backup-key)
+  - [What flags are available for kubeseal?](#what-flags-are-available-for-kubeseal)
+  - [How do I update parts of JSON/YAML/TOML.. file encrypted with sealed secrets?](#how-do-i-update-parts-of-jsonyamltoml-file-encrypted-with-sealed-secrets)
+- [Community](#community)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Overview
 
