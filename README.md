@@ -16,6 +16,9 @@ decrypted only by the controller running in the target cluster and
 nobody else (not even the original author) is able to obtain the
 original Secret from the SealedSecret.
 
+<!-- START doctoc -->
+<!-- END doctoc -->
+
 ## Overview
 
 Sealed Secrets is composed of two parts:
