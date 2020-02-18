@@ -381,14 +381,23 @@ start sealing your new rotated secrets, otherwise you'll be giving attackers acc
 
 A key can be generated early by passing the current timestamp to the controller into a flag called `--key-cutoff-time` or an env var called `SEALED_SECRETS_KEY_CUTOFF_TIME`. Expected format is RFC1123, you can generate it with the `date -R` unix command.
 
-**NOTE** Sealed secrets currently does not automatically pick up relabelled
-keys, an admin must restart the controller before the effect will apply.
+### Manual key management (advanced)
 
-Labelling a secret with anything other than `active` effectively deletes
+The sealed secrets controller and the associated workflow is designed to keep old sealing keys around and periodically add new ones. You should not delete old keys unless you know what you're doing.
+
+That said, if you want you can manually manage (create, move, delete) *sealing keys*. They are just normal k8s secrets living in the same namespace where the sealed secret controller lives (usually `kube-system`, but it's configurable).
+
+There are advanced use cases that you can address by creative management of the sealing keys.
+For example, you can share the same sealing key among a few clusters so that you can apply exactly the same sealed secret in multiple clusters.
+Since sealing keys are just normal k8s secrets you can even use sealed secrets itself and use a GitOps workflow to manage your sealing keys (useful when you want to share the same key among different clusters)!
+
+Labelling a *sealing key* secret with anything other than `active` effectively deletes
 the key from the sealed secrets controller, but it is still available in k8s for
 manual encryption/decryption if need be.
 
-### Re-encryption
+**NOTE** Sealed secrets currently does not automatically pick up manually created, deleted or relabeled sealing keys, an admin must restart the controller before the effect will apply.
+
+### Re-encryption (advanced)
 
 Before you can get rid of some old sealing keys you need to re-encrypt your SealedSecrets with the latest private key).
 
@@ -405,7 +414,7 @@ Currently old keys are not garbage collected automatically.
 
 It's a good idea to periodically re-encrypt your SealedSecrets. But as mentioned above, don't lull yourself in a false sense of security: you must assume the old version of the SealedSecret (the one encrypted with a key you think of as dead) is still potentially around and accessible to attackers. I.e. re-encryption is not a substitute for periodically rotating your actual secrets.
 
-## Details
+## Details (advanced)
 
 This controller adds a new `SealedSecret` custom resource. The
 interesting part of a `SealedSecret` is a base64-encoded
