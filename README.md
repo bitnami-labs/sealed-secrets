@@ -387,11 +387,11 @@ Sealing keys are automatically renewed every 30 days. Which means a new sealing 
 
 The most recently created sealing key is the one used to seal new secrets when you use `kubeseal` and it's the one whose certificate is downloaded when you use `kubeseal --fetch-cert`.
 
-The renewal time of 30d is reasonable default, but it can be tweaked as needed
+The renewal time of 30d is a reasonable default, but it can be tweaked as needed
 with the `--key-renew-period=<value>` flag. The `value` field can be given as golang
 duration flag (eg: `720h30m`).
 
-A value of `0` will disable automatic key renewal. Of course, it's possible you have a valid use for disabling automatic sealing key renewal; but experience has shown that new users often tend to jump to conclusions that they want control over key renewal before fully understanding how sealed secrets work. Read more about this in the [common misconceptions](#common-misconceptions-about-key-renewal) section below.
+A value of `0` will disable automatic key renewal. Of course, it's possible you have a valid use case for disabling automatic sealing key renewal; but experience has shown that new users often tend to jump to conclusions that they want control over key renewal, before fully understanding how sealed secrets work. Read more about this in the [common misconceptions](#common-misconceptions-about-key-renewal) section below.
 
 > Unfortunately you cannot use e.g. "d" as a unit for days because that's not supported by the Go stdlib. Instead of hitting your face with a palm, take this as an opportunity to meditate on the [falsehoods programmers believe about time](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time).
 
@@ -430,9 +430,9 @@ A key can be generated early by passing the current timestamp to the controller 
 
 ### Common misconceptions about key renewal
 
-Sealed secrets sealing keys are not access control keys (e.g. like a password); they are more like the GPG key you might use to read encrypted mail sent to you. Let's conitinue with the email analogy for a bit:
+Sealed secrets sealing keys are not access control keys (e.g. like a password); they are more like the GPG key you might use to read encrypted mail sent to you. Let's continue with the email analogy for a bit:
 
-Imagine you have reasons to believe your private GPG key might have been compromised, you have more to lose than to gain if the first thing you do is to just delete your private key. All the previous emails sent with that key are no longer accessible to you (unless you have a decrypted copy of those emails), nor are new emails sent by your friends whom you have not yet managed to tell to use the new key.
+Imagine you have reasons to believe your private GPG key might have been compromised. You'd have more to lose than to gain if the first thing you do is to just delete your private key. All the previous emails sent with that key are no longer accessible to you (unless you have a decrypted copy of those emails), nor are new emails sent by your friends whom you have not yet managed to tell to use the new key.
 
 Sure, the content of those encrypted emails is not secure, as an attacker might now be able to decrypt them, but what's done is done. Your sudden loss of ability to read those emails surely doesn't undo the damage; if anything, it's worse because you no longer know for sure what secret the attacker got to know. What you really want to do is to make sure that your friend stops using your old key and that from now on all further communication is encrypted with a new key pair (i.e. your friend must know about that new key).
 
