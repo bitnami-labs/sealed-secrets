@@ -379,10 +379,7 @@ since the attacker could just decrypt the new secrets as well. Thus you need to 
 If you know or suspect a *sealing key* has been compromised you should renew the key ASAP before you
 start sealing your new rotated secrets, otherwise you'll be giving attackers access to your new secrets as well.
 
-A key can be generated early in two ways
-1. Label the current latest key as compromised (any value other than active)
-`kubectl label secrets <keyname> sealedsecrets.bitnami.com/sealed-secrets-key=compromised`.
-2. (since v0.9.3) pass current timestamp to the controller into a flag called `--key-cutoff-time` or an env var called `SEALED_SECRETS_KEY_CUTOFF_TIME`. Expected format is RFC1123, you can generate it with the `date -R` unix command.
+A key can be generated early by passing the current timestamp to the controller into a flag called `--key-cutoff-time` or an env var called `SEALED_SECRETS_KEY_CUTOFF_TIME`. Expected format is RFC1123, you can generate it with the `date -R` unix command.
 
 **NOTE** Sealed secrets currently does not automatically pick up relabelled
 keys, an admin must restart the controller before the effect will apply.
