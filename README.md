@@ -345,17 +345,25 @@ TL;DR:
 >
 > SealedSecret key renewal and re-encryption features are **not a substitute** for periodical rotation of your actual secret values.
 
-### Key renewal
+### Sealing key renewal
 
-Keys are automatically renewed every 30 days. This can be configured on controller startup with
-the `--key-renew-period=<value>` flag. The `value` field can be given as golang
-duration flag (eg: `720h30m`). A value of `0` will disable automatic key renewal.
+Sealing keys are automatically renewed every 30 days. Which means a new sealing key is created and appended to the set of active sealing keys the controller can use to unseal Sealed Secret resources.
+
+The most recently created sealing key is the one used to seal new secrets when you use `kubeseal` and it's the one whose certificate is downloaded when you use `kubeseal --fetch-cert`.
+
+The renewal time of 30d is reasonable default, but it can be tweaked as needed
+with the `--key-renew-period=<value>` flag. The `value` field can be given as golang
+duration flag (eg: `720h30m`).
+
+A value of `0` will disable automatic key renewal. Of course, it's possible you have a valid use for disabling automatic sealing key renewal; but experience has shown that new users often tend to jump to conclusions that they want control over key renewal before fully understanding how sealed secrets work. Read more about this in the [common misconceptions](#common-misconceptions-about-key-renewal) section below.
 
 > Unfortunately you cannot use e.g. "d" as a unit for days because that's not supported by the Go stdlib. Instead of hitting your face with a palm, take this as an opportunity to meditate on the [falsehoods programmers believe about time](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time).
 
-The feature has been historically called "key rotation" but this term can be confusing.
+A common misunderstanding is that key renewal is often thought of as a form of key rotation, where the old key is not only obsolete but actually bad and that you thus want to get rid of it. 
+It doesn't help that this feature has been historically called "key rotation", which can add to the confusion.
+
 Sealed secrets are not automatically rotated and old keys are not deleted
-when new keys are generated. Old sealed secrets resources can be still decrypted.
+when new keys are generated. Old sealed secrets resources can be still decrypted (that's because old sealing keys are not deleted).
 
 ### User secret rotation
 
@@ -383,6 +391,22 @@ If you know or suspect a *sealing key* has been compromised you should renew the
 start sealing your new rotated secrets, otherwise you'll be giving attackers access to your new secrets as well.
 
 A key can be generated early by passing the current timestamp to the controller into a flag called `--key-cutoff-time` or an env var called `SEALED_SECRETS_KEY_CUTOFF_TIME`. Expected format is RFC1123, you can generate it with the `date -R` unix command.
+
+### Common misconceptions about key renewal
+
+Sealed secrets sealing keys are not access control keys (e.g. like a password); they are more like the GPG key you might use to read encrypted mail sent to you. Let's conitinue with the email analogy for a bit:
+
+Imagine you have reasons to believe your private GPG key might have been compromised, you have more to lose than to gain if the first thing you do is to just delete your private key. All the previous emails sent with that key are no longer accessible to you (unless you have a decrypted copy of those emails), nor are new emails sent by your friends whom you have not yet managed to tell to use the new key.
+
+Sure, the content of those encrypted emails is not secure, as an attacker might now be able to decrypt them, but what's done is done. Your sudden loss of ability to read those emails surely doesn't undo the damage; if anything, it's worse because you no longer know for sure what secret the attacker got to know. What you really want to do is to make sure that your friend stops using your old key and that from now on all further communication is encrypted with a new key pair (i.e. your friend must know about that new key).
+
+The same logic applies to SealedSecrets. The ultimate goal is securing your actual "user" secrets. The "sealing" secrets are just a mechanism, an "envelope". If a secret is leaked there is no going back; what's done is done.
+
+You first need to ensure that new secrets don't get encrypted with that old compromised key (in the email analogy above that's: create a new keypair and give all your friends your new public key).
+
+The second logical step is to neutralize the damage, which depends on the nature of the secret. A simple example is a database password: if you accidentally leak your database password, the thing you're supposed to do is simply to change your database password (on the database; and revoke the old one!) *and* update the SealedSecret resource with the new password (i.e. running `kubeseal` again).
+
+Both steps are described in the previous sections, albeit in a less verbose way. There is no shame in reading them again, now that you have a more in-depth grasp of the underlying rationale.
 
 ### Manual key management (advanced)
 
