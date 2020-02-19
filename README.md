@@ -401,6 +401,21 @@ It doesn't help that this feature has been historically called "key rotation", w
 Sealed secrets are not automatically rotated and old keys are not deleted
 when new keys are generated. Old sealed secrets resources can be still decrypted (that's because old sealing keys are not deleted).
 
+#### Using your own keys
+
+> It's not recommended to use it since the best security would be provived by renewing its sealed keys. But it would be helpful in a disaster recovery so you don't have to re-encrypt everything or lose any secrets.
+
+- You need to disable the sealed key renew to use it. once disabled use the following commands.
+
+```
+openssl req -x509 -nodes -newkey rsa:4096 -keyout sealed-privateKey -out sealed-publicKey -subj "/CN=sealed-secret/O=sealed-secret
+
+kubectl create secret tls sealed-secrets-key --cert=sealed-publicKey --key=sealed-privateKey -n kube-system
+
+kubectl label secret -n kube-system sealed-secrets-key sealedsecrets.bitnami.com/sealed-secrets-key=active
+
+```
+
 ### User secret rotation
 
 The *sealing key* renewal and SealedSecret rotation are **not a substitute** for rotating your actual secrets.
