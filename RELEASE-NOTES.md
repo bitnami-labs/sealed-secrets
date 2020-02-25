@@ -4,6 +4,16 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.9.8
+
+## Announcements
+
+This release contains only changes in Linux `kubeseal-arm` and `kubeseal-arm64` binaries. There are no changes in the docker images, nor in the `x86_64` binaries for any of the supported OS.
+
+## Changelog
+
+* Fix bad release of Linux ARM7 and ARM64 binaries (#362)
+
 # v0.9.7
 
 ## Announcements
