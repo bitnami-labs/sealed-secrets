@@ -14,6 +14,8 @@ This release contains only changes in Linux `kubeseal-arm` and `kubeseal-arm64` 
 
 * Fix bad release of Linux ARM7 and ARM64 binaries (#362)
 
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/14?closed=1
+
 # v0.9.7
 
 ## Announcements
