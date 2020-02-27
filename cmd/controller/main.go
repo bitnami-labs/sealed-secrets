@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	v1 "k8s.io/api/core/v1"
 	"log"
 	"os"
 	"os/signal"
@@ -18,6 +17,7 @@ import (
 	"time"
 
 	flag "github.com/spf13/pflag"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -260,8 +260,8 @@ func main() {
 
 	ssv1alpha1.AcceptDeprecatedV1Data = *acceptV1Data
 
+	fmt.Printf("controller version: %s\n", VERSION)
 	if *printVersion {
-		fmt.Printf("controller version: %s\n", VERSION)
 		return
 	}
 
