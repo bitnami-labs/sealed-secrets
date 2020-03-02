@@ -19,7 +19,12 @@
 /kubeseal-arm64
 
 /controller.image
+/controller.image.*
+/pushed.controller.image.*
+/controller-manifest-*
+/push-controller-image
 /*-static
+/*-static-*
 /controller.yaml
 /controller-norbac.yaml
 /sealedsecret-crd.yaml

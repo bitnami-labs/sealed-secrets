@@ -23,6 +23,7 @@ env:
     - MINIKUBE_HOME=${HOME}
     - CHANGE_MINIKUBE_NONE_USER=true
     - KUBECONFIG=${HOME}/.kube/config
+    - DOCKER_CLI_EXPERIMENTAL=enabled
 
 matrix:
   include:
@@ -95,23 +96,27 @@ script:
   - cp kubeseal-static $EXE_NAME
   - ./$EXE_NAME --help || test $? -eq 2
   - |
-    if [ "$TRAVIS_OS_NAME" = linux ]; then
-      make controller.yaml controller-norbac.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE IMAGE_PULL_POLICY=Never
-    fi
-  - |
     if [ "$INT_KVERS" != "" ]; then
+      # multiarch manifests require push to real repository and each job in the travis matrix
+      # needs its own image tag.
+      make controller.yaml controller-norbac.yaml CONTROLLER_IMAGE=${CONTROLLER_IMAGE}-${TRAVIS_JOB_ID}
+
       minikube update-context
       minikube status
+      docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
+      sudo chmod o+x /etc/docker # https://github.com/docker/for-linux/issues/396
+      make push-controller-image CONTROLLER_IMAGE=${CONTROLLER_IMAGE}-${TRAVIS_JOB_ID}
       while ! kubectl cluster-info; do sleep 3; done
       kubectl create -f $INT_SSC_CONF
       kubectl rollout status deployment/sealed-secrets-controller -n kube-system -w
-      make integrationtest CONTROLLER_IMAGE=$CONTROLLER_IMAGE GINKGO="ginkgo -v --randomizeSuites --failOnPending --trace --progress --compilers=2 --nodes=4"
+      make integrationtest CONTROLLER_IMAGE=${CONTROLLER_IMAGE}-${TRAVIS_JOB_ID} GINKGO="ginkgo -v --randomizeSuites --failOnPending --trace --progress --compilers=2 --nodes=4"
+
+      # cleanup the manifests since they point to the job specific image used for parallel integration testing
+      # and might not be suitable for publishing as GH release artifacts.
+      rm -f controller.yaml controller-norbac.yaml
     fi
-  # integration tests required Never pull policy, but release artifacts can't have that
-  # TODO(mkm): cleanup this.
   - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then
-      rm -f controller.yaml controller-norbac.yaml
       make controller.yaml controller-norbac.yaml CONTROLLER_IMAGE=$CONTROLLER_IMAGE
     fi
   - rm -f kubeseal-static
@@ -133,15 +138,14 @@ after_success:
           "$TRAVIS_GO_VERSION.0" =~ ^1\.13\. ]]; then
       echo "Pushing :latest..."
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
-      docker tag $CONTROLLER_IMAGE ${CONTROLLER_IMAGE_NAME}:latest
-      docker push ${CONTROLLER_IMAGE_NAME}:latest
+      make push-controller-image CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE_NAME}:latest
     fi
 
 before_deploy:
   - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
-      docker push $CONTROLLER_IMAGE
+      make push-controller-image CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE}
     fi
 
 deploy:
