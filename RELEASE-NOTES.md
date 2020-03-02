@@ -4,6 +4,20 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.10.0
+
+## Announcements
+
+This release supports the ARM 32 bit and 64 bit architectures, both on the client and the controller sides.
+
+We also end the silly streak of patch level releases that actually contained features. We'll try to bump the minor version on every release except true hotfixes.
+
+## Changelog
+
+* Provide multi-arch Container image for sealed secrets controller (#349)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/2?closed=1
+
 # v0.9.8
 
 ## Announcements
