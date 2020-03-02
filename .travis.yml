@@ -138,6 +138,7 @@ after_success:
           "$TRAVIS_GO_VERSION.0" =~ ^1\.13\. ]]; then
       echo "Pushing :latest..."
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
+      sudo chmod o+x /etc/docker # https://github.com/docker/for-linux/issues/396
       make push-controller-image CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE_NAME}:latest
     fi
 
@@ -145,6 +146,7 @@ before_deploy:
   - |
     if [ "$TRAVIS_OS_NAME" = linux ]; then
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
+      sudo chmod o+x /etc/docker # https://github.com/docker/for-linux/issues/396
       make push-controller-image CONTROLLER_IMAGE_NAME=${CONTROLLER_IMAGE}
     fi
 
