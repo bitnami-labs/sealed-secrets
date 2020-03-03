@@ -1,8 +1,8 @@
 language: go
 
 go:
+  - '1.14'
   - '1.13'
-  - '1.12'
 
 services:
   - docker
@@ -68,7 +68,7 @@ install:
         --kubernetes-version $INT_KVERS
       sudo chown -R travis: /home/travis/.minikube/
 
-      go get github.com/onsi/ginkgo/ginkgo
+      go install github.com/onsi/ginkgo/ginkgo
     fi
   - |
     v=0.12.0
@@ -79,16 +79,6 @@ install:
     ln -sf kubecfg-$v $GOPATH/bin/kubecfg
 
 script:
-  # We want to support both go.mod aware builds and legacy builds.
-  # Instead of adding more combinations to the build matrix,
-  # we're going to use go 1.13 for the go.mod aware build
-  # and test the legacy build with go 1.12
-  - export USE_GO_MOD=no
-  - |
-    if [[ ${TRAVIS_GO_VERSION}.0 =~ ^1\.13\. ]]; then
-      export USE_GO_MOD=yes
-      make vet
-    fi
   - make
   - make test
   - make kubeseal-static
@@ -135,7 +125,7 @@ after_success:
     if [[ "$TRAVIS_OS_NAME" == linux && \
           "$TRAVIS_BRANCH" == master && \
           "$TRAVIS_PULL_REQUEST" == false && \
-          "$TRAVIS_GO_VERSION.0" =~ ^1\.13\. ]]; then
+          "$TRAVIS_GO_VERSION.0" =~ ^1\.14\. ]]; then
       echo "Pushing :latest..."
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
       sudo chmod o+x /etc/docker # https://github.com/docker/for-linux/issues/396
@@ -162,7 +152,7 @@ deploy:
     - controller.yaml
     - controller-norbac.yaml
   on:
-    condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.13\.
+    condition: ${TRAVIS_GO_VERSION}.0 =~ ^1\.14\.
     tags: true
   provider: releases
   skip_cleanup: true
