@@ -1,14 +1,8 @@
 GO = go
 GOFMT = gofmt
 
-USE_GO_MOD := $(shell echo $${USE_GO_MOD:-yes})
-ifeq ($(USE_GO_MOD),yes)
 export GO111MODULE = on
 GO_FLAGS = -mod=vendor
-else
-export GO111MODULE = off
-GO_FLAGS =
-endif
 
 KUBECFG = kubecfg
 DOCKER = docker
