@@ -388,14 +388,14 @@ Sealing keys are automatically renewed every 30 days. Which means a new sealing 
 The most recently created sealing key is the one used to seal new secrets when you use `kubeseal` and it's the one whose certificate is downloaded when you use `kubeseal --fetch-cert`.
 
 The renewal time of 30d is a reasonable default, but it can be tweaked as needed
-with the `--key-renew-period=<value>` flag. The `value` field can be given as golang
+with the `--key-renew-period=<value>` flag (on the controller!). The `value` field can be given as golang
 duration flag (eg: `720h30m`).
 
 A value of `0` will disable automatic key renewal. Of course, it's possible you have a valid use case for disabling automatic sealing key renewal; but experience has shown that new users often tend to jump to conclusions that they want control over key renewal, before fully understanding how sealed secrets work. Read more about this in the [common misconceptions](#common-misconceptions-about-key-renewal) section below.
 
 > Unfortunately you cannot use e.g. "d" as a unit for days because that's not supported by the Go stdlib. Instead of hitting your face with a palm, take this as an opportunity to meditate on the [falsehoods programmers believe about time](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time).
 
-A common misunderstanding is that key renewal is often thought of as a form of key rotation, where the old key is not only obsolete but actually bad and that you thus want to get rid of it. 
+A common misunderstanding is that key renewal is often thought of as a form of key rotation, where the old key is not only obsolete but actually bad and that you thus want to get rid of it.
 It doesn't help that this feature has been historically called "key rotation", which can add to the confusion.
 
 Sealed secrets are not automatically rotated and old keys are not deleted
