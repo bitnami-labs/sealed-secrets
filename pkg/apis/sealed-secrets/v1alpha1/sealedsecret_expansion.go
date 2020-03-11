@@ -89,26 +89,20 @@ func EncryptionLabel(namespace, name string, scope SealingScope) []byte {
 	return []byte(l)
 }
 
-func scopeFromLegacy(o metav1.Object) (SealingScope, bool, bool) {
-	if o.GetAnnotations()[SealedSecretClusterWideAnnotation] == "true" {
-		return ClusterWideScope, true, false
-	}
-	if o.GetAnnotations()[SealedSecretNamespaceWideAnnotation] == "true" {
-		return NamespaceWideScope, false, true
-	}
-	return StrictScope, false, false
-}
-
 // Returns labels followed by clusterWide followed by namespaceWide.
-func labelFor(o metav1.Object) ([]byte, bool, bool) {
-	scope, clusterWide, namespaceWide := scopeFromLegacy(o)
-	return EncryptionLabel(o.GetNamespace(), o.GetName(), scope), clusterWide, namespaceWide
+func labelFor(o metav1.Object) []byte {
+	return EncryptionLabel(o.GetNamespace(), o.GetName(), SecretScope(o))
 }
 
 // SecretScope returns the scope of a secret to be sealed, as annotated in its metadata.
 func SecretScope(o metav1.Object) SealingScope {
-	scope, _, _ := scopeFromLegacy(o)
-	return scope
+	if o.GetAnnotations()[SealedSecretClusterWideAnnotation] == "true" {
+		return ClusterWideScope
+	}
+	if o.GetAnnotations()[SealedSecretNamespaceWideAnnotation] == "true" {
+		return NamespaceWideScope
+	}
+	return StrictScope
 }
 
 // Scope returns the scope of the sealed secret, as annotated in its metadata.
@@ -138,7 +132,7 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
 	// during decryption.
-	label, clusterWide, namespaceWide := labelFor(secret)
+	label := labelFor(secret)
 
 	ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, plaintext, label)
 	if err != nil {
@@ -155,13 +149,27 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 		},
 	}
 
-	if clusterWide {
-		s.Annotations = map[string]string{SealedSecretClusterWideAnnotation: "true"}
-	}
-	if namespaceWide {
-		s.Annotations = map[string]string{SealedSecretNamespaceWideAnnotation: "true"}
-	}
+	s.Annotations = UpdateScopeAnnotations(s.Annotations, SecretScope(secret))
+
 	return s, nil
+}
+
+// UpdateScopeAnnotations updates the annotation map so that it reflects the desired scope.
+// It does so by updating and/or deleting existing annotations.
+func UpdateScopeAnnotations(anno map[string]string, scope SealingScope) map[string]string {
+	if anno == nil {
+		anno = map[string]string{}
+	}
+	delete(anno, SealedSecretNamespaceWideAnnotation)
+	delete(anno, SealedSecretClusterWideAnnotation)
+
+	if scope == NamespaceWideScope {
+		anno[SealedSecretNamespaceWideAnnotation] = "true"
+	}
+	if scope == ClusterWideScope {
+		anno[SealedSecretClusterWideAnnotation] = "true"
+	}
+	return anno
 }
 
 // StripLastAppliedAnnotations strips annotations added by tools such as kubectl and kubecfg
@@ -216,7 +224,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 
 	// RSA-OAEP will fail to decrypt unless the same label is used
 	// during decryption.
-	label, clusterWide, namespaceWide := labelFor(secret)
+	label := labelFor(secret)
 
 	for key, value := range secret.Data {
 		ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, value, label)
@@ -234,15 +242,8 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		s.Spec.EncryptedData[key] = base64.StdEncoding.EncodeToString(ciphertext)
 	}
 
-	if clusterWide {
-		if s.Annotations == nil {
-			s.Annotations = map[string]string{}
-		}
-		s.Annotations[SealedSecretClusterWideAnnotation] = "true"
-	}
-	if namespaceWide {
-		s.Annotations = map[string]string{SealedSecretNamespaceWideAnnotation: "true"}
-	}
+	s.Annotations = UpdateScopeAnnotations(s.Annotations, SecretScope(secret))
+
 	return s, nil
 }
 
@@ -255,7 +256,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 	// during encryption.  This check ensures that we can't be
 	// tricked into decrypting a sealed secret into an unexpected
 	// namespace/name.
-	label, _, _ := labelFor(smeta)
+	label := labelFor(smeta)
 
 	var secret v1.Secret
 	if len(s.Spec.EncryptedData) > 0 {

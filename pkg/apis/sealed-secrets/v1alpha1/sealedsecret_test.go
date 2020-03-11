@@ -86,10 +86,7 @@ func TestLabel(t *testing.T) {
 			Namespace: "myns",
 		},
 	}
-	l, c, _ := labelFor(&s)
-	if c {
-		t.Errorf("Unexpected value for cluster wide annotation: %#v", c)
-	}
+	l := labelFor(&s)
 	if string(l) != "myns/myname" {
 		t.Errorf("Unexpected label: %#v", l)
 	}
@@ -105,10 +102,7 @@ func TestClusterWide(t *testing.T) {
 			},
 		},
 	}
-	l, c, _ := labelFor(&s)
-	if !c {
-		t.Errorf("Unexpected value for cluster wide annotation: %#v", c)
-	}
+	l := labelFor(&s)
 	if string(l) != "" {
 		t.Errorf("Unexpected label: %#v", l)
 	}
@@ -124,10 +118,7 @@ func TestNamespaceWide(t *testing.T) {
 			},
 		},
 	}
-	l, _, n := labelFor(&s)
-	if !n {
-		t.Errorf("Unexpected value for namespace wide annotation: %#v", n)
-	}
+	l := labelFor(&s)
 	if string(l) != "myns" {
 		t.Errorf("Unexpected label: %#v", l)
 	}
@@ -144,13 +135,7 @@ func TestClusterAndNamespaceWide(t *testing.T) {
 			},
 		},
 	}
-	l, c, n := labelFor(&s)
-	if !c {
-		t.Errorf("Unexpected value for cluster wide annotation: %#v", c)
-	}
-	if n {
-		t.Errorf("Unexpected value for namespace wide annotation: %#v", n)
-	}
+	l := labelFor(&s)
 	if string(l) != "" {
 		t.Errorf("Unexpected label: %#v", l)
 	}

@@ -21,6 +21,8 @@ import (
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -152,6 +154,7 @@ func TestSeal(t *testing.T) {
 
 	testCases := []struct {
 		secret v1.Secret
+		scope  ssv1alpha1.SealingScope
 		want   ssv1alpha1.SealedSecret // partial object
 	}{
 		{
@@ -259,6 +262,48 @@ func TestSeal(t *testing.T) {
 				},
 			},
 		},
+		{
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "",
+				},
+				Data: map[string][]byte{
+					"foo": []byte("sekret"),
+				},
+			},
+			scope: ssv1alpha1.NamespaceWideScope,
+			want: ssv1alpha1.SealedSecret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "default",
+					Annotations: map[string]string{
+						ssv1alpha1.SealedSecretNamespaceWideAnnotation: "true",
+					},
+				},
+			},
+		},
+		{
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "",
+				},
+				Data: map[string][]byte{
+					"foo": []byte("sekret"),
+				},
+			},
+			scope: ssv1alpha1.ClusterWideScope,
+			want: ssv1alpha1.SealedSecret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "",
+					Annotations: map[string]string{
+						ssv1alpha1.SealedSecretClusterWideAnnotation: "true",
+					},
+				},
+			},
+		},
 	}
 
 	for i, tc := range testCases {
@@ -276,7 +321,7 @@ func TestSeal(t *testing.T) {
 			t.Logf("input is: %s", string(inbuf.Bytes()))
 
 			outbuf := bytes.Buffer{}
-			if err := seal(&inbuf, &outbuf, scheme.Codecs, key,  false,"", ""); err != nil {
+			if err := seal(&inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, "", ""); err != nil {
 				t.Fatalf("seal() returned error: %v", err)
 			}
 
@@ -293,6 +338,9 @@ func TestSeal(t *testing.T) {
 				t.Errorf("got: %q, want: %q", got, want)
 			}
 			if got, want := smeta.GetNamespace(), tc.want.GetNamespace(); got != want {
+				t.Errorf("got: %q, want: %q", got, want)
+			}
+			if got, want := smeta.GetAnnotations(), tc.want.GetAnnotations(); !cmp.Equal(got, want, cmpopts.EquateEmpty()) {
 				t.Errorf("got: %q, want: %q", got, want)
 			}
 
@@ -369,7 +417,7 @@ func mkTestSecret(t *testing.T, key, value string, opts ...mkTestSecretOpt) []by
 func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string, opts ...mkTestSecretOpt) []byte {
 	inbuf := bytes.NewBuffer(mkTestSecret(t, key, value, opts...))
 	var outbuf bytes.Buffer
-	if err := seal(inbuf, &outbuf, scheme.Codecs, pubKey, false, "", ""); err != nil {
+	if err := seal(inbuf, &outbuf, scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, "", ""); err != nil {
 		t.Fatalf("seal() returned error: %v", err)
 	}
 
@@ -509,7 +557,7 @@ func TestMergeInto(t *testing.T) {
 		f.Close()
 
 		buf := bytes.NewBuffer(newSecret)
-		if err := sealMergingInto(buf, f.Name(), scheme.Codecs, pubKey, false); err != nil {
+		if err := sealMergingInto(buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false); err != nil {
 			t.Fatal(err)
 		}
 
