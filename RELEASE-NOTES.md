@@ -4,6 +4,22 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.11.0
+
+## Announcements
+
+Creating secrets with namespace-wide and cluster-wide scopes is now easier as it no longer requires manually adding annotations in the input Secret before passing it to `kubeseal`. This was often the root cause of many support requests. Now all you need to do is to:
+
+```
+$ kubeseal --scope namespace-wide <input-secret.yaml >output-sealed-secret.json
+```
+
+## Changelog
+
+* Honour --scope flag (#371)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/15?closed=1
+
 # v0.10.0
 
 ## Announcements
