@@ -226,7 +226,7 @@ func openCert(certURL string) (io.ReadCloser, error) {
 // Seal reads a k8s Secret resource parsed from an input reader by a given codec, encrypts all its secrets
 // with a given public key, using the name and namespace found in the input secret, unless explicitly overridden
 // by the overrideName and overrideNamespace arguments.
-func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, allowEmptyData bool, overrideName, overrideNamespace string) error {
+func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string) error {
 	secret, err := readSecret(codecs.UniversalDecoder(), in)
 	if err != nil {
 		return err
@@ -246,6 +246,10 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 
 	if overrideNamespace != "" {
 		secret.Namespace = overrideNamespace
+	}
+
+	if scope != ssv1alpha1.DefaultScope {
+		secret.Annotations = ssv1alpha1.UpdateScopeAnnotations(secret.Annotations, scope)
 	}
 
 	if ssv1alpha1.SecretScope(secret) != ssv1alpha1.ClusterWideScope && secret.GetNamespace() == "" {
@@ -393,7 +397,7 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 	return &ss, nil
 }
 
-func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, allowEmptyData bool) error {
+func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool) error {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
@@ -405,7 +409,7 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	}
 
 	var buf bytes.Buffer
-	if err := seal(in, &buf, codecs, pubKey, allowEmptyData, orig.Name, orig.Namespace); err != nil {
+	if err := seal(in, &buf, codecs, pubKey, scope, allowEmptyData, orig.Name, orig.Namespace); err != nil {
 		return err
 	}
 
@@ -612,7 +616,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 	}
 
 	if mergeInto != "" {
-		return sealMergingInto(os.Stdin, mergeInto, scheme.Codecs, pubKey, allowEmptyData)
+		return sealMergingInto(os.Stdin, mergeInto, scheme.Codecs, pubKey, sealingScope, allowEmptyData)
 	}
 
 	if unseal {
@@ -652,7 +656,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 		return encryptSecretItem(w, secretName, ns, data, sealingScope, pubKey)
 	}
 
-	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey, allowEmptyData, secretName, "")
+	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey, sealingScope, allowEmptyData, secretName, "")
 }
 
 func main() {
