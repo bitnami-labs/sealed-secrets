@@ -8,6 +8,10 @@ Latest release:
 
 ## Announcements
 
+This release contains only changes in kubeseal binary (no k8s manifest changes required).
+
+### For those who choose the name and namespace after sealing the secret
+
 Creating secrets with namespace-wide and cluster-wide scopes is now easier as it no longer requires manually adding annotations in the input Secret before passing it to `kubeseal`. This was often the root cause of many support requests. Now all you need to do is to:
 
 ```
