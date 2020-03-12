@@ -83,6 +83,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 		// TODO: requeue?
 		return err
 	}
+
 	log.Printf("Updated %s", objName)
 	return nil
 }
