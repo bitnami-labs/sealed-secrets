@@ -9,12 +9,15 @@ controller {
     metadata: {
       name: 'sealed-secrets-controller',
       namespace: $.namespace,
+      labels: {
+        name: 'sealed-secrets-controller',
+      },
     },
     spec: {
-      jobLabel: 'sealed-secrets-controller',
+      jobLabel: 'name',
       selector: {
         matchLabels: {
-          'app.kubernetes.io/name': 'sealed-secrets-controller',
+          name: 'sealed-secrets-controller',
         },
       },
       namespaceSelector: {
