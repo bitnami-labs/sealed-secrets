@@ -135,7 +135,7 @@ controller.yaml: controller.jsonnet controller-norbac.jsonnet
 
 controller-norbac.yaml: controller-norbac.jsonnet
 
-controller-podmonitor.yaml: controller.jsonnet controller.image controller-norbac.jsonnet
+controller-podmonitor.yaml: controller.jsonnet controller-norbac.jsonnet
 
 test:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
