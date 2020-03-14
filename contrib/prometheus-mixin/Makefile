@@ -1,11 +1,9 @@
 # Prometheus Mixin Makefile
 # Heavily copied from upstream project kubenetes-mixin
 
-# TODO: Find out why official prom images segfault
-# PROMETHEUS_IMAGE := prom/prometheus:v2.1.0
-PROMETHEUS_IMAGE := registry.gitlab.com/kskewes/docker-promtool:latest
+PROMETHEUS_IMAGE := prom/prometheus:v2.16.0
 
-JSONNET_FMT := jsonnetfmt -n 2 --max-blank-lines 2 --string-style s --comment-style s
+JSONNET_FMT := jsonnetfmt
 
 all: fmt prometheus_alerts.yaml prometheus_rules.yaml dashboards_out lint test ## Generate files, lint and test
 
@@ -43,9 +41,11 @@ lint: prometheus_alerts.yaml prometheus_rules.yaml ## Lint and check YAML
 clean: ## Clean up generated files
 	rm -rf manifests/
 
+# TODO: Find out why official prom images segfaults during `test rules` if not root
 test: prometheus_alerts.yaml prometheus_rules.yaml ## Test generated files
 	docker run \
 		-v $(PWD):/tmp \
+		--user root \
 		--entrypoint '/bin/promtool' \
 		$(PROMETHEUS_IMAGE) \
 		test rules /tmp/tests.yaml
