@@ -198,9 +198,11 @@ func (c *Controller) processNextItem() bool {
 }
 
 func (c *Controller) unseal(key string) error {
+	unsealRequestsTotal.Inc()
 	obj, exists, err := c.informer.GetIndexer().GetByKey(key)
 	if err != nil {
 		log.Printf("Error fetching object with key %s from store: %v", key, err)
+		unsealErrorsTotal.WithLabelValues("fetch").Inc()
 		return err
 	}
 
@@ -229,6 +231,7 @@ func (c *Controller) unseal(key string) error {
 	newSecret, err := c.attemptUnseal(ssecret)
 	if err != nil {
 		c.recorder.Eventf(ssecret, corev1.EventTypeWarning, ErrUnsealFailed, "Failed to unseal: %v", err)
+		unsealErrorsTotal.WithLabelValues("unseal").Inc()
 		return err
 	}
 
@@ -238,12 +241,14 @@ func (c *Controller) unseal(key string) error {
 	}
 	if err != nil {
 		c.recorder.Event(ssecret, corev1.EventTypeWarning, ErrUpdateFailed, err.Error())
+		unsealErrorsTotal.WithLabelValues("update").Inc()
 		return err
 	}
 
 	if !metav1.IsControlledBy(secret, ssecret) && !isAnnotatedToBeManaged(secret) {
 		msg := fmt.Sprintf("Resource %q already exists and is not managed by SealedSecret", secret.Name)
 		c.recorder.Event(ssecret, corev1.EventTypeWarning, ErrUpdateFailed, msg)
+		unsealErrorsTotal.WithLabelValues("unmanaged").Inc()
 		return fmt.Errorf("failed update: %s", msg)
 	}
 
@@ -260,6 +265,7 @@ func (c *Controller) unseal(key string) error {
 		secret, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(secret)
 		if err != nil {
 			c.recorder.Event(ssecret, corev1.EventTypeWarning, ErrUpdateFailed, err.Error())
+			unsealErrorsTotal.WithLabelValues("update").Inc()
 			return err
 		}
 	}
@@ -268,6 +274,7 @@ func (c *Controller) unseal(key string) error {
 	if err != nil {
 		// Non-fatal.  Log and continue.
 		log.Printf("Error updating SealedSecret %s status: %v", key, err)
+		unsealErrorsTotal.WithLabelValues("status").Inc()
 	}
 
 	c.recorder.Event(ssecret, corev1.EventTypeNormal, SuccessUnsealed, "SealedSecret unsealed successfully")

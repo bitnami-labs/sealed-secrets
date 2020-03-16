@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	flag "github.com/spf13/pflag"
 	"github.com/throttled/throttled"
 	"github.com/throttled/throttled/store/memstore"
@@ -39,6 +41,8 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		io.WriteString(w, "ok\n")
 	})
+
+	mux.Handle("/metrics", promhttp.Handler())
 
 	mux.Handle("/v1/verify", httpRateLimiter.RateLimit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		content, err := ioutil.ReadAll(r.Body)
