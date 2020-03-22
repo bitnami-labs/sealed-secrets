@@ -6,9 +6,9 @@ local controller = import 'controller-norbac.jsonnet';
 controller {
   local kube = self.kube,
 
-  account: kube.ServiceAccount('sealed-secrets-controller') + $.namespace,
+  account: kube.ServiceAccount('sealed-secrets-controller') + $.namespace + $.labels,
 
-  unsealerRole: kube.ClusterRole('secrets-unsealer') {
+  unsealerRole: kube.ClusterRole('secrets-unsealer') + $.labels {
     rules: [
       {
         apiGroups: ['bitnami.com'],
@@ -28,7 +28,7 @@ controller {
     ],
   },
 
-  unsealKeyRole: kube.Role('sealed-secrets-key-admin') + $.namespace {
+  unsealKeyRole: kube.Role('sealed-secrets-key-admin') + $.namespace + $.labels {
     rules: [
       {
         apiGroups: [''],
@@ -39,7 +39,7 @@ controller {
     ],
   },
 
-  serviceProxierRole: kube.Role('sealed-secrets-service-proxier') + $.namespace {
+  serviceProxierRole: kube.Role('sealed-secrets-service-proxier') + $.namespace + $.labels {
     rules: [
       {
         apiGroups: [
@@ -60,17 +60,17 @@ controller {
     ],
   },
 
-  unsealerBinding: kube.ClusterRoleBinding('sealed-secrets-controller') {
+  unsealerBinding: kube.ClusterRoleBinding('sealed-secrets-controller') + $.labels {
     roleRef_: $.unsealerRole,
     subjects_+: [$.account],
   },
 
-  unsealKeyBinding: kube.RoleBinding('sealed-secrets-controller') + $.namespace {
+  unsealKeyBinding: kube.RoleBinding('sealed-secrets-controller') + $.namespace + $.labels {
     roleRef_: $.unsealKeyRole,
     subjects_+: [$.account],
   },
 
-  serviceProxierBinding: kube.RoleBinding('sealed-secrets-service-proxier') + $.namespace {
+  serviceProxierBinding: kube.RoleBinding('sealed-secrets-service-proxier') + $.namespace + $.labels {
     roleRef_: $.serviceProxierRole,
     // kube.libsonnet assumes object here have a namespace, but system groups don't
     // thus are not supposed to use the magic "_" here.
