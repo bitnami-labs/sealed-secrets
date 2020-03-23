@@ -16,6 +16,8 @@ var (
 
 	// SchemeBuilder adds this group to scheme
 	SchemeBuilder = runtime.NewSchemeBuilder(addKnownTypes)
+	// AddToScheme is a global function that registers this API group & version to a scheme
+	AddToScheme = SchemeBuilder.AddToScheme
 )
 
 func init() {
