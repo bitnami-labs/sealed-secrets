@@ -9,7 +9,13 @@ local namespace = 'kube-system';
   controllerImage:: std.extVar('CONTROLLER_IMAGE'),
   imagePullPolicy:: std.extVar('IMAGE_PULL_POLICY'),
 
-  crd: kube.CustomResourceDefinition('bitnami.com', 'v1alpha1', 'SealedSecret'),
+  crd: kube.CustomResourceDefinition('bitnami.com', 'v1alpha1', 'SealedSecret') {
+    spec+: {
+      subresources: {
+        status: {},
+      }
+    },
+  },
 
   namespace:: { metadata+: { namespace: namespace } },
 

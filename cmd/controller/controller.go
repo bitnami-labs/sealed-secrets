@@ -197,7 +197,7 @@ func (c *Controller) processNextItem() bool {
 	return true
 }
 
-func (c *Controller) unseal(key string) error {
+func (c *Controller) unseal(key string) (unsealErr error) {
 	unsealRequestsTotal.Inc()
 	obj, exists, err := c.informer.GetIndexer().GetByKey(key)
 	if err != nil {
@@ -227,6 +227,18 @@ func (c *Controller) unseal(key string) error {
 
 	ssecret := obj.(*ssv1alpha1.SealedSecret)
 	log.Printf("Updating %s", key)
+
+	// any exit of this function at this point will cause an update to the status subresource
+	// of the SealedSecret custome resource. The return value of the unseal function is available
+	// to the deferred function body in the unsealErr named return value (even if explicit return
+	// statements are used to return).
+	defer func() {
+		if err := c.updateSealedSecretStatus(ssecret, unsealErr); err != nil {
+			// Non-fatal.  Log and continue.
+			log.Printf("Error updating SealedSecret %s status: %v", key, err)
+			unsealErrorsTotal.WithLabelValues("status").Inc()
+		}
+	}()
 
 	newSecret, err := c.attemptUnseal(ssecret)
 	if err != nil {
@@ -270,26 +282,16 @@ func (c *Controller) unseal(key string) error {
 		}
 	}
 
-	err = c.updateSealedSecretStatus(ssecret, secret)
-	if err != nil {
-		// Non-fatal.  Log and continue.
-		log.Printf("Error updating SealedSecret %s status: %v", key, err)
-		unsealErrorsTotal.WithLabelValues("status").Inc()
-	}
-
 	c.recorder.Event(ssecret, corev1.EventTypeNormal, SuccessUnsealed, "SealedSecret unsealed successfully")
 	return nil
 }
 
-func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, secret *corev1.Secret) error {
+func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, unsealError error) error {
 	ssecret = ssecret.DeepCopy()
 
-	ssecret.Status.ObservedGeneration = secret.ObjectMeta.Generation
+	ssecret.Status.ObservedGeneration = ssecret.ObjectMeta.Generation
 
-	// TODO: Use UpdateStatus when k8s CustomResourceSubresources
-	// feature is widespread.
-	var err error
-	ssecret, err = c.ssclient.SealedSecrets(ssecret.GetObjectMeta().GetNamespace()).Update(ssecret)
+	_, err := c.ssclient.SealedSecrets(ssecret.GetObjectMeta().GetNamespace()).UpdateStatus(ssecret)
 	return err
 }
 

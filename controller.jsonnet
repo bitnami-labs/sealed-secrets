@@ -13,7 +13,12 @@ controller {
       {
         apiGroups: ['bitnami.com'],
         resources: ['sealedsecrets'],
-        verbs: ['get', 'list', 'watch', 'update'],
+        verbs: ['get', 'list', 'watch'],
+      },
+      {
+        apiGroups: ['bitnami.com'],
+        resources: ['sealedsecrets/status'],
+        verbs: ['update'],
       },
       {
         apiGroups: [''],
