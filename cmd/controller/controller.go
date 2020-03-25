@@ -288,11 +288,41 @@ func (c *Controller) unseal(key string) (unsealErr error) {
 
 func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, unsealError error) error {
 	ssecret = ssecret.DeepCopy()
+	st := &ssecret.Status
 
-	ssecret.Status.ObservedGeneration = ssecret.ObjectMeta.Generation
+	st.ObservedGeneration = ssecret.ObjectMeta.Generation
+	updateSealedSecretsStatusConditions(st, unsealError)
 
 	_, err := c.ssclient.SealedSecrets(ssecret.GetObjectMeta().GetNamespace()).UpdateStatus(ssecret)
 	return err
+}
+
+func updateSealedSecretsStatusConditions(st *ssv1alpha1.SealedSecretStatus, unsealError error) {
+	cond := func() *ssv1alpha1.SealedSecretCondition {
+		for i := range st.Conditions {
+			if st.Conditions[i].Type == ssv1alpha1.SealedSecretSynced {
+				return &st.Conditions[i]
+			}
+		}
+		st.Conditions = append(st.Conditions, ssv1alpha1.SealedSecretCondition{
+			Type: ssv1alpha1.SealedSecretSynced,
+		})
+		return &st.Conditions[len(st.Conditions)-1]
+	}()
+
+	var status corev1.ConditionStatus
+	if unsealError == nil {
+		status = corev1.ConditionTrue
+		cond.Message = ""
+	} else {
+		status = corev1.ConditionFalse
+		cond.Message = unsealError.Error()
+	}
+	cond.LastUpdateTime = metav1.Now()
+	if cond.Status != status {
+		cond.LastTransitionTime = cond.LastUpdateTime
+		cond.Status = status
+	}
 }
 
 func (c *Controller) updateSecret(newSecret *corev1.Secret) (*corev1.Secret, error) {
