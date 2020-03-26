@@ -36,7 +36,11 @@ func (in *SealedSecret) DeepCopyInto(out *SealedSecret) {
 	out.TypeMeta = in.TypeMeta
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
 	in.Spec.DeepCopyInto(&out.Spec)
-	in.Status.DeepCopyInto(&out.Status)
+	if in.Status != nil {
+		in, out := &in.Status, &out.Status
+		*out = new(SealedSecretStatus)
+		(*in).DeepCopyInto(*out)
+	}
 	return
 }
 
