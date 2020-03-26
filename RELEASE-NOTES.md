@@ -4,6 +4,30 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.12.0
+
+## Announcements
+
+This release contains changes in `kubeseal` and `controller` binaries as well as a minor change to the k8s manifest (see #381); keep that in mind if you don't rely on the official k8s manifests, including the community-maintained Helm chart.
+
+# Status field
+
+Now the sealed secrets controller updates the `Status` field of the `SealedSecrets` resources.
+This makes it easier for automation like ArgoCD to detect whether (and when) the controller has reacted to changes in the SealedSecret resources and produced a Secret. It also shows an error message in case it fails (many users are not familiar with k8s events and they may find it easier to see the error message in the status).
+
+# Prometheus
+
+The sealed secrets controller now exports prometheus metrics. See also [contrib/prometheus-mixin](contrib/prometheus-mixin) and `controller-podmonitor.yaml`.
+
+## Changelog
+
+* Update Status field (#346)
+* Add prometheus metrics (#177)
+* Upgrade k8s client-go to v0.16.8 (#380)
+* kubeseal no longer emits empty `status: {}` field (#383)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/16?closed=1
+
 # v0.11.0
 
 ## Announcements
@@ -54,7 +78,7 @@ The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secre
 
 ## Announcements
 
-This release contains  changes in `kubeseal` and `controller` binaries as well as a minnor change to the k8s manifest (see #338); keep that in mind if you don't rely on the official k8s manifests, including the community-maintained Helm chart.
+This release contains  changes in `kubeseal` and `controller` binaries as well as a minor change to the k8s manifest (see #338); keep that in mind if you don't rely on the official k8s manifests, including the community-maintained Helm chart.
 
 ### Allow overwriting existing secrets
 
