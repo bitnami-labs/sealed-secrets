@@ -24,7 +24,7 @@ const (
 
 	// SealedSecretManagedAnnotation is the name for the annotation for
 	// flaging the existing secrets be managed by SealedSecret controller.
- 	SealedSecretManagedAnnotation = annoNs + "managed"
+	SealedSecretManagedAnnotation = annoNs + "managed"
 )
 
 // SecretTemplateSpec describes the structure a Secret should have
@@ -101,8 +101,9 @@ type SealedSecret struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SealedSecretSpec   `json:"spec"`
-	Status SealedSecretStatus `json:"status"`
+	Spec SealedSecretSpec `json:"spec"`
+	// +optional
+	Status *SealedSecretStatus `json:"status,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

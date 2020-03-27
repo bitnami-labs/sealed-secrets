@@ -288,10 +288,12 @@ func (c *Controller) unseal(key string) (unsealErr error) {
 
 func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, unsealError error) error {
 	ssecret = ssecret.DeepCopy()
-	st := &ssecret.Status
+	if ssecret.Status == nil {
+		ssecret.Status = &ssv1alpha1.SealedSecretStatus{}
+	}
 
-	st.ObservedGeneration = ssecret.ObjectMeta.Generation
-	updateSealedSecretsStatusConditions(st, unsealError)
+	ssecret.Status.ObservedGeneration = ssecret.ObjectMeta.Generation
+	updateSealedSecretsStatusConditions(ssecret.Status, unsealError)
 
 	_, err := c.ssclient.SealedSecrets(ssecret.GetObjectMeta().GetNamespace()).UpdateStatus(ssecret)
 	return err
