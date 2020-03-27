@@ -221,7 +221,13 @@ These are the possible scopes:
 
 In contrast to the restrictions of *name* and *namespace*, secret *items* (i.e. JSON object keys like `spec.encryptedData.my-key`) can be renamed at will without losing the ability to decrypt the sealed secret.
 
-The scope is selected with annotations in the input secret you pass to `kubeseal`:
+The scope is selected with the `--scope` flag:
+
+```sh
+$ kubeseal --scope cluster-wide <secret.yaml >sealed-secret.json
+```
+
+It's also possible to request a scope via annotations in the input secret you pass to `kubeseal`:
 
 * `sealedsecrets.bitnami.com/namespace-wide: "true"` -> for `namespace-wide`
 * `sealedsecrets.bitnami.com/cluster-wide: "true"` -> for `cluster-wide`
@@ -229,8 +235,6 @@ The scope is selected with annotations in the input secret you pass to `kubeseal
 The lack of any of such annotations means `strict` mode. If both are set, `cluster-wide` takes precedence.
 
 > NOTE: next release will consolidate this into a single `sealedsecrets.bitnami.com/scope` annotation.
-> NOTE: next release will enhance the kubeseal tooling so you don't have to fiddle with these annotations.
-
 
 ## Installation
 
