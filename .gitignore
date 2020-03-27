@@ -27,7 +27,7 @@
 /*-static-*
 /controller.yaml
 /controller-norbac.yaml
-/sealedsecret-crd.yaml
+/controller-podmonitor.yaml
 /docker/controller
 *.iml
 .idea
