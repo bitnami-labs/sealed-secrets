@@ -571,12 +571,6 @@ func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.Code
 	return resourceOutput(w, codecs, v1.SchemeGroupVersion, sec)
 }
 
-func warnTTY() {
-	if isatty.IsTerminal(os.Stdin.Fd()) {
-		fmt.Fprintf(os.Stderr, "(tty detected: expecting json/yaml k8s resource in stdin)\n")
-	}
-}
-
 func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw, allowEmptyData bool, fromFile []string, mergeInto string, unseal bool, privKeys []string) error {
 	if len(fromFile) != 0 && !raw {
 		return fmt.Errorf("--from-file requires --raw")
@@ -588,7 +582,9 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 	}
 
 	if !raw && !dumpCert {
-		warnTTY()
+		if isatty.IsTerminal(os.Stdin.Fd()) {
+			fmt.Fprintf(os.Stderr, "(tty detected: expecting json/yaml k8s resource in stdin)\n")
+		}
 	}
 
 	if validateSecret {
@@ -640,15 +636,20 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 			return fmt.Errorf("must provide the --name flag with --raw and --scope %s", sealingScope.String())
 		}
 
-		if len(fromFile) == 0 {
-			return fmt.Errorf("must provide the --from-file flag with --raw")
-		}
-		if len(fromFile) > 1 {
-			return fmt.Errorf("must provide only one --from-file when encrypting a single item with --raw")
-		}
+		var data []byte
+		if len(fromFile) > 0 {
+			if len(fromFile) > 1 {
+				return fmt.Errorf("must provide only one --from-file when encrypting a single item with --raw")
+			}
 
-		_, filename := parseFromFile(fromFile[0])
-		data, err := ioutil.ReadFile(filename)
+			_, filename := parseFromFile(fromFile[0])
+			data, err = ioutil.ReadFile(filename)
+		} else {
+			if isatty.IsTerminal(os.Stdin.Fd()) {
+				fmt.Fprintf(os.Stderr, "(tty detected: expecting a secret to encrypt in stdin)\n")
+			}
+			data, err = ioutil.ReadAll(os.Stdin)
+		}
 		if err != nil {
 			return err
 		}
