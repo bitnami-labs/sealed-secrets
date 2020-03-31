@@ -21,6 +21,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
+	"k8s.io/klog"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	ssclientset "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
@@ -59,6 +60,7 @@ type Controller struct {
 	keyRegistry *KeyRegistry
 
 	oldGCBehavior bool // feature flag to revert to old behavior where we delete the secrets instead of relying on owners reference.
+	updateStatus  bool // feature flag that enables updating the status subresource.
 }
 
 func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, keyRegistry *KeyRegistry, ssecret *ssv1alpha1.SealedSecret) error {
@@ -287,6 +289,11 @@ func (c *Controller) unseal(key string) (unsealErr error) {
 }
 
 func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, unsealError error) error {
+	if !c.updateStatus {
+		klog.V(2).Infof("not updating status because updateStatus feature flag not turned on")
+		return nil
+	}
+
 	ssecret = ssecret.DeepCopy()
 	if ssecret.Status == nil {
 		ssecret.Status = &ssv1alpha1.SealedSecretStatus{}

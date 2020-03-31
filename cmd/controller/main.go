@@ -50,6 +50,8 @@ var (
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
+	updateStatus = flag.Bool("update-status", false, "beta: if true, the controller will update the status subresource whenever it processes a sealed secret")
+
 	// VERSION set from Makefile
 	VERSION = buildinfo.DefaultVersion
 
@@ -231,6 +233,7 @@ func main2() error {
 	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, nil)
 	controller := NewController(clientset, ssclientset, ssinformer, keyRegistry)
 	controller.oldGCBehavior = *oldGCBehavior
+	controller.updateStatus = *updateStatus
 
 	stop := make(chan struct{})
 	defer close(stop)
