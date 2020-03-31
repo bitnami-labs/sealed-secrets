@@ -4,6 +4,24 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.12.1
+
+## Announcements
+
+This release contains changes in `kubeseal` and `controller` binaries but no changes in manifests since v0.12.0.
+
+This release is a fixup release that turns off the status update feature introduced in v0.12.0. Several users have reported
+a severe bug (an infinite feedback loop where the controller kept updating sealedsecrets and consuming lots of CPU).
+
+In order to turn it back on you need to manually pass the `--update-status` flag to the *controller* (or pass the `SEALED_SECRETS_UPDATE_STATUS=1` env var)
+
+## Changelog
+
+* Make it easier to use --raw from stdin (#386)
+* Disable status updates unless a feature flag is explicitly passed (#388)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/18?closed=1
+
 # v0.12.0
 
 ## Announcements
