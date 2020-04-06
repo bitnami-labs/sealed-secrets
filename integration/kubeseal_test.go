@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"crypto/rsa"
 	"crypto/x509"
+	"encoding/json"
 	"encoding/pem"
 	"io"
 	"io/ioutil"
@@ -302,5 +303,87 @@ var _ = Describe("kubeseal --cert", func() {
 
 	It("should return an error", func() {
 		Expect(output.String()).Should(MatchRegexp("^error:.*no such file or directory"))
+	})
+})
+
+var _ = Describe("kubeseal --recovery-unseal", func() {
+	const ns = "default"
+	const secretName = "testSecret"
+
+	var args []string
+	var backupKeysFile *os.File
+	var c corev1.CoreV1Interface
+	var err error
+	var sealedSecretInput []byte
+	var ss *ssv1alpha1.SealedSecret
+	var stderr *bytes.Buffer
+	var stdout *bytes.Buffer
+
+	BeforeEach(func() {
+		c = corev1.NewForConfigOrDie(clusterConfigOrDie())
+
+		input := &v1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: ns,
+				Name:      secretName,
+			},
+			Data: map[string][]byte{
+				"foo": []byte("bar"),
+			},
+		}
+		outobj, err := runKubesealWith([]string{}, input)
+		Expect(err).NotTo(HaveOccurred())
+		ss = outobj.(*ssv1alpha1.SealedSecret)
+
+		enc := scheme.Codecs.LegacyCodec(ssv1alpha1.SchemeGroupVersion)
+		sealedSecretInput, err = runtime.Encode(enc, ss)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	BeforeEach(func() {
+		master, err := c.Secrets("kube-system").List(metav1.ListOptions{
+			LabelSelector: keySelector,
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		backupKeysFile, err = ioutil.TempFile("", "master")
+		Expect(err).NotTo(HaveOccurred())
+		defer backupKeysFile.Close()
+
+		json, err := json.Marshal(master)
+		Expect(err).NotTo(HaveOccurred())
+
+		backupKeysFile.Write(json)
+	})
+
+	BeforeEach(func() {
+		args = []string{"--recovery-unseal", "--kubeconfig", "/?this/file/cannot/possibly/exist/right?"}
+		stderr = &bytes.Buffer{}
+		stdout = &bytes.Buffer{}
+	})
+
+	JustBeforeEach(func() {
+		err = runKubeseal(args, bytes.NewReader(sealedSecretInput), stdout, runAppWithStderr(stderr))
+	})
+
+	Context("without --recovery-private-key", func() {
+		It("should return an error", func() {
+			Expect(err).To(HaveOccurred())
+			Expect(stderr.String()).Should(MatchRegexp("^error:.*key could decrypt secret (.*)"))
+		})
+	})
+
+	Context("with valid --recovery-private-key", func() {
+		var secret v1.Secret
+
+		BeforeEach(func() {
+			args = append(args, "--recovery-private-key", backupKeysFile.Name())
+		})
+
+		It("should successfully unseal the secret", func() {
+			json.Unmarshal(stdout.Bytes(), &secret)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(secret.Data).To(HaveKeyWithValue("foo", []byte("bar")))
+		})
 	})
 })
