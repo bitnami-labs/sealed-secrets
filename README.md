@@ -585,3 +585,7 @@ Since this is a common problem, especially when dealing with legacy applications
 - [#sealed-secrets on Kubernetes Slack](https://kubernetes.slack.com/messages/sealed-secrets)
 
 Click [here](http://slack.k8s.io) to sign up to the Kubernetes Slack org.
+
+### Related projects
+
+* Visual code studio extension: https://marketplace.visualstudio.com/items?itemName=codecontemplator.kubeseal
