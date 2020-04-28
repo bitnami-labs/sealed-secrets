@@ -83,6 +83,9 @@ func fetchKeys(c corev1.SecretsGetter) (map[string]*rsa.PrivateKey, []*x509.Cert
 
 	rsaPrivKey := privKey.(*rsa.PrivateKey)
 	fp, err := crypto.PublicKeyFingerprint(&rsaPrivKey.PublicKey)
+	if err != nil {
+		return nil, nil, err
+	}
 	privKeys := map[string]*rsa.PrivateKey{fp: rsaPrivKey}
 	return privKeys, certs, nil
 }
@@ -181,6 +184,7 @@ var _ = Describe("create", func() {
 				// update
 				s.Data["foo"] = []byte("baz")
 				ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+				Expect(err).NotTo(HaveOccurred())
 				ss.ResourceVersion = resVer
 
 				fmt.Fprintf(GinkgoWriter, "Updating to SealedSecret: %#v\n", ss)
