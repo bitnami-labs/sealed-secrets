@@ -4,6 +4,32 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.12.2
+
+## Announcements
+
+This release contains important changes in manifests since v0.12.1.
+It also contains a minor fix in kubeseal client.
+
+Previously, users upgrading to v0.12.x from previous versions would experience:
+
+```
+The Deployment "sealed-secrets-controller" is invalid: spec.selector: Invalid value: v1.LabelSelector{MatchLabels:map[string]string{"app.kubernetes.io/managed-by":"jsonnet", "app.kubernetes.io/name":"kubeseal", "app.kubernetes.io/part-of":"kubeseal", "app.kubernetes.io/version":"v0.12.1", "name":"sealed-secrets-controller"}, MatchExpressions:[]v1.LabelSelectorRequirement(nil)}: field is immutable
+```
+
+This was caused by a bug in our official yaml manifests introduced in v0.12.0. Users of the Helm chart were unaffected.
+
+By reverting this issue we're are going to cause the same bad experience for users who did perform a clean install of v0.12.x.
+However, we believe such users are a minority.
+
+## Changelog
+
+* Revert "Add recommended labels" (#404)
+* remove kubeconfig deps from recovery-unsea(#394)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/19?closed=1
+
+
 # v0.12.1
 
 ## Announcements
