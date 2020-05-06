@@ -18,23 +18,12 @@ local namespace = 'kube-system';
   },
 
   namespace:: { metadata+: { namespace: namespace } },
-  managedBy:: 'jsonnet',
-  labels:: {
-    metadata+: {
-      labels+: {
-        'app.kubernetes.io/name': 'kubeseal',
-        'app.kubernetes.io/version': std.splitLimit($.controllerImage, ':', 1)[1],
-        'app.kubernetes.io/part-of': 'kubeseal',
-        'app.kubernetes.io/managed-by': $.managedBy,
-      },
-    },
-  },
 
-  service: kube.Service('sealed-secrets-controller') + $.namespace + $.labels {
+  service: kube.Service('sealed-secrets-controller') + $.namespace {
     target_pod: $.controller.spec.template,
   },
 
-  controller: kube.Deployment('sealed-secrets-controller') + $.namespace + $.labels {
+  controller: kube.Deployment('sealed-secrets-controller') + $.namespace {
     spec+: {
       template+: {
         spec+: {
