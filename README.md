@@ -52,6 +52,7 @@ original Secret from the SealedSecret.
   - [What flags are available for kubeseal?](#what-flags-are-available-for-kubeseal)
   - [How do I update parts of JSON/YAML/TOML.. file encrypted with sealed secrets?](#how-do-i-update-parts-of-jsonyamltoml-file-encrypted-with-sealed-secrets)
 - [Community](#community)
+  - [Related projects](#related-projects)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
