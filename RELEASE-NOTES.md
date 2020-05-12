@@ -4,6 +4,18 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.12.3
+
+## Announcements
+
+This release contains only a change in the `kubeseal` binary since v0.12.2. No controller nor k8s manifest changes.
+
+## Changelog
+
+* Fix `--merge-into` file permissions on Windows (#407)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/20?closed=1
+
 # v0.12.2
 
 ## Announcements
