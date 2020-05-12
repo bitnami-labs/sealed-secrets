@@ -434,8 +434,13 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	if err := sealedSecretOutput(&out, codecs, orig); err != nil {
 		return err
 	}
-
-	return ioutil.WriteFile(filename, out.Bytes(), 0)
+	// On windows the permission bits are used also when truncating existing files
+	// (see https://github.com/golang/go/issues/38225)
+	// Thus we need to set some reasonable permissions.
+	// The actual permissions will be filtered by the user's umask.
+	// We still drop any permissions to the other group because despite the sealed secret
+	// being encrypted, we still don't know how the end users feel about it.
+	return ioutil.WriteFile(filename, out.Bytes(), 0660)
 }
 
 func encryptSecretItem(w io.Writer, secretName, ns string, data []byte, scope ssv1alpha1.SealingScope, pubKey *rsa.PublicKey) error {
