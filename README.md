@@ -28,6 +28,7 @@ original Secret from the SealedSecret.
   - [Controller](#controller)
   - [Kustomize](#kustomize)
   - [Helm Chart](#helm-chart)
+  - [Operator Framework](#operator-framework)
   - [Homebrew](#homebrew)
   - [Installation from source](#installation-from-source)
 - [Upgrade](#upgrade)
@@ -269,6 +270,9 @@ Sealed Secret helm charts can be found on this [link](https://github.com/helm/ch
 
 [![](https://img.shields.io/badge/dynamic/json?color=orange&label=helm%20release&query=%24.data.relationships.latestChartVersion.data.app_version&url=https%3A%2F%2Fhub.kubeapps.com%2Fapi%2Fchartsvc%2Fv1%2Fcharts%2Fstable%2Fsealed-secrets)](https://hub.kubeapps.com/charts/stable/sealed-secrets)
 
+### Operator Framework
+
+Install Sealed Secrets as Kubernetes Operator via the Operator Lifecyle Manager of your cluster. The `Sealed Secrets Operator (Helm)` is published at [OperatorHub.io](https://operatorhub.io/operator/sealed-secrets-operator-helm) for Kubernetes, as community operator in OpenShift's integrated OperatorHub or at the [GitHub repository](https://github.com/disposab1e/sealed-secrets-operator-helm) of the project. Please note, this is also an independently maintained project, so please contact the maintainers directly for support, help or [documentation](https://sealed-secrets-operator-helm.readthedocs.io/en/latest/).
 
 ### Homebrew
 
