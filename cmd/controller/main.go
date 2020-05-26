@@ -255,7 +255,7 @@ func main2() error {
 
 	if *encryptBackend == "AWS-KMS" {
 		if kmsKeyID == nil {
-			return fmt.Errorf("missing AWS KMS key ID")
+			return fmt.Errorf("must provide the --aws-kms-key-id flag with AWS-KMS backend")
 		}
 		backend, err = aws.NewKMS(*kmsKeyID)
 		if err != nil {
