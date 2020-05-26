@@ -423,7 +423,6 @@ func (c *Controller) attemptUnseal(ss *ssv1alpha1.SealedSecret) (*corev1.Secret,
 	return attemptUnseal(ss, c.backend)
 }
 
-// need to pass backend
 func attemptUnseal(ss *ssv1alpha1.SealedSecret, backend ssbackend.Backend) (*corev1.Secret, error) {
 	return ss.Unseal(scheme.Codecs, backend)
 }
