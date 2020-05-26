@@ -4,6 +4,18 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.12.4
+
+## Announcements
+
+The binaries in this release have been rebuilt with the Go 1.14.3 toolchain. No other changes in binaries nor k8s manifests.
+
+## Changelog
+
+* Build with latest Go 1.14.x version (#411)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/22?closed=1
+
 # v0.12.3
 
 ## Announcements
@@ -14,7 +26,7 @@ This release contains only a change in the `kubeseal` binary since v0.12.2. No c
 
 * Fix `--merge-into` file permissions on Windows (#407)
 
-The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/20?closed=1
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/21?closed=1
 
 # v0.12.2
 
