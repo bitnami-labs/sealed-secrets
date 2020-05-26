@@ -189,9 +189,9 @@ func initKeyGenSignalListener(trigger func()) {
 func parseBackend() error {
 	switch *encryptBackend {
 	case "AES-256":
-		log.Println("use AES-256 encryption backend")
+		log.Println("AES-256 used as encryption backend is used")
 	case "AWS-KMS":
-		log.Println("use AWS-KMS encryption backend")
+		log.Println("AWS-KMS used as encryption backend")
 	default:
 		return fmt.Errorf("invalid encryption backend: %s", *encryptBackend)
 	}
