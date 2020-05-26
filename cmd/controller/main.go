@@ -200,8 +200,7 @@ func parseBackend() error {
 
 func main2() error {
 
-	err := parseBackend()
-	if err != nil {
+	if err := parseBackend(); err != nil {
 		return err
 	}
 
