@@ -51,7 +51,7 @@ const (
 
 var (
 	// TODO: Verify k8s server signature against cert in kube client config.
-	encryptBackend = flag.String("encryption-backend", "", "Encryption backend used to encrypt/secret (AES-256, AWS-KMS).")
+	encryptBackend = flag.String("backend", "", "Encryption backend used to encrypt/secret (AES-256, AWS-KMS).")
 	certURL        = flag.String("cert", "", "Certificate / public key file/URL to use for encryption. Overrides --controller-*")
 	kmsKeyID       = flag.String("aws-kms-key-id", "", "AWS KMS key ID used to encrypt/decrypt secrets.")
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")

@@ -41,7 +41,7 @@ const (
 )
 
 var (
-	encryptBackend = flag.String("encryption-backend", "AES-256", "Encryption backend used to encrypt/secret (AES-256, AWS-KMS).")
+	encryptBackend = flag.String("backend", "AES-256", "Encryption backend used to encrypt/secret (AES-256, AWS-KMS).")
 	keyPrefix      = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
 	keySize        = flag.Int("key-size", 4096, "Size of encryption key.")
 	validFor       = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
