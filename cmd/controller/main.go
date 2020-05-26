@@ -50,7 +50,7 @@ var (
 	keyRenewPeriod = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation disabled if 0)")
 	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", false, "Accept deprecated V1 data field.")
 	keyCutoffTime  = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
-	kmsKeyID       = flag.String("aws-kms-key-id", "", "AWS KMS key ID used to encrypt/decrypt secrets.")
+	awsKmsKeyID    = flag.String("aws-kms-key-id", "", "AWS KMS key ID used to encrypt/decrypt secrets.")
 	namespaceAll   = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
@@ -254,10 +254,10 @@ func main2() error {
 	}
 
 	if *encryptBackend == "AWS-KMS" {
-		if kmsKeyID == nil {
+		if *awsKmsKeyID == "" {
 			return fmt.Errorf("must provide the --aws-kms-key-id flag with AWS-KMS backend")
 		}
-		backend, err = aws.NewKMS(*kmsKeyID)
+		backend, err = aws.NewKMS(*awsKmsKeyID)
 		if err != nil {
 			return err
 		}
