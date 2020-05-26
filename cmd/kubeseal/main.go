@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
@@ -40,6 +39,10 @@ import (
 	"github.com/bitnami-labs/flagenv"
 	"github.com/bitnami-labs/pflagenv"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+
+	ssbackend "github.com/bitnami-labs/sealed-secrets/pkg/backend"
+	"github.com/bitnami-labs/sealed-secrets/pkg/backend/aes"
+	"github.com/bitnami-labs/sealed-secrets/pkg/backend/aws"
 )
 
 const (
@@ -48,11 +51,13 @@ const (
 
 var (
 	// TODO: Verify k8s server signature against cert in kube client config.
+	encryptBackend = flag.String("encryption-backend", "", "Encryption backend used to encrypt/secret (AES-256, AWS-KMS).")
 	certURL        = flag.String("cert", "", "Certificate / public key file/URL to use for encryption. Overrides --controller-*")
+	kmsKeyID       = flag.String("aws-kms-key-id", "", "AWS KMS key ID used to encrypt/decrypt secrets.")
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.StringP("format", "o", "json", "Output format for sealed secret. Either json or yaml")
-	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
+	dumpProvider   = flag.Bool("fetch-provider", false, "Write certificate to stdout. Useful for later use with --cert")
 	allowEmptyData = flag.Bool("allow-empty-data", false, "Allow empty data in the secret object")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
@@ -101,13 +106,74 @@ func init() {
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 }
 
-func parseKey(r io.Reader) (*rsa.PublicKey, error) {
-	data, err := ioutil.ReadAll(r)
+func validateFlags() error {
+
+	if len(*fromFile) != 0 && !*raw {
+		return fmt.Errorf("--from-file requires --raw")
+	}
+
+	err := parseBackend()
+	if err != nil {
+		return err
+	}
+
+	if *unseal && *encryptBackend == "" {
+		return fmt.Errorf("missing encryption backend: %s", *encryptBackend)
+	}
+
+	return nil
+
+}
+
+func parseBackend() error {
+	switch *encryptBackend {
+	case "AES-256":
+		if len(*privKeys) == 0 {
+			return fmt.Errorf("must provide the --recovery-private-key flag with private key files")
+		}
+	case "AWS-KMS":
+		if *kmsKeyID == "" {
+			return fmt.Errorf("must provide the --aws-kms-key-id flag with AWS KMS key ID")
+		}
+	case "":
+	default:
+		return fmt.Errorf("invalid encryption backend: %s", *encryptBackend)
+	}
+
+	return nil
+}
+
+func fetchBackend() ([]byte, error) {
+
+	if (!*unseal && *encryptBackend != "") || *unseal {
+		return []byte(*encryptBackend), nil
+	}
+
+	conf, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	certs, err := cert.ParseCertsPEM(data)
+	restClient, err := corev1.NewForConfig(conf)
+	if err != nil {
+		return nil, err
+	}
+
+	f, err := restClient.
+		Services(*controllerNs).
+		ProxyGet("http", *controllerName, "", "/v1/backend", nil).
+		Stream()
+	if err != nil {
+		return nil, fmt.Errorf("cannot fetch backend type: %v", err)
+	}
+	defer f.Close()
+
+	return ioutil.ReadAll(f)
+}
+
+func parseKey(key []byte) (*rsa.PublicKey, error) {
+
+	certs, err := cert.ParseCertsPEM(key)
 	if err != nil {
 		return nil, err
 	}
@@ -164,17 +230,20 @@ func isFilename(name string) (bool, error) {
 
 // openCertLocal opens a cert URI or local filename, by fetching it locally from the client
 // (as opposed as openCertCluster which fetches it via HTTP but through the k8s API proxy).
-func openCertLocal(filenameOrURI string) (io.ReadCloser, error) {
-	// detect if a certificate is a local file or an URI.
-	if ok, err := isFilename(filenameOrURI); err != nil {
-		return nil, err
-	} else if ok {
-		return os.Open(filenameOrURI)
+func openCert(filenameOrURI string) ([]byte, error) {
+	if *certURL != "" {
+		// detect if a certificate is a local file or an URI.
+		if ok, err := isFilename(filenameOrURI); err != nil {
+			return nil, err
+		} else if ok {
+			return ioutil.ReadFile(filenameOrURI)
+		}
+		return openCertURI(filenameOrURI)
 	}
-	return openCertURI(filenameOrURI)
+	return openProvider()
 }
 
-func openCertURI(uri string) (io.ReadCloser, error) {
+func openCertURI(uri string) ([]byte, error) {
 	// support file:// scheme. Note: we're opening the file using os.Open rather
 	// than using the file:// scheme below because there is no point in complicating our lives
 	// and escape the filename properly.
@@ -190,43 +259,42 @@ func openCertURI(uri string) (io.ReadCloser, error) {
 	if resp.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("cannot fetch %q: %s", uri, resp.Status)
 	}
-	return resp.Body, nil
+	return ioutil.ReadAll(resp.Body)
 }
 
 // openCertCluster fetches a certificate by performing an HTTP request to the controller
 // through the k8s API proxy.
-func openCertCluster(c corev1.CoreV1Interface, namespace, name string) (io.ReadCloser, error) {
-	f, err := c.
-		Services(namespace).
-		ProxyGet("http", name, "", "/v1/cert.pem", nil).
-		Stream()
-	if err != nil {
-		return nil, fmt.Errorf("cannot fetch certificate: %v", err)
-	}
-	return f, nil
-}
-
-func openCert(certURL string) (io.ReadCloser, error) {
-	if certURL != "" {
-		return openCertLocal(certURL)
-	}
+func openProvider() ([]byte, error) {
 
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, err
 	}
-	conf.AcceptContentTypes = "application/x-pem-file, */*"
+	//conf.AcceptContentTypes = "application/x-pem-file, */*"
 	restClient, err := corev1.NewForConfig(conf)
 	if err != nil {
 		return nil, err
 	}
-	return openCertCluster(restClient, *controllerNs, *controllerName)
+	f, err := restClient.
+		Services(*controllerNs).
+		ProxyGet("http", *controllerName, "", "/v1/provider", nil).
+		Stream()
+	if err != nil {
+		return nil, fmt.Errorf("cannot fetch provider: %v", err)
+	}
+	defer f.Close()
+
+	data, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
 
 // Seal reads a k8s Secret resource parsed from an input reader by a given codec, encrypts all its secrets
 // with a given public key, using the name and namespace found in the input secret, unless explicitly overridden
 // by the overrideName and overrideNamespace arguments.
-func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string) error {
+func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, backend ssbackend.Backend, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string) error {
 	secret, err := readSecret(codecs.UniversalDecoder(), in)
 	if err != nil {
 		return err
@@ -271,7 +339,7 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 	secret.SetDeletionTimestamp(nil)
 	secret.DeletionGracePeriodSeconds = nil
 
-	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, pubKey, secret)
+	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, backend, secret)
 	if err != nil {
 		return err
 	}
@@ -397,7 +465,7 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 	return &ss, nil
 }
 
-func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool) error {
+func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, backend ssbackend.Backend, scope ssv1alpha1.SealingScope, allowEmptyData bool) error {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
@@ -409,7 +477,7 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	}
 
 	var buf bytes.Buffer
-	if err := seal(in, &buf, codecs, pubKey, scope, allowEmptyData, orig.Name, orig.Namespace); err != nil {
+	if err := seal(in, &buf, codecs, backend, scope, allowEmptyData, orig.Name, orig.Namespace); err != nil {
 		return err
 	}
 
@@ -443,11 +511,11 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	return ioutil.WriteFile(filename, out.Bytes(), 0660)
 }
 
-func encryptSecretItem(w io.Writer, secretName, ns string, data []byte, scope ssv1alpha1.SealingScope, pubKey *rsa.PublicKey) error {
+func encryptSecretItem(w io.Writer, secretName, ns string, data []byte, scope ssv1alpha1.SealingScope, backend ssbackend.Backend) error {
 	// TODO(mkm): refactor cluster-wide/namespace-wide to an actual enum so we can have a simple flag
 	// to refer to the scope mode that is not a tuple of booleans.
 	label := ssv1alpha1.EncryptionLabel(ns, secretName, scope)
-	out, err := crypto.HybridEncrypt(rand.Reader, pubKey, data, label)
+	out, err := backend.Encrypt(data, label)
 	if err != nil {
 		return err
 	}
@@ -553,11 +621,7 @@ func readPrivKeys(filenames []string) (map[string]*rsa.PrivateKey, error) {
 	return res, nil
 }
 
-func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.CodecFactory, privKeyFilenames []string) error {
-	privKeys, err := readPrivKeys(privKeyFilenames)
-	if err != nil {
-		return err
-	}
+func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.CodecFactory, backend ssbackend.Backend) error {
 
 	b, err := ioutil.ReadAll(in)
 	if err != nil {
@@ -568,7 +632,8 @@ func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.Code
 	if err != nil {
 		return err
 	}
-	sec, err := ss.Unseal(codecs, privKeys)
+
+	sec, err := ss.Unseal(codecs, backend)
 	if err != nil {
 		return err
 	}
@@ -576,9 +641,10 @@ func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.Code
 	return resourceOutput(w, codecs, v1.SchemeGroupVersion, sec)
 }
 
-func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw, allowEmptyData bool, fromFile []string, mergeInto string, unseal bool, privKeys []string) error {
-	if len(fromFile) != 0 && !raw {
-		return fmt.Errorf("--from-file requires --raw")
+func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpProvider, raw, allowEmptyData bool, fromFile []string, mergeInto string, unseal bool, privKeys []string) error {
+
+	if err := validateFlags(); err != nil {
+		return err
 	}
 
 	if printVersion {
@@ -586,17 +652,10 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 		return nil
 	}
 
-	if !raw && !dumpCert {
+	if !raw && !dumpProvider {
 		if isatty.IsTerminal(os.Stdin.Fd()) {
 			fmt.Fprintf(os.Stderr, "(tty detected: expecting json/yaml k8s resource in stdin)\n")
 		}
-	}
-
-	if unseal {
-		return unsealSealedSecret(w, os.Stdin, scheme.Codecs, privKeys)
-	}
-	if len(privKeys) != 0 && isatty.IsTerminal(os.Stderr.Fd()) {
-		fmt.Fprintf(os.Stderr, "warning: ignoring --recovery-private-key because unseal command not chosen with --recovery-unseal\n")
 	}
 
 	if validateSecret {
@@ -607,24 +666,59 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 		return reEncryptSealedSecret(os.Stdin, os.Stdout, scheme.Codecs, controllerNs, controllerName)
 	}
 
-	f, err := openCert(certURL)
+	backendType, err := fetchBackend()
 	if err != nil {
 		return err
 	}
-	defer f.Close()
 
-	if dumpCert {
-		_, err := io.Copy(os.Stdout, f)
-		return err
+	var backend ssbackend.Backend
+
+	var providerData []byte
+
+	if string(backendType) == "AES-256" {
+		var pubKey *rsa.PublicKey
+		if !unseal {
+			providerData, err = openCert(certURL)
+			if err != nil {
+				return err
+			}
+			pubKey, err = parseKey(providerData)
+			if err != nil {
+				return err
+			}
+		}
+		privKeysMap, _ := readPrivKeys(privKeys)
+		backend = aes.NewAES256(nil, pubKey, privKeysMap)
 	}
 
-	pubKey, err := parseKey(f)
-	if err != nil {
-		return err
+	if string(backendType) == "AWS-KMS" {
+		if *kmsKeyID != "" {
+			providerData = []byte(*kmsKeyID)
+		} else {
+			providerData, err = openProvider()
+			if err != nil {
+				return err
+			}
+		}
+		backend, err = aws.NewKMS(string(providerData))
+		if err != nil {
+			return err
+		}
+	}
+
+	if unseal {
+		return unsealSealedSecret(w, os.Stdin, scheme.Codecs, backend)
+	}
+	if len(privKeys) != 0 && isatty.IsTerminal(os.Stderr.Fd()) {
+		fmt.Fprintf(os.Stderr, "warning: ignoring --recovery-private-key because unseal command not chosen with --recovery-unseal\n")
+	}
+
+	if dumpProvider {
+		fmt.Fprintf(os.Stdout, string(providerData)+"\n")
 	}
 
 	if mergeInto != "" {
-		return sealMergingInto(os.Stdin, mergeInto, scheme.Codecs, pubKey, sealingScope, allowEmptyData)
+		return sealMergingInto(os.Stdin, mergeInto, scheme.Codecs, backend, sealingScope, allowEmptyData)
 	}
 
 	if raw {
@@ -659,17 +753,17 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 			return err
 		}
 
-		return encryptSecretItem(w, secretName, ns, data, sealingScope, pubKey)
+		return encryptSecretItem(w, secretName, ns, data, sealingScope, backend)
 	}
 
-	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey, sealingScope, allowEmptyData, secretName, "")
+	return seal(os.Stdin, os.Stdout, scheme.Codecs, backend, sealingScope, allowEmptyData, secretName, "")
 }
 
 func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
-	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *allowEmptyData, *fromFile, *mergeInto, *unseal, *privKeys); err != nil {
+	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpProvider, *raw, *allowEmptyData, *fromFile, *mergeInto, *unseal, *privKeys); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

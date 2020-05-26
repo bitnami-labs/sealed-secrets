@@ -1,8 +1,6 @@
 package main
 
 import (
-	"crypto/x509"
-	"encoding/pem"
 	"io"
 	"io/ioutil"
 	"log"
@@ -14,7 +12,7 @@ import (
 	flag "github.com/spf13/pflag"
 	"github.com/throttled/throttled"
 	"github.com/throttled/throttled/store/memstore"
-	certUtil "k8s.io/client-go/util/cert"
+	//certUtil "k8s.io/client-go/util/cert"
 )
 
 var (
@@ -24,7 +22,6 @@ var (
 )
 
 // Called on every request to /cert.  Errors will be logged and return a 500.
-type certProvider func() ([]*x509.Certificate, error)
 type secretChecker func([]byte) (bool, error)
 type secretRotator func([]byte) ([]byte, error)
 
@@ -32,7 +29,7 @@ type secretRotator func([]byte) ([]byte, error)
 // or secret rotation and validation. This endpoint is designed to be accessible by
 // all users of a given cluster. It must not leak any secret material.
 // The server is started in the background and a handle to it returned so it can be shut down.
-func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Server {
+func httpserver(provider func(http.ResponseWriter, *http.Request), sc secretChecker, sr secretRotator) *http.Server {
 	httpRateLimiter := rateLimter()
 
 	mux := http.NewServeMux()
@@ -91,18 +88,11 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 		w.Write(newSecret)
 	})
 
-	mux.HandleFunc("/v1/cert.pem", func(w http.ResponseWriter, r *http.Request) {
-		certs, err := cp()
-		if err != nil {
-			log.Printf("cannot get certificates: %v", err)
-			http.Error(w, "cannot get certificate", http.StatusInternalServerError)
-			return
-		}
+	mux.HandleFunc("/v1/provider", provider)
 
-		w.Header().Set("Content-Type", "application/x-pem-file")
-		for _, cert := range certs {
-			w.Write(pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
-		}
+	mux.HandleFunc("/v1/backend", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/html")
+		w.Write([]byte(*encryptBackend))
 	})
 
 	server := http.Server{

@@ -1,4 +1,4 @@
-package main
+package aes
 
 import (
 	"crypto/rsa"
@@ -30,12 +30,14 @@ type KeyRegistry struct {
 	keyPrefix     string
 	keyLabel      string
 	keysize       int
+	validFor      time.Duration
+	myCN          string
 	keys          map[string]*Key
 	mostRecentKey *Key
 }
 
 // NewKeyRegistry creates a new KeyRegistry.
-func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel string, keysize int) *KeyRegistry {
+func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel string, keysize int, validFor time.Duration, myCN string) *KeyRegistry {
 	return &KeyRegistry{
 		client:    client,
 		namespace: namespace,
@@ -46,8 +48,20 @@ func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel 
 	}
 }
 
-func (kr *KeyRegistry) generateKey() (string, error) {
-	key, cert, err := generatePrivateKeyAndCert(kr.keysize)
+func (k Key) GetCreationTime() time.Time {
+	return k.creationTime
+}
+
+func (kr *KeyRegistry) GetMostRecentKey() *Key {
+	return kr.mostRecentKey
+}
+
+func (kr *KeyRegistry) GetKeys() map[string]*Key {
+	return kr.keys
+}
+
+func (kr *KeyRegistry) GenerateKey() (string, error) {
+	key, cert, err := generatePrivateKeyAndCert(kr.keysize, kr.validFor, kr.myCN)
 	if err != nil {
 		return "", err
 	}
@@ -57,7 +71,7 @@ func (kr *KeyRegistry) generateKey() (string, error) {
 		return "", err
 	}
 	// Only store key to local store if write to k8s worked
-	if err := kr.registerNewKey(generatedName, key, cert, time.Now()); err != nil {
+	if err := kr.RegisterNewKey(generatedName, key, cert, time.Now()); err != nil {
 		return "", err
 	}
 	log.Printf("New key written to %s/%s\n", kr.namespace, generatedName)
@@ -65,7 +79,7 @@ func (kr *KeyRegistry) generateKey() (string, error) {
 	return generatedName, nil
 }
 
-func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate, creationTime time.Time) error {
+func (kr *KeyRegistry) RegisterNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate, creationTime time.Time) error {
 	fingerprint, err := crypto.PublicKeyFingerprint(&privKey.PublicKey)
 	if err != nil {
 		return err
@@ -86,12 +100,12 @@ func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, c
 	return nil
 }
 
-func (kr *KeyRegistry) latestPrivateKey() *rsa.PrivateKey {
+func (kr *KeyRegistry) LatestPrivateKey() *rsa.PrivateKey {
 	return kr.mostRecentKey.private
 }
 
 // getCert returns the current certificate. This method can be called by another goroutine.
-func (kr *KeyRegistry) getCert() (*x509.Certificate, error) {
+func (kr *KeyRegistry) GetCert() (*x509.Certificate, error) {
 	kr.Lock()
 	defer kr.Unlock()
 

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"crypto/rand"
-	"crypto/x509"
+	"crypto/rsa"
 	goflag "flag"
 	"fmt"
 	"io"
@@ -30,6 +30,10 @@ import (
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
+
+	ssbackend "github.com/bitnami-labs/sealed-secrets/pkg/backend"
+	"github.com/bitnami-labs/sealed-secrets/pkg/backend/aes"
+	"github.com/bitnami-labs/sealed-secrets/pkg/backend/aws"
 )
 
 const (
@@ -38,6 +42,7 @@ const (
 )
 
 var (
+	encryptBackend = flag.String("encryption-backend", "AES-256", "Encryption backend used to encrypt/secret (AES-256, AWS-KMS).")
 	keyPrefix      = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
 	keySize        = flag.Int("key-size", 4096, "Size of encryption key.")
 	validFor       = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
@@ -46,6 +51,7 @@ var (
 	keyRenewPeriod = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation disabled if 0)")
 	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", false, "Accept deprecated V1 data field.")
 	keyCutoffTime  = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
+	kmsKeyID       = flag.String("aws-kms-key-id", "", "AWS KMS key ID used to encrypt/decrypt secrets.")
 	namespaceAll   = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
@@ -56,7 +62,7 @@ var (
 	VERSION = buildinfo.DefaultVersion
 
 	// Selector used to find existing public/private key pairs on startup
-	keySelector = fields.OneTermEqualSelector(SealedSecretsKeyLabel, "active")
+	keySelector = fields.OneTermEqualSelector(aes.SealedSecretsKeyLabel, "active")
 )
 
 func init() {
@@ -88,7 +94,7 @@ func initKeyPrefix(keyPrefix string) (string, error) {
 	return prefix, err
 }
 
-func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
+func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*aes.KeyRegistry, error) {
 	log.Printf("Searching for existing private keys")
 	secretList, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{
 		LabelSelector: keySelector.String(),
@@ -107,15 +113,15 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix
 		// TODO(mkm): add the label to the legacy secret to simplify discovery and backups.
 	}
 
-	keyRegistry := NewKeyRegistry(client, namespace, prefix, label, keysize)
+	keyRegistry := aes.NewKeyRegistry(client, namespace, prefix, label, keysize, *validFor, *myCN)
 	sort.Sort(ssv1alpha1.ByCreationTimestamp(items))
 	for _, secret := range items {
-		key, certs, err := readKey(secret)
+		key, certs, err := aes.ReadKey(secret)
 		if err != nil {
 			log.Printf("Error reading key %s: %v", secret.Name, err)
 		}
 		ct := secret.CreationTimestamp
-		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], ct.Time); err != nil {
+		if err := keyRegistry.RegisterNewKey(secret.Name, key, certs[0], ct.Time); err != nil {
 			return nil, err
 		}
 		log.Printf("----- %s", secret.Name)
@@ -141,18 +147,18 @@ func myNamespace() string {
 // Initialises the first key and starts the rotation job. returns an early trigger function.
 // A period of 0 disables automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
 // is still honoured.
-func initKeyRenewal(registry *KeyRegistry, period time.Duration, cutoffTime time.Time) (func(), error) {
+func initKeyRenewal(registry *aes.KeyRegistry, period time.Duration, cutoffTime time.Time) (func(), error) {
 	// Create a new key if it's the first key,
 	// or if it's older than cutoff time.
-	if len(registry.keys) == 0 || registry.mostRecentKey.creationTime.Before(cutoffTime) {
-		if _, err := registry.generateKey(); err != nil {
+	if len(registry.GetKeys()) == 0 || registry.GetMostRecentKey().GetCreationTime().Before(cutoffTime) {
+		if _, err := registry.GenerateKey(); err != nil {
 			return nil, err
 		}
 	}
 
 	// wrapper function to log error thrown by generateKey function
 	keyGenFunc := func() {
-		if _, err := registry.generateKey(); err != nil {
+		if _, err := registry.GenerateKey(); err != nil {
 			log.Printf("Failed to generate new key : %v\n", err)
 		}
 	}
@@ -162,7 +168,7 @@ func initKeyRenewal(registry *KeyRegistry, period time.Duration, cutoffTime time
 
 	// If key rotation is enabled, we'll rotate the key when the most recent
 	// key becomes stale (older than period).
-	mostRecentKeyAge := time.Since(registry.mostRecentKey.creationTime)
+	mostRecentKeyAge := time.Since(registry.GetMostRecentKey().GetCreationTime())
 	initialDelay := period - mostRecentKeyAge
 	if initialDelay < 0 {
 		initialDelay = 0
@@ -181,7 +187,25 @@ func initKeyGenSignalListener(trigger func()) {
 	}()
 }
 
+func parseBackend() error {
+	switch *encryptBackend {
+	case "AES-256":
+		log.Println("use AES-256 encryption backend")
+	case "AWS-KMS":
+		log.Println("use AWS-KMS encryption backend")
+	default:
+		return fmt.Errorf("invalid encryption backend: %s", *encryptBackend)
+	}
+	return nil
+}
+
 func main2() error {
+
+	err := parseBackend()
+	if err != nil {
+		return err
+	}
+
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return err
@@ -199,31 +223,47 @@ func main2() error {
 
 	myNs := myNamespace()
 
-	prefix, err := initKeyPrefix(*keyPrefix)
-	if err != nil {
-		return err
+	var backend ssbackend.Backend
+
+	if *encryptBackend == "AES-256" {
+		prefix, err := initKeyPrefix(*keyPrefix)
+		if err != nil {
+			return err
+		}
+
+		keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, prefix, aes.SealedSecretsKeyLabel, *keySize)
+		if err != nil {
+			return err
+		}
+
+		var ct time.Time
+		if *keyCutoffTime != "" {
+			var err error
+			ct, err = time.Parse(time.RFC1123Z, *keyCutoffTime)
+			if err != nil {
+				return err
+			}
+		}
+
+		trigger, err := initKeyRenewal(keyRegistry, *keyRenewPeriod, ct)
+		if err != nil {
+			return err
+		}
+
+		initKeyGenSignalListener(trigger)
+
+		backend = aes.NewAES256(keyRegistry, nil, map[string]*rsa.PrivateKey{})
 	}
 
-	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, *keySize)
-	if err != nil {
-		return err
-	}
-
-	var ct time.Time
-	if *keyCutoffTime != "" {
-		var err error
-		ct, err = time.Parse(time.RFC1123Z, *keyCutoffTime)
+	if *encryptBackend == "AWS-KMS" {
+		if kmsKeyID == nil {
+			return fmt.Errorf("missing AWS KMS key ID")
+		}
+		backend, err = aws.NewKMS(*kmsKeyID)
 		if err != nil {
 			return err
 		}
 	}
-
-	trigger, err := initKeyRenewal(keyRegistry, *keyRenewPeriod, ct)
-	if err != nil {
-		return err
-	}
-
-	initKeyGenSignalListener(trigger)
 
 	namespace := v1.NamespaceAll
 	if !*namespaceAll {
@@ -231,7 +271,7 @@ func main2() error {
 	}
 
 	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, nil)
-	controller := NewController(clientset, ssclientset, ssinformer, keyRegistry)
+	controller := NewController(clientset, ssclientset, ssinformer, &backend)
 	controller.oldGCBehavior = *oldGCBehavior
 	controller.updateStatus = *updateStatus
 
@@ -240,15 +280,7 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	cp := func() ([]*x509.Certificate, error) {
-		cert, err := keyRegistry.getCert()
-		if err != nil {
-			return nil, err
-		}
-		return []*x509.Certificate{cert}, nil
-	}
-
-	server := httpserver(cp, controller.AttemptUnseal, controller.Rotate)
+	server := httpserver(backend.Provider, controller.AttemptUnseal, controller.Rotate)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)

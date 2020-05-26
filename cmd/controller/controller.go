@@ -1,7 +1,6 @@
 package main
 
 import (
-	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -22,6 +21,8 @@ import (
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
+
+	ssbackend "github.com/bitnami-labs/sealed-secrets/pkg/backend"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	ssclientset "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
@@ -52,18 +53,19 @@ const (
 
 // Controller implements the main sealed-secrets-controller loop.
 type Controller struct {
-	queue       workqueue.RateLimitingInterface
-	informer    cache.SharedIndexInformer
-	sclient     v1.SecretsGetter
-	ssclient    ssv1alpha1client.SealedSecretsGetter
-	recorder    record.EventRecorder
-	keyRegistry *KeyRegistry
+	queue    workqueue.RateLimitingInterface
+	informer cache.SharedIndexInformer
+	sclient  v1.SecretsGetter
+	ssclient ssv1alpha1client.SealedSecretsGetter
+	recorder record.EventRecorder
+
+	backend ssbackend.Backend
 
 	oldGCBehavior bool // feature flag to revert to old behavior where we delete the secrets instead of relying on owners reference.
 	updateStatus  bool // feature flag that enables updating the status subresource.
 }
 
-func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, keyRegistry *KeyRegistry, ssecret *ssv1alpha1.SealedSecret) error {
+func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, backend *ssbackend.Backend, ssecret *ssv1alpha1.SealedSecret) error {
 	// Important: Be careful not to reveal the namespace/name of
 	// the *decrypted* Secret (or any other detail) in error/log
 	// messages.
@@ -71,7 +73,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 	objName := fmt.Sprintf("%s/%s", ssecret.GetObjectMeta().GetNamespace(), ssecret.GetObjectMeta().GetName())
 	log.Printf("Updating %s", objName)
 
-	secret, err := attemptUnseal(ssecret, keyRegistry)
+	secret, err := attemptUnseal(ssecret, *backend)
 	if err != nil {
 		// TODO: Add error event
 		return err
@@ -91,7 +93,7 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 }
 
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, keyRegistry *KeyRegistry) *Controller {
+func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, backend *ssbackend.Backend) *Controller {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
 	ssscheme.AddToScheme(scheme.Scheme)
@@ -126,12 +128,12 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 	})
 
 	return &Controller{
-		informer:    informer,
-		queue:       queue,
-		sclient:     clientset.CoreV1(),
-		ssclient:    ssclientset.BitnamiV1alpha1(),
-		recorder:    recorder,
-		keyRegistry: keyRegistry,
+		informer: informer,
+		queue:    queue,
+		sclient:  clientset.CoreV1(),
+		ssclient: ssclientset.BitnamiV1alpha1(),
+		recorder: recorder,
+		backend:  *backend,
 	}
 }
 
@@ -403,8 +405,7 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("Error decrypting secret. %v", err)
 		}
-		latestPrivKey := c.keyRegistry.latestPrivateKey()
-		resealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, &latestPrivKey.PublicKey, secret)
+		resealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, c.backend, secret)
 		if err != nil {
 			return nil, fmt.Errorf("Error creating new sealed secret. %v", err)
 		}
@@ -419,13 +420,10 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 }
 
 func (c *Controller) attemptUnseal(ss *ssv1alpha1.SealedSecret) (*corev1.Secret, error) {
-	return attemptUnseal(ss, c.keyRegistry)
+	return attemptUnseal(ss, c.backend)
 }
 
-func attemptUnseal(ss *ssv1alpha1.SealedSecret, keyRegistry *KeyRegistry) (*corev1.Secret, error) {
-	privateKeys := map[string]*rsa.PrivateKey{}
-	for k, v := range keyRegistry.keys {
-		privateKeys[k] = v.private
-	}
-	return ss.Unseal(scheme.Codecs, privateKeys)
+// need to pass backend
+func attemptUnseal(ss *ssv1alpha1.SealedSecret, backend ssbackend.Backend) (*corev1.Secret, error) {
+	return ss.Unseal(scheme.Codecs, backend)
 }
