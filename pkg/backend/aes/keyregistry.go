@@ -43,6 +43,8 @@ func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel 
 		namespace: namespace,
 		keyPrefix: keyPrefix,
 		keysize:   keysize,
+		validFor:  validFor,
+		myCN:      myCN,
 		keyLabel:  keyLabel,
 		keys:      map[string]*Key{},
 	}
