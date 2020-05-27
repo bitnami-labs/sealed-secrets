@@ -56,7 +56,7 @@ func (b AES256) Decrypt(ciphertext, label []byte) ([]byte, error) {
 
 }
 
-func (b AES256) Provider(w http.ResponseWriter, r *http.Request) {
+func (b AES256) ProviderHandler(w http.ResponseWriter, r *http.Request) {
 	cert, err := b.keyRegistry.GetCert()
 	if err != nil {
 		log.Printf("cannot get certificates: %v", err)

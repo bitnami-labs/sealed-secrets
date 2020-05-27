@@ -278,7 +278,7 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	server := httpserver(backend.Provider, controller.AttemptUnseal, controller.Rotate)
+	server := httpserver(backend.ProviderHandler, controller.AttemptUnseal, controller.Rotate)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)

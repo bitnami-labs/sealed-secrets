@@ -57,7 +57,7 @@ var (
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.StringP("format", "o", "json", "Output format for sealed secret. Either json or yaml")
-	dumpProvider   = flag.Bool("fetch-provider", false, "Write certificate to stdout. Useful for later use with --cert")
+	dumpProvider   = flag.Bool("fetch-provider", false, "Write backend provider information to stdout.")
 	allowEmptyData = flag.Bool("allow-empty-data", false, "Allow empty data in the secret object")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")

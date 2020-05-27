@@ -65,7 +65,7 @@ func (b *KMS) Decrypt(ciphertext, label []byte) ([]byte, error) {
 	return result.Plaintext, nil
 }
 
-func (b KMS) Provider(w http.ResponseWriter, r *http.Request) {
+func (b KMS) ProviderHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html")
 	w.Write([]byte(b.keyID))
 }
