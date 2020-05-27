@@ -53,7 +53,7 @@ var (
 	// TODO: Verify k8s server signature against cert in kube client config.
 	encryptBackend = flag.String("backend", "", "Encryption backend used to encrypt/secret (AES-256, AWS-KMS).")
 	certURL        = flag.String("cert", "", "Certificate / public key file/URL to use for encryption. Overrides --controller-*")
-	kmsKeyID       = flag.String("aws-kms-key-id", "", "AWS KMS key ID used to encrypt/decrypt secrets.")
+	awsKmsKeyID    = flag.String("aws-kms-key-id", "", "AWS KMS key ID used to encrypt/decrypt secrets.")
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.StringP("format", "o", "json", "Output format for sealed secret. Either json or yaml")
@@ -132,7 +132,7 @@ func parseBackend() error {
 			return fmt.Errorf("must provide the --recovery-private-key flag with private key files")
 		}
 	case "AWS-KMS":
-		if *kmsKeyID == "" {
+		if *awsKmsKeyID == "" {
 			return fmt.Errorf("must provide the --aws-kms-key-id flag with AWS KMS key ID")
 		}
 	case "":
@@ -692,8 +692,8 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 	}
 
 	if string(backendType) == "AWS-KMS" {
-		if *kmsKeyID != "" {
-			providerData = []byte(*kmsKeyID)
+		if *awsKmsKeyID != "" {
+			providerData = []byte(*awsKmsKeyID)
 		} else {
 			providerData, err = openProvider()
 			if err != nil {
