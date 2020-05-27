@@ -9,7 +9,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
-	"github.com/bitnami-labs/sealed-secrets/pkg/backend"
+	ssbackend "github.com/bitnami-labs/sealed-secrets/pkg/backend"
 	"github.com/mkmik/multierror"
 )
 
@@ -32,7 +32,7 @@ var (
 
 // SealedSecretExpansion has methods to work with SealedSecrets resources.
 type SealedSecretExpansion interface {
-	Unseal(codecs runtimeserializer.CodecFactory, be backend.Backend) (*v1.Secret, error)
+	Unseal(codecs runtimeserializer.CodecFactory, backend ssbackend.Backend) (*v1.Secret, error)
 }
 
 // SealingScope is an enum that declares the mobility of a sealed secret by defining
@@ -112,7 +112,7 @@ func (s *SealedSecret) Scope() SealingScope {
 // provided secret. This encrypts all the secrets into a single encrypted
 // blob and stores it in the `Data` attribute. Keeping this for backward
 // compatibility.
-func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, be backend.Backend, secret *v1.Secret) (*SealedSecret, error) {
+func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, backend ssbackend.Backend, secret *v1.Secret) (*SealedSecret, error) {
 	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
 	if !ok {
 		return nil, fmt.Errorf("binary can't serialize JSON")
@@ -132,7 +132,7 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, be backend.Backend
 	// during decryption.
 	label := labelFor(secret)
 
-	ciphertext, err := be.Encrypt(plaintext, label)
+	ciphertext, err := backend.Encrypt(plaintext, label)
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +190,7 @@ func StripLastAppliedAnnotations(annotations map[string]string) {
 // NewSealedSecret creates a new SealedSecret object wrapping the
 // provided secret. This encrypts only the values of each secrets
 // individually, so secrets can be updated one by one.
-func NewSealedSecret(codecs runtimeserializer.CodecFactory, be backend.Backend, secret *v1.Secret) (*SealedSecret, error) {
+func NewSealedSecret(codecs runtimeserializer.CodecFactory, backend ssbackend.Backend, secret *v1.Secret) (*SealedSecret, error) {
 	if SecretScope(secret) != ClusterWideScope && secret.GetNamespace() == "" {
 		return nil, fmt.Errorf("secret must declare a namespace")
 	}
@@ -225,7 +225,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, be backend.Backend, 
 	label := labelFor(secret)
 
 	for key, value := range secret.Data {
-		ciphertext, err := be.Encrypt(value, label)
+		ciphertext, err := backend.Encrypt(value, label)
 		if err != nil {
 			return nil, err
 		}
@@ -233,7 +233,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, be backend.Backend, 
 	}
 
 	for key, value := range secret.StringData {
-		ciphertext, err := be.Encrypt([]byte(value), label)
+		ciphertext, err := backend.Encrypt([]byte(value), label)
 		if err != nil {
 			return nil, err
 		}
@@ -246,7 +246,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, be backend.Backend, 
 }
 
 // Unseal decrypts and returns the embedded v1.Secret.
-func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, be backend.Backend) (*v1.Secret, error) {
+func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, backend ssbackend.Backend) (*v1.Secret, error) {
 	boolTrue := true
 	smeta := s.GetObjectMeta()
 
@@ -269,7 +269,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, be backend.
 			if err != nil {
 				return nil, err
 			}
-			plaintext, err := be.Decrypt(valueBytes, label)
+			plaintext, err := backend.Decrypt(valueBytes, label)
 			if err != nil {
 				errs = append(errs, multierror.Tag(key, err))
 			}
@@ -280,7 +280,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, be backend.
 			return nil, multierror.Join(multierror.Uniq(errs), multierror.WithFormatter(multierror.InlineFormatter))
 		}
 	} else if AcceptDeprecatedV1Data { // Support decrypting old secrets for backward compatibility
-		plaintext, err := be.Decrypt(s.Spec.Data, label)
+		plaintext, err := backend.Decrypt(s.Spec.Data, label)
 		if err != nil {
 			return nil, err
 		}
