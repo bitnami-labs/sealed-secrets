@@ -1,11 +1,11 @@
 package aes
 
 import (
-	"fmt"
-	"strings"
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	"strings"
 
 	"crypto/x509"
 	"encoding/pem"
