@@ -12,7 +12,6 @@ import (
 	flag "github.com/spf13/pflag"
 	"github.com/throttled/throttled"
 	"github.com/throttled/throttled/store/memstore"
-	//certUtil "k8s.io/client-go/util/cert"
 )
 
 var (

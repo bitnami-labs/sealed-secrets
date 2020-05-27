@@ -3,6 +3,7 @@ module github.com/bitnami-labs/sealed-secrets
 go 1.12
 
 require (
+	github.com/aws/aws-sdk-go v1.31.5
 	github.com/bitnami-labs/flagenv v0.0.0-20190607135054-a87af7a1d6fc
 	github.com/bitnami-labs/pflagenv v0.0.0-20190702160147-b4d9f048d98f
 	github.com/golang/groupcache v0.0.0-20190129154638-5b532d6fd5ef // indirect
