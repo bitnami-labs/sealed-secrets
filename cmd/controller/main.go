@@ -2,25 +2,19 @@ package main
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/rsa"
 	goflag "flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
-	"sort"
 	"strings"
 	"syscall"
 	"time"
 
 	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -59,9 +53,6 @@ var (
 
 	// VERSION set from Makefile
 	VERSION = buildinfo.DefaultVersion
-
-	// Selector used to find existing public/private key pairs on startup
-	keySelector = fields.OneTermEqualSelector(aes.SealedSecretsKeyLabel, "active")
 )
 
 func init() {
@@ -85,49 +76,6 @@ type controller struct {
 	clientset kubernetes.Interface
 }
 
-func initKeyPrefix(keyPrefix string) (string, error) {
-	prefix, err := validateKeyPrefix(keyPrefix)
-	if err != nil {
-		return "", err
-	}
-	return prefix, err
-}
-
-func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*aes.KeyRegistry, error) {
-	log.Printf("Searching for existing private keys")
-	secretList, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{
-		LabelSelector: keySelector.String(),
-	})
-	if err != nil {
-		return nil, err
-	}
-	items := secretList.Items
-
-	s, err := client.CoreV1().Secrets(namespace).Get(prefix, metav1.GetOptions{})
-	if !errors.IsNotFound(err) {
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, *s)
-		// TODO(mkm): add the label to the legacy secret to simplify discovery and backups.
-	}
-
-	keyRegistry := aes.NewKeyRegistry(client, namespace, prefix, label, keysize, *validFor, *myCN)
-	sort.Sort(ssv1alpha1.ByCreationTimestamp(items))
-	for _, secret := range items {
-		key, certs, err := aes.ReadKey(secret)
-		if err != nil {
-			log.Printf("Error reading key %s: %v", secret.Name, err)
-		}
-		ct := secret.CreationTimestamp
-		if err := keyRegistry.RegisterNewKey(secret.Name, key, certs[0], ct.Time); err != nil {
-			return nil, err
-		}
-		log.Printf("----- %s", secret.Name)
-	}
-	return keyRegistry, nil
-}
-
 func myNamespace() string {
 	if ns := os.Getenv("POD_NAMESPACE"); ns != "" {
 		return ns
@@ -143,66 +91,7 @@ func myNamespace() string {
 	return metav1.NamespaceDefault
 }
 
-// Initialises the first key and starts the rotation job. returns an early trigger function.
-// A period of 0 disables automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
-// is still honoured.
-func initKeyRenewal(registry *aes.KeyRegistry, period time.Duration, cutoffTime time.Time) (func(), error) {
-	// Create a new key if it's the first key,
-	// or if it's older than cutoff time.
-	if len(registry.GetKeys()) == 0 || registry.GetMostRecentKey().GetCreationTime().Before(cutoffTime) {
-		if _, err := registry.GenerateKey(); err != nil {
-			return nil, err
-		}
-	}
-
-	// wrapper function to log error thrown by generateKey function
-	keyGenFunc := func() {
-		if _, err := registry.GenerateKey(); err != nil {
-			log.Printf("Failed to generate new key : %v\n", err)
-		}
-	}
-	if period == 0 {
-		return keyGenFunc, nil
-	}
-
-	// If key rotation is enabled, we'll rotate the key when the most recent
-	// key becomes stale (older than period).
-	mostRecentKeyAge := time.Since(registry.GetMostRecentKey().GetCreationTime())
-	initialDelay := period - mostRecentKeyAge
-	if initialDelay < 0 {
-		initialDelay = 0
-	}
-	return ScheduleJobWithTrigger(initialDelay, period, keyGenFunc), nil
-}
-
-func initKeyGenSignalListener(trigger func()) {
-	sigChannel := make(chan os.Signal)
-	signal.Notify(sigChannel, syscall.SIGUSR1)
-	go func() {
-		for {
-			<-sigChannel
-			trigger()
-		}
-	}()
-}
-
-func parseBackend() error {
-	switch *encryptBackend {
-	case "AES-256":
-		log.Println("AES-256 used as encryption backend is used")
-	case "AWS-KMS":
-		log.Println("AWS-KMS used as encryption backend")
-	default:
-		return fmt.Errorf("invalid encryption backend: %s", *encryptBackend)
-	}
-	return nil
-}
-
 func main2() error {
-
-	if err := parseBackend(); err != nil {
-		return err
-	}
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -223,37 +112,13 @@ func main2() error {
 
 	var backend ssbackend.Backend
 
-	if *encryptBackend == "AES-256" {
-		prefix, err := initKeyPrefix(*keyPrefix)
+	switch *encryptBackend {
+	case "AES-256":
+		backend, err = aes.NewAES256WithKeyRegistry(clientset, myNs, *keyPrefix, *keySize, *validFor, *myCN, *keyRenewPeriod, *keyCutoffTime)
 		if err != nil {
 			return err
 		}
-
-		keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, prefix, aes.SealedSecretsKeyLabel, *keySize)
-		if err != nil {
-			return err
-		}
-
-		var ct time.Time
-		if *keyCutoffTime != "" {
-			var err error
-			ct, err = time.Parse(time.RFC1123Z, *keyCutoffTime)
-			if err != nil {
-				return err
-			}
-		}
-
-		trigger, err := initKeyRenewal(keyRegistry, *keyRenewPeriod, ct)
-		if err != nil {
-			return err
-		}
-
-		initKeyGenSignalListener(trigger)
-
-		backend = aes.NewAES256(keyRegistry, nil, map[string]*rsa.PrivateKey{})
-	}
-
-	if *encryptBackend == "AWS-KMS" {
+	case "AWS-KMS":
 		if *awsKmsKeyID == "" {
 			return fmt.Errorf("must provide the --aws-kms-key-id flag with AWS-KMS backend")
 		}
@@ -261,6 +126,8 @@ func main2() error {
 		if err != nil {
 			return err
 		}
+	default:
+		return fmt.Errorf("invalid encryption backend: %s", *encryptBackend)
 	}
 
 	namespace := v1.NamespaceAll

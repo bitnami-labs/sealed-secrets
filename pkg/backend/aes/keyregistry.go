@@ -50,19 +50,7 @@ func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel 
 	}
 }
 
-func (k Key) GetCreationTime() time.Time {
-	return k.creationTime
-}
-
-func (kr *KeyRegistry) GetMostRecentKey() *Key {
-	return kr.mostRecentKey
-}
-
-func (kr *KeyRegistry) GetKeys() map[string]*Key {
-	return kr.keys
-}
-
-func (kr *KeyRegistry) GenerateKey() (string, error) {
+func (kr *KeyRegistry) generateKey() (string, error) {
 	key, cert, err := generatePrivateKeyAndCert(kr.keysize, kr.validFor, kr.myCN)
 	if err != nil {
 		return "", err
@@ -73,7 +61,7 @@ func (kr *KeyRegistry) GenerateKey() (string, error) {
 		return "", err
 	}
 	// Only store key to local store if write to k8s worked
-	if err := kr.RegisterNewKey(generatedName, key, cert, time.Now()); err != nil {
+	if err := kr.registerNewKey(generatedName, key, cert, time.Now()); err != nil {
 		return "", err
 	}
 	log.Printf("New key written to %s/%s\n", kr.namespace, generatedName)
@@ -81,7 +69,7 @@ func (kr *KeyRegistry) GenerateKey() (string, error) {
 	return generatedName, nil
 }
 
-func (kr *KeyRegistry) RegisterNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate, creationTime time.Time) error {
+func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate, creationTime time.Time) error {
 	fingerprint, err := crypto.PublicKeyFingerprint(&privKey.PublicKey)
 	if err != nil {
 		return err

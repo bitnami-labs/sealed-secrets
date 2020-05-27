@@ -688,7 +688,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 			}
 		}
 		privKeysMap, _ := readPrivKeys(privKeys)
-		backend = aes.NewAES256(nil, pubKey, privKeysMap)
+		backend = aes.NewAES256WithKey(pubKey, privKeysMap)
 	}
 
 	if string(backendType) == "AWS-KMS" {

@@ -27,7 +27,7 @@ func generatePrivateKeyAndCert(keySize int, validFor time.Duration, myCN string)
 	return crypto.GeneratePrivateKeyAndCert(keySize, validFor, myCN)
 }
 
-func ReadKey(secret v1.Secret) (*rsa.PrivateKey, []*x509.Certificate, error) {
+func readKey(secret v1.Secret) (*rsa.PrivateKey, []*x509.Certificate, error) {
 	key, err := keyutil.ParsePrivateKeyPEM(secret.Data[v1.TLSPrivateKeyKey])
 	if err != nil {
 		return nil, nil, err
