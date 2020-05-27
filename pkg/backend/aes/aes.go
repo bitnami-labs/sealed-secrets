@@ -1,6 +1,8 @@
 package aes
 
 import (
+	"fmt"
+	"strings"
 	"crypto/rand"
 	"crypto/rsa"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
@@ -24,11 +26,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	"github.com/bitnami-labs/sealed-secrets/pkg/utils"
 )
 
 var (
 	// Selector used to find existing public/private key pairs on startup
 	keySelector = fields.OneTermEqualSelector(SealedSecretsKeyLabel, "active")
+)
+
+const (
+	kubeChars     = "abcdefghijklmnopqrstuvwxyz0123456789-" // Acceptable characters in k8s resource name
+	maxNameLength = 245                                     // Max resource name length is 253, leave some room for a suffix
 )
 
 type AES256 struct {
@@ -204,7 +212,7 @@ func initKeyRenewal(registry *KeyRegistry, period time.Duration, cutoffTime time
 	if initialDelay < 0 {
 		initialDelay = 0
 	}
-	return ScheduleJobWithTrigger(initialDelay, period, keyGenFunc), nil
+	return utils.ScheduleJobWithTrigger(initialDelay, period, keyGenFunc), nil
 }
 
 func initKeyGenSignalListener(trigger func()) {
@@ -216,4 +224,16 @@ func initKeyGenSignalListener(trigger func()) {
 			trigger()
 		}
 	}()
+}
+
+func validateKeyPrefix(name string) (string, error) {
+	if len(name) > maxNameLength {
+		return "", fmt.Errorf("name is too long, must be shorter than %d, got %d", maxNameLength, len(name))
+	}
+	for _, char := range name {
+		if !strings.ContainsRune(kubeChars, char) {
+			return "", fmt.Errorf("name contains illegal character %c", char)
+		}
+	}
+	return name, nil
 }

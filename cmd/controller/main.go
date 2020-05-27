@@ -4,17 +4,14 @@ import (
 	"context"
 	goflag "flag"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"os/signal"
-	"strings"
 	"syscall"
 	"time"
 
 	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -27,6 +24,7 @@ import (
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
+	"github.com/bitnami-labs/sealed-secrets/pkg/utils"
 )
 
 const (
@@ -76,23 +74,7 @@ type controller struct {
 	clientset kubernetes.Interface
 }
 
-func myNamespace() string {
-	if ns := os.Getenv("POD_NAMESPACE"); ns != "" {
-		return ns
-	}
-
-	// Fall back to the namespace associated with the service account token, if available
-	if data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
-		if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
-			return ns
-		}
-	}
-
-	return metav1.NamespaceDefault
-}
-
 func main2() error {
-
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return err
@@ -108,7 +90,7 @@ func main2() error {
 		return err
 	}
 
-	myNs := myNamespace()
+	myNs := utils.MyNamespace()
 
 	var backend ssbackend.Backend
 
@@ -132,7 +114,7 @@ func main2() error {
 
 	namespace := v1.NamespaceAll
 	if !*namespaceAll {
-		namespace = myNamespace()
+		namespace = utils.MyNamespace()
 	}
 
 	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, nil)
