@@ -26,7 +26,7 @@ func NewAES256(kr *KeyRegistry, pubKey *rsa.PublicKey, privKeys map[string]*rsa.
 	}
 }
 
-func (b AES256) Encrypt(plaintext, label []byte) ([]byte, error) {
+func (b *AES256) Encrypt(plaintext, label []byte) ([]byte, error) {
 
 	var publicKey *rsa.PublicKey
 
@@ -40,7 +40,7 @@ func (b AES256) Encrypt(plaintext, label []byte) ([]byte, error) {
 	return crypto.HybridEncrypt(rand.Reader, publicKey, plaintext, label)
 }
 
-func (b AES256) Decrypt(ciphertext, label []byte) ([]byte, error) {
+func (b *AES256) Decrypt(ciphertext, label []byte) ([]byte, error) {
 
 	privateKeys := map[string]*rsa.PrivateKey{}
 
@@ -56,7 +56,7 @@ func (b AES256) Decrypt(ciphertext, label []byte) ([]byte, error) {
 
 }
 
-func (b AES256) ProviderHandler(w http.ResponseWriter, r *http.Request) {
+func (b *AES256) ProviderHandler(w http.ResponseWriter, r *http.Request) {
 	cert, err := b.keyRegistry.GetCert()
 	if err != nil {
 		log.Printf("cannot get certificates: %v", err)
