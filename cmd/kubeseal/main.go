@@ -41,8 +41,6 @@ import (
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 
 	ssbackend "github.com/bitnami-labs/sealed-secrets/pkg/backend"
-	"github.com/bitnami-labs/sealed-secrets/pkg/backend/aes"
-	"github.com/bitnami-labs/sealed-secrets/pkg/backend/aws"
 )
 
 const (
@@ -106,71 +104,6 @@ func init() {
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 }
 
-func validateFlags() error {
-
-	if len(*fromFile) != 0 && !*raw {
-		return fmt.Errorf("--from-file requires --raw")
-	}
-
-	err := parseBackend()
-	if err != nil {
-		return err
-	}
-
-	if *unseal && *encryptBackend == "" {
-		return fmt.Errorf("missing encryption backend: %s", *encryptBackend)
-	}
-
-	return nil
-
-}
-
-func parseBackend() error {
-	switch *encryptBackend {
-	case "AES-256":
-		if len(*privKeys) == 0 {
-			return fmt.Errorf("must provide the --recovery-private-key flag with private key files")
-		}
-	case "AWS-KMS":
-		if *awsKmsKeyID == "" {
-			return fmt.Errorf("must provide the --aws-kms-key-id flag with AWS KMS key ID")
-		}
-	case "":
-	default:
-		return fmt.Errorf("invalid encryption backend: %s", *encryptBackend)
-	}
-
-	return nil
-}
-
-func fetchBackend() ([]byte, error) {
-
-	if (!*unseal && *encryptBackend != "") || *unseal {
-		return []byte(*encryptBackend), nil
-	}
-
-	conf, err := clientConfig.ClientConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	restClient, err := corev1.NewForConfig(conf)
-	if err != nil {
-		return nil, err
-	}
-
-	f, err := restClient.
-		Services(*controllerNs).
-		ProxyGet("http", *controllerName, "", "/v1/backend", nil).
-		Stream()
-	if err != nil {
-		return nil, fmt.Errorf("cannot fetch backend type: %v", err)
-	}
-	defer f.Close()
-
-	return ioutil.ReadAll(f)
-}
-
 func parseKey(key []byte) (*rsa.PublicKey, error) {
 
 	certs, err := cert.ParseCertsPEM(key)
@@ -230,17 +163,14 @@ func isFilename(name string) (bool, error) {
 
 // openCertLocal opens a cert URI or local filename, by fetching it locally from the client
 // (as opposed as openCertCluster which fetches it via HTTP but through the k8s API proxy).
-func openCert(filenameOrURI string) ([]byte, error) {
-	if *certURL != "" {
-		// detect if a certificate is a local file or an URI.
-		if ok, err := isFilename(filenameOrURI); err != nil {
-			return nil, err
-		} else if ok {
-			return ioutil.ReadFile(filenameOrURI)
-		}
-		return openCertURI(filenameOrURI)
+func openCertLocal(filenameOrURI string) ([]byte, error) {
+	// detect if a certificate is a local file or an URI.
+	if ok, err := isFilename(filenameOrURI); err != nil {
+		return nil, err
+	} else if ok {
+		return ioutil.ReadFile(filenameOrURI)
 	}
-	return openProvider()
+	return openCertURI(filenameOrURI)
 }
 
 func openCertURI(uri string) ([]byte, error) {
@@ -643,8 +573,8 @@ func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.Code
 
 func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpProvider, raw, allowEmptyData bool, fromFile []string, mergeInto string, unseal bool, privKeys []string) error {
 
-	if err := validateFlags(); err != nil {
-		return err
+	if len(fromFile) != 0 && !raw {
+		return fmt.Errorf("--from-file requires --raw")
 	}
 
 	if printVersion {
@@ -666,44 +596,9 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 		return reEncryptSealedSecret(os.Stdin, os.Stdout, scheme.Codecs, controllerNs, controllerName)
 	}
 
-	backendType, err := fetchBackend()
+	backend, providerData, err := getBackend()
 	if err != nil {
 		return err
-	}
-
-	var backend ssbackend.Backend
-
-	var providerData []byte
-
-	if string(backendType) == "AES-256" {
-		var pubKey *rsa.PublicKey
-		if !unseal {
-			providerData, err = openCert(certURL)
-			if err != nil {
-				return err
-			}
-			pubKey, err = parseKey(providerData)
-			if err != nil {
-				return err
-			}
-		}
-		privKeysMap, _ := readPrivKeys(privKeys)
-		backend = aes.NewAES256WithKey(pubKey, privKeysMap)
-	}
-
-	if string(backendType) == "AWS-KMS" {
-		if *awsKmsKeyID != "" {
-			providerData = []byte(*awsKmsKeyID)
-		} else {
-			providerData, err = openProvider()
-			if err != nil {
-				return err
-			}
-		}
-		backend, err = aws.NewKMS(string(providerData))
-		if err != nil {
-			return err
-		}
 	}
 
 	if unseal {
@@ -768,3 +663,4 @@ func main() {
 		os.Exit(1)
 	}
 }
+
