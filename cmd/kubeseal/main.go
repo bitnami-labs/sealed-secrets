@@ -192,7 +192,7 @@ func openCertURI(uri string) ([]byte, error) {
 	return ioutil.ReadAll(resp.Body)
 }
 
-// openCertCluster fetches a certificate by performing an HTTP request to the controller
+// openProvider fetches a backend provider information by performing an HTTP request to the controller
 // through the k8s API proxy.
 func openProvider() ([]byte, error) {
 
