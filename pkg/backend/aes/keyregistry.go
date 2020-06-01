@@ -90,7 +90,7 @@ func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, c
 	return nil
 }
 
-func (kr *KeyRegistry) LatestPrivateKey() *rsa.PrivateKey {
+func (kr *KeyRegistry) latestPrivateKey() *rsa.PrivateKey {
 	return kr.mostRecentKey.private
 }
 

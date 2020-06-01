@@ -100,7 +100,7 @@ func (b *AES256) Encrypt(plaintext, label []byte) ([]byte, error) {
 	if b.pubKey != nil {
 		publicKey = b.pubKey
 	} else {
-		latestPrivKey := b.keyRegistry.LatestPrivateKey()
+		latestPrivKey := b.keyRegistry.latestPrivateKey()
 		publicKey = &latestPrivKey.PublicKey
 	}
 

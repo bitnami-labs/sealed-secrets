@@ -31,14 +31,20 @@ func NewKMS(keyID string) (*KMS, error) {
 
 }
 
-func (b *KMS) Encrypt(plaintext, label []byte) ([]byte, error) {
+func getEncryptionContext(label []byte) map[string]*string {
+	var encryptionContext map[string]*string
+	if len(label) > 0 {
+		encryptionContext = make(map[string]*string)
+		encryptionContext["kubernetes-secret"] = aws.String(string(label))
+	}
+	return encryptionContext
+}
 
-	encryptionContext := make(map[string]*string)
-	encryptionContext["kubernetes-secret"] = aws.String(string(label))
+func (b *KMS) Encrypt(plaintext, label []byte) ([]byte, error) {
 
 	input := &kms.EncryptInput{
 		Plaintext:         plaintext,
-		EncryptionContext: encryptionContext,
+		EncryptionContext: getEncryptionContext(label),
 		KeyId:             aws.String(b.keyID),
 	}
 	result, err := b.kmsSvc.Encrypt(input)
@@ -50,12 +56,9 @@ func (b *KMS) Encrypt(plaintext, label []byte) ([]byte, error) {
 
 func (b *KMS) Decrypt(ciphertext, label []byte) ([]byte, error) {
 
-	encryptionContext := make(map[string]*string)
-	encryptionContext["kubernetes-secret"] = aws.String(string(label))
-
 	input := &kms.DecryptInput{
 		CiphertextBlob:    ciphertext,
-		EncryptionContext: encryptionContext,
+		EncryptionContext: getEncryptionContext(label),
 		KeyId:             aws.String(b.keyID),
 	}
 	result, err := b.kmsSvc.Decrypt(input)
