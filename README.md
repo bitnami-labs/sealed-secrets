@@ -585,6 +585,11 @@ cannot help you update individual fields in it.
 
 Since this is a common problem, especially when dealing with legacy applications, we do offer an [example](docs/examples/config-template) of a possible workaround.
 
+### Can I bring my own (pre-generated) certificates?
+
+Yes, you can provide the controller with your own certificates so it will consume them.
+Please check [here](docs/bring-your-own-certificates.md) for a workaround.
+
 ## Community
 
 - [#sealed-secrets on Kubernetes Slack](https://kubernetes.slack.com/messages/sealed-secrets)
