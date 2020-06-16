@@ -52,6 +52,7 @@ original Secret from the SealedSecret.
   - [Can I decrypt my secrets offline with a backup key?](#can-i-decrypt-my-secrets-offline-with-a-backup-key)
   - [What flags are available for kubeseal?](#what-flags-are-available-for-kubeseal)
   - [How do I update parts of JSON/YAML/TOML.. file encrypted with sealed secrets?](#how-do-i-update-parts-of-jsonyamltoml-file-encrypted-with-sealed-secrets)
+  - [Can I bring my own (pre-generated) certificates?](#can-i-bring-my-own-pre-generated-certificates)
 - [Community](#community)
   - [Related projects](#related-projects)
 
