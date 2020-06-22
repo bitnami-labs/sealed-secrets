@@ -239,6 +239,8 @@ func (c *Controller) unseal(key string) (unsealErr error) {
 			// Non-fatal.  Log and continue.
 			log.Printf("Error updating SealedSecret %s status: %v", key, err)
 			unsealErrorsTotal.WithLabelValues("status").Inc()
+		} else {
+			ObserveCondition(ssecret)
 		}
 	}()
 

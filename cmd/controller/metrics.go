@@ -1,11 +1,25 @@
 package main
 
 import (
+	"github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
+	v1 "k8s.io/api/core/v1"
 )
 
 // Define Prometheus Exporter namespace (prefix) for all metric names
 const metricNamespace string = "sealed_secrets_controller"
+
+const (
+	labelNamespace = "namespace"
+	labelName      = "name"
+	labelCondition = "condition"
+)
+
+var conditionStatusToGaugeValue = map[v1.ConditionStatus]float64{
+	v1.ConditionFalse:   -1,
+	v1.ConditionUnknown: 0,
+	v1.ConditionTrue:    1,
+}
 
 // Define Prometheus metrics to expose
 var (
@@ -35,6 +49,12 @@ var (
 		},
 		[]string{"reason"},
 	)
+
+	conditionInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: metricNamespace,
+		Name:      "condition_info",
+		Help:      "Current SealedSecret condition status. Values are -1 (false), 0 (unknown or absent), 1 (true)",
+	}, []string{labelNamespace, labelName, labelCondition})
 )
 
 func init() {
@@ -43,10 +63,22 @@ func init() {
 	prometheus.MustRegister(prometheus.NewBuildInfoCollector())
 	prometheus.MustRegister(unsealRequestsTotal)
 	prometheus.MustRegister(unsealErrorsTotal)
+	prometheus.MustRegister(conditionInfo)
 
 	// Initialise known label values
 	for _, val := range []string{"fetch", "status", "unmanaged", "unseal", "update"} {
 		unsealErrorsTotal.WithLabelValues(val)
 	}
 
+}
+
+// ObserveCondition sets a `condition_info` Gauge according to a SealedSecret status.
+func ObserveCondition(ssecret *v1alpha1.SealedSecret) {
+	for _, condition := range ssecret.Status.Conditions {
+		conditionInfo.With(prometheus.Labels{
+			labelNamespace: ssecret.Namespace,
+			labelName:      ssecret.Name,
+			labelCondition: string(condition.Type),
+		}).Set(conditionStatusToGaugeValue[condition.Status])
+	}
 }
