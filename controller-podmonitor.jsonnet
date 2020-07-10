@@ -8,7 +8,7 @@ controller {
     kind: 'PodMonitor',
     metadata: {
       name: 'sealed-secrets-controller',
-      namespace: $.namespace,
+      namespace: $.namespace.metadata.namespace,
       labels: {
         name: 'sealed-secrets-controller',
       },
@@ -22,7 +22,7 @@ controller {
       },
       namespaceSelector: {
         matchNames: [
-          $.namespace,
+          $.namespace.metadata.namespace,
         ],
       },
       podMetricsEndpoints: [
