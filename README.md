@@ -398,7 +398,7 @@ Sealing keys are automatically renewed every 30 days. Which means a new sealing 
 The most recently created sealing key is the one used to seal new secrets when you use `kubeseal` and it's the one whose certificate is downloaded when you use `kubeseal --fetch-cert`.
 
 The renewal time of 30d is a reasonable default, but it can be tweaked as needed
-with the `--key-renew-period=<value>` flag (on the controller!). The `value` field can be given as golang
+with the `--key-renew-period=<value>` flag for the command in the pod template of the sealed secret controller. The `value` field can be given as golang
 duration flag (eg: `720h30m`).
 
 A value of `0` will disable automatic key renewal. Of course, it's possible you have a valid use case for disabling automatic sealing key renewal; but experience has shown that new users often tend to jump to conclusions that they want control over key renewal, before fully understanding how sealed secrets work. Read more about this in the [common misconceptions](#common-misconceptions-about-key-renewal) section below.
