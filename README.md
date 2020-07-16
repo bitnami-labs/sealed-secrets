@@ -53,6 +53,7 @@ original Secret from the SealedSecret.
   - [What flags are available for kubeseal?](#what-flags-are-available-for-kubeseal)
   - [How do I update parts of JSON/YAML/TOML.. file encrypted with sealed secrets?](#how-do-i-update-parts-of-jsonyamltoml-file-encrypted-with-sealed-secrets)
   - [Can I bring my own (pre-generated) certificates?](#can-i-bring-my-own-pre-generated-certificates)
+  - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
 - [Community](#community)
   - [Related projects](#related-projects)
 
@@ -590,6 +591,23 @@ Since this is a common problem, especially when dealing with legacy applications
 
 Yes, you can provide the controller with your own certificates so it will consume them.
 Please check [here](docs/bring-your-own-certificates.md) for a workaround.
+
+### How to use kubeseal if the controller is not running within the `kube-system` namespace?
+
+If you installed the controller in a different namespace than the default `kube-system`, you need to provide this namespace
+to the `kubeseal` commandline tool. There are two options: You can specify the namespace via the commandlione option
+`--controller-namespace <namespace>` or via the environment variable `SEALED_SECRETS_CONTROLLER_NAMESPACE`.
+
+Example:
+
+```sh
+# Provide the namespace via the commandlione option
+$ kubeseal --controller-namespace sealed-secrets <mysecret.json >mysealedsecret.json
+
+# Provide the namespace via the environment variable
+$ export SEALED_SECRETS_CONTROLLER_NAMESPACE=sealed-secrets
+$ kubeseal <mysecret.json >mysealedsecret.json
+```
 
 ## Community
 
