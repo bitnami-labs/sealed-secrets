@@ -617,4 +617,4 @@ Click [here](http://slack.k8s.io) to sign up to the Kubernetes Slack org.
 
 ### Related projects
 
-* Visual studio code extension: https://marketplace.visualstudio.com/items?itemName=codecontemplator.kubeseal
+* Visual Studio Code extension: https://marketplace.visualstudio.com/items?itemName=codecontemplator.kubeseal
