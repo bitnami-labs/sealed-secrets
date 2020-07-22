@@ -82,3 +82,14 @@ func ObserveCondition(ssecret *v1alpha1.SealedSecret) {
 		}).Set(conditionStatusToGaugeValue[condition.Status])
 	}
 }
+
+// UnregisterCondition unregisters Gauges associated to a SealedSecret conditions.
+func UnregisterCondition(ssecret *v1alpha1.SealedSecret) {
+	for _, condition := range ssecret.Status.Conditions {
+		prometheus.Unregister(conditionInfo.With(prometheus.Labels{
+			labelNamespace: ssecret.Namespace,
+			labelName:      ssecret.Name,
+			labelCondition: string(condition.Type),
+		}))
+	}
+}
