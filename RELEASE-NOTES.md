@@ -8,7 +8,7 @@ Latest release:
 
 ## Changelog
 
-* Add `condition_info` metric to expose SealedSecrets status #421
+* Add `condition_info` metric to expose SealedSecrets status (#421)
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/23?closed=1
 
