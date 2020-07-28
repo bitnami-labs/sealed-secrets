@@ -4,6 +4,14 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.12.5
+
+## Changelog
+
+* Add `condition_info` metric to expose SealedSecrets status #421
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/23?closed=1
+
 # v0.12.4
 
 ## Announcements
