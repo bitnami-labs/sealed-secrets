@@ -69,11 +69,13 @@ func init() {
 	for _, val := range []string{"fetch", "status", "unmanaged", "unseal", "update"} {
 		unsealErrorsTotal.WithLabelValues(val)
 	}
-
 }
 
 // ObserveCondition sets a `condition_info` Gauge according to a SealedSecret status.
 func ObserveCondition(ssecret *v1alpha1.SealedSecret) {
+	if ssecret.Status == nil {
+		return
+	}
 	for _, condition := range ssecret.Status.Conditions {
 		conditionInfo.With(prometheus.Labels{
 			labelNamespace: ssecret.Namespace,
@@ -85,6 +87,9 @@ func ObserveCondition(ssecret *v1alpha1.SealedSecret) {
 
 // UnregisterCondition unregisters Gauges associated to a SealedSecret conditions.
 func UnregisterCondition(ssecret *v1alpha1.SealedSecret) {
+	if ssecret.Status == nil {
+		return
+	}
 	for _, condition := range ssecret.Status.Conditions {
 		prometheus.Unregister(conditionInfo.With(prometheus.Labels{
 			labelNamespace: ssecret.Namespace,
