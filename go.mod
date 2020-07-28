@@ -9,6 +9,7 @@ require (
 	github.com/gomodule/redigo v2.0.0+incompatible // indirect
 	github.com/google/go-cmp v0.3.0
 	github.com/google/gofuzz v1.0.0
+	github.com/google/renameio v0.1.0
 	github.com/googleapis/gnostic v0.0.0-20171211024024-933c109c13ce // indirect
 	github.com/mattn/go-isatty v0.0.10
 	github.com/mkmik/multierror v0.3.0

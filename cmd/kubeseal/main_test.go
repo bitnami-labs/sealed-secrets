@@ -644,7 +644,7 @@ func TestMergeInto(t *testing.T) {
 
 func TestVersion(t *testing.T) {
 	var buf strings.Builder
-	err := run(&buf, "", "", "", "", true, false, false, false, false, false, nil, "", false, nil)
+	err := run(&buf, "", "", "", "", "", "", true, false, false, false, false, false, nil, "", false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -656,7 +656,7 @@ func TestVersion(t *testing.T) {
 
 func TestMainError(t *testing.T) {
 	const badFileName = "/?this/file/cannot/possibly/exist/can/it?"
-	err := run(ioutil.Discard, "", "", "", badFileName, false, false, false, false, false, false, nil, "", false, nil)
+	err := run(ioutil.Discard, "", "", "", "", "", badFileName, false, false, false, false, false, false, nil, "", false, nil)
 
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
@@ -818,11 +818,102 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 	fromFile := []string{dataFile}
 
 	var buf bytes.Buffer
-	if err := run(&buf, secretName, "", "", certFilename, false, false, false, false, true, false, fromFile, "", false, nil); err != nil {
+	if err := run(&buf, "", "", secretName, "", "", certFilename, false, false, false, false, true, false, fromFile, "", false, nil); err != nil {
 		return "", err
 	}
 
 	return buf.String(), nil
+}
+
+func TestWriteToFile(t *testing.T) {
+	certFilename, _, cleanup := testingKeypairFiles(t)
+	defer cleanup()
+
+	in, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(in.Name())
+	fmt.Fprintf(in, `apiVersion: v1
+kind: Secret
+metadata:
+  name: foo
+  namespace: bar
+data:
+  super: c2VjcmV0
+`)
+	in.Close()
+
+	out, err := ioutil.TempFile("", "*.yaml")
+	if err != nil {
+		t.Fatal(err)
+	}
+	out.Close()
+	defer os.RemoveAll(out.Name())
+
+	var buf bytes.Buffer
+	if err := run(&buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := buf.Len(), 0; got != want {
+		t.Errorf("got: %d, want: %d", got, want)
+	}
+
+	b, err := ioutil.ReadFile(out.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sub := "kind: SealedSecret"; !bytes.Contains(b, []byte(sub)) {
+		t.Errorf("expecting to find %q in %q", sub, b)
+	}
+}
+
+func TestFailToWriteToFile(t *testing.T) {
+	certFilename, _, cleanup := testingKeypairFiles(t)
+	defer cleanup()
+
+	in, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(in.Name())
+	fmt.Fprintf(in, `apiVersion: v1
+kind: BadInput
+metadata:
+  name: foo
+  namespace: bar
+`)
+	in.Close()
+
+	out, err := ioutil.TempFile("", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// if sealing error happens, the old content of the output file shouldn't be truncated.
+	const testOldContent = "previous content"
+
+	fmt.Fprint(out, testOldContent)
+	out.Close()
+	defer os.RemoveAll(out.Name())
+
+	var buf bytes.Buffer
+	if err := run(&buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil); err == nil {
+		t.Errorf("expecting error")
+	}
+
+	if got, want := buf.Len(), 0; got != want {
+		t.Errorf("got: %d, want: %d", got, want)
+	}
+
+	b, err := ioutil.ReadFile(out.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, want := string(b), testOldContent; got != want {
+		t.Errorf("got: %q, want: %q", got, want)
+	}
 }
 
 // writeTempFile creates a temporary file, writes data into it and closes it.
