@@ -14,10 +14,12 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	"github.com/google/renameio"
 	"github.com/mattn/go-isatty"
 	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
@@ -52,6 +54,8 @@ var (
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.StringP("format", "o", "json", "Output format for sealed secret. Either json or yaml")
+	outputFileName = flag.StringP("sealed-secret-file", "w", "", "Sealed-secret (output) file")
+	inputFileName  = flag.StringP("secret-file", "f", "", "Secret (input) file")
 	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
 	allowEmptyData = flag.Bool("allow-empty-data", false, "Allow empty data in the secret object")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
@@ -576,7 +580,7 @@ func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.Code
 	return resourceOutput(w, codecs, v1.SchemeGroupVersion, sec)
 }
 
-func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw, allowEmptyData bool, fromFile []string, mergeInto string, unseal bool, privKeys []string) error {
+func run(w io.Writer, inputFileName, outputFileName, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw, allowEmptyData bool, fromFile []string, mergeInto string, unseal bool, privKeys []string) (err error) {
 	if len(fromFile) != 0 && !raw {
 		return fmt.Errorf("--from-file requires --raw")
 	}
@@ -586,25 +590,60 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 		return nil
 	}
 
-	if !raw && !dumpCert {
+	var input io.Reader = os.Stdin
+	if inputFileName != "" {
+		f, err := os.Open(inputFileName)
+		if err != nil {
+			return nil
+		}
+		defer f.Close()
+
+		input = f
+	} else if !raw && !dumpCert {
 		if isatty.IsTerminal(os.Stdin.Fd()) {
 			fmt.Fprintf(os.Stderr, "(tty detected: expecting json/yaml k8s resource in stdin)\n")
 		}
 	}
 
+	// reEncrypt is the only "in-place" update subcommand. When the user only provides one file (the input file)
+	// we'll use the same file for output (see #405).
+	if reEncrypt && (outputFileName == "" && inputFileName != "") {
+		outputFileName = inputFileName
+	}
+	if outputFileName != "" {
+		// TODO(mkm): get rid of these horrible global variables
+		if ext := filepath.Ext(outputFileName); ext == ".yaml" || ext == ".yml" {
+			*outputFormat = "yaml"
+		}
+
+		var f *renameio.PendingFile
+		f, err = renameio.TempFile("", outputFileName)
+		if err != nil {
+			return err
+		}
+		// only write the output file if the run function exits without errors.
+		defer func() {
+			if err == nil {
+				f.CloseAtomicallyReplace()
+			}
+		}()
+
+		w = f
+	}
+
 	if unseal {
-		return unsealSealedSecret(w, os.Stdin, scheme.Codecs, privKeys)
+		return unsealSealedSecret(w, input, scheme.Codecs, privKeys)
 	}
 	if len(privKeys) != 0 && isatty.IsTerminal(os.Stderr.Fd()) {
 		fmt.Fprintf(os.Stderr, "warning: ignoring --recovery-private-key because unseal command not chosen with --recovery-unseal\n")
 	}
 
 	if validateSecret {
-		return validateSealedSecret(os.Stdin, controllerNs, controllerName)
+		return validateSealedSecret(input, controllerNs, controllerName)
 	}
 
 	if reEncrypt {
-		return reEncryptSealedSecret(os.Stdin, os.Stdout, scheme.Codecs, controllerNs, controllerName)
+		return reEncryptSealedSecret(input, w, scheme.Codecs, controllerNs, controllerName)
 	}
 
 	f, err := openCert(certURL)
@@ -614,7 +653,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 	defer f.Close()
 
 	if dumpCert {
-		_, err := io.Copy(os.Stdout, f)
+		_, err := io.Copy(w, f)
 		return err
 	}
 
@@ -624,7 +663,7 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 	}
 
 	if mergeInto != "" {
-		return sealMergingInto(os.Stdin, mergeInto, scheme.Codecs, pubKey, sealingScope, allowEmptyData)
+		return sealMergingInto(input, mergeInto, scheme.Codecs, pubKey, sealingScope, allowEmptyData)
 	}
 
 	if raw {
@@ -662,14 +701,14 @@ func run(w io.Writer, secretName, controllerNs, controllerName, certURL string, 
 		return encryptSecretItem(w, secretName, ns, data, sealingScope, pubKey)
 	}
 
-	return seal(os.Stdin, os.Stdout, scheme.Codecs, pubKey, sealingScope, allowEmptyData, secretName, "")
+	return seal(input, w, scheme.Codecs, pubKey, sealingScope, allowEmptyData, secretName, "")
 }
 
 func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
-	if err := run(os.Stdout, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *allowEmptyData, *fromFile, *mergeInto, *unseal, *privKeys); err != nil {
+	if err := run(os.Stdout, *inputFileName, *outputFileName, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *allowEmptyData, *fromFile, *mergeInto, *unseal, *privKeys); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
