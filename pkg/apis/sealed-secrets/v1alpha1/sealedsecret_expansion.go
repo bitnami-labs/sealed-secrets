@@ -1,10 +1,12 @@
 package v1alpha1
 
 import (
+	"bytes"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
+	"text/template"
 
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -264,6 +266,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 		secret.Type = s.Spec.Template.Type
 
 		secret.Data = map[string][]byte{}
+		data := map[string]string{}
 
 		var errs []error
 		for key, value := range s.Spec.EncryptedData {
@@ -276,6 +279,21 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 				errs = append(errs, multierror.Tag(key, err))
 			}
 			secret.Data[key] = plaintext
+			data[key] = string(plaintext)
+		}
+
+		for key, value := range s.Spec.Template.Data {
+			var plaintext bytes.Buffer
+			template, err := template.New(key).Parse(value)
+			if err != nil {
+				errs = append(errs, multierror.Tag(key, err))
+				continue
+			}
+			err = template.Execute(&plaintext, data)
+			if err != nil {
+				errs = append(errs, multierror.Tag(key, err))
+			}
+			secret.Data[key] = plaintext.Bytes()
 		}
 
 		if errs != nil {

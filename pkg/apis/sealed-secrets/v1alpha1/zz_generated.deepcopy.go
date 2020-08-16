@@ -169,6 +169,13 @@ func (in *SealedSecretStatus) DeepCopy() *SealedSecretStatus {
 func (in *SecretTemplateSpec) DeepCopyInto(out *SecretTemplateSpec) {
 	*out = *in
 	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	if in.Data != nil {
+		in, out := &in.Data, &out.Data
+		*out = make(map[string]string, len(*in))
+		for key, val := range *in {
+			(*out)[key] = val
+		}
+	}
 	return
 }
 
