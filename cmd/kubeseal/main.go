@@ -441,6 +441,9 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	for k, v := range update.Spec.Template.Labels {
 		orig.Spec.Template.Labels[k] = v
 	}
+	for k, v := range update.Spec.Template.Data {
+		orig.Spec.Template.Data[k] = v
+	}
 
 	// updated sealed secret file in-place avoiding clobbering the file upon rendering errors.
 	var out bytes.Buffer
