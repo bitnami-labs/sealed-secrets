@@ -30,6 +30,7 @@ original Secret from the SealedSecret.
   - [Helm Chart](#helm-chart)
   - [Operator Framework](#operator-framework)
   - [Homebrew](#homebrew)
+  - [MacPorts](#macports)
   - [Installation from source](#installation-from-source)
 - [Upgrade](#upgrade)
 - [Usage](#usage)
@@ -282,6 +283,14 @@ The `kubeseal` client is also available on [homebrew](https://formulae.brew.sh/f
 
 ```
 $ brew install kubeseal
+```
+
+### MacPorts
+
+The `kubeseal` client is also available on [MacPorts](https://ports.macports.org/port/kubeseal/summary):
+
+```
+$ port install kubeseal
 ```
 
 ### Installation from source
