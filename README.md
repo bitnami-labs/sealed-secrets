@@ -604,13 +604,13 @@ Please check [here](docs/bring-your-own-certificates.md) for a workaround.
 ### How to use kubeseal if the controller is not running within the `kube-system` namespace?
 
 If you installed the controller in a different namespace than the default `kube-system`, you need to provide this namespace
-to the `kubeseal` commandline tool. There are two options: You can specify the namespace via the commandlione option
+to the `kubeseal` commandline tool. There are two options: You can specify the namespace via the command line option
 `--controller-namespace <namespace>` or via the environment variable `SEALED_SECRETS_CONTROLLER_NAMESPACE`.
 
 Example:
 
 ```sh
-# Provide the namespace via the commandlione option
+# Provide the namespace via the command line option
 $ kubeseal --controller-namespace sealed-secrets <mysecret.json >mysealedsecret.json
 
 # Provide the namespace via the environment variable
