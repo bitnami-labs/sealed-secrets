@@ -667,17 +667,23 @@ func run(w io.Writer, inputFileName, outputFileName, secretName, controllerNs, c
 	}
 
 	if raw {
-		ns, _, err := namespaceFromClientConfig()
-		if err != nil {
-			return err
-		}
+		var (
+			ns  string
+			err error
+		)
+		if sealingScope < ssv1alpha1.ClusterWideScope {
+			ns, _, err = namespaceFromClientConfig()
+			if err != nil {
+				return err
+			}
 
-		if ns == "" && sealingScope < ssv1alpha1.ClusterWideScope {
-			return fmt.Errorf("must provide the --namespace flag with --raw and --scope %s", sealingScope.String())
-		}
+			if ns == "" {
+				return fmt.Errorf("must provide the --namespace flag with --raw and --scope %s", sealingScope.String())
+			}
 
-		if secretName == "" && sealingScope < ssv1alpha1.NamespaceWideScope {
-			return fmt.Errorf("must provide the --name flag with --raw and --scope %s", sealingScope.String())
+			if secretName == "" && sealingScope < ssv1alpha1.NamespaceWideScope {
+				return fmt.Errorf("must provide the --name flag with --raw and --scope %s", sealingScope.String())
+			}
 		}
 
 		var data []byte
