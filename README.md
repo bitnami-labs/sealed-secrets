@@ -319,7 +319,7 @@ and/or the controller.
 ```sh
 # Create a json/yaml-encoded Secret somehow:
 # (note use of `--dry-run` - this is just a local file!)
-$ echo -n bar | kubectl create secret generic mysecret --dry-run --from-file=foo=/dev/stdin -o json >mysecret.json
+$ echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json >mysecret.json
 
 # This is the important bit:
 # (note default format is json!)
@@ -363,9 +363,9 @@ You must take care of sealing the updated items with a compatible name and names
 You can use the `--merge-into` command to update an existing sealed secrets if you don't want to copy&paste:
 
 ```sh
-$ echo -n bar | kubectl create secret generic mysecret --dry-run --from-file=foo=/dev/stdin -o json \
+$ echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json \
   | kubeseal > mysealedsecret.json
-$ echo -n baz | kubectl create secret generic mysecret --dry-run --from-file=bar=/dev/stdin -o json \
+$ echo -n baz | kubectl create secret generic mysecret --dry-run=client --from-file=bar=/dev/stdin -o json \
   | kubeseal --merge-into mysealedsecret.json
 ```
 
