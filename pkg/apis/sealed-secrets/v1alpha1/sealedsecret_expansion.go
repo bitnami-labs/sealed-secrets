@@ -41,8 +41,8 @@ type SealedSecretExpansion interface {
 // in which scopes
 type SealingScope int
 
-func (s *SealingScope) String() string {
-	switch *s {
+func (s SealingScope) String() string {
+	switch s {
 	case StrictScope:
 		return "strict"
 	case NamespaceWideScope:
@@ -50,7 +50,7 @@ func (s *SealingScope) String() string {
 	case ClusterWideScope:
 		return "cluster-wide"
 	default:
-		return fmt.Sprintf("undefined-%d", *s)
+		return fmt.Sprintf("undefined-%d", s)
 	}
 }
 
@@ -247,16 +247,36 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 	return s, nil
 }
 
-// Unseal decrypts and returns the embedded v1.Secret.
-func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys map[string]*rsa.PrivateKey) (*v1.Secret, error) {
-	boolTrue := true
-	smeta := s.GetObjectMeta()
-
+func decrypt(privKeys map[string]*rsa.PrivateKey, valueBytes []byte, smeta metav1.Object) ([]byte, error) {
 	// This will fail to decrypt unless the same label was used
 	// during encryption.  This check ensures that we can't be
 	// tricked into decrypting a sealed secret into an unexpected
 	// namespace/name.
 	label := labelFor(smeta)
+
+	plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, valueBytes, label)
+	if err == nil {
+		return plaintext, nil
+	}
+
+	// Sometimes it happens that users encrypt the secret with a scope and then later change the scope.
+	// Let's not give them a helpless error message "cannot decrypt the key" and instead do some work
+	// on their behalf: try to see if there is any other scope that would have worked.
+	// Performing this work is safe since the user could (and would) do it anyway to troubleshoot why it doesn't decrypt.
+	scopes := []SealingScope{StrictScope, NamespaceWideScope, ClusterWideScope}
+	for _, s := range scopes {
+		label := EncryptionLabel(smeta.GetNamespace(), smeta.GetName(), s)
+		if _, err := crypto.HybridDecrypt(rand.Reader, privKeys, valueBytes, label); err == nil {
+			return nil, fmt.Errorf("secret item encrypted with scope %q, being decrypted in scope %q", s.String(), SecretScope(smeta).String())
+		}
+	}
+	return nil, err
+}
+
+// Unseal decrypts and returns the embedded v1.Secret.
+func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys map[string]*rsa.PrivateKey) (*v1.Secret, error) {
+	boolTrue := true
+	smeta := s.GetObjectMeta()
 
 	var secret v1.Secret
 	if len(s.Spec.EncryptedData) > 0 {
@@ -271,7 +291,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 			if err != nil {
 				return nil, err
 			}
-			plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, valueBytes, label)
+			plaintext, err := decrypt(privKeys, valueBytes, smeta)
 			if err != nil {
 				errs = append(errs, multierror.Tag(key, err))
 			}
@@ -282,7 +302,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 			return nil, multierror.Join(multierror.Uniq(errs), multierror.WithFormatter(multierror.InlineFormatter))
 		}
 	} else if AcceptDeprecatedV1Data { // Support decrypting old secrets for backward compatibility
-		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, s.Spec.Data, label)
+		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, s.Spec.Data, labelFor(smeta))
 		if err != nil {
 			return nil, err
 		}

@@ -789,6 +789,49 @@ func TestRaw(t *testing.T) {
 	}
 }
 
+func TestRawBadScope(t *testing.T) {
+	certFilename, privKeyFilename, cleanup := testingKeypairFiles(t)
+	defer cleanup()
+
+	const (
+		secretNS    = "myns"
+		secretName  = "mysecret"
+		secretItem  = "foo"
+		secretValue = "supersecret"
+		secretScope = ssv1alpha1.StrictScope
+		unsealErr   = `secret item encrypted with scope "strict", being decrypted in scope "cluster-wide"`
+	)
+
+	enc, err := sealTestItem(certFilename, secretNS, secretName, secretValue, secretScope)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ss := &ssv1alpha1.SealedSecret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: secretNS,
+			Name:      secretName,
+			Annotations: map[string]string{
+				"sealedsecrets.bitnami.com/cluster-wide": "true",
+			},
+		},
+		Spec: ssv1alpha1.SealedSecretSpec{
+			EncryptedData: map[string]string{
+				secretItem: enc,
+			},
+		},
+	}
+
+	privKeys, err := readPrivKeys([]string{privKeyFilename})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = ss.Unseal(scheme.Codecs, privKeys)
+	if got, want := err.Error(), unsealErr; !strings.HasPrefix(got, want) {
+		t.Fatalf("got: %v, want: %v", err, want)
+	}
+}
+
 func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope ssv1alpha1.SealingScope) (string, error) {
 	// we use a global k8s config from which we take the namespace (either default or set by flag).
 	// it's a mess, for now let's hook in a test getter and restore the original getter after the test.
