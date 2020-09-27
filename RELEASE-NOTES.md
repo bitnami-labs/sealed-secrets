@@ -108,7 +108,7 @@ This makes it easier for automation like ArgoCD to detect whether (and when) the
 
 # Prometheus
 
-The sealed secrets controller now exports prometheus metrics. See also [contrib/prometheus-mixin](contrib/prometheus-mixin) and `controller-podmonitor.yaml`.
+The sealed secrets controller now exports prometheus metrics. See also [contrib/sealed-secrets-mixin](contrib/sealed-secrets-mixin) and `controller-podmonitor.yaml`.
 
 ## Changelog
 
