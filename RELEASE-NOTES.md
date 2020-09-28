@@ -4,6 +4,21 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.12.6
+
+# Announcements
+
+This release contains a fix for [CVE-2020-14040](https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2020-14040), which could have opened the possibility for an attacker to cause a DoS on the sealed-secret controller (provided the attacker can cause the controller to process a malicious sealed secret resource).
+
+## Changelog
+
+* Fix CVE-2020-14040 (#456)
+* Don't require a namespace when using --raw and cluster-wide scope (#451)
+* Unregister Prometheus Gauges associated to removed SealedSecrets conditions (#422)
+* Add -f and -w flags as an alternative to stdin/out (#439)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/24?closed=1
+
 # v0.12.5
 
 ## Changelog
