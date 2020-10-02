@@ -1,7 +1,7 @@
 # Prometheus Mixin Makefile
 # Heavily copied from upstream project kubenetes-mixin
 
-PROMETHEUS_IMAGE := prom/prometheus:v2.16.0
+PROMETHEUS_IMAGE := prom/prometheus:v2.21.0
 
 JSONNET_FMT := jsonnetfmt
 

@@ -23,8 +23,9 @@
             severity: 'warning',
           },
           annotations: {
-            message: 'High rate of errors unsealing Sealed Secrets',
-            runbook: 'https://github.com/bitnami-labs/sealed-secrets',
+            summary: 'Sealed Secrets Unseal Error Rate High',
+            description: 'High rate of errors unsealing Sealed Secrets',
+            runbook_url: 'https://github.com/bitnami-labs/sealed-secrets',
           },
         },
       ],
