@@ -1,0 +1,36 @@
+version: "3"
+services:
+  kube-api:
+    image: rancher/k3s:${K3S_VERSION}
+    command: server --disable-agent
+    container_name: k3s-api
+    volumes:
+      - ./tmp-rancher/root:/.kube
+      - ./tmp-rancher/root:/.rancher
+      - ./tmp-rancher/root/etc:/etc/rancher/k3s
+    expose:
+      - 6443
+    user: "${USERID}"
+    environment:
+      - USER=nobody
+      - HOME=/
+    tmpfs:
+      - /var/run
+      - /run
+      - /tmp
+  e2e-test:
+    build: .
+    container_name: e2e-test
+    links:
+      - "kube-api:kube-api"
+    depends_on:
+      - kube-api
+    volumes:
+      - ./tmp-rancher/root:/tmp/rancher
+      - ..:/work
+    working_dir: /work
+    environment:
+      - HOME=/
+    user: "${USERID}"
+    command:
+      - tests/k3s-e2e-test.sh

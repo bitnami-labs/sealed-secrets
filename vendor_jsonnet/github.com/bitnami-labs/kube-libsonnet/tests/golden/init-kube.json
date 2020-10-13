@@ -1,0 +1,32 @@
+{
+   "vpa_crd": {
+      "apiVersion": "apiextensions.k8s.io/v1beta1",
+      "kind": "CustomResourceDefinition",
+      "metadata": {
+         "name": "verticalpodautoscalers.autoscaling.k8s.io"
+      },
+      "spec": {
+         "group": "autoscaling.k8s.io",
+         "names": {
+            "kind": "VerticalPodAutoscaler",
+            "listKind": "VerticalPodAutoscalerList",
+            "plural": "verticalpodautoscalers",
+            "singular": "verticalpodautoscaler"
+         },
+         "scope": "Namespaced",
+         "version": "v1beta1",
+         "versions": [
+            {
+               "name": "v1beta1",
+               "served": true,
+               "storage": false
+            },
+            {
+               "name": "v1beta2",
+               "served": true,
+               "storage": true
+            }
+         ]
+      }
+   }
+}

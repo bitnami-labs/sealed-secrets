@@ -1,0 +1,22 @@
+{
+   "apiVersion": "v1",
+   "items": [
+      {
+         "apiVersion": "networking.gke.io/v1beta1",
+         "kind": "ManagedCertificate",
+         "metadata": {
+            "annotations": { },
+            "labels": {
+               "name": "foo"
+            },
+            "name": "foo"
+         },
+         "spec": {
+            "domains": [
+               "foo.example.com"
+            ]
+         }
+      }
+   ],
+   "kind": "List"
+}
