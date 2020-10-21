@@ -47,7 +47,7 @@ var (
 			Name:      "unseal_errors_total",
 			Help:      "Total number of sealed secret unseal errors by reason",
 		},
-		[]string{"reason"},
+		[]string{"reason", "namespace"},
 	)
 
 	conditionInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
@@ -64,11 +64,6 @@ func init() {
 	prometheus.MustRegister(unsealRequestsTotal)
 	prometheus.MustRegister(unsealErrorsTotal)
 	prometheus.MustRegister(conditionInfo)
-
-	// Initialise known label values
-	for _, val := range []string{"fetch", "status", "unmanaged", "unseal", "update"} {
-		unsealErrorsTotal.WithLabelValues(val)
-	}
 }
 
 // ObserveCondition sets a `condition_info` Gauge according to a SealedSecret status.
