@@ -9,8 +9,12 @@ DOCKER = docker
 GINKGO = ginkgo -p
 
 CONTROLLER_IMAGE = quay.io/bitnami/sealed-secrets-controller:latest
+INSECURE_REGISTRY = false # useful for local registry
 IMAGE_PULL_POLICY = Always
 KUBECONFIG ?= $(HOME)/.kube/config
+
+DOCKER_CLI_EXPERIMENTAL = enabled
+export DOCKER_CLI_EXPERIMENTAL
 
 GO_PACKAGES = ./...
 GO_FILES := $(shell find $(shell $(GO) list -f '{{.Dir}}' $(GO_PACKAGES)) -name \*.go)
@@ -107,7 +111,7 @@ controller-manifest-%: IMAGE=$(subst $(comma),:,$(subst %,/,$*))
 controller-manifest-%: $(PUSHED_CONTROLLER_IMAGE_PER_ARCH)
 	@echo "composing multiarch manifest for $(IMAGE)"
 
-	$(DOCKER) manifest create $(IMAGE) $(foreach i,$(PUSHED_CONTROLLER_IMAGE_PER_ARCH),$(shell cat $(i)))
+	$(DOCKER) manifest create --insecure=$(INSECURE_REGISTRY) $(IMAGE) $(foreach i,$(PUSHED_CONTROLLER_IMAGE_PER_ARCH),$(shell cat $(i)))
 	$(foreach i,$(ARCHS),$(DOCKER) manifest annotate --arch $(i) $(IMAGE) $(shell cat pushed.controller.image.linux-$(i));)
 	@echo $(IMAGE) >$@.tmp
 	@mv $@.tmp $@
