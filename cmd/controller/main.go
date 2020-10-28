@@ -44,7 +44,7 @@ var (
 	myCN           = flag.String("my-cn", "", "CN to use in generated certificate.")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	keyRenewPeriod = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation disabled if 0)")
-	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", false, "Accept deprecated V1 data field.")
+	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
 	keyCutoffTime  = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
 	namespaceAll   = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
 
