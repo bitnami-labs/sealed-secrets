@@ -4,6 +4,15 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.13.0
+
+## Changelog
+
+* Make it easier to upgrade from ancient (pre v0.9.0) controllers (#466)
+* Prometheus: add namespace to unseal error metric (#463)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/17?closed=1
+
 # v0.12.6
 
 # Announcements
