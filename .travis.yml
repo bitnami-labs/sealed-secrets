@@ -92,7 +92,8 @@ script:
       minikube status
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
       sudo chmod o+x /etc/docker # https://github.com/docker/for-linux/issues/396
-      make push-controller-image CONTROLLER_IMAGE=${CONTROLLER_IMAGE}-${TRAVIS_JOB_ID}
+      make controller.image.linux-amd64 CONTROLLER_IMAGE=${CONTROLLER_IMAGE}-${TRAVIS_JOB_ID}
+      docker tag ${CONTROLLER_IMAGE}-${TRAVIS_JOB_ID}-linux-amd64 ${CONTROLLER_IMAGE}-${TRAVIS_JOB_ID}
       while ! kubectl cluster-info; do sleep 3; done
       kubectl create -f $INT_SSC_CONF
       kubectl rollout status deployment/sealed-secrets-controller -n kube-system -w
