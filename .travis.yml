@@ -132,7 +132,7 @@ after_success:
 before_deploy:
   - |
     if [[ "$TRAVIS_OS_NAME" == linux && \
-          "$INT_KVERS" == "v1.16.0" ]]; then
+          "$INT_KVERS" == "v1.16.13" ]]; then
       docker login -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD" quay.io
       sudo chmod o+x /etc/docker # https://github.com/docker/for-linux/issues/396
       make push-controller-image CONTROLLER_IMAGE=${CONTROLLER_IMAGE}
