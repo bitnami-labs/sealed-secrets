@@ -1,5 +1,11 @@
-on: push
 name: TOC Generator
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
 jobs:
   generateTOC:
     name: TOC Generator
