@@ -1,8 +1,11 @@
 package main
 
 import (
+	"net/http"
+
 	"github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -55,6 +58,25 @@ var (
 		Name:      "condition_info",
 		Help:      "Current SealedSecret condition status. Values are -1 (false), 0 (unknown or absent), 1 (true)",
 	}, []string{labelNamespace, labelName, labelCondition})
+
+	httpRequestsTotal = prometheus.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: metricNamespace,
+			Name:      "http_requests_total",
+			Help:      "A counter for requests to the wrapped handler.",
+		},
+		[]string{"path", "code", "method"},
+	)
+
+	httpRequestDurationSeconds = prometheus.NewHistogramVec(
+		prometheus.HistogramOpts{
+			Namespace: metricNamespace,
+			Name:      "http_request_duration_seconds",
+			Help:      "A histogram of latencies for requests.",
+			Buckets:   prometheus.DefBuckets,
+		},
+		[]string{"path", "method"},
+	)
 )
 
 func init() {
@@ -64,6 +86,8 @@ func init() {
 	prometheus.MustRegister(unsealRequestsTotal)
 	prometheus.MustRegister(unsealErrorsTotal)
 	prometheus.MustRegister(conditionInfo)
+	prometheus.MustRegister(httpRequestsTotal)
+	prometheus.MustRegister(httpRequestDurationSeconds)
 }
 
 // ObserveCondition sets a `condition_info` Gauge according to a SealedSecret status.
@@ -92,4 +116,10 @@ func UnregisterCondition(ssecret *v1alpha1.SealedSecret) {
 			labelCondition: string(condition.Type),
 		}))
 	}
+}
+
+// Instrument HTTP handler
+func Instrument(path string, h http.Handler) http.Handler {
+	return promhttp.InstrumentHandlerDuration(httpRequestDurationSeconds.MustCurryWith(prometheus.Labels{"path": path}),
+		promhttp.InstrumentHandlerCounter(httpRequestsTotal.MustCurryWith(prometheus.Labels{"path": path}), h))
 }
