@@ -14,17 +14,17 @@
         // - 'for' clause not used because we are unlikely to have a sustained rate of errors unless there is a LOT of secret churn in cluster.
         // Rob Ewaschuk - My Philosophy on Alerting: https://docs.google.com/document/d/199PqyG3UsyXlwieHaqbGiWVa8eMWi8zzAn0YfcApr8Q/edit
         {
-          alert: 'SealedSecretsUnsealErrorRateHigh',
+          alert: 'SealedSecretsUnsealErrorHigh',
           expr: |||
-            sum(rate(sealed_secrets_controller_unseal_errors_total{}[5m])) > 0
+            sum by (reason, namespace) (rate(sealed_secrets_controller_unseal_errors_total{}[5m])) > 0
           ||| % $._config,
           // 'for': '5m', // Not used, see caveats above.
           labels: {
             severity: 'warning',
           },
           annotations: {
-            summary: 'Sealed Secrets Unseal Error Rate High',
-            description: 'High rate of errors unsealing Sealed Secrets',
+            summary: 'Sealed Secrets Unseal Error High',
+            description: 'High number of errors during unsealing Sealed Secrets in {{ $labels.namespace }} namespace.',
             runbook_url: 'https://github.com/bitnami-labs/sealed-secrets',
           },
         },
