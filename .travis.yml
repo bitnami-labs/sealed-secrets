@@ -162,7 +162,8 @@ cache:
 
 branches:
   only:
-    - master
+    # using github actions for master and PRs
+    # - master
     # release tags
     - /^v\d+\.\d+\.\d+.*/
     # for bors (in particular: don't build "staging.tmp")

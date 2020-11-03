@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+env:
+  CONTROLLER_IMAGE: gcr.io/mkm-cloud/sealed-secrets-controller:latest
+
+jobs:
+
+  test:
+    name: Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        # go: ["1.15"]
+        go: ["1.14", "1.15"]
+        # os: [ubuntu-latest]
+        os: [macos-latest, ubuntu-latest]
+        # unit tests on windows are currently broken, TODO: fix
+        # os: [macos-latest, windows-latest, ubuntu-latest]
+    steps:
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^${{ matrix.go }}
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Test
+      run: make test
+
+  container:
+    name: Build Container
+    runs-on: ubuntu-latest
+    steps:
+
+    - name: Check out code
+      uses: actions/checkout@v2
+
+    - name: Setup kubecfg
+      run: |
+        mkdir -p ~/bin
+        curl -sLf https://github.com/bitnami/kubecfg/releases/download/v0.16.0/kubecfg-linux-amd64 >~/bin/kubecfg
+        chmod +x ~/bin/kubecfg
+
+    - name: Docker build
+      run: |
+        export PATH=~/bin:$PATH
+        make CONTROLLER_IMAGE=$CONTROLLER_IMAGE IMAGE_PULL_POLICY=Never controller.yaml
+        make CONTROLLER_IMAGE=$CONTROLLER_IMAGE controller.image.linux-amd64
+        docker tag $CONTROLLER_IMAGE-linux-amd64 $CONTROLLER_IMAGE
+        docker save $CONTROLLER_IMAGE -o /tmp/controller-image.tar
+
+    - name: Upload manifest artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: controller-manifest
+        path: controller.yaml
+
+    - name: Upload container image artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: controller-image
+        path: /tmp/controller-image.tar
+
+  integration:
+    name: Integration
+    runs-on: ubuntu-latest
+    needs: container
+    strategy:
+      matrix:
+        k8s: ["1.15.11", "1.16.13"]
+#        k8s: ["1.15.11"]
+    env:
+      MINIKUBE_WANTUPDATENOTIFICATION: "false"
+      MINIKUBE_WANTREPORTERRORPROMPT: "false"
+      CHANGE_MINIKUBE_NONE_USER: "true"
+
+    steps:
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ^1.15
+      id: go
+
+    - name: Set up Ginkgo
+      run: |
+        (cd /tmp; GO111MODULE=on go get github.com/onsi/ginkgo/ginkgo@v1.14.2)
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - uses: opsgang/ga-setup-minikube@v0.1.1
+      with:
+        minikube-version: 1.14.2
+        k8s-version: ${{ matrix.k8s }}
+
+    - name: K8s setup
+      run: |
+        minikube config set vm-driver none
+        minikube config set kubernetes-version v${{ matrix.k8s }}
+        sudo minikube start
+        sudo chown -R runner: /home/runner/.{mini,}kube/
+        minikube update-context
+        kubectl cluster-info
+
+    - name: Download manifest artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: controller-manifest
+
+    - name: Download container image artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: controller-image
+
+    - name: Load docker image
+      run: |
+        docker load -i controller-image.tar
+        docker inspect $CONTROLLER_IMAGE
+
+    - name: Testing environment setup
+      run: |
+        kubectl apply -f controller.yaml
+        kubectl rollout status deployment/sealed-secrets-controller -n kube-system -w --timeout=1m || kubectl -n kube-system describe pod -lname=sealed-secrets-controller
+
+    - name: Integration tests
+      run: make integrationtest CONTROLLER_IMAGE=$CONTROLLER_IMAGE GINKGO="ginkgo -v --randomizeSuites --failOnPending --trace --progress --compilers=2 --nodes=4"
