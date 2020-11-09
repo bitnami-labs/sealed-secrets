@@ -15,6 +15,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	goruntime "runtime"
 	"strings"
 	"testing"
 	"time"
@@ -123,13 +125,20 @@ func TestParseKey(t *testing.T) {
 func TestOpenCertFile(t *testing.T) {
 	certFile := tmpfile(t, []byte(testCert))
 
-	s := httptest.NewServer(http.FileServer(http.Dir("/")))
+	s := httptest.NewServer(http.FileServer(http.Dir(filepath.Dir(certFile))))
 	defer s.Close()
 
-	testCases := []string{"", "file://", s.URL}
-	for _, prefix := range testCases {
-		certURL := fmt.Sprintf("%s%s", prefix, certFile)
+	testCases := []string{
+		certFile,
+		fmt.Sprintf("%s/%s", s.URL, filepath.Base(certFile)),
+		// This should work on windows but it causes a 500 error in the file handler. TODO: investigate
+		//		(&url.URL{Scheme: "file", Path: path.Join("/", filepath.ToSlash(certFile))}).String(),
+	}
+	if goruntime.GOOS != "windows" {
+		testCases = append(testCases, fmt.Sprintf("file://%s", certFile))
+	}
 
+	for _, certURL := range testCases {
 		f, err := openCert(certURL)
 		if err != nil {
 			t.Fatalf("Error reading test cert file: %v", err)
@@ -655,7 +664,7 @@ func TestVersion(t *testing.T) {
 }
 
 func TestMainError(t *testing.T) {
-	const badFileName = "/?this/file/cannot/possibly/exist/can/it?"
+	badFileName := filepath.Join("this", "file", "cannot", "possibly", "exist", "can", "it?")
 	err := run(ioutil.Discard, "", "", "", "", "", badFileName, false, false, false, false, false, false, nil, "", false, nil)
 
 	if err == nil || !os.IsNotExist(err) {

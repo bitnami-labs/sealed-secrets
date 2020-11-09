@@ -163,6 +163,10 @@ func isFilename(name string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	// windows drive letters
+	if s := strings.ToLower(u.Scheme); len(s) == 1 && s[0] >= 'a' && s[0] <= 'z' {
+		return true, nil
+	}
 	return u.Scheme == "", nil
 }
 

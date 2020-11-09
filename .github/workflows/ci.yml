@@ -16,12 +16,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        # go: ["1.15"]
         go: ["1.14", "1.15"]
-        # os: [ubuntu-latest]
-        os: [macos-latest, ubuntu-latest]
-        # unit tests on windows are currently broken, TODO: fix
-        # os: [macos-latest, windows-latest, ubuntu-latest]
+        os: [macos-latest, windows-latest, ubuntu-latest]
     steps:
 
     - name: Set up Go 1.x
