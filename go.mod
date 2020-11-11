@@ -20,6 +20,7 @@ require (
 	github.com/throttled/throttled v2.2.2+incompatible
 	golang.org/x/crypto v0.0.0-20200220183623-bac4c82f6975
 	golang.org/x/text v0.3.3 // indirect
+	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.16.8
 	k8s.io/apimachinery v0.16.8
 	k8s.io/client-go v0.16.8

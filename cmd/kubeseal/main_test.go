@@ -372,6 +372,7 @@ type mkTestSecretOpt func(*mkTestSecretOpts)
 type mkTestSecretOpts struct {
 	secretName      string
 	secretNamespace string
+	asYAML          bool
 }
 
 func withSecretName(n string) mkTestSecretOpt {
@@ -383,6 +384,12 @@ func withSecretName(n string) mkTestSecretOpt {
 func withSecretNamespace(n string) mkTestSecretOpt {
 	return func(o *mkTestSecretOpts) {
 		o.secretNamespace = n
+	}
+}
+
+func asYAML(y bool) mkTestSecretOpt {
+	return func(o *mkTestSecretOpts) {
+		o.asYAML = y
 	}
 }
 
@@ -411,7 +418,12 @@ func mkTestSecret(t *testing.T, key, value string, opts ...mkTestSecretOpt) []by
 		},
 	}
 
-	info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
+	contentType := runtime.ContentTypeJSON
+	if o.asYAML {
+		contentType = runtime.ContentTypeYAML
+	}
+
+	info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), contentType)
 	if !ok {
 		t.Fatalf("binary can't serialize JSON")
 	}
@@ -1001,5 +1013,16 @@ func TestReadPrivKeySecret(t *testing.T) {
 
 	if got, want := pkr.D.String(), pkw.D.String(); got != want {
 		t.Errorf("got: %q, want: %q", got, want)
+	}
+}
+
+func TestYAMLStream(t *testing.T) {
+	s1 := mkTestSecret(t, "foo", "1", withSecretName("s1"), asYAML(true))
+	s2 := mkTestSecret(t, "var", "2", withSecretName("s2"), asYAML(true))
+	bad := fmt.Sprintf("%s\n---\n%s\n", s1, s2)
+
+	_, err := readSecret(scheme.Codecs.UniversalDecoder(), strings.NewReader(bad))
+	if err == nil {
+		t.Fatalf("error expected")
 	}
 }

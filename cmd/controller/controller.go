@@ -29,6 +29,7 @@ import (
 	ssscheme "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/scheme"
 	ssv1alpha1client "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/typed/sealed-secrets/v1alpha1"
 	ssinformer "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
+	"github.com/bitnami-labs/sealed-secrets/pkg/multidocyaml"
 )
 
 const (
@@ -378,6 +379,10 @@ func isAnnotatedToBeManaged(secret *corev1.Secret) bool {
 
 // AttemptUnseal tries to unseal a secret.
 func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
+	if err := multidocyaml.EnsureNotMultiDoc(content); err != nil {
+		return false, err
+	}
+
 	object, err := runtime.Decode(scheme.Codecs.UniversalDecoder(ssv1alpha1.SchemeGroupVersion), content)
 	if err != nil {
 		return false, err
