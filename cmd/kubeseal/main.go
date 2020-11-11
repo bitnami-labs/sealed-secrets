@@ -19,6 +19,7 @@ import (
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	"github.com/bitnami-labs/sealed-secrets/pkg/multidocyaml"
 	"github.com/google/renameio"
 	"github.com/mattn/go-isatty"
 	flag "github.com/spf13/pflag"
@@ -132,6 +133,10 @@ func parseKey(r io.Reader) (*rsa.PublicKey, error) {
 func readSecret(codec runtime.Decoder, r io.Reader) (*v1.Secret, error) {
 	data, err := ioutil.ReadAll(r)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := multidocyaml.EnsureNotMultiDoc(data); err != nil {
 		return nil, err
 	}
 
@@ -376,7 +381,7 @@ func resourceOutput(out io.Writer, codecs runtimeserializer.CodecFactory, gv run
 	case "json", "":
 		contentType = runtime.ContentTypeJSON
 	case "yaml":
-		contentType = "application/yaml"
+		contentType = runtime.ContentTypeYAML
 	default:
 		return fmt.Errorf("unsupported output format: %s", *outputFormat)
 	}
