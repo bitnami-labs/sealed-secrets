@@ -44,9 +44,8 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 
 	mux.Handle("/metrics", promhttp.Handler())
 
-	mux.Handle("/v1/verify", httpRateLimiter.RateLimit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/v1/verify", Instrument("/v1/verify", httpRateLimiter.RateLimit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		content, err := ioutil.ReadAll(r.Body)
-
 		if err != nil {
 			log.Printf("Error handling /v1/verify request: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -54,7 +53,6 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 		}
 
 		valid, err := sc(content)
-
 		if err != nil {
 			log.Printf("Error validating secret: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -66,12 +64,11 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 		} else {
 			w.WriteHeader(http.StatusConflict)
 		}
-	})))
+	}))))
 
 	// TODO(mkm): rename to re-encrypt
-	mux.HandleFunc("/v1/rotate", func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/v1/rotate", Instrument("/v1/rotate", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		content, err := ioutil.ReadAll(r.Body)
-
 		if err != nil {
 			log.Printf("Error handling /v1/rotate request: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -79,7 +76,6 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 		}
 
 		newSecret, err := sr(content)
-
 		if err != nil {
 			log.Printf("Error rotating secret: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
@@ -89,9 +85,9 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(newSecret)
-	})
+	})))
 
-	mux.HandleFunc("/v1/cert.pem", func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/v1/cert.pem", Instrument("/v1/cert.pem", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		certs, err := cp()
 		if err != nil {
 			log.Printf("cannot get certificates: %v", err)
@@ -103,7 +99,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 		for _, cert := range certs {
 			w.Write(pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
 		}
-	})
+	})))
 
 	server := http.Server{
 		Addr:         *listenAddr,
@@ -135,5 +131,4 @@ func rateLimter() throttled.HTTPRateLimiter {
 		RateLimiter: rateLimiter,
 		VaryBy:      &throttled.VaryBy{Path: true, Headers: []string{"X-Forwarded-For"}},
 	}
-
 }
