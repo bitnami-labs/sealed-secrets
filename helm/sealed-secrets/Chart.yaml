@@ -5,3 +5,6 @@ appVersion: 0.13.1
 kubeVersion: ">=1.9.0-0"
 home: https://github.com/bitnami-labs/sealed-secrets
 apiVersion: v1
+maintainers:
+- name: mkmik
+  email: example@example.com
