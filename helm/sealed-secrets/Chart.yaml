@@ -1,0 +1,11 @@
+name: sealed-secrets
+description: A Helm chart for Sealed Secrets
+version: 1.13.0
+icon: https://avatars0.githubusercontent.com/u/34656521?s=200&v=4
+appVersion: 0.13.1
+kubeVersion: ">=1.9.0-0"
+home: https://github.com/bitnami-labs/sealed-secrets
+apiVersion: v1
+maintainers:
+- name: mkmik
+  email: mkm@bitnami.com
