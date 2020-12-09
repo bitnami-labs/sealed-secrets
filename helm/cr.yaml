@@ -1,4 +1,0 @@
-# Set to true for GPG signing
-sign: false
-# UID of the GPG key to use
-key: Chart Releaser Test Key
