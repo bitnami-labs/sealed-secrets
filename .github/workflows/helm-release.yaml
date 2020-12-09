@@ -2,8 +2,8 @@ name: Release Charts
 
 on:
   push:
-    branches:
-      - master
+    tags:
+      - 'helm-v*'
 
 jobs:
   release:
