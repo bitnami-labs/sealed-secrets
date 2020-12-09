@@ -8,4 +8,4 @@ home: https://github.com/bitnami-labs/sealed-secrets
 apiVersion: v1
 maintainers:
 - name: mkmik
-  email: example@example.com
+  email: mkm@bitnami.com
