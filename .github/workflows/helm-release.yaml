@@ -2,8 +2,10 @@ name: Release Charts
 
 on:
   push:
-    tags:
-      - 'helm-v*'
+    paths:
+      - 'helm/**'
+    branches:
+      - master
 
 jobs:
   release:
