@@ -28,7 +28,7 @@ env:
 matrix:
   include:
     - env: INT_KVERS=v1.16.13 INT_SSC_CONF=controller.yaml
-    - env: INT_KVERS=v1.15.11 INT_SSC_CONF=controller.yaml
+    - env: INT_KVERS=v1.17.11 INT_SSC_CONF=controller.yaml
 
 addons:
   apt:
