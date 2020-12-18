@@ -135,11 +135,11 @@ controller.image: controller-manifest-$(subst :,$(comma),$(subst /,%,$(CONTROLLE
 	$(KUBECFG) show -V CONTROLLER_IMAGE=$(CONTROLLER_IMAGE) -V IMAGE_PULL_POLICY=$(IMAGE_PULL_POLICY) -o yaml $< > $@.tmp
 	mv $@.tmp $@
 
-controller.yaml: controller.jsonnet controller-norbac.jsonnet
+controller.yaml: controller.jsonnet controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixes.libsonnet
 
-controller-norbac.yaml: controller-norbac.jsonnet
+controller-norbac.yaml: controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixes.libsonnet
 
-controller-podmonitor.yaml: controller.jsonnet controller-norbac.jsonnet
+controller-podmonitor.yaml: controller.jsonnet controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixes.libsonnet
 
 test:
 	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
