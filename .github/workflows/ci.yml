@@ -72,8 +72,7 @@ jobs:
     needs: container
     strategy:
       matrix:
-        k8s: ["1.15.11", "1.16.13"]
-#        k8s: ["1.15.11"]
+        k8s: ["1.16.13", "1.17.11"]
     env:
       MINIKUBE_WANTUPDATENOTIFICATION: "false"
       MINIKUBE_WANTREPORTERRORPROMPT: "false"
@@ -98,11 +97,15 @@ jobs:
       env:
         ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
       with:
-        minikube-version: 1.14.2
+        minikube-version: 1.16.0
         k8s-version: ${{ matrix.k8s }}
 
+    # need to delete old state of the cluster, see:
+    # https://github.com/kubernetes/minikube/issues/8765
     - name: K8s setup
       run: |
+        sudo minikube delete
+        sudo rm -rf /home/runner/.{mini,}kube/
         minikube config set vm-driver none
         minikube config set kubernetes-version v${{ matrix.k8s }}
         sudo minikube start
