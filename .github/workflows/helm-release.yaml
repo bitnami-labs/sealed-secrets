@@ -3,7 +3,8 @@ name: Release Charts
 on:
   push:
     paths:
-      - 'helm/**'
+      # update version.txt to trigger helm chart release
+      - 'version.txt'
     branches:
       - master
 
