@@ -1,0 +1,7 @@
+openAPIV3Schema:
+  type: object
+  properties:
+    spec:
+      type: object
+      x-kubernetes-preserve-unknown-fields: true
+      properties: {}

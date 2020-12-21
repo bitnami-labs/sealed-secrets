@@ -1,19 +1,28 @@
 // Minimal required deployment for a functional controller.
 
+local kubecfg = import "kubecfg.libsonnet";
+
 local namespace = 'kube-system';
 
 {
   kube:: (import 'vendor_jsonnet/kube-libsonnet/kube.libsonnet'),
-  local kube = self.kube,
+  local kube = self.kube + import 'kube-fixes.libsonnet',
 
   controllerImage:: std.extVar('CONTROLLER_IMAGE'),
   imagePullPolicy:: std.extVar('IMAGE_PULL_POLICY'),
 
   crd: kube.CustomResourceDefinition('bitnami.com', 'v1alpha1', 'SealedSecret') {
     spec+: {
-      subresources: {
-        status: {},
-      }
+      versions_+: {
+        v1alpha1+: {
+          served: true,
+          storage: true,
+          subresources: {
+            status: {},
+          },
+          schema: kubecfg.parseYaml(importstr "schema-v1alpha1.yaml")[0],
+        },
+      },
     },
   },
 
