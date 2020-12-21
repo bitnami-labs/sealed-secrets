@@ -1,11 +1,19 @@
-// This file forces go mod to include dependencies used during build, such as
-// code generation tools.
-// The build tag below ensures this dep is not pulled during normal builds.
+// This binary is used to perform build automation duties.
+//
+// The existence of this file causes go mod to include dependencies used during
+// development, such as code generation tools.
+// However, the build tag below ensures these deps are not pulled during normal builds.
 
 // +build tools
 
-package sealedsecrets
+package main
 
 import (
+	"fmt"
+
 	_ "k8s.io/code-generator"
 )
+
+func main() {
+	fmt.Println("TODO")
+}
