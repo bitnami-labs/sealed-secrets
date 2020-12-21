@@ -1,0 +1,15 @@
+version: v0.13.1
+helmRevision: r2
+
+helmReplace:
+# The helm chart started as a community effort and started off using v1.x.y
+# while the main project remained conservatively at v0.x.y.
+# Perhaps we'll converge in the future, but for now let's just deal with it with a version mapping.
+- replace: "v0"
+  with: "1"
+
+# The new helm chart has been manually version bumped beyond the app version before we established
+# the "-rN" suffix convention. This rule ensures that the linter doesn't choke on that version.
+- replace: "1.13.1-r2"
+  with: "1.13.2-r2"
+

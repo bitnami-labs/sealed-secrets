@@ -4,7 +4,7 @@ on:
   push:
     paths:
       # update version.txt to trigger helm chart release
-      - 'version.txt'
+      - 'version.yaml'
     branches:
       - master
 
