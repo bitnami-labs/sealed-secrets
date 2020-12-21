@@ -1,5 +1,11 @@
 name: sealed-secrets
-description: A Helm chart for Sealed
+description: |
+  Helm chart for sealed-secrets.
+
+  This release tag is not a new release of the sealed-secrets project itself, but only a release
+  tag for the helm chart itself. Helm charts are an optional (but supported) way to install sealed-secrets.
+  You can also install it with a simpler YAML file, see https://github.com/bitnami-labs/sealed-secrets/releases
+
 
 ##############################
 # Important versioning rules #
