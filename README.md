@@ -269,9 +269,27 @@ In some cases you might need to apply your own customizations, like set a custom
 
 ### Helm Chart
 
-Sealed Secret helm charts can be found on this [link](https://github.com/helm/charts/tree/master/stable/sealed-secrets). It's maintained independently and it might lag a bit behind the latest release. This badge should indicate the latest helm chart release:
+The Sealed Secrets helm chart is now official supported and hosted in this GitHub repo.
 
-[![](https://img.shields.io/badge/dynamic/json?color=orange&label=helm%20release&query=%24.data.relationships.latestChartVersion.data.app_version&url=https%3A%2F%2Fhub.kubeapps.com%2Fapi%2Fchartsvc%2Fv1%2Fcharts%2Fstable%2Fsealed-secrets)](https://hub.kubeapps.com/charts/stable/sealed-secrets)
+```
+$ helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
+```
+
+NOTE: The versioning scheme of the helm chart differs from the versioning scheme of the sealed secrets project itself.
+
+Originally the helm chart was maintained by the community and the first version adopted a major version of 1 while the
+sealed secrets project itself is still at major 0.
+This is ok because the version of the helm chart itself is not meant to be necessarily the version of the app itself.
+However this is confusing, so our current versioning rule is:
+
+1. The sealed secret controller version scheme: 0.X.Y
+2. The helm chart version scheme: 1.X.Y-rZ
+
+There can be thus multiple revisions of the helm chart, with fixes that apply only to the helm chart without
+affecting the static YAML manifests or the controller image itself.
+
+NOTE: the helm chart readme still contains a deprecation notice but it's no longer reflects reality
+and will be removed upon next release.
 
 ### Operator Framework
 
