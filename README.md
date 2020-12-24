@@ -293,7 +293,9 @@ and will be removed upon next release.
 
 ### Operator Framework
 
-Install Sealed Secrets as Kubernetes Operator via the Operator Lifecyle Manager of your cluster. The `Sealed Secrets Operator (Helm)` is published at [OperatorHub.io](https://operatorhub.io/operator/sealed-secrets-operator-helm) for Kubernetes, as community operator in OpenShift's integrated OperatorHub or at the [GitHub repository](https://github.com/disposab1e/sealed-secrets-operator-helm) of the project. Please note, this is also an independently maintained project, so please contact the maintainers directly for support, help or [documentation](https://sealed-secrets-operator-helm.readthedocs.io/en/latest/).
+Install Sealed Secrets as Kubernetes Operator via the Operator Lifecyle Manager of your cluster. The `Sealed Secrets Operator (Helm)` is published at [OperatorHub.io](https://operatorhub.io/operator/sealed-secrets-operator-helm) for Kubernetes, as community operator in OpenShift's integrated OperatorHub or at the [GitHub repository](https://github.com/disposab1e/sealed-secrets-operator-helm) of the project.
+
+NOTE: the sealed secrets operator is an independently maintained project, so please contact the maintainers directly for support, help or [documentation](https://sealed-secrets-operator-helm.readthedocs.io/en/latest/).
 
 ### Homebrew
 
