@@ -110,11 +110,7 @@ func UnregisterCondition(ssecret *v1alpha1.SealedSecret) {
 		return
 	}
 	for _, condition := range ssecret.Status.Conditions {
-		prometheus.Unregister(conditionInfo.With(prometheus.Labels{
-			labelNamespace: ssecret.Namespace,
-			labelName:      ssecret.Name,
-			labelCondition: string(condition.Type),
-		}))
+		conditionInfo.MetricVec.DeleteLabelValues(ssecret.Namespace, ssecret.Name, string(condition.Type))
 	}
 }
 
