@@ -4,7 +4,15 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.14.1
+
+## Changelog
+
+* Fixed `condition_info` prometheus metric disappearance (#504)
+
 # v0.14.0
+
+## Changelog
 
 * Updated CustomResourceDefinition to apiextensions.k8s.io/v1 (#490)
 
