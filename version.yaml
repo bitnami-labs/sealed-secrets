@@ -1,5 +1,5 @@
-version: v0.13.1
-helmRevision: r2
+version: v0.14.0
+helmRevision: r1
 
 helmReplace:
 # The helm chart started as a community effort and started off using v1.x.y
@@ -12,4 +12,3 @@ helmReplace:
 # the "-rN" suffix convention. This rule ensures that the linter doesn't choke on that version.
 - replace: "1.13.1-r2"
   with: "1.13.2-r2"
-
