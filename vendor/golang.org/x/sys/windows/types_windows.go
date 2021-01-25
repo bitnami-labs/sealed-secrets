@@ -681,18 +681,26 @@ const (
 	AF_UNSPEC  = 0
 	AF_UNIX    = 1
 	AF_INET    = 2
-	AF_INET6   = 23
 	AF_NETBIOS = 17
+	AF_INET6   = 23
+	AF_IRDA    = 26
+	AF_BTH     = 32
 
 	SOCK_STREAM    = 1
 	SOCK_DGRAM     = 2
 	SOCK_RAW       = 3
+	SOCK_RDM       = 4
 	SOCK_SEQPACKET = 5
 
-	IPPROTO_IP   = 0
-	IPPROTO_IPV6 = 0x29
-	IPPROTO_TCP  = 6
-	IPPROTO_UDP  = 17
+	IPPROTO_IP      = 0
+	IPPROTO_ICMP    = 1
+	IPPROTO_IGMP    = 2
+	BTHPROTO_RFCOMM = 3
+	IPPROTO_TCP     = 6
+	IPPROTO_UDP     = 17
+	IPPROTO_IPV6    = 41
+	IPPROTO_ICMPV6  = 58
+	IPPROTO_RM      = 113
 
 	SOL_SOCKET                = 0xffff
 	SO_REUSEADDR              = 4
@@ -701,6 +709,7 @@ const (
 	SO_BROADCAST              = 32
 	SO_LINGER                 = 128
 	SO_RCVBUF                 = 0x1002
+	SO_RCVTIMEO               = 0x1006
 	SO_SNDBUF                 = 0x1001
 	SO_UPDATE_ACCEPT_CONTEXT  = 0x700b
 	SO_UPDATE_CONNECT_CONTEXT = 0x7010
@@ -1575,18 +1584,6 @@ const (
 	JOB_OBJECT_LIMIT_WORKINGSET                 = 0x00000001
 )
 
-type JOBOBJECT_BASIC_LIMIT_INFORMATION struct {
-	PerProcessUserTimeLimit int64
-	PerJobUserTimeLimit     int64
-	LimitFlags              uint32
-	MinimumWorkingSetSize   uintptr
-	MaximumWorkingSetSize   uintptr
-	ActiveProcessLimit      uint32
-	Affinity                uintptr
-	PriorityClass           uint32
-	SchedulingClass         uint32
-}
-
 type IO_COUNTERS struct {
 	ReadOperationCount  uint64
 	WriteOperationCount uint64
@@ -1741,4 +1738,103 @@ const (
 	GET_MODULE_HANDLE_EX_FLAG_PIN                = 1
 	GET_MODULE_HANDLE_EX_FLAG_UNCHANGED_REFCOUNT = 2
 	GET_MODULE_HANDLE_EX_FLAG_FROM_ADDRESS       = 4
+)
+
+// MUI function flag values
+const (
+	MUI_LANGUAGE_ID                    = 0x4
+	MUI_LANGUAGE_NAME                  = 0x8
+	MUI_MERGE_SYSTEM_FALLBACK          = 0x10
+	MUI_MERGE_USER_FALLBACK            = 0x20
+	MUI_UI_FALLBACK                    = MUI_MERGE_SYSTEM_FALLBACK | MUI_MERGE_USER_FALLBACK
+	MUI_THREAD_LANGUAGES               = 0x40
+	MUI_CONSOLE_FILTER                 = 0x100
+	MUI_COMPLEX_SCRIPT_FILTER          = 0x200
+	MUI_RESET_FILTERS                  = 0x001
+	MUI_USER_PREFERRED_UI_LANGUAGES    = 0x10
+	MUI_USE_INSTALLED_LANGUAGES        = 0x20
+	MUI_USE_SEARCH_ALL_LANGUAGES       = 0x40
+	MUI_LANG_NEUTRAL_PE_FILE           = 0x100
+	MUI_NON_LANG_NEUTRAL_FILE          = 0x200
+	MUI_MACHINE_LANGUAGE_SETTINGS      = 0x400
+	MUI_FILETYPE_NOT_LANGUAGE_NEUTRAL  = 0x001
+	MUI_FILETYPE_LANGUAGE_NEUTRAL_MAIN = 0x002
+	MUI_FILETYPE_LANGUAGE_NEUTRAL_MUI  = 0x004
+	MUI_QUERY_TYPE                     = 0x001
+	MUI_QUERY_CHECKSUM                 = 0x002
+	MUI_QUERY_LANGUAGE_NAME            = 0x004
+	MUI_QUERY_RESOURCE_TYPES           = 0x008
+	MUI_FILEINFO_VERSION               = 0x001
+
+	MUI_FULL_LANGUAGE      = 0x01
+	MUI_PARTIAL_LANGUAGE   = 0x02
+	MUI_LIP_LANGUAGE       = 0x04
+	MUI_LANGUAGE_INSTALLED = 0x20
+	MUI_LANGUAGE_LICENSED  = 0x40
+)
+
+// FILE_INFO_BY_HANDLE_CLASS constants for SetFileInformationByHandle/GetFileInformationByHandleEx
+const (
+	FileBasicInfo                  = 0
+	FileStandardInfo               = 1
+	FileNameInfo                   = 2
+	FileRenameInfo                 = 3
+	FileDispositionInfo            = 4
+	FileAllocationInfo             = 5
+	FileEndOfFileInfo              = 6
+	FileStreamInfo                 = 7
+	FileCompressionInfo            = 8
+	FileAttributeTagInfo           = 9
+	FileIdBothDirectoryInfo        = 10
+	FileIdBothDirectoryRestartInfo = 11
+	FileIoPriorityHintInfo         = 12
+	FileRemoteProtocolInfo         = 13
+	FileFullDirectoryInfo          = 14
+	FileFullDirectoryRestartInfo   = 15
+	FileStorageInfo                = 16
+	FileAlignmentInfo              = 17
+	FileIdInfo                     = 18
+	FileIdExtdDirectoryInfo        = 19
+	FileIdExtdDirectoryRestartInfo = 20
+	FileDispositionInfoEx          = 21
+	FileRenameInfoEx               = 22
+	FileCaseSensitiveInfo          = 23
+	FileNormalizedNameInfo         = 24
+)
+
+// LoadLibrary flags for determining from where to search for a DLL
+const (
+	DONT_RESOLVE_DLL_REFERENCES               = 0x1
+	LOAD_LIBRARY_AS_DATAFILE                  = 0x2
+	LOAD_WITH_ALTERED_SEARCH_PATH             = 0x8
+	LOAD_IGNORE_CODE_AUTHZ_LEVEL              = 0x10
+	LOAD_LIBRARY_AS_IMAGE_RESOURCE            = 0x20
+	LOAD_LIBRARY_AS_DATAFILE_EXCLUSIVE        = 0x40
+	LOAD_LIBRARY_REQUIRE_SIGNED_TARGET        = 0x80
+	LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR          = 0x100
+	LOAD_LIBRARY_SEARCH_APPLICATION_DIR       = 0x200
+	LOAD_LIBRARY_SEARCH_USER_DIRS             = 0x400
+	LOAD_LIBRARY_SEARCH_SYSTEM32              = 0x800
+	LOAD_LIBRARY_SEARCH_DEFAULT_DIRS          = 0x1000
+	LOAD_LIBRARY_SAFE_CURRENT_DIRS            = 0x00002000
+	LOAD_LIBRARY_SEARCH_SYSTEM32_NO_FORWARDER = 0x00004000
+	LOAD_LIBRARY_OS_INTEGRITY_CONTINUITY      = 0x00008000
+)
+
+// RegNotifyChangeKeyValue notifyFilter flags.
+const (
+	// REG_NOTIFY_CHANGE_NAME notifies the caller if a subkey is added or deleted.
+	REG_NOTIFY_CHANGE_NAME = 0x00000001
+
+	// REG_NOTIFY_CHANGE_ATTRIBUTES notifies the caller of changes to the attributes of the key, such as the security descriptor information.
+	REG_NOTIFY_CHANGE_ATTRIBUTES = 0x00000002
+
+	// REG_NOTIFY_CHANGE_LAST_SET notifies the caller of changes to a value of the key. This can include adding or deleting a value, or changing an existing value.
+	REG_NOTIFY_CHANGE_LAST_SET = 0x00000004
+
+	// REG_NOTIFY_CHANGE_SECURITY notifies the caller of changes to the security descriptor of the key.
+	REG_NOTIFY_CHANGE_SECURITY = 0x00000008
+
+	// REG_NOTIFY_THREAD_AGNOSTIC indicates that the lifetime of the registration must not be tied to the lifetime of the thread issuing the RegNotifyChangeKeyValue call. Note: This flag value is only supported in Windows 8 and later.
+	REG_NOTIFY_THREAD_AGNOSTIC = 0x10000000
 )
