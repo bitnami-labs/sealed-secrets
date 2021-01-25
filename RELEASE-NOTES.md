@@ -4,6 +4,10 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.14.0
+
+* Updated CustomResourceDefinition to apiextensions.k8s.io/v1 (#490)
+
 # v0.13.1
 
 ## Changelog
