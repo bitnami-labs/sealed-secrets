@@ -10,11 +10,15 @@ Latest release:
 
 * Fixed `condition_info` prometheus metric disappearance (#504)
 
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/27?closed=1
+
 # v0.14.0
 
 ## Changelog
 
 * Updated CustomResourceDefinition to apiextensions.k8s.io/v1 (#490)
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/19?closed=1
 
 # v0.13.1
 
