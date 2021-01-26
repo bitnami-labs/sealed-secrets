@@ -3,7 +3,7 @@
 [![](https://img.shields.io/badge/install-docs-brightgreen.svg)](#Installation)
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 [![](https://img.shields.io/homebrew/v/kubeseal)](https://formulae.brew.sh/formula/kubeseal)
-[![](https://img.shields.io/badge/dynamic/json?color=orange&label=helm%20release&query=%24.data.relationships.latestChartVersion.data.app_version&url=https%3A%2F%2Fhub.kubeapps.com%2Fapi%2Fchartsvc%2Fv1%2Fcharts%2Fstable%2Fsealed-secrets)](https://hub.kubeapps.com/charts/stable/sealed-secrets)
+[![](https://img.shields.io/github/v/release/bitnami-labs/sealed-secrets?include_prereleases&label=helm&sort=semver)](https://github.com/bitnami-labs/sealed-secrets/releases)
 [![Build Status](https://travis-ci.org/bitnami-labs/sealed-secrets.svg?branch=master)](https://travis-ci.org/bitnami-labs/sealed-secrets)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bitnami-labs/sealed-secrets)](https://goreportcard.com/report/github.com/bitnami-labs/sealed-secrets)
 ![Downloads](https://img.shields.io/github/downloads/bitnami-labs/sealed-secrets/total.svg)
