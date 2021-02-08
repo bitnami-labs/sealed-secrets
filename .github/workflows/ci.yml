@@ -97,7 +97,7 @@ jobs:
       env:
         ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
       with:
-        minikube-version: 1.16.0
+        minikube-version: 1.17.1
         k8s-version: ${{ matrix.k8s }}
 
     # need to delete old state of the cluster, see:
@@ -134,4 +134,8 @@ jobs:
         kubectl rollout status deployment/sealed-secrets-controller -n kube-system -w --timeout=1m || kubectl -n kube-system describe pod -lname=sealed-secrets-controller
 
     - name: Integration tests
-      run: make integrationtest CONTROLLER_IMAGE=$CONTROLLER_IMAGE GINKGO="ginkgo -v --randomizeSuites --failOnPending --trace --progress --compilers=2 --nodes=4"
+      run: |
+        ls -l /home/runner/.kube/config
+        cat /home/runner/.kube/config
+        kubectl config view
+        make integrationtest CONTROLLER_IMAGE=$CONTROLLER_IMAGE GINKGO="ginkgo -v --randomizeSuites --failOnPending --trace --progress --compilers=2 --nodes=4"
