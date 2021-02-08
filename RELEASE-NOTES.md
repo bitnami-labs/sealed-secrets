@@ -8,7 +8,7 @@ Latest release:
 
 ## Changelog
 
-* Fixed `condition_info` prometheus metric disappearance (#504)
+* Fixed `condition_info` prometheus metric disappearance ([#504](https://github.com/bitnami-labs/sealed-secrets/issues/504))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/27?closed=1
 
@@ -16,7 +16,7 @@ The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secre
 
 ## Changelog
 
-* Updated CustomResourceDefinition to apiextensions.k8s.io/v1 (#490)
+* Updated CustomResourceDefinition to apiextensions.k8s.io/v1 ([#490](https://github.com/bitnami-labs/sealed-secrets/issues/490))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/19?closed=1
 
@@ -24,8 +24,8 @@ The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secre
 
 ## Changelog
 
-* Make it easier to upgrade from ancient (pre v0.9.0) controllers (#466)
-* Prometheus: add namespace to unseal error metric (#463)
+* Make it easier to upgrade from ancient (pre v0.9.0) controllers ([#466](https://github.com/bitnami-labs/sealed-secrets/issues/466))
+* Prometheus: add namespace to unseal error metric ([#463](https://github.com/bitnami-labs/sealed-secrets/issues/463))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/17?closed=1
 
@@ -37,10 +37,10 @@ This release contains a fix for [CVE-2020-14040](https://cve.mitre.org/cgi-bin/c
 
 ## Changelog
 
-* Fix CVE-2020-14040 (#456)
-* Don't require a namespace when using --raw and cluster-wide scope (#451)
-* Unregister Prometheus Gauges associated to removed SealedSecrets conditions (#422)
-* Add -f and -w flags as an alternative to stdin/out (#439)
+* Fix CVE-2020-14040 ([#456](https://github.com/bitnami-labs/sealed-secrets/issues/456))
+* Don't require a namespace when using --raw and cluster-wide scope ([#451](https://github.com/bitnami-labs/sealed-secrets/issues/451))
+* Unregister Prometheus Gauges associated to removed SealedSecrets conditions ([#422](https://github.com/bitnami-labs/sealed-secrets/issues/422))
+* Add -f and -w flags as an alternative to stdin/out ([#439](https://github.com/bitnami-labs/sealed-secrets/issues/439))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/24?closed=1
 
@@ -48,7 +48,7 @@ The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secre
 
 ## Changelog
 
-* Add `condition_info` metric to expose SealedSecrets status (#421)
+* Add `condition_info` metric to expose SealedSecrets status ([#421](https://github.com/bitnami-labs/sealed-secrets/issues/421))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/23?closed=1
 
@@ -60,7 +60,7 @@ The binaries in this release have been rebuilt with the Go 1.14.3 toolchain. No 
 
 ## Changelog
 
-* Build with latest Go 1.14.x version (#411)
+* Build with latest Go 1.14.x version ([#411](https://github.com/bitnami-labs/sealed-secrets/issues/411))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/22?closed=1
 
@@ -72,7 +72,7 @@ This release contains only a change in the `kubeseal` binary since v0.12.2. No c
 
 ## Changelog
 
-* Fix `--merge-into` file permissions on Windows (#407)
+* Fix `--merge-into` file permissions on Windows ([#407](https://github.com/bitnami-labs/sealed-secrets/issues/407))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/21?closed=1
 
@@ -96,8 +96,8 @@ However, we believe such users are a minority.
 
 ## Changelog
 
-* Revert "Add recommended labels" (#404)
-* remove kubeconfig deps from recovery-unsea(#394)
+* Revert "Add recommended labels" ([#404](https://github.com/bitnami-labs/sealed-secrets/issues/404))
+* remove kubeconfig deps from recovery-unseal ([#394](https://github.com/bitnami-labs/sealed-secrets/issues/394))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/19?closed=1
 
@@ -115,8 +115,8 @@ In order to turn it back on you need to manually pass the `--update-status` flag
 
 ## Changelog
 
-* Make it easier to use --raw from stdin (#386)
-* Disable status updates unless a feature flag is explicitly passed (#388)
+* Make it easier to use --raw from stdin ([#386](https://github.com/bitnami-labs/sealed-secrets/issues/386))
+* Disable status updates unless a feature flag is explicitly passed ([#388](https://github.com/bitnami-labs/sealed-secrets/issues/388))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/18?closed=1
 
@@ -124,7 +124,7 @@ The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secre
 
 ## Announcements
 
-This release contains changes in `kubeseal` and `controller` binaries as well as a minor change to the k8s manifest (see #381); keep that in mind if you don't rely on the official k8s manifests, including the community-maintained Helm chart.
+This release contains changes in `kubeseal` and `controller` binaries as well as a minor change to the k8s manifest (see [#381](https://github.com/bitnami-labs/sealed-secrets/issues/381)); keep that in mind if you don't rely on the official k8s manifests, including the community-maintained Helm chart.
 
 # Status field
 
@@ -137,10 +137,10 @@ The sealed secrets controller now exports prometheus metrics. See also [contrib/
 
 ## Changelog
 
-* Update Status field (#346)
-* Add prometheus metrics (#177)
-* Upgrade k8s client-go to v0.16.8 (#380)
-* kubeseal no longer emits empty `status: {}` field (#383)
+* Update Status field ([#346](https://github.com/bitnami-labs/sealed-secrets/issues/346))
+* Add prometheus metrics ([#177](https://github.com/bitnami-labs/sealed-secrets/issues/177))
+* Upgrade k8s client-go to v0.16.8 ([#380](https://github.com/bitnami-labs/sealed-secrets/issues/380))
+* kubeseal no longer emits empty `status: {}` field ([#383](https://github.com/bitnami-labs/sealed-secrets/issues/383))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/16?closed=1
 
@@ -160,7 +160,7 @@ $ kubeseal --scope namespace-wide <input-secret.yaml >output-sealed-secret.json
 
 ## Changelog
 
-* Honour --scope flag (#371)
+* Honour --scope flag ([#371](https://github.com/bitnami-labs/sealed-secrets/issues/371))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/15?closed=1
 
@@ -174,7 +174,7 @@ We also end the silly streak of patch level releases that actually contained fea
 
 ## Changelog
 
-* Provide multi-arch Container image for sealed secrets controller (#349)
+* Provide multi-arch Container image for sealed secrets controller ([#349](https://github.com/bitnami-labs/sealed-secrets/issues/349))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/2?closed=1
 
@@ -186,7 +186,7 @@ This release contains only changes in Linux `kubeseal-arm` and `kubeseal-arm64` 
 
 ## Changelog
 
-* Fix bad release of Linux ARM7 and ARM64 binaries (#362)
+* Fix bad release of Linux ARM7 and ARM64 binaries ([#362](https://github.com/bitnami-labs/sealed-secrets/issues/362))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/14?closed=1
 
@@ -194,7 +194,7 @@ The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secre
 
 ## Announcements
 
-This release contains  changes in `kubeseal` and `controller` binaries as well as a minor change to the k8s manifest (see #338); keep that in mind if you don't rely on the official k8s manifests, including the community-maintained Helm chart.
+This release contains  changes in `kubeseal` and `controller` binaries as well as a minor change to the k8s manifest (see [#338](https://github.com/bitnami-labs/sealed-secrets/issues/338)); keep that in mind if you don't rely on the official k8s manifests, including the community-maintained Helm chart.
 
 ### Allow overwriting existing secrets
 
@@ -208,11 +208,11 @@ You now can just annotate your `Secret`s with `sealedsecrets.bitnami.com/managed
 
 ## Changelog
 
-* Release includes ARMv7 and ARM64 binaries (although no docker images yet) (#173)
-* Set `fsGroup` to `nobody` in order to support `BoundServiceAccountTokenVolume` (#338)
-* Add `--force-empty-data` flag to allow (un)sealing an empty secret (#334)
-* Avoid forcing the default namespace when sealing a cluster-wide secret (#323)
-* Introduce the `sealedsecrets.bitnami.com/managed: true` annotation which controls overwriting existing secrets (#331)
+* Release includes ARMv7 and ARM64 binaries (although no docker images yet) ([#173](https://github.com/bitnami-labs/sealed-secrets/issues/173))
+* Set `fsGroup` to `nobody` in order to support `BoundServiceAccountTokenVolume` ([#338](https://github.com/bitnami-labs/sealed-secrets/issues/338))
+* Add `--force-empty-data` flag to allow (un)sealing an empty secret ([#334](https://github.com/bitnami-labs/sealed-secrets/issues/334))
+* Avoid forcing the default namespace when sealing a cluster-wide secret ([#323](https://github.com/bitnami-labs/sealed-secrets/issues/323))
+* Introduce the `sealedsecrets.bitnami.com/managed: true` annotation which controls overwriting existing secrets ([#331](https://github.com/bitnami-labs/sealed-secrets/issues/331))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/13?closed=1
 
@@ -233,9 +233,9 @@ Since v0.9.6 you can reduce this noise by setting the `--all-namespaces` flag to
 
 ## Changelog
 
-* Give an option to search only the current namespace (#316)
-* Support parsing multiple private keys in --recovery-private-key (#325)
-* Add klog flags so we can troubleshoot k8s client (#320)
+* Give an option to search only the current namespace ([#316](https://github.com/bitnami-labs/sealed-secrets/issues/316))
+* Support parsing multiple private keys in --recovery-private-key ([#325](https://github.com/bitnami-labs/sealed-secrets/issues/325))
+* Add klog flags so we can troubleshoot k8s client ([#320](https://github.com/bitnami-labs/sealed-secrets/issues/320))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/12?closed=1
 
@@ -248,8 +248,8 @@ This release contains only changes in `kubeseal` binary (no k8s manifest changes
 
 ## Changelog
 
-* Improve error reporting in case of missing kubeconfig when inferring namespace (#313)
-* Teach kubeseal to decrypt using backed up secrets (#312)
+* Improve error reporting in case of missing kubeconfig when inferring namespace ([#313](https://github.com/bitnami-labs/sealed-secrets/issues/313))
+* Teach kubeseal to decrypt using backed up secrets ([#312](https://github.com/bitnami-labs/sealed-secrets/issues/312))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/11?closed=1
 
@@ -261,8 +261,8 @@ This release contains only changes in `kubeseal` and `controller` binaries (no k
 
 ## Changelog
 
-* Remove tty warning in `--fetch-cert` (regression caused by #303 released in v0.9.3) (#306)
-* Implement `--recovery-unseal` to help with disaster recovery (#307)
+* Remove tty warning in `--fetch-cert` (regression caused by #303 released in v0.9.3) ([#306](https://github.com/bitnami-labs/sealed-secrets/issues/306))
+* Implement `--recovery-unseal` to help with disaster recovery ([#307](https://github.com/bitnami-labs/sealed-secrets/issues/307))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/10?closed=1
 
@@ -274,8 +274,8 @@ This release contains only changes in `kubeseal` and `controller` binaries (no k
 
 ## Changelog
 
-* Implement `--key-cutoff-time` (#299)
-* Warn if stdin is a terminal (#303)
+* Implement `--key-cutoff-time` ([#299](https://github.com/bitnami-labs/sealed-secrets/issues/299))
+* Warn if stdin is a terminal ([#303](https://github.com/bitnami-labs/sealed-secrets/issues/303))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/9?closed=1
 
@@ -295,16 +295,16 @@ cannot access the target cluster (while not being completely offline), we offer 
 
 ## Changelog
 
-* Accept URLs in `--cert` (#281)
-* Improve logs/events in case of decryption error (#274)
-* Reduce likelihood of name/namespace mismatch when using `--merge-into` (#286)
+* Accept URLs in `--cert` ([#281](https://github.com/bitnami-labs/sealed-secrets/issues/281))
+* Improve logs/events in case of decryption error ([#274](https://github.com/bitnami-labs/sealed-secrets/issues/274))
+* Reduce likelihood of name/namespace mismatch when using `--merge-into` ([#286](https://github.com/bitnami-labs/sealed-secrets/issues/286))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/8?closed=1
 
 # v0.9.1
 
-* Make manifests compatible with k8s 1.16.x (#269)
-* Fix non-strict scopes with --raw (#276)
+* Make manifests compatible with k8s 1.16.x ([#269](https://github.com/bitnami-labs/sealed-secrets/issues/269))
+* Fix non-strict scopes with --raw ([#276](https://github.com/bitnami-labs/sealed-secrets/issues/276))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/7?closed=1
 
@@ -352,13 +352,13 @@ $ kubectl create secret generic mysecret --dry-run -o json --from-file=bar=/tmp/
 
 * Doc improvements.
 * Rename "key rotation" to "key renewal" since the terminology was confusing.
-* Key renewal is enabled by default every 30 days (#236)
-* You can now use env vars such as SEALED_SECRETS_FOO_BAR to customize the controller (#234)
-* Disabling by default deprecated "v1" encrypted data format (used by pre-v0.7.0 clients) (#235)
-* Fix RBAC rules for /v1/rotate and /v1/validate fixing #166 for good (#249)
-* Implement the --merge-into command (#253)
-* Add the `-o` alias for `--format` (#261)
-* Add the `--raw` command for only encrypting single items (#257)
+* Key renewal is enabled by default every 30 days ([#236](https://github.com/bitnami-labs/sealed-secrets/issues/236))
+* You can now use env vars such as SEALED_SECRETS_FOO_BAR to customize the controller ([#234](https://github.com/bitnami-labs/sealed-secrets/issues/234))
+* Disabling by default deprecated "v1" encrypted data format (used by pre-v0.7.0 clients) ([#235](https://github.com/bitnami-labs/sealed-secrets/issues/235))
+* Fix RBAC rules for /v1/rotate and /v1/validate fixing #166 for good ([#249](https://github.com/bitnami-labs/sealed-secrets/issues/249))
+* Implement the --merge-into command ([#253](https://github.com/bitnami-labs/sealed-secrets/issues/253))
+* Add the `-o` alias for `--format` ([#261](https://github.com/bitnami-labs/sealed-secrets/issues/261))
+* Add the `--raw` command for only encrypting single items ([#257](https://github.com/bitnami-labs/sealed-secrets/issues/257))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/1?closed=1
 
@@ -376,37 +376,37 @@ This release strips this annotation (and a similar annotation created by the `ku
 ## Changelog
 
 Fixes in this release:
-* Round-tripping secrets can leak cleartext in last-applied-configuration (#227)
+* Round-tripping secrets can leak cleartext in last-applied-configuration ([#227](https://github.com/bitnami-labs/sealed-secrets/issues/227))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/6?closed=1
 
 # v0.8.2
 
 Fixes in this release:
-* Endless loop in controller on invalid base64 encrypted data bug (#201)
-* Fix RBAC for /v1/cert.pem public key in isolated namespaces, removes most use cases for offline sealing with `--cert` (#208,#166)
-* Accept and seal stringData into secret (#221)
-* Fix a couple of blockers for enabling (still experimental) key rotation (#185, #219, #218)
+* Endless loop in controller on invalid base64 encrypted data bug ([#201](https://github.com/bitnami-labs/sealed-secrets/issues/201))
+* Fix RBAC for /v1/cert.pem public key in isolated namespaces, removes most use cases for offline sealing with `--cert` ([#208](https://github.com/bitnami-labs/sealed-secrets/issues/208),[#166](https://github.com/bitnami-labs/sealed-secrets/issues/166))
+* Accept and seal stringData into secret ([#221](https://github.com/bitnami-labs/sealed-secrets/issues/221))
+* Fix a couple of blockers for enabling (still experimental) key rotation ([#185](https://github.com/bitnami-labs/sealed-secrets/issues/185), [#219](https://github.com/bitnami-labs/sealed-secrets/issues/219), [#218](https://github.com/bitnami-labs/sealed-secrets/issues/218))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/5?closed=1
 
 # v0.8.1
 
 Fixes in this release:
-* Solve kubectl auth issues with clusters using `client.authentication.k8s.io/v1beta1` config by upgrading to client-go v12.0.0 (#183)
-* Fix controller crash when writing logs due to read-only root FS (#200)
+* Solve kubectl auth issues with clusters using `client.authentication.k8s.io/v1beta1` config by upgrading to client-go v12.0.0 ([#183](https://github.com/bitnami-labs/sealed-secrets/issues/183))
+* Fix controller crash when writing logs due to read-only root FS ([#200](https://github.com/bitnami-labs/sealed-secrets/issues/200))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/4?closed=1
 
 # v0.8.0
 
 The main improvements in this release are:
-* support for annotations and labels (#92)
-* support for secrets rotation opt-in (#137)
-* fix bug with OwnerReferences handling (#127)
-* EKS support; client-go version bump to release-7.0 (#110)
-* Instructions to run on GKE when user is not cluster-admin (#111)
-* Windows binary of kubeseal (#85)
+* support for annotations and labels ([#92](https://github.com/bitnami-labs/sealed-secrets/issues/92))
+* support for secrets rotation opt-in ([#137](https://github.com/bitnami-labs/sealed-secrets/issues/137))
+* fix bug with OwnerReferences handling ([#127](https://github.com/bitnami-labs/sealed-secrets/issues/127))
+* EKS support; client-go version bump to release-7.0 ([#110](https://github.com/bitnami-labs/sealed-secrets/issues/110))
+* Instructions to run on GKE when user is not cluster-admin ([#111](https://github.com/bitnami-labs/sealed-secrets/issues/111))
+* Windows binary of kubeseal ([#85](https://github.com/bitnami-labs/sealed-secrets/issues/85))
 * Internal codebase modernization (e.g. switch to Go modules)
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/3?closed=1
@@ -425,7 +425,7 @@ Big change for this release is the switch to **per-key encrypted values**.
    (The [cluster-wide annotation](https://github.com/bitnami-labs/sealed-secrets/blob/bda0af6a6a8abebc9ff359dd2e5e22d54cb40798/pkg/apis/sealed-secrets/v1alpha1/types.go#L16)  _does_ allow this, with the corresponding caveats, as before)
 - The `kubeseal` tool does not yet have an option to output _just_ a single value, but you can safely mix+match the individual values from `kubeseal` output with an existing SealedSecret.  Improving `kubeseal` support for this feature is still an open action item.
 - Existing/older "all-in-one" SealedSecrets are declared deprecated, but will continue to be supported by the controller for the foreseeable future.  New invocations of the `kubeseal` tool now produce per-key encrypted output - if you need to produce the older format, just use an older `kubeseal`.  Please raise a github issue if you have a use-case that requires supporting "all-in-one" SealedSecrets going forward.
-- Note the CRD schema used for server-side validation in k8s >=1.9 has been temporarily removed, because it was unable to support the new per-key structure correctly (see kubernetes/kubernetes#59485).
+- Note the CRD schema used for server-side validation in k8s >=1.9 has been temporarily removed, because it was unable to support the new per-key structure correctly (see [kubernetes/kubernetes#59485](https://github.com/kubernetes/kubernetes/issues/59485)).
 - Huge thanks to @sullerandras for the code and his persistence in getting this merged!
 
 # v0.6.0
