@@ -301,7 +301,6 @@ func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, 
 		return nil
 	}
 
-	ssecret = ssecret.DeepCopy()
 	if ssecret.Status == nil {
 		ssecret.Status = &ssv1alpha1.SealedSecretStatus{}
 	}
