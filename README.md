@@ -1,3 +1,5 @@
+DO NOT MERGE
+
 # "Sealed Secrets" for Kubernetes
 
 [![](https://img.shields.io/badge/install-docs-brightgreen.svg)](#Installation)
