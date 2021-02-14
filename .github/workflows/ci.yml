@@ -104,12 +104,10 @@ jobs:
     # https://github.com/kubernetes/minikube/issues/8765
     - name: K8s setup
       run: |
-        sudo minikube delete
-        sudo rm -rf /home/runner/.{mini,}kube/
-        minikube config set vm-driver none
+        minikube delete
+        minikube config set vm-driver docker
         minikube config set kubernetes-version v${{ matrix.k8s }}
-        sudo minikube start
-        sudo chown -R runner: /home/runner/.{mini,}kube/
+        minikube start
         minikube update-context
         kubectl cluster-info
 
@@ -125,6 +123,7 @@ jobs:
 
     - name: Load docker image
       run: |
+        eval $(minikube docker-env)
         docker load -i controller-image.tar
         docker inspect $CONTROLLER_IMAGE
 
