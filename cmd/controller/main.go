@@ -47,6 +47,7 @@ var (
 	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
 	keyCutoffTime  = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
 	namespaceAll   = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
+	labelSelector  = flag.String("label-selector", "", "Label selector which can be used to filter sealed secrets.")
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
@@ -219,7 +220,14 @@ func main2() error {
 		namespace = myNamespace()
 	}
 
-	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, nil)
+	var tweakopts func(*metav1.ListOptions) = nil
+	if *labelSelector != "" {
+		tweakopts = func(options *metav1.ListOptions) {
+			options.LabelSelector = *labelSelector
+		}
+	}
+
+	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, tweakopts)
 	controller := NewController(clientset, ssclientset, ssinformer, keyRegistry)
 	controller.oldGCBehavior = *oldGCBehavior
 	controller.updateStatus = *updateStatus
