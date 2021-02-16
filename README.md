@@ -122,9 +122,9 @@ metadata:
     "kubectl.kubernetes.io/last-applied-configuration": ....
 spec:
   encryptedData:
-    .dockercfg: AgBy3i4OJSWK+PiTySYZZA9rO43cGDEq.....
+    .dockerconfigjson: AgBy3i4OJSWK+PiTySYZZA9rO43cGDEq.....
   template:
-    type: kubernetes.io/dockercfg
+    type: kubernetes.io/dockerconfigjson
     # this is an example of labels and annotations that will be added to the output secret
     metadata:
       labels:
@@ -151,9 +151,9 @@ metadata:
     kind: SealedSecret
     name: mysecret
     uid: 5caff6a0-c9ac-11e9-881e-42010aac003e
-type: kubernetes.io/dockercfg
+type: kubernetes.io/dockerconfigjson
 data:
-  .dockercfg: ewogICJjcmVk...
+  .dockerconfigjson: ewogICJjcmVk...
 ```
 
 As you can see, the generated `Secret` resource is a "dependent object" of the `SealedSecret` and as such
