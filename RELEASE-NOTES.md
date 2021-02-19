@@ -4,6 +4,21 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.15.0
+
+This release contains a couple of fixes in the controller and manifests.
+
+Notable mention: You can give the `SEALED_SECRETS_UPDATE_STATUS=1` feature flag another try. We'll turn it on by default in the next release.
+
+## Changelog
+
+*  Remove '{}' in CRD schema propererties so that argocd doesn't get confused ([#529](https://github.com/bitnami-labs/sealed-secrets/issues/529))
+*  Fix bug in status updates ([#223](https://github.com/bitnami-labs/sealed-secrets/issues/223))
+*  Add label-selector to filter sealed secrets([#521](https://github.com/bitnami-labs/sealed-secrets/issues/521))
+
+
+The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/28?closed=1
+
 # v0.14.1
 
 ## Changelog
