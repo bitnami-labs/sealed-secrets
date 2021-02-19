@@ -12,8 +12,8 @@ description: Helm chart for the sealed-secrets controller.
 # for a while the helm chart version will be 1.x.y and the appVersion 0.x.y
 #
 
-version: 1.14.1-r1
-appVersion: v0.14.1
+version: 1.15.0-r1
+appVersion: v0.15.0
 
 icon: https://avatars0.githubusercontent.com/u/34656521?s=200&v=4
 kubeVersion: ">=1.16.0-0"
