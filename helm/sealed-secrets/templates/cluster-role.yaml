@@ -40,4 +40,28 @@ rules:
     verbs:
       - create
       - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "sealed-secrets.fullname" . }}-view
+  namespace: {{ template "sealed-secrets.namespace" . }}
+  labels:
+    app.kubernetes.io/name: {{ template "sealed-secrets.name" . }}
+    helm.sh/chart: {{ template "sealed-secrets.chart" . }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    rbac.authorization.k8s.io/aggregate-to-view: "true"
+    rbac.authorization.k8s.io/aggregate-to-edit: "true"
+    rbac.authorization.k8s.io/aggregate-to-admin: "true"
+rules:
+  - apiGroups:
+      - bitnami.com
+    resources:
+      - sealedsecrets
+    verbs:
+      - get
+      - list
+      - watch
 {{ end }}
