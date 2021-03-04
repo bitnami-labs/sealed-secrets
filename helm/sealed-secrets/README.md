@@ -12,13 +12,13 @@ To install the chart with the release name `my-release`:
 ### Helm 3
 
 ```bash
-$ helm3 install --namespace kube-system my-release stable/sealed-secrets 
+$ helm3 install --namespace kube-system my-release sealed-secrets/sealed-secrets 
 ```
 
 ### Helm 2
 
 ```bash
-$ helm2 install --namespace kube-system --name my-release stable/sealed-secrets
+$ helm2 install --namespace kube-system --name my-release sealed-secrets/sealed-secrets
 ```
 
 The command deploys a controller and [CRD](https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/) for sealed secrets on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
