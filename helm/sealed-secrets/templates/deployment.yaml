@@ -28,6 +28,10 @@ spec:
 {{ toYaml .Values.podLabels | indent 8 }}
         {{- end }}
     spec:
+      {{- if .Values.image.pullSecret }}
+      imagePullSecrets:
+        - name: {{ .Values.image.pullSecret }}
+      {{- end }}
       serviceAccountName: {{ template "sealed-secrets.serviceAccountName" . }}
       {{- if .Values.priorityClassName }}
       priorityClassName: "{{ .Values.priorityClassName }}"
