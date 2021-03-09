@@ -10,6 +10,9 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    {{- if .Values.rbac.labels }}
+{{ toYaml .Values.rbac.labels | indent 4 }}
+    {{- end }}
 rules:
   - apiGroups:
       - ""
@@ -38,6 +41,9 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    {{- if .Values.rbac.labels }}
+{{ toYaml .Values.rbac.labels | indent 4 }}
+    {{- end }}
 rules:
 - apiGroups:
   - ""

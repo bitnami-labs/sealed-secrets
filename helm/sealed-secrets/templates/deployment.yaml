@@ -10,6 +10,9 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    {{- if .Values.controller.labels }}
+{{ toYaml .Values.controller.labels | indent 4 }}
+    {{- end }}
 spec:
   selector:
     matchLabels:
