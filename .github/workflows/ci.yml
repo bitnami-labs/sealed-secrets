@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 env:
   CONTROLLER_IMAGE: gcr.io/mkm-cloud/sealed-secrets-controller:latest

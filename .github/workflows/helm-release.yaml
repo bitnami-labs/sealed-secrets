@@ -6,7 +6,7 @@ on:
       # update version.txt to trigger helm chart release
       - 'version.yaml'
     branches:
-      - master
+      - main
 
 jobs:
   release:

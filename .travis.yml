@@ -120,7 +120,7 @@ after_success:
   - |
     echo OS_NAME=$TRAVIS_OS_NAME BRANCH=$TRAVIS_BRANCH PR=$TRAVIS_PULL_REQUEST GO_VERSION=$TRAVIS_GO_VERSION
     if [[ "$TRAVIS_OS_NAME" == linux && \
-          "$TRAVIS_BRANCH" == master && \
+          "$TRAVIS_BRANCH" == main && \
           "$TRAVIS_PULL_REQUEST" == false && \
           "$TRAVIS_GO_VERSION.0" =~ ^1\.14\. ]]; then
       echo "Pushing :latest..."
@@ -162,8 +162,8 @@ cache:
 
 branches:
   only:
-    # using github actions for master and PRs
-    # - master
+    # using github actions for main and PRs
+    # - main
     # release tags
     - /^v\d+\.\d+\.\d+.*/
     # for bors (in particular: don't build "staging.tmp")
