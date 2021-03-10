@@ -11,6 +11,12 @@ affinity: {}
 controller:
   # controller.create: `true` if Sealed Secrets controller should be created
   create: true
+  # controller.labels: Extra labels to be added to controller deployment
+  labels: {}
+  # controller.service: Configuration options for controller service
+  service:
+    # controller.service.labels: Extra labels to be added to controller service
+    labels: {}
 
 # namespace: Namespace to deploy the controller.
 namespace: ""
@@ -18,12 +24,16 @@ namespace: ""
 serviceAccount:
   # serviceAccount.create: Whether to create a service account or not
   create: true
+  # serviceAccount.labels: Extra labels to be added to service account
+  labels: {}
   # serviceAccount.name: The name of the service account to create or use
   name: ""
 
 rbac:
   # rbac.create: `true` if rbac resources should be created
   create: true
+  # rbac.labels: Extra labels to be added to rbac resources
+  labels: {}
   pspEnabled: false
 
 # secretName: The name of the TLS secret containing the key used to encrypt secrets
