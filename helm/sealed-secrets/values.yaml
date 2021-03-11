@@ -3,7 +3,7 @@ image:
   tag: v0.15.0
   pullPolicy: IfNotPresent
   pullSecret: ""
-  
+
 resources: {}
 nodeSelector: {}
 tolerations: []
