@@ -7,24 +7,37 @@ This chart contains the resources to use [sealed-secrets](https://github.com/bit
 * Kubernetes >= 1.16
 
 ## Installing the Chart
-
 To install the chart with the release name `my-release`:
 
+### Helm 3
+
 ```bash
-$ helm install --namespace kube-system --name my-release stable/sealed-secrets
+$ helm3 install --namespace kube-system my-release sealed-secrets/sealed-secrets 
+```
+
+### Helm 2
+
+```bash
+$ helm2 install --namespace kube-system --name my-release sealed-secrets/sealed-secrets
 ```
 
 The command deploys a controller and [CRD](https://kubernetes.io/docs/tasks/access-kubernetes-api/custom-resources/custom-resource-definitions/) for sealed secrets on the Kubernetes cluster in the default configuration. The [configuration](#configuration) section lists the parameters that can be configured during installation.
 
 ## Uninstalling the Chart
 
-To uninstall/delete the `my-release` deployment:
+To uninstall/delete all of the resources associated with the chart `my-release` 
+
+### Helm 2
 
 ```bash
-$ helm delete [--purge] my-release
+$ helm2 delete [--purge] my-release
 ```
 
-The command removes all the Kubernetes components associated with the chart and deletes the release.
+### Helm 3
+
+```bash
+$ helm3 uninstall my-release -n kube-system
+```
 
 ## Using kubeseal
 
