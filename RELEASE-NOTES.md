@@ -8,7 +8,7 @@ Latest release:
 
 This release contains a couple of fixes in the controller and manifests.
 
-Notable mention: You can give the `SEALED_SECRETS_UPDATE_STATUS=1` feature flag another try. We'll turn it on by default in the next release.
+Notable mention: You can give the `--update-status` (also available as env var `SEALED_SECRETS_UPDATE_STATUS=1`) feature flag another try. We'll turn it on by default in the next release.
 
 ## Changelog
 
