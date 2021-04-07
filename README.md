@@ -319,14 +319,10 @@ If you just want the latest client tool, it can be installed into
 `$GOPATH/bin` with:
 
 ```sh
-% (cd /; GO111MODULE=on go get github.com/bitnami-labs/sealed-secrets/cmd/kubeseal@master)
-go: finding github.com/bitnami-labs/sealed-secrets/cmd/kubeseal master
-go: finding github.com/bitnami-labs/sealed-secrets/cmd master
-go: finding github.com/bitnami-labs/sealed-secrets master
-go: extracting github.com/bitnami-labs/sealed-secrets v0.8.1-0.20190724082116-385d02a4f4a3
+% (cd /; GO111MODULE=on go get github.com/bitnami-labs/sealed-secrets/cmd/kubeseal@main)
 ```
 
-You can specify a release tag or a commit SHA instead of `master`.
+You can specify a release tag or a commit SHA instead of `main`.
 
 ## Upgrade
 
