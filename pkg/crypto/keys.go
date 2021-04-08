@@ -41,6 +41,9 @@ func SignKey(r io.Reader, key *rsa.PrivateKey, validFor time.Duration, cn string
 		KeyUsage:     x509.KeyUsageEncipherOnly,
 		NotBefore:    notBefore.UTC(),
 		NotAfter:     notBefore.Add(validFor).UTC(),
+		Issuer: pkix.Name{
+			CommonName: cn,
+		},
 		Subject: pkix.Name{
 			CommonName: cn,
 		},
