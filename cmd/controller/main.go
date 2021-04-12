@@ -41,7 +41,7 @@ var (
 	keyPrefix      = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
 	keySize        = flag.Int("key-size", 4096, "Size of encryption key.")
 	validFor       = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
-	myCN           = flag.String("my-cn", "", "CN to use in generated certificate.")
+	myCN           = flag.String("my-cn", "", "Common name to be used as issuer/subject DN in generated certificate.")
 	printVersion   = flag.Bool("version", false, "Print version information and exit")
 	keyRenewPeriod = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation disabled if 0)")
 	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
