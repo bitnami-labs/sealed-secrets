@@ -19,6 +19,9 @@ controller:
     # controller.service.labels: Extra labels to be added to controller service
     labels: {}
 
+# commandArgs: set extra command line arguments to the controller deployment
+commandArgs: []
+
 # namespace: Namespace to deploy the controller.
 namespace: ""
 
