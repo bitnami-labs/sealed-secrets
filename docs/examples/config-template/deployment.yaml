@@ -12,25 +12,6 @@ spec:
       labels:
         app: example
     spec:
-      initContainers:
-      - name: inject-secrets
-        image: hairyhenderson/gomplate:alpine
-        volumeMounts:
-        # The /secrets directory will contain one file per secret item.
-        # The secret item's key will become the file name, while its value goes in the file contents.
-        - name: config-secrets-volume
-          mountPath: /secrets
-        # The config map containing the config file template will be available here.
-        - name: config-template-volume
-          mountPath: /input
-        # While the expanded template will be put in a volume shared with the application which will run
-        # in the main container when this init container is done.
-        - name: config-volume
-          mountPath: /output
-        # Now we can actually run the template expander and inject secrets into the template.
-        command: ["sh", "-c"]
-        args:
-        - gomplate -d secrets=/secrets/ </input/myconfig.json.tmpl >/output/myconfig.json
       containers:
       # This is an example application that assumes a complex configuration file in /config/myconfig.json.
       # The JSON format here is just an example; any textual file format would work.
@@ -48,11 +29,5 @@ spec:
          sleep 100000h
       volumes:
       - name: config-volume
-        emptyDir: {}
-      - name: config-template-volume
-        configMap:
-          name: example
-      - name: config-secrets-volume
         secret:
           secretName: example
-

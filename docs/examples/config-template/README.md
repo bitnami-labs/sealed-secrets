@@ -1,4 +1,4 @@
-# Injecting secrets in config file templates
+# Injecting secrets into config file templates
 
 Kubernetes Secrets are very flexible and can be consumed in many ways.
 Secret values can be passed to containers as environment variables or appear as regular files when mounting secret volumes.
@@ -13,8 +13,12 @@ That said, there are circumstances where you just have to provide such a file to
 * You cannot easily update individual secret values (e.g. rotate your DB password), without first decrypting the whole configuration file.
 * Since the whole configuration file is encrypted, it's hard to view, change (and review) non-secret parts of the config.
 
-This example shows a possible approach to split the non-secret part of the config into a ConfigMap, and rely on a simple "Init Container" to merge the actual secret values back into it.
+This example shows how to use built in support for templating encrypted secret values into a plaintext key template.
 
-The example here includes an example Secret resource, which since you're reading this as part of the sealed-secrets documentation, you'd probably pass through `kubeseal` before checking it in; that said this approach is not limited to sealed-secrets.
+To update the encrypted data in the included sealedsecret with your own value
+for `server1` you can run:
 
-This example uses the [gomplate](https://docs.gomplate.ca/) Go template based utility. We're not affiliated with it, it's just an example, you can use any other similar tool.
+```
+echo -n baz | kubectl create secret generic example --dry-run --from-file=server1=/dev/stdin -o json \
+  | kubeseal -o yaml --merge-into sealedsecret.yaml
+```
