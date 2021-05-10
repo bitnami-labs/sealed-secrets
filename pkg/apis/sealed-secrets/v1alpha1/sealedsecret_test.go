@@ -446,6 +446,44 @@ func TestSealRoundTripWithMisMatchNamespaceWide(t *testing.T) {
 	}
 }
 
+func TestSealRoundTripTemplateData(t *testing.T) {
+	scheme := runtime.NewScheme()
+	codecs := serializer.NewCodecFactory(scheme)
+
+	SchemeBuilder.AddToScheme(scheme)
+	v1.SchemeBuilder.AddToScheme(scheme)
+
+	key, keys := generateTestKey(t, testRand(), 2048)
+
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+		},
+		Data: map[string][]byte{
+			"foo": []byte("bar"),
+		},
+	}
+
+	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
+	if err != nil {
+		t.Fatalf("NewSealedSecret returned error: %v", err)
+	}
+
+	ssecret.Spec.Template.Data = map[string]string{
+		"bar": `secret {{ index . "foo"}} !`,
+	}
+
+	secret2, err := ssecret.Unseal(codecs, keys)
+	if err != nil {
+		t.Fatalf("Unseal returned error: %v", err)
+	}
+
+	if got, want := string(secret2.Data["bar"]), "secret bar !"; got != want {
+		t.Errorf("got: %q, want: %q", got, want)
+	}
+}
+
 func TestSealMetadataPreservation(t *testing.T) {
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)
