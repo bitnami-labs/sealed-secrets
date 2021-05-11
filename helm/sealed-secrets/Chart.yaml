@@ -11,7 +11,7 @@ description: Helm chart for the sealed-secrets controller.
 # during support requests.
 # We may want to reconsider this rule in the future.
 
-version: 1.16.0
+version: 1.16.0-r1
 appVersion: v0.16.0
 
 icon: https://avatars0.githubusercontent.com/u/34656521?s=200&v=4
