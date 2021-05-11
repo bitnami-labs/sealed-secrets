@@ -1,5 +1,4 @@
-version: v0.15.0
-helmRevision: r3
+version: v0.16.0
 
 helmReplace:
 # The helm chart started as a community effort and started off using v1.x.y

@@ -6,14 +6,13 @@ description: Helm chart for the sealed-secrets controller.
 ##############################
 #
 # Please keep the chart version in sync with the app version
-# and use -rN suffixes (e.g. -r2)
 #
-# Since the helm chart started with 1 and we don't want discontinuities,
-# for a while the helm chart version will be 1.x.y and the appVersion 0.x.y
-#
+# Many users don't look at the appVersion and cause unnecessary confusion
+# during support requests.
+# We may want to reconsider this rule in the future.
 
-version: 1.15.0-r3
-appVersion: v0.15.0
+version: 1.16.0
+appVersion: v0.16.0
 
 icon: https://avatars0.githubusercontent.com/u/34656521?s=200&v=4
 kubeVersion: ">=1.16.0-0"
