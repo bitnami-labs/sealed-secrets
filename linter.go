@@ -29,9 +29,8 @@ func (f *Flags) Bind(fs *flag.FlagSet) {
 }
 
 type Version struct {
-	Version      string    `yaml:"version"`
-	HelmRevision string    `yaml:"helmRevision"`
-	HelmReplace  Replacers `yaml:"helmReplace"`
+	Version     string    `yaml:"version"`
+	HelmReplace Replacers `yaml:"helmReplace"`
 }
 
 type Replacers []Replacer
@@ -53,7 +52,7 @@ func (pr Replacer) Replace(src string) string {
 }
 
 func (v Version) HelmVersion() string {
-	tmp := fmt.Sprintf("%s-%s", v.Version, v.HelmRevision)
+	tmp := fmt.Sprintf("%s", v.Version)
 	return v.HelmReplace.Replace(tmp)
 }
 
