@@ -68,11 +68,19 @@ func readVersion(filename string) (v Version, err error) {
 
 type Chart struct {
 	Metadata ChartMetadata
+	Values   Values
 }
 
 type ChartMetadata struct {
-	Version    string `yaml:"version"`
 	AppVersion string `yaml:"appVersion"`
+}
+
+type Values struct {
+	Image ValuesImage `yaml:"image"`
+}
+
+type ValuesImage struct {
+	Tag string `yaml:tag"`
 }
 
 func loadHelmChart(dir string) (Chart, error) {
@@ -84,9 +92,26 @@ func loadHelmChart(dir string) (Chart, error) {
 	if err := yaml.NewDecoder(f).Decode(&m); err != nil {
 		return Chart{}, err
 	}
+	v, err := loadValues(dir)
+	if err != nil {
+		return Chart{}, err
+	}
 	return Chart{
 		Metadata: m,
+		Values:   v,
 	}, nil
+}
+
+func loadValues(dir string) (Values, error) {
+	var m Values
+	f, err := os.Open(filepath.Join(dir, "values.yaml"))
+	if err != nil {
+		return Values{}, err
+	}
+	if err := yaml.NewDecoder(f).Decode(&m); err != nil {
+		return Values{}, err
+	}
+	return m, nil
 }
 
 func mainE(flags Flags) error {
@@ -101,11 +126,11 @@ func mainE(flags Flags) error {
 	if err != nil {
 		return err
 	}
-	if got, want := v.HelmVersion(), ch.Metadata.Version; got != want {
-		log.Fatalf("Helm chart version: got: %q, want: %q", got, want)
-	}
 	if got, want := v.Version, ch.Metadata.AppVersion; got != want {
 		log.Fatalf("Helm app version: got: %q, want: %q", got, want)
+	}
+	if got, want := ch.Values.Image.Tag, v.Version; got != want {
+		log.Fatalf("Image Version: got: %q, want: %q", got, want)
 	}
 	log.Printf("ok")
 	return nil
