@@ -17,7 +17,7 @@ The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secre
 
 This release contains a couple of fixes in the controller and manifests.
 
-Notable mention: You can give the `--update-status` (also available as env var `SEALED_SECRETS_UPDATE_STATUS=1`) feature flag another try. We'll turn it on by default in the next release.
+Notable mention: You can give the `--update-status` (also available as env var `SEALED_SECRETS_UPDATE_STATUS=1`) feature flag another try. We'll turn it on by default in ~~the next release~~ v0.17.0.
 
 ## Changelog
 
