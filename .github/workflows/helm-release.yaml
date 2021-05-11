@@ -3,8 +3,8 @@ name: Release Charts
 on:
   push:
     paths:
-      # update version.txt to trigger helm chart release
-      - 'version.yaml'
+      # update this file to trigger helm chart release
+      - 'helm/sealed-secrets/Chart.yaml'
     branches:
       - main
 
