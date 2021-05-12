@@ -46,7 +46,9 @@ import (
 )
 
 const (
-	flagEnvPrefix = "SEALED_SECRETS"
+	flagEnvPrefix          = "SEALED_SECRETS"
+	certRequestPath        = "/v1/cert.pem"
+	certAcceptContentTypes = "application/x-pem-file, */*"
 )
 
 var (
@@ -54,6 +56,7 @@ var (
 	certURL        = flag.String("cert", "", "Certificate / public key file/URL to use for encryption. Overrides --controller-*")
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
+	localPort      = flag.Int32("local-port", 0, "If set, will internally port forward the controller for fetching the certificate. Useful for private/firewalled clusters.")
 	outputFormat   = flag.StringP("format", "o", "json", "Output format for sealed secret. Either json or yaml")
 	outputFileName = flag.StringP("sealed-secret-file", "w", "", "Sealed-secret (output) file")
 	inputFileName  = flag.StringP("secret-file", "f", "", "Secret (input) file")
@@ -211,7 +214,7 @@ func openCertURI(uri string) (io.ReadCloser, error) {
 func openCertCluster(c corev1.CoreV1Interface, namespace, name string) (io.ReadCloser, error) {
 	f, err := c.
 		Services(namespace).
-		ProxyGet("http", name, "", "/v1/cert.pem", nil).
+		ProxyGet("http", name, "", certRequestPath, nil).
 		Stream()
 	if err != nil {
 		return nil, fmt.Errorf("cannot fetch certificate: %v", err)
@@ -224,11 +227,16 @@ func openCert(certURL string) (io.ReadCloser, error) {
 		return openCertLocal(certURL)
 	}
 
+	if *localPort > 0 {
+		return openCertFromPortForward(*controllerNs, *controllerName, *localPort)
+	}
+
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, err
 	}
-	conf.AcceptContentTypes = "application/x-pem-file, */*"
+
+	conf.AcceptContentTypes = certAcceptContentTypes
 	restClient, err := corev1.NewForConfig(conf)
 	if err != nil {
 		return nil, err
