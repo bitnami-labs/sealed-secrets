@@ -1,7 +1,7 @@
 name: sealed-secrets
 description: Helm chart for the sealed-secrets controller.
 
-version: 1.16.1
+version: 1.17.0
 appVersion: v0.16.0
 
 kubeVersion: ">=1.16.0-0"
