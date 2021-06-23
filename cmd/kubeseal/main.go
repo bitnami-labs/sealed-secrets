@@ -715,7 +715,7 @@ func run(w io.Writer, inputFileName, outputFileName, secretName, controllerNs, c
 		if err != nil {
 			return err
 		}
-
+		data = bytes.TrimSuffix(data, []byte{10})
 		return encryptSecretItem(w, secretName, ns, data, sealingScope, pubKey)
 	}
 
