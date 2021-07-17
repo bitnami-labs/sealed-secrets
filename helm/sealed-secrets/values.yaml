@@ -22,6 +22,11 @@ controller:
 # namespace: Namespace to deploy the controller.
 namespace: ""
 
+# Extra env variables to to be added to controller deployment
+env: []
+# - name: SEALED_SECRETS_UPDATE_STATUS
+#   value: 1
+
 serviceAccount:
   # serviceAccount.create: Whether to create a service account or not
   create: true

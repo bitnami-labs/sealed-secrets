@@ -57,6 +57,12 @@ spec:
           volumeMounts:
           - mountPath: /tmp
             name: tmp
+          {{- if .Values.env }}
+          env:
+            {{- with .Values.env }}
+              {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /healthz
