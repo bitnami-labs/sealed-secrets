@@ -1,9 +1,9 @@
-// Prometheus Service Monitor manifest
+// Prometheus Pod Monitor manifest
 
 local controller = import 'controller.jsonnet';
 
 controller {
-  serviceMonitor: {
+  podMonitor: {
     apiVersion: 'monitoring.coreos.com/v1',
     kind: 'PodMonitor',
     metadata: {
@@ -27,6 +27,7 @@ controller {
       },
       podMetricsEndpoints: [
         {
+          honorLabels: true,  // prefer controller metric namespace
           port: 'http',
           interval: '30s',
         },
