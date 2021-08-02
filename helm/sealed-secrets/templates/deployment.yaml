@@ -65,17 +65,15 @@ spec:
             httpGet:
               path: /healthz
               port: 8080
+          {{- with .Values.containerSecurityContext }}
           securityContext:
-            readOnlyRootFilesystem: true
-            {{- if .Values.securityContext.runAsUser }}
-            runAsNonRoot: true
-            runAsUser: {{ .Values.securityContext.runAsUser }}
-            {{- end }}
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           resources:
 {{ toYaml .Values.resources | indent 12 }}
-      {{- if .Values.securityContext.fsGroup }}
+      {{- with .Values.securityContext }}
       securityContext:
-        fsGroup: {{ .Values.securityContext.fsGroup }}
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       volumes:
       - name: tmp

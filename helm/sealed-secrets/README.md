@@ -12,7 +12,7 @@ To install the chart with the release name `my-release`:
 ### Helm 3
 
 ```bash
-$ helm3 install --namespace kube-system my-release sealed-secrets/sealed-secrets 
+$ helm3 install --namespace kube-system my-release sealed-secrets/sealed-secrets
 ```
 
 ### Helm 2
@@ -25,7 +25,7 @@ The command deploys a controller and [CRD](https://kubernetes.io/docs/tasks/acce
 
 ## Uninstalling the Chart
 
-To uninstall/delete all of the resources associated with the chart `my-release` 
+To uninstall/delete all of the resources associated with the chart `my-release`
 
 ### Helm 2
 
@@ -95,9 +95,8 @@ Read about kubeseal usage on [sealed-secrets docs](https://github.com/bitnami-la
 - In the case that **serviceAccount.create** is `false` and **rbac.create** is `true` it is expected for a service account with the name **serviceAccount.name** to exist _in the same namespace as this chart_ before installation.
 - If **serviceAccount.create** is `true` there cannot be an existing service account with the name **serviceAccount.name**.
 - If a secret with name **secretName** does not exist _in the same namespace as this chart_, then on install one will be created. If a secret already exists with this name the keys inside will be used.
-- OpenShift: unset the runAsUser and fsGroup like this:
+- OpenShift: unset the runAsUser and fsGroup by removing the explicit pod security context like this:
 ```
   securityContext:
-    runAsUser:
-    fsGroup:
+    {}
 ```

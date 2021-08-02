@@ -67,6 +67,16 @@ securityContext:
   # securityContext.fsGroup defines the filesystem group
   fsGroup: 65534
 
+# containerSecurityContext: configure the container security context
+containerSecurityContext:
+  runAsNonRoot: true
+  readOnlyRootFilesystem: true
+  allowPrivilegeEscalation: false
+  privileged: false
+  capabilities:
+    drop:
+       - ALL
+
 podAnnotations: {}
 
 podLabels: {}
