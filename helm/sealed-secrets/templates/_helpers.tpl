@@ -47,3 +47,14 @@ Create the name of the service account to use
     {{ default "default" .Values.serviceAccount.name }}
 {{- end -}}
 {{- end -}}
+
+{{/*
+Create the name of the controller service to use
+*/}}
+{{- define "sealed-secrets.serviceName" -}}
+{{- if .Values.controller.create -}}
+    {{ default (printf "%s-controller" (include "sealed-secrets.fullname" . )) .Values.controller.service.name }}
+{{- else -}}
+    {{ default "default" .Values.controller.service.name }}
+{{- end -}}
+{{- end -}}

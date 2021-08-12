@@ -16,6 +16,8 @@ controller:
   labels: {}
   # controller.service: Configuration options for controller service
   service:
+    # controller.service.name: The name of the service to create or use
+    name: ""
     # controller.service.labels: Extra labels to be added to controller service
     labels: {}
 
