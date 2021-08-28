@@ -4,6 +4,8 @@ image:
   pullPolicy: IfNotPresent
   pullSecret: ""
 
+fullnameOverride: "sealed-secrets-controller"
+
 resources: {}
 nodeSelector: {}
 tolerations: []
