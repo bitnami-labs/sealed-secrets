@@ -12,6 +12,9 @@ metadata:
     {{- if .Values.metrics.serviceMonitor.labels }}
     {{- include "sealed-secrets.render" ( dict "value" .Values.metrics.serviceMonitor.labels "context" $) | nindent 4 }}
     {{- end }}
+  {{- if .Values.metrics.serviceMonitor.annotations }}
+  annotations: {{- include "sealed-secrets.render" (dict "value" .Values.metrics.serviceMonitor.annotations "context" $) | nindent 4 }}
+  {{- end }}
 spec:
   endpoints:
     - honorLabels: true

@@ -126,6 +126,8 @@ The command removes all the Kubernetes components associated with the chart and 
 | ------------------------------------------ | -------------------------------------------------------------------------------------- | ------- |
 | `metrics.serviceMonitor.enabled`           | Specify if a ServiceMonitor will be deployed for Prometheus Operator                   | `false` |
 | `metrics.serviceMonitor.namespace`         | Namespace where Prometheus Operator is running in                                      | `""`    |
+| `metrics.serviceMonitor.labels`            | Extra labels for the ServiceMonitor                                                    | `{}`    |
+| `metrics.serviceMonitor.annotations`       | Annotations for the ServiceMonitor                                                     | `{}`    |
 | `metrics.serviceMonitor.interval`          | How frequently to scrape metrics                                                       | `""`    |
 | `metrics.serviceMonitor.scrapeTimeout`     | Timeout after which the scrape is ended                                                | `""`    |
 | `metrics.serviceMonitor.metricRelabelings` | Specify additional relabeling of metrics                                               | `[]`    |
