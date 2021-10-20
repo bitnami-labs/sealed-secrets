@@ -44,6 +44,9 @@ spec:
           command:
             - controller
           args:
+            {{- if .Values.controller.updatestatus }}
+            - "--update-status"
+            {{- end }}
             - "--key-prefix"
             - "{{ .Values.secretName }}"
             {{- range $value := .Values.commandArgs }}

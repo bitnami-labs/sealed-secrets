@@ -18,6 +18,9 @@ controller:
   service:
     # controller.service.labels: Extra labels to be added to controller service
     labels: {}
+  # controller.update-status: `true` if controller should update the status subresource whenever it processes a sealed secret
+  updatestatus: true
+
 
 # namespace: Namespace to deploy the controller.
 namespace: ""
