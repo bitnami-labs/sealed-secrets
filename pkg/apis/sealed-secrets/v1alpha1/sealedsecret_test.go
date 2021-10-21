@@ -220,14 +220,6 @@ func generateTestKey(t *testing.T, rand io.Reader, bits int) (*rsa.PrivateKey, m
 }
 
 func TestSealRoundTrip(t *testing.T) {
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
-
-	SchemeBuilder.AddToScheme(scheme)
-	v1.SchemeBuilder.AddToScheme(scheme)
-
-	key, keys := generateTestKey(t, testRand(), 2048)
-
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
@@ -238,10 +230,7 @@ func TestSealRoundTrip(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
-	if err != nil {
-		t.Fatalf("NewSealedSecret returned error: %v", err)
-	}
+	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
 
 	secret2, err := ssecret.Unseal(codecs, keys)
 	if err != nil {
@@ -254,14 +243,6 @@ func TestSealRoundTrip(t *testing.T) {
 }
 
 func TestSealRoundTripStringDataConversion(t *testing.T) {
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
-
-	SchemeBuilder.AddToScheme(scheme)
-	v1.SchemeBuilder.AddToScheme(scheme)
-
-	key, keys := generateTestKey(t, testRand(), 2048)
-
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
@@ -287,10 +268,7 @@ func TestSealRoundTripStringDataConversion(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
-	if err != nil {
-		t.Fatalf("NewSealedSecret returned error: %v", err)
-	}
+	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
 
 	secret2, err := ssecret.Unseal(codecs, keys)
 	if err != nil {
@@ -303,14 +281,6 @@ func TestSealRoundTripStringDataConversion(t *testing.T) {
 }
 
 func TestSealRoundTripWithClusterWide(t *testing.T) {
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
-
-	SchemeBuilder.AddToScheme(scheme)
-	v1.SchemeBuilder.AddToScheme(scheme)
-
-	key, keys := generateTestKey(t, testRand(), 2048)
-
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
@@ -324,10 +294,7 @@ func TestSealRoundTripWithClusterWide(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
-	if err != nil {
-		t.Fatalf("NewSealedSecret returned error: %v", err)
-	}
+	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
 
 	secret2, err := ssecret.Unseal(codecs, keys)
 	if err != nil {
@@ -340,14 +307,6 @@ func TestSealRoundTripWithClusterWide(t *testing.T) {
 }
 
 func TestSealRoundTripWithMisMatchClusterWide(t *testing.T) {
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
-
-	SchemeBuilder.AddToScheme(scheme)
-	v1.SchemeBuilder.AddToScheme(scheme)
-
-	key, keys := generateTestKey(t, testRand(), 2048)
-
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
@@ -361,28 +320,17 @@ func TestSealRoundTripWithMisMatchClusterWide(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
-	if err != nil {
-		t.Fatalf("NewSealedSecret returned error: %v", err)
-	}
+	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
 
 	ssecret.ObjectMeta.Annotations[SealedSecretClusterWideAnnotation] = "false"
 
-	_, err = ssecret.Unseal(codecs, keys)
+	_, err := ssecret.Unseal(codecs, keys)
 	if err == nil {
 		t.Fatalf("Unseal did not return expected error: %v", err)
 	}
 }
 
 func TestSealRoundTripWithNamespaceWide(t *testing.T) {
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
-
-	SchemeBuilder.AddToScheme(scheme)
-	v1.SchemeBuilder.AddToScheme(scheme)
-
-	key, keys := generateTestKey(t, testRand(), 2048)
-
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
@@ -396,10 +344,7 @@ func TestSealRoundTripWithNamespaceWide(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
-	if err != nil {
-		t.Fatalf("NewSealedSecret returned error: %v", err)
-	}
+	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
 
 	secret2, err := ssecret.Unseal(codecs, keys)
 	if err != nil {
@@ -412,14 +357,6 @@ func TestSealRoundTripWithNamespaceWide(t *testing.T) {
 }
 
 func TestSealRoundTripWithMisMatchNamespaceWide(t *testing.T) {
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
-
-	SchemeBuilder.AddToScheme(scheme)
-	v1.SchemeBuilder.AddToScheme(scheme)
-
-	key, keys := generateTestKey(t, testRand(), 2048)
-
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
@@ -433,28 +370,17 @@ func TestSealRoundTripWithMisMatchNamespaceWide(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
-	if err != nil {
-		t.Fatalf("NewSealedSecret returned error: %v", err)
-	}
+	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
 
 	ssecret.ObjectMeta.Annotations[SealedSecretNamespaceWideAnnotation] = "false"
 
-	_, err = ssecret.Unseal(codecs, keys)
+	_, err := ssecret.Unseal(codecs, keys)
 	if err == nil {
 		t.Fatalf("Unseal did not return expected error: %v", err)
 	}
 }
 
 func TestSealRoundTripTemplateData(t *testing.T) {
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
-
-	SchemeBuilder.AddToScheme(scheme)
-	v1.SchemeBuilder.AddToScheme(scheme)
-
-	key, keys := generateTestKey(t, testRand(), 2048)
-
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
@@ -465,10 +391,7 @@ func TestSealRoundTripTemplateData(t *testing.T) {
 		},
 	}
 
-	ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
-	if err != nil {
-		t.Fatalf("NewSealedSecret returned error: %v", err)
-	}
+	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
 
 	ssecret.Spec.Template.Data = map[string]string{
 		"bar": `secret {{ index . "foo"}} !`,
@@ -539,28 +462,6 @@ func TestSealMetadataPreservation(t *testing.T) {
 }
 
 func TestUnsealingV1Format(t *testing.T) {
-	testUnsealingV1Format(t, true)
-	testUnsealingV1Format(t, false)
-}
-
-func testUnsealingV1Format(t *testing.T, acceptDeprecated bool) {
-	defer func(saved bool) {
-		AcceptDeprecatedV1Data = saved
-	}(AcceptDeprecatedV1Data)
-	AcceptDeprecatedV1Data = acceptDeprecated
-
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
-
-	SchemeBuilder.AddToScheme(scheme)
-	v1.SchemeBuilder.AddToScheme(scheme)
-
-	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 2048)
-	if err != nil {
-		t.Fatalf("Failed to generate test key: %v", err)
-	}
-
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "myname",
@@ -575,17 +476,10 @@ func testUnsealingV1Format(t *testing.T, acceptDeprecated bool) {
 		},
 	}
 
-	ssecret, err := NewSealedSecretV1(codecs, &key.PublicKey, &secret)
-	if err != nil {
-		t.Fatalf("NewSealedSecret returned error: %v", err)
-	}
+	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecretV1)
 
-	fp, err := crypto.PublicKeyFingerprint(&key.PublicKey)
-	if err != nil {
-		t.Fatalf("cannot compute fingerprint: %v", err)
-	}
-	secret2, err := ssecret.Unseal(codecs, map[string]*rsa.PrivateKey{fp: key})
-	if acceptDeprecated {
+	t.Run("AcceptDeprecatedV1Data", testWithAcceptDeprecatedV1Data(true, func(t *testing.T) {
+		secret2, err := ssecret.Unseal(codecs, keys)
 		if err != nil {
 			t.Fatalf("Unseal returned error: %v", err)
 		}
@@ -593,9 +487,40 @@ func testUnsealingV1Format(t *testing.T, acceptDeprecated bool) {
 		if !reflect.DeepEqual(secret.Data, secret2.Data) {
 			t.Errorf("Unsealed secret != original secret: %v != %v", secret, secret2)
 		}
-	} else {
+	}))
+
+	t.Run("RejectDeprecatedV1Data", testWithAcceptDeprecatedV1Data(false, func(t *testing.T) {
+		_, err := ssecret.Unseal(codecs, keys)
 		if needle := "deprecated"; err == nil || !strings.Contains(err.Error(), needle) {
 			t.Fatalf("Expecting error: %v to contain %q", err, needle)
 		}
+	}))
+}
+
+func sealSecret(t *testing.T, secret *v1.Secret, newSealedSecret func(serializer.CodecFactory, *rsa.PublicKey, *v1.Secret) (*SealedSecret, error)) (*SealedSecret, serializer.CodecFactory, map[string]*rsa.PrivateKey) {
+	scheme := runtime.NewScheme()
+	codecs := serializer.NewCodecFactory(scheme)
+
+	SchemeBuilder.AddToScheme(scheme)
+	v1.SchemeBuilder.AddToScheme(scheme)
+
+	key, keys := generateTestKey(t, testRand(), 2048)
+
+	sealedSecret, err := newSealedSecret(codecs, &key.PublicKey, secret)
+	if err != nil {
+		t.Fatalf("NewSealedSecret returned error: %v", err)
+	}
+
+	return sealedSecret, codecs, keys
+}
+
+func testWithAcceptDeprecatedV1Data(acceptDeprecated bool, inner func(t *testing.T)) func(*testing.T) {
+	return func(t *testing.T) {
+		defer func(saved bool) {
+			AcceptDeprecatedV1Data = saved
+		}(AcceptDeprecatedV1Data)
+		AcceptDeprecatedV1Data = acceptDeprecated
+
+		inner(t)
 	}
 }
