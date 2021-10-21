@@ -407,6 +407,25 @@ func TestSealRoundTripTemplateData(t *testing.T) {
 	}
 }
 
+func TestTemplateWithoutEncryptedData(t *testing.T) {
+	sealed := SealedSecret{
+		Spec: SealedSecretSpec{
+			Template: SecretTemplateSpec{
+				Data: map[string]string{"foo": "bar"},
+			},
+		},
+	}
+
+	unsealed, err := sealed.Unseal(serializer.CodecFactory{}, nil)
+	if err != nil {
+		t.Fatalf("Unseal returned error: %v", err)
+	}
+
+	if got, want := unsealed.Data, map[string][]byte{"foo": []byte("bar")}; !reflect.DeepEqual(got, want) {
+		t.Errorf("got: %q, want: %q", got, want)
+	}
+}
+
 func TestSealMetadataPreservation(t *testing.T) {
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)
@@ -491,6 +510,33 @@ func TestUnsealingV1Format(t *testing.T) {
 
 	t.Run("RejectDeprecatedV1Data", testWithAcceptDeprecatedV1Data(false, func(t *testing.T) {
 		_, err := ssecret.Unseal(codecs, keys)
+		if needle := "deprecated"; err == nil || !strings.Contains(err.Error(), needle) {
+			t.Fatalf("Expecting error: %v to contain %q", err, needle)
+		}
+	}))
+}
+
+func TestRejectBothEncryptedDataAndDeprecatedV1Data(t *testing.T) {
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+		},
+		StringData: map[string]string{"foo": "bar"},
+	}
+
+	sealedSecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
+	sealedSecret.Spec.Data = []byte{}
+
+	t.Run("AcceptDeprecatedV1Data", testWithAcceptDeprecatedV1Data(true, func(t *testing.T) {
+		_, err := sealedSecret.Unseal(codecs, keys)
+		if needle := "at the same time"; err == nil || !strings.Contains(err.Error(), needle) {
+			t.Fatalf("Expecting error: %v to contain %q", err, needle)
+		}
+	}))
+
+	t.Run("RejectDeprecatedV1Data", testWithAcceptDeprecatedV1Data(false, func(t *testing.T) {
+		_, err := sealedSecret.Unseal(codecs, keys)
 		if needle := "deprecated"; err == nil || !strings.Contains(err.Error(), needle) {
 			t.Fatalf("Expecting error: %v to contain %q", err, needle)
 		}

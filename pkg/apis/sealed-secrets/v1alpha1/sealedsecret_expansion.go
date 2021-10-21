@@ -261,7 +261,8 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 	label := labelFor(smeta)
 
 	var secret v1.Secret
-	if len(s.Spec.EncryptedData) > 0 {
+
+	if s.Spec.Data == nil {
 		s.Spec.Template.ObjectMeta.DeepCopyInto(&secret.ObjectMeta)
 		secret.Type = s.Spec.Template.Type
 
@@ -300,6 +301,10 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 			return nil, multierror.Join(multierror.Uniq(errs), multierror.WithFormatter(multierror.InlineFormatter))
 		}
 	} else if AcceptDeprecatedV1Data { // Support decrypting old secrets for backward compatibility
+		if len(s.Spec.EncryptedData) > 0 {
+			return nil, fmt.Errorf("cannot use the field 'encryptedData' and the deprecated field 'data' at the same time")
+		}
+
 		plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, s.Spec.Data, label)
 		if err != nil {
 			return nil, err
@@ -310,9 +315,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 			return nil, err
 		}
 	} else {
-		if s.Spec.Data != nil {
-			return nil, fmt.Errorf("using deprecated 'data' field, use 'encryptedData' or flip the feature flag")
-		}
+		return nil, fmt.Errorf("using deprecated 'data' field, use 'encryptedData' or flip the feature flag")
 	}
 
 	// Ensure these are set to what we expect
