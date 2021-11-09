@@ -51,7 +51,7 @@ var (
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
-	updateStatus = flag.Bool("update-status", false, "beta: if true, the controller will update the status subresource whenever it processes a sealed secret")
+	updateStatus = flag.Bool("update-status", true, "beta: if true, the controller will update the status subresource whenever it processes a sealed secret")
 
 	// VERSION set from Makefile
 	VERSION = buildinfo.DefaultVersion
