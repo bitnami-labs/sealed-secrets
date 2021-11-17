@@ -205,7 +205,7 @@ There are many ways to configure RBAC on k8s, but it's quite common to forbid lo
 from reading Secrets. It's also common to give users one or more namespaces where they have higher privileges,
 which would allow them to create and read secrets (and/or create deployments that can reference those secrets).
 
-Encrypted SealedSecret are designed to be safe to be looked at without gaining any knowledge about the secrets it conceals. This implies that we cannot allow users to read a SealedSecret meant for a namespace they wouldn't have access to
+Encrypted SealedSecret resources are designed to be safe to be looked at without gaining any knowledge about the secrets it conceals. This implies that we cannot allow users to read a SealedSecret meant for a namespace they wouldn't have access to
 and just push a copy of it in a namespace where they can read secrets from.
 
 Sealed-secrets thus behaves *as if* each namespace had its own independent encryption key and thus once you
