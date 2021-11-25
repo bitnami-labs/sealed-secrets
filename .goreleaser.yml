@@ -1,0 +1,45 @@
+project_name: sealed-secrets
+env:
+  - CGO_ENABLED=0
+builds:
+  - binary: controller
+    id: controller
+    main: ./cmd/controller
+    targets:
+      - darwin_amd64
+      - linux_amd64
+      - linux_arm64
+      - linux_arm
+      - windows_amd64
+  - binary: kubeseal
+    id: kubeseal
+    main: ./cmd/kubeseal
+    targets:
+      - darwin_amd64
+      - linux_amd64
+      - linux_arm64
+      - linux_arm
+      - windows_amd64
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+checksum:
+  algorithm: sha256
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^helm:'
+      - '^integration:'
+      - '^vendor_jsonnet:'
+release:
+  header: |
+    ## v{{ .Version }} ({{ .Date }})
+
+    New v{{ .Version }} release!
+  footer: |
+    ## Thanks!
+  name_template: "{{ .ProjectName }}-v{{ .Version }}"
