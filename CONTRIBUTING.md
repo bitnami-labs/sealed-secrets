@@ -19,4 +19,4 @@ When submitting a PR make sure that it:
 ### PR Approval and Release Process
 
 1. Changes are manually reviewed by VMware/Bitnami team members.
-2. When the PR passes all tests, the PR is merged by the reviewer(s) in the GitHub `master` branch.
+2. When the PR passes all tests, the PR is merged by the reviewer(s) in the GitHub `main` branch.
