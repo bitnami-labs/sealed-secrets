@@ -46,6 +46,10 @@ spec:
           args:
             - "--key-prefix"
             - "{{ .Values.secretName }}"
+            {{- if .Values.controller.keyrenewperiod }}
+            - "--key-renew-period"
+            - "{{ .Values.controller.keyrenewperiod }}"
+            {{- end }}
             {{- range $value := .Values.commandArgs }}
             - {{ $value | quote }}
             {{- end }}

@@ -18,6 +18,9 @@ controller:
   service:
     # controller.service.labels: Extra labels to be added to controller service
     labels: {}
+ 
+  # certificates get automatically renewed every 30 days. You can customize or disable by setting value 0
+  keyrenewperiod: "720h30m"
 
 # namespace: Namespace to deploy the controller.
 namespace: ""
