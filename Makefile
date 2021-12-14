@@ -70,10 +70,12 @@ controller-static: controller-static-$(GOOS)-$(GOARCH)
 kubeseal-static: kubeseal-static-$(GOOS)-$(GOARCH)
 	cp $< $@
 
+
 define controllerimage
-controller.image.$(1)-$(2): docker/Dockerfile controller-static-$(1)-$(2)
-	cp controller-static-$(1)-$(2) docker/controller
-	$(DOCKER) build -t $(CONTROLLER_IMAGE)-$(1)-$(2) docker/
+controller.image.$(1)-$(2): Dockerfile controller-static-$(1)-$(2)
+	mkdir -p dist/controller_$(1)_$(2)
+	cp controller-static-$(1)-$(2) dist/controller_$(1)_$(2)/controller
+	$(DOCKER) build -t $(CONTROLLER_IMAGE)-$(1)-$(2) .
 	@echo $(CONTROLLER_IMAGE)-$(1)-$(2) >$$@.tmp
 	@mv $$@.tmp $$@
 endef
