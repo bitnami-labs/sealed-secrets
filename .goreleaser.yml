@@ -43,5 +43,9 @@ release:
 
     New v{{ .Version }} release!
   footer: |
+    ## Release Notes
+
+    Please read the [RELEASE_NOTES](https://github.com/bitnami-labs/sealed-secrets/blob/master/RELEASE-NOTES.md) which contain among other things important information for who is upgrading from previous releases.
+
     ## Thanks!
   name_template: "{{ .ProjectName }}-v{{ .Version }}"
