@@ -21,7 +21,9 @@ builds:
       - linux_arm
       - windows_amd64
 archives:
-  - replacements:
+  - builds:
+      - kubeseal
+    replacements:
       darwin: Darwin
       linux: Linux
       windows: Windows
