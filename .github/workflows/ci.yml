@@ -10,7 +10,6 @@ env:
   CONTROLLER_IMAGE: quay.io/bitnami/sealed-secrets-controller:latest
 
 jobs:
-
   test:
     name: Build
     runs-on: ${{ matrix.os }}
