@@ -31,3 +31,6 @@
 /docker/controller
 *.iml
 .idea
+
+# GoReleaser output dir
+dist/
