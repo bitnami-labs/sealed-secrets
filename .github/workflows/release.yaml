@@ -1,4 +1,4 @@
-name: release
+name: Release
 
 # Only release when a new GH tag is added
 on:
@@ -46,8 +46,8 @@ jobs:
         uses: docker/login-action@v1
         with:
           registry: quay.io
-          username: ${{ secrets.QUAY_USER }}
-          password: ${{ secrets.QUAY_PASS }}
+          username: ${{ secrets.QUAY_USERNAME }}
+          password: ${{ secrets.QUAY_ROBOT_TOKEN }}
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2

@@ -70,6 +70,18 @@ controller-static: controller-static-$(GOOS)-$(GOARCH)
 kubeseal-static: kubeseal-static-$(GOOS)-$(GOARCH)
 	cp $< $@
 
+define controllerimage
+controller.image.$(1)-$(2): docker/Dockerfile controller-static-$(1)-$(2)
+	cp controller-static-$(1)-$(2) docker/controller
+	$(DOCKER) build -t $(CONTROLLER_IMAGE)-$(1)-$(2) docker/
+	@echo $(CONTROLLER_IMAGE)-$(1)-$(2) >$$@.tmp
+	@mv $$@.tmp $$@
+endef
+
+$(eval $(call controllerimage,linux,amd64))
+$(eval $(call controllerimage,linux,arm64))
+$(eval $(call controllerimage,linux,arm))
+
 %.yaml: %.jsonnet
 	$(KUBECFG) show -V CONTROLLER_IMAGE=$(CONTROLLER_IMAGE) -V IMAGE_PULL_POLICY=$(IMAGE_PULL_POLICY) -o yaml $< > $@.tmp
 	mv $@.tmp $@
@@ -99,5 +111,6 @@ clean:
 	$(RM) ./controller ./kubeseal
 	$(RM) *-static*
 	$(RM) controller*.yaml
+	$(RM) controller.image*
 
 .PHONY: all kubeseal controller test clean vet fmt
