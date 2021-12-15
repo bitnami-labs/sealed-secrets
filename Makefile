@@ -2,7 +2,7 @@ GO = go
 GOFMT = gofmt
 
 export GO111MODULE = on
-GO_FLAGS = -mod=vendor
+GO_FLAGS =
 
 KUBECFG = kubecfg
 DOCKER = docker
