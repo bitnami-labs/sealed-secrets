@@ -19,9 +19,16 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.15
+
+      # Run tests
       - name: Tests
         run: make test
-  
+
+      # Generate K8s manifests
+      - name: K8s manifests
+        run: |
+          make CONTROLLER_IMAGE=${{ env.image_name }}:${{ github.ref_name }} controller.yaml controller-norbac.yaml
+
       # Setup env for multi-arch builds
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
