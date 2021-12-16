@@ -10,7 +10,7 @@ metadata:
   {{- end }}
   labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
     {{- if .Values.serviceMonitor.labels }}
-    {{- toYaml .Values.serviceMonitor.labels | nindent 4 }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.serviceMonitor.labels "context" $) | nindent 4 }}
     {{- end }}
 spec:
   endpoints:
