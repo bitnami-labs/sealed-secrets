@@ -5,6 +5,8 @@ builds:
   - binary: controller
     id: controller
     main: ./cmd/controller
+    ldflags:
+      - -X main.VERSION={{ .Version }}
     targets:
       - darwin_amd64
       - linux_amd64
@@ -14,6 +16,8 @@ builds:
   - binary: kubeseal
     id: kubeseal
     main: ./cmd/kubeseal
+    ldflags:
+      - -X main.VERSION={{ .Version }}
     targets:
       - darwin_amd64
       - linux_amd64
