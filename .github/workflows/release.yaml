@@ -19,6 +19,11 @@ jobs:
         uses: actions/setup-go@v2
         with:
           go-version: 1.15
+      - name: Setup kubecfg
+        run: |
+          mkdir -p ~/bin
+          curl -sLf https://github.com/bitnami/kubecfg/releases/download/v0.16.0/kubecfg-linux-amd64 >~/bin/kubecfg
+          chmod +x ~/bin/kubecfg
 
       # Run tests
       - name: Tests
@@ -27,6 +32,7 @@ jobs:
       # Generate K8s manifests
       - name: K8s manifests
         run: |
+          export PATH=~/bin:$PATH
           make CONTROLLER_IMAGE=${{ env.image_name }}:${{ github.ref_name }} controller.yaml controller-norbac.yaml
 
       # Setup env for multi-arch builds
