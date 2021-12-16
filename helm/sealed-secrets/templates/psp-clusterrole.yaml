@@ -2,17 +2,15 @@
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
-  name: {{ template "sealed-secrets.fullname" . }}-psp
-  labels:
-    app.kubernetes.io/name: {{ template "sealed-secrets.name" . }}
-    helm.sh/chart: {{ template "sealed-secrets.chart" . }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+  name: {{ include "sealed-secrets.fullname" . }}-psp
+  labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
+    {{- if .Values.rbac.labels }}
+    {{- toYaml .Values.rbac.labels | nindent 4 }}
+    {{- end }}
 rules:
-- apiGroups: ['extensions']
-  resources: ['podsecuritypolicies']
-  verbs:     ['use']
-  resourceNames:
-  - {{ template "sealed-secrets.fullname" . }}
+  - apiGroups: ['extensions']
+    resources: ['podsecuritypolicies']
+    verbs:     ['use']
+    resourceNames:
+      - {{ include "sealed-secrets.fullname" . }}
 {{- end }}
