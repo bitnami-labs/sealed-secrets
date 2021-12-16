@@ -9,6 +9,7 @@ Latest release:
 ## Changelog
 
 * Binaries to emit the proper version ([#683](https://github.com/bitnami-labs/sealed-secrets/pull/683)
+* Re-enable publishing K8s manifests in GH releases ([#678](https://github.com/bitnami-labs/sealed-secrets/issues/678)
 
 # v0.17.0
 
