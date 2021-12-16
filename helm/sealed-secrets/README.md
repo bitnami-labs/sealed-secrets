@@ -139,11 +139,11 @@ Specify each parameter using the `--set key=value[,key=value]` argument to `helm
 
 ```console
 $ helm install my-release \
-  --set livenessProbe.successThreshold=5 \
+  --set resources.requests.cpu=25m \
     sealed-secrets/sealed-secrets
 ```
 
-The above command sets the `livenessProbe.successThreshold` to `5`.
+The above command sets the `resources.requests.cpu` parameter to `25m`.
 
 Alternatively, a YAML file that specifies the values for the above parameters can be provided while installing the chart. For example,
 
