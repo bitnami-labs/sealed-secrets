@@ -16,4 +16,4 @@ maintainers:
     email: mmikulicic@gmail.com
 name: sealed-secrets
 type: application
-version: 2.0.0
+version: 2.0.1

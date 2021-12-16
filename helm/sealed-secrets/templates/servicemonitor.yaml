@@ -3,19 +3,19 @@ apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
   name: {{ include "sealed-secrets.fullname" . }}
-  {{- if .Values.serviceMonitor.namespace }}
-  namespace: {{ .Values.serviceMonitor.namespace }}
+  {{- if .Values.metrics.serviceMonitor.namespace }}
+  namespace: {{ .Values.metrics.serviceMonitor.namespace }}
   {{- else }}
   namespace: {{ include "sealed-secrets.namespace" . }}
   {{- end }}
   labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
-    {{- if .Values.serviceMonitor.labels }}
-    {{- include "sealed-secrets.render" ( dict "value" .Values.serviceMonitor.labels "context" $) | nindent 4 }}
+    {{- if .Values.metrics.serviceMonitor.labels }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.metrics.serviceMonitor.labels "context" $) | nindent 4 }}
     {{- end }}
 spec:
   endpoints:
     - honorLabels: true
-      port: {{ .Values.service.port }}
+      port: http
       {{- if .Values.metrics.serviceMonitor.interval }}
       interval: {{ .Values.metrics.serviceMonitor.interval }}
       {{- end }}
