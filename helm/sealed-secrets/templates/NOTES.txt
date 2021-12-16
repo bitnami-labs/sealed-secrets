@@ -21,8 +21,8 @@ The file mysealedsecret.[json|yaml] is a commitable file.
 If you would rather not need access to the cluster to generate the sealed secret you can run:
 
     kubeseal \
-      --controller-name={{ template "common.names.fullname" . }} \
-      --controller-namespace={{ .Release.Namespace }} \
+      --controller-name={{ include "sealed-secrets.fullname" . }} \
+      --controller-namespace={{ include "sealed-secrets.namespace" . }} \
       --fetch-cert > mycert.pem
 
 to retrieve the public cert used for encryption and store it locally. You can then run 'kubeseal --cert mycert.pem' instead to use the local cert e.g.
