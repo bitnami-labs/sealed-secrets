@@ -1,0 +1,4 @@
+{{- range .Values.extraDeploy }}
+---
+{{ include "sealed-secrets.render" (dict "value" . "context" $) }}
+{{- end }}

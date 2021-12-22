@@ -4,6 +4,24 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+# v0.17.1
+
+## Changelog
+
+* Binaries to emit the proper version ([#683](https://github.com/bitnami-labs/sealed-secrets/pull/683)
+* Re-enable publishing K8s manifests in GH releases ([#678](https://github.com/bitnami-labs/sealed-secrets/issues/678)
+
+# v0.17.0
+
+## Announcements
+
+This release finally turns on the `update-status` feature flag that was introduced back in v0.12.0. The feature is considered stable (if it doesn't work for you, you can disable it by setting `SEALED_SECRETS_UPDATE_STATUS=0` in the controller manifest).
+
+## Changelog
+
+* Update rbac api version to `rbac.authorization.k8s.io/v1` ([#602](https://github.com/bitnami-labs/sealed-secrets/issues/#602))
+* Enable `--update-status` by default ([#583](https://github.com/bitnami-labs/sealed-secrets/pull/583))
+
 # v0.16.0
 
 ## Changelog

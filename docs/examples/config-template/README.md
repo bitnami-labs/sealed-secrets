@@ -18,7 +18,7 @@ This example shows how to use built in support for templating encrypted secret v
 To update the encrypted data in the included sealedsecret with your own value
 for `server1` you can run:
 
-```
-echo -n baz | kubectl create secret generic example --dry-run --from-file=server1=/dev/stdin -o json \
+```sh
+echo -n baz | kubectl create secret generic example --dry-run=client --from-file=server1=/dev/stdin -o json \
   | kubeseal -o yaml --merge-into sealedsecret.yaml
 ```

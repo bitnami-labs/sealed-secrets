@@ -7,10 +7,9 @@ on:
     branches: [ main ]
 
 env:
-  CONTROLLER_IMAGE: gcr.io/mkm-cloud/sealed-secrets-controller:latest
+  CONTROLLER_IMAGE: quay.io/bitnami/sealed-secrets-controller:latest
 
 jobs:
-
   test:
     name: Build
     runs-on: ${{ matrix.os }}
@@ -97,7 +96,7 @@ jobs:
       env:
         ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
       with:
-        minikube-version: 1.16.0
+        minikube-version: 1.24.0
         k8s-version: ${{ matrix.k8s }}
 
     # need to delete old state of the cluster, see:
@@ -105,9 +104,8 @@ jobs:
     - name: K8s setup
       run: |
         minikube delete
-        minikube config set vm-driver docker
         minikube config set kubernetes-version v${{ matrix.k8s }}
-        minikube start
+        minikube start --vm-driver=docker
         minikube update-context
         kubectl cluster-info
 

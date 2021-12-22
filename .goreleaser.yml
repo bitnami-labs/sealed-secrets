@@ -1,0 +1,55 @@
+project_name: sealed-secrets
+env:
+  - CGO_ENABLED=0
+builds:
+  - binary: controller
+    id: controller
+    main: ./cmd/controller
+    ldflags:
+      - -X main.VERSION={{ .Version }}
+    targets:
+      - darwin_amd64
+      - linux_amd64
+      - linux_arm64
+      - linux_arm
+      - windows_amd64
+  - binary: kubeseal
+    id: kubeseal
+    main: ./cmd/kubeseal
+    ldflags:
+      - -X main.VERSION={{ .Version }}
+    targets:
+      - darwin_amd64
+      - linux_amd64
+      - linux_arm64
+      - linux_arm
+      - windows_amd64
+archives:
+  - builds:
+      - kubeseal
+    name_template: "kubeseal-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
+checksum:
+  algorithm: sha256
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^helm:'
+      - '^integration:'
+      - '^vendor_jsonnet:'
+release:
+  name_template: "{{ .ProjectName }}-v{{ .Version }}"
+  header: |
+    ## v{{ .Version }} ({{ .Date }})
+
+    New v{{ .Version }} release!
+  footer: |
+    ## Release Notes
+
+    Please read the [RELEASE_NOTES](https://github.com/bitnami-labs/sealed-secrets/blob/master/RELEASE-NOTES.md) which contain among other things important information for who is upgrading from previous releases.
+
+    ## Thanks!
+  extra_files:
+    - glob: ./controller.yaml
+    - glob: ./controller-norbac.yaml

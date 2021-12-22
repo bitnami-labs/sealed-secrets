@@ -1,23 +1,23 @@
-{{- if .Values.controller.create -}}
+{{- if .Values.createController -}}
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ template "sealed-secrets.fullname" . }}
-  namespace: {{ template "sealed-secrets.namespace" . }}
-  labels:
-    app.kubernetes.io/name: {{ template "sealed-secrets.name" . }}
-    helm.sh/chart: {{ template "sealed-secrets.chart" . }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/version: {{ .Chart.AppVersion }}
-    {{- if .Values.controller.service.labels }}
-{{ toYaml .Values.controller.service.labels | indent 4 }}
+  name: {{ include "sealed-secrets.fullname" . }}
+  namespace: {{ include "sealed-secrets.namespace" . }}
+  labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
+    {{- if .Values.service.labels }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.service.labels "context" $) | nindent 4 }}
     {{- end }}
 spec:
+  type: {{ .Values.service.type }}
   ports:
-    - port: 8080
-      targetPort: 8080
-  selector:
-    app.kubernetes.io/name: {{ template "sealed-secrets.name" . }}
-  type: ClusterIP
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) (not (empty .Values.service.nodePort)) }}
+      nodePort: {{ .Values.service.nodePort }}
+      {{- else if eq .Values.service.type "ClusterIP" }}
+      nodePort: null
+      {{- end }}
+  selector: {{- include "sealed-secrets.matchLabels" . | nindent 4 }}
 {{- end }}
