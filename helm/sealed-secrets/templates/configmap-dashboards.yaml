@@ -9,7 +9,7 @@ metadata:
   namespace: {{ $namespace }}
   labels: {{- include "sealed-secrets.labels" $ | nindent 4 }}
     {{- if $.Values.metrics.dashboards.labels }}
-    {{- include "sealed-secrets.render" ( dict "value" $.Values.serviceAccount.labels "context" $) | nindent 4 }}
+    {{- include "sealed-secrets.render" ( dict "value" $.Values.metrics.dashboards.labels "context" $) | nindent 4 }}
     {{- end }}
 data:
   {{ base $path }}: |-
