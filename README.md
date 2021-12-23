@@ -179,8 +179,8 @@ The certificate is also printed to the controller log on startup.
 Since v0.9.x certificates get automatically renewed every 30 days. It's good practice that you and your team
 update your offline certificate periodically. To help you with that, since v0.9.2 `kubeseal` accepts URLs too. You can setup your internal automation to publish certificates somewhere you trust.
 
-```console
-$ kubeseal --cert https://your.intranet.company.com/sealed-secrets/your-cluster.cert
+```bash
+kubeseal --cert https://your.intranet.company.com/sealed-secrets/your-cluster.cert
 ```
 
 It also recognizes the `SEALED_SECRETS_CERT` env var. (pro-tip: see also [direnv](https://github.com/direnv/direnv)).
@@ -224,8 +224,8 @@ In contrast to the restrictions of *name* and *namespace*, secret *items* (i.e. 
 
 The scope is selected with the `--scope` flag:
 
-```console
-$ kubeseal --scope cluster-wide <secret.yaml >sealed-secret.json
+```bash
+kubeseal --scope cluster-wide <secret.yaml >sealed-secret.json
 ```
 
 It's also possible to request a scope via annotations in the input secret you pass to `kubeseal`:
@@ -239,8 +239,7 @@ The lack of any of such annotations means `strict` mode. If both are set, `clust
 
 ## Installation
 
-See https://github.com/bitnami-labs/sealed-secrets/releases for the latest
-release and detailed installation instructions.
+See https://github.com/bitnami-labs/sealed-secrets/releases for the latest release and detailed installation instructions.
 
 Cloud platform specific notes and instructions:
 
@@ -268,8 +267,8 @@ In some cases you might need to apply your own customizations, like set a custom
 
 The Sealed Secrets helm chart is now official supported and hosted in this GitHub repo.
 
-```console
-$ helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
+```bash
+helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
 ```
 
 NOTE: The versioning scheme of the helm chart differs from the versioning scheme of the sealed secrets project itself.
@@ -298,16 +297,16 @@ NOTE: the sealed secrets operator is an independently maintained project, so ple
 
 The `kubeseal` client is also available on [homebrew](https://formulae.brew.sh/formula/kubeseal):
 
-```console
-$ brew install kubeseal
+```bash
+brew install kubeseal
 ```
 
 ### MacPorts
 
 The `kubeseal` client is also available on [MacPorts](https://ports.macports.org/port/kubeseal/summary):
 
-```console
-$ port install kubeseal
+```bash
+port install kubeseal
 ```
 
 ### Installation from source
@@ -316,7 +315,7 @@ If you just want the latest client tool, it can be installed into
 `$GOPATH/bin` with:
 
 ```bash
-% (cd /; GO111MODULE=on go get github.com/bitnami-labs/sealed-secrets/cmd/kubeseal@main)
+(cd /; GO111MODULE=on go get github.com/bitnami-labs/sealed-secrets/cmd/kubeseal@main)
 ```
 
 You can specify a release tag or a commit SHA instead of `main`.
@@ -329,21 +328,21 @@ and/or the controller.
 
 ## Usage
 
-```console
+```bash
 # Create a json/yaml-encoded Secret somehow:
 # (note use of `--dry-run` - this is just a local file!)
-$ echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json >mysecret.json
+echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json >mysecret.json
 
 # This is the important bit:
 # (note default format is json!)
-$ kubeseal <mysecret.json >mysealedsecret.json
+kubeseal <mysecret.json >mysealedsecret.json
 
 # mysealedsecret.json is safe to upload to github, post to twitter,
 # etc.  Eventually:
-$ kubectl create -f mysealedsecret.json
+kubectl create -f mysealedsecret.json
 
 # Profit!
-$ kubectl get secret mysecret
+kubectl get secret mysecret
 ```
 
 Note the `SealedSecret` and `Secret` must have **the same namespace and
@@ -376,10 +375,10 @@ You must take care of sealing the updated items with a compatible name and names
 
 You can use the `--merge-into` command to update an existing sealed secrets if you don't want to copy&paste:
 
-```console
-$ echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json \
+```bash
+echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json \
   | kubeseal > mysealedsecret.json
-$ echo -n baz | kubectl create secret generic mysecret --dry-run=client --from-file=bar=/dev/stdin -o json \
+echo -n baz | kubectl create secret generic mysecret --dry-run=client --from-file=bar=/dev/stdin -o json \
   | kubeseal --merge-into mysealedsecret.json
 ```
 
@@ -498,8 +497,8 @@ manual encryption/decryption if need be.
 
 Before you can get rid of some old sealing keys you need to re-encrypt your SealedSecrets with the latest private key.
 
-```console
-$ kubeseal --re-encrypt <my_sealed_secret.json >tmp.json \
+```bash
+kubeseal --re-encrypt <my_sealed_secret.json >tmp.json \
   && mv tmp.json my_sealed_secret.json
 ```
 
@@ -529,46 +528,11 @@ labelled as active.
 
 ### Crypto
 
-More details about crypto can be found [here](docs/crypto.md).
+More details about crypto can be found [here](docs/developer/crypto.md).
 
 ## Developing
 
-To be able to develop on this project, you need to have the following tools installed:
-
-- make
-- [Ginkgo](https://onsi.github.io/ginkgo/)
-- [Minikube](https://github.com/kubernetes/minikube)
-- [kubecfg](https://github.com/bitnami/kubecfg)
-- Go
-
-To build the `kubeseal` and controller binaries, run:
-
-```console
-$ make
-```
-
-To run the unit tests:
-
-```console
-$ make test
-```
-
-To run the integration tests:
-
-- Start Minikube
-- Build the controller for Linux, so that it can be run within a Docker image - edit the Makefile to add
-`GOOS=linux GOARCH=amd64` to `%-static`, and then run `make controller.yaml IMAGE_PULL_POLICY=Never`
-- Add the sealed-secret CRD and controller to Kubernetes - `kubectl apply -f controller.yaml`
-- Revert any changes made to the Makefile to build the Linux controller
-- Remove the binaries which were possibly built for another OS - `make clean`
-- Rebuild the binaries for your OS - `make`
-- Run the integration tests - `make integrationtest`
-
-To update the jsonnet dependencies:
-
-```console
-$ jb install --jsonnetpkg-home=vendor_jsonnet
-```
+More details about crypto can be found [in the Developer Guide](docs/developer/README.md).
 
 ## FAQ
 
@@ -580,9 +544,9 @@ No, the private keys are only stored in the Secret managed by the controller (un
 
 If you do want to make a backup of the encryption private keys, it's easy to do from an account with suitable access and:
 
-```console
-$ kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >master.key
-$ kubectl get secret -n kube-system sealed-secrets-key -o yaml >>master.key
+```bash
+kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >master.key
+kubectl get secret -n kube-system sealed-secrets-key -o yaml >>master.key
 ```
 
 NOTE: you need the second statement only if you ever installed sealed-secrets older than version 0.9.x on your cluster.
@@ -591,9 +555,9 @@ NOTE: This file will contains the controller's public + private keys and should 
 
 To restore from a backup after some disaster, just put that secrets back before starting the controller - or if the controller was already started, replace the newly-created secrets and restart the controller:
 
-```console
-$ kubectl apply -f master.key
-$ kubectl delete pod -n kube-system -l app.kubernetes.io/name=sealed-secrets
+```bash
+kubectl apply -f master.key
+kubectl delete pod -n kube-system -l name=sealed-secrets-controller
 ```
 
 ### Can I decrypt my secrets offline with a backup key?
@@ -629,13 +593,13 @@ to the `kubeseal` commandline tool. There are two options: You can specify the n
 
 Example:
 
-```console
+```bash
 # Provide the namespace via the command line option
-$ kubeseal --controller-namespace sealed-secrets <mysecret.json >mysealedsecret.json
+kubeseal --controller-namespace sealed-secrets <mysecret.json >mysealedsecret.json
 
 # Provide the namespace via the environment variable
-$ export SEALED_SECRETS_CONTROLLER_NAMESPACE=sealed-secrets
-$ kubeseal <mysecret.json >mysealedsecret.json
+export SEALED_SECRETS_CONTROLLER_NAMESPACE=sealed-secrets
+kubeseal <mysecret.json >mysealedsecret.json
 ```
 
 ## Community
