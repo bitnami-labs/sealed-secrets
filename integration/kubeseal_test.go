@@ -4,6 +4,7 @@ package integration
 
 import (
 	"bytes"
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
@@ -37,8 +38,13 @@ var _ = Describe("kubeseal", func() {
 	var certs []*x509.Certificate
 	var config *clientcmdapi.Config
 	var kubeconfigFile string
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
 
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
 		clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
 			&clientcmd.ClientConfigLoadingRules{ExplicitPath: *kubeconfig},
 			&clientcmd.ConfigOverrides{})
@@ -65,6 +71,7 @@ var _ = Describe("kubeseal", func() {
 	})
 	AfterEach(func() {
 		os.Remove(kubeconfigFile)
+		cancel()
 	})
 
 	BeforeEach(func() {
@@ -81,7 +88,7 @@ var _ = Describe("kubeseal", func() {
 		}
 
 		var err error
-		privKeys, certs, err = fetchKeys(c)
+		privKeys, certs, err = fetchKeys(ctx, c)
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -187,8 +194,13 @@ var _ = Describe("kubeseal --fetch-cert", func() {
 	var input io.Reader
 	var output *bytes.Buffer
 	var args []string
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
 
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
 		c = corev1.NewForConfigOrDie(clusterConfigOrDie())
 
 		args = append(args, "--fetch-cert")
@@ -198,9 +210,12 @@ var _ = Describe("kubeseal --fetch-cert", func() {
 		err := runKubeseal(args, input, output)
 		Expect(err).NotTo(HaveOccurred())
 	})
+	AfterEach(func() {
+		cancel()
+	})
 
 	It("should produce the certificate", func() {
-		_, certs, err := fetchKeys(c)
+		_, certs, err := fetchKeys(ctx, c)
 		Expect(err).NotTo(HaveOccurred())
 
 		Expect(certUtil.ParseCertsPEM(output.Bytes())).
@@ -318,8 +333,13 @@ var _ = Describe("kubeseal --recovery-unseal", func() {
 	var ss *ssv1alpha1.SealedSecret
 	var stderr *bytes.Buffer
 	var stdout *bytes.Buffer
+	var (
+		ctx    context.Context
+		cancel context.CancelFunc
+	)
 
 	BeforeEach(func() {
+		ctx, cancel = context.WithCancel(context.Background())
 		c = corev1.NewForConfigOrDie(clusterConfigOrDie())
 
 		input := &v1.Secret{
@@ -339,9 +359,8 @@ var _ = Describe("kubeseal --recovery-unseal", func() {
 		sealedSecretInput, err = runtime.Encode(enc, ss)
 		Expect(err).NotTo(HaveOccurred())
 	})
-
 	BeforeEach(func() {
-		master, err := c.Secrets("kube-system").List(metav1.ListOptions{
+		master, err := c.Secrets("kube-system").List(ctx, metav1.ListOptions{
 			LabelSelector: keySelector,
 		})
 		Expect(err).NotTo(HaveOccurred())
@@ -364,6 +383,9 @@ var _ = Describe("kubeseal --recovery-unseal", func() {
 
 	JustBeforeEach(func() {
 		err = runKubeseal(args, bytes.NewReader(sealedSecretInput), stdout, runAppWithStderr(stderr))
+	})
+	AfterEach(func() {
+		cancel()
 	})
 
 	Context("without --recovery-private-key", func() {
