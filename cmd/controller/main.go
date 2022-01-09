@@ -51,7 +51,8 @@ var (
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
-	updateStatus = flag.Bool("update-status", true, "beta: if true, the controller will update the status subresource whenever it processes a sealed secret")
+	updateStatus  = flag.Bool("update-status", true, "beta: if true, the controller will update the status subresource whenever it processes a sealed secret")
+	disableKeyGen = flag.Bool("disable-key-generation", false, "Disable any key generation by the controller (including rotation)")
 
 	// VERSION set from Makefile
 	VERSION = buildinfo.DefaultVersion
@@ -74,6 +75,11 @@ func init() {
 	if f := flag.CommandLine.Lookup("logtostderr"); f != nil {
 		f.DefValue = "true"
 		f.Value.Set(f.DefValue)
+	}
+
+	// Disable key renew, if controller is not allowed to generate new keys
+	if *disableKeyGen {
+		*keyRenewPeriod = 0
 	}
 }
 
@@ -197,6 +203,10 @@ func main2() error {
 	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, *keySize)
 	if err != nil {
 		return err
+	}
+
+	if *disableKeyGen && len(keyRegistry.keys) == 0 {
+		return fmt.Errorf("No existing keys found while key generation is disabled.")
 	}
 
 	var ct time.Time

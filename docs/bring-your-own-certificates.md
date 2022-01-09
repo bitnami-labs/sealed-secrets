@@ -27,6 +27,13 @@ kubectl -n "$NAMESPACE" create secret tls "$SECRETNAME" --cert="$PUBLICKEY" --ke
 kubectl -n "$NAMESPACE" label secret "$SECRETNAME" sealedsecrets.bitnami.com/sealed-secrets-key=active
 ```
 
+## (OPTIONAL) disable key generation in the controller:
+```bash
+kubectl -n "$NAMESPACE" patch deployment/sealed-secrets-controller --type=json --patch '[{"op": "add", "path": "/spec/template/spec/containers/0/args", "value": ["--disable-key-generation"]}]'
+```
+This will ensure the controller does not try to generate a new key in case it fails to find existing one for whatever reason or in case of a periodical rotation.
+
+NB: This is NOT going to retain any command-line arguments, which were previously added manually. Adjust the command accordingly.
 ## Deleting the controller Pod is needed to pick they new keys:
 ```bash
 kubectl -n  "$NAMESPACE" delete pod -l name=sealed-secrets-controller

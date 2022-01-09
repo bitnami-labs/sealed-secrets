@@ -494,6 +494,8 @@ Labelling a *sealing key* secret with anything other than `active` effectively d
 the key from the sealed secrets controller, but it is still available in k8s for
 manual encryption/decryption if need be.
 
+If manual (or rather external to controller) key management is the case, you may want to completely disable key generation (including key rotation), so controller doesn't intefere with whatever process is already in-place (see [bring-your-own-certificates.md](docs/bring-your-own-certificates.md)).
+
 **NOTE** Sealed secrets currently does not automatically pick up manually created, deleted or relabeled sealing keys, an admin must restart the controller before the effect will apply.
 
 ### Re-encryption (advanced)
