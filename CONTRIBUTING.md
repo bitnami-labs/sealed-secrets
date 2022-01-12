@@ -2,7 +2,7 @@
 
 Contributions are welcome via GitHub Pull Requests. This document outlines the process to help get your contribution accepted.
 
-Any type of contribution is welcome; from new features, bug fixes, or documentation improvements. However, VMware/Bitnami will review the proposals and perform a triage over them. By doing so, we will ensure that the most valuable contributions for the comunity will be implemented in due time.
+Any type of contribution is welcome; from new features, bug fixes, or documentation improvements. However, VMware/Bitnami will review the proposals and perform a triage over them. By doing so, we will ensure that the most valuable contributions for the community will be implemented in due time.
 
 ## How to Contribute
 
