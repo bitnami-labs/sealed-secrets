@@ -89,9 +89,9 @@ func initKeyPrefix(keyPrefix string) (string, error) {
 	return prefix, err
 }
 
-func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
+func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
 	log.Printf("Searching for existing private keys")
-	secretList, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{
+	secretList, err := client.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: keySelector.String(),
 	})
 	if err != nil {
@@ -99,7 +99,7 @@ func initKeyRegistry(client kubernetes.Interface, r io.Reader, namespace, prefix
 	}
 	items := secretList.Items
 
-	s, err := client.CoreV1().Secrets(namespace).Get(prefix, metav1.GetOptions{})
+	s, err := client.CoreV1().Secrets(namespace).Get(ctx, prefix, metav1.GetOptions{})
 	if !errors.IsNotFound(err) {
 		if err != nil {
 			return nil, err
@@ -142,18 +142,18 @@ func myNamespace() string {
 // Initialises the first key and starts the rotation job. returns an early trigger function.
 // A period of 0 disables automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
 // is still honoured.
-func initKeyRenewal(registry *KeyRegistry, period time.Duration, cutoffTime time.Time) (func(), error) {
+func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period time.Duration, cutoffTime time.Time) (func(), error) {
 	// Create a new key if it's the first key,
 	// or if it's older than cutoff time.
 	if len(registry.keys) == 0 || registry.mostRecentKey.creationTime.Before(cutoffTime) {
-		if _, err := registry.generateKey(); err != nil {
+		if _, err := registry.generateKey(ctx); err != nil {
 			return nil, err
 		}
 	}
 
 	// wrapper function to log error thrown by generateKey function
 	keyGenFunc := func() {
-		if _, err := registry.generateKey(); err != nil {
+		if _, err := registry.generateKey(ctx); err != nil {
 			log.Printf("Failed to generate new key : %v\n", err)
 		}
 	}
@@ -188,13 +188,14 @@ func main2() error {
 	}
 
 	myNs := myNamespace()
+	ctx := context.Background()
 
 	prefix, err := initKeyPrefix(*keyPrefix)
 	if err != nil {
 		return err
 	}
 
-	keyRegistry, err := initKeyRegistry(clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, *keySize)
+	keyRegistry, err := initKeyRegistry(ctx, clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, *keySize)
 	if err != nil {
 		return err
 	}
@@ -208,7 +209,7 @@ func main2() error {
 		}
 	}
 
-	trigger, err := initKeyRenewal(keyRegistry, *keyRenewPeriod, ct)
+	trigger, err := initKeyRenewal(ctx, keyRegistry, *keyRenewPeriod, ct)
 	if err != nil {
 		return err
 	}

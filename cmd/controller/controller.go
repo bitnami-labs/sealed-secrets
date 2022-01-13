@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
@@ -65,7 +66,7 @@ type Controller struct {
 	updateStatus  bool // feature flag that enables updating the status subresource.
 }
 
-func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, keyRegistry *KeyRegistry, ssecret *ssv1alpha1.SealedSecret) error {
+func unseal(ctx context.Context, sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, keyRegistry *KeyRegistry, ssecret *ssv1alpha1.SealedSecret) error {
 	// Important: Be careful not to reveal the namespace/name of
 	// the *decrypted* Secret (or any other detail) in error/log
 	// messages.
@@ -79,9 +80,9 @@ func unseal(sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, key
 		return err
 	}
 
-	_, err = sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(secret)
+	_, err = sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(ctx, secret, metav1.CreateOptions{})
 	if err != nil && errors.IsAlreadyExists(err) {
-		_, err = sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(secret)
+		_, err = sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(ctx, secret, metav1.UpdateOptions{})
 	}
 	if err != nil {
 		// TODO: requeue?
@@ -169,25 +170,27 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 		return
 	}
 
-	wait.Until(c.runWorker, time.Second, stopCh)
+	wait.Until(func() {
+		c.runWorker(context.Background())
+	}, time.Second, stopCh)
 
 	log.Printf("Shutting down controller")
 }
 
-func (c *Controller) runWorker() {
-	for c.processNextItem() {
+func (c *Controller) runWorker(ctx context.Context) {
+	for c.processNextItem(ctx) {
 		// continue looping
 	}
 }
 
-func (c *Controller) processNextItem() bool {
+func (c *Controller) processNextItem(ctx context.Context) bool {
 	key, quit := c.queue.Get()
 	if quit {
 		return false
 	}
 
 	defer c.queue.Done(key)
-	err := c.unseal(key.(string))
+	err := c.unseal(ctx, key.(string))
 	if err == nil {
 		// No error, reset the ratelimit counters
 		c.queue.Forget(key)
@@ -204,7 +207,7 @@ func (c *Controller) processNextItem() bool {
 	return true
 }
 
-func (c *Controller) unseal(key string) (unsealErr error) {
+func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	unsealRequestsTotal.Inc()
 	obj, exists, err := c.informer.GetIndexer().GetByKey(key)
 	if err != nil {
@@ -224,7 +227,7 @@ func (c *Controller) unseal(key string) (unsealErr error) {
 			if err != nil {
 				return err
 			}
-			err = c.sclient.Secrets(ns).Delete(name, &metav1.DeleteOptions{})
+			err = c.sclient.Secrets(ns).Delete(ctx, name, metav1.DeleteOptions{})
 			if err != nil && !errors.IsNotFound(err) {
 				return err
 			}
@@ -256,9 +259,9 @@ func (c *Controller) unseal(key string) (unsealErr error) {
 		return err
 	}
 
-	secret, err := c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Get(newSecret.GetObjectMeta().GetName(), metav1.GetOptions{})
+	secret, err := c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Get(ctx, newSecret.GetObjectMeta().GetName(), metav1.GetOptions{})
 	if errors.IsNotFound(err) {
-		secret, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(newSecret)
+		secret, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(ctx, newSecret, metav1.CreateOptions{})
 	}
 	if err != nil {
 		c.recorder.Event(ssecret, corev1.EventTypeWarning, ErrUpdateFailed, err.Error())
@@ -283,7 +286,7 @@ func (c *Controller) unseal(key string) (unsealErr error) {
 	secret.ObjectMeta.Labels = newSecret.ObjectMeta.Labels
 
 	if !apiequality.Semantic.DeepEqual(origSecret, secret) {
-		secret, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(secret)
+		secret, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(ctx, secret, metav1.UpdateOptions{})
 		if err != nil {
 			c.recorder.Event(ssecret, corev1.EventTypeWarning, ErrUpdateFailed, err.Error())
 			unsealErrorsTotal.WithLabelValues("update", ssecret.GetNamespace()).Inc()
@@ -346,8 +349,8 @@ func updateSealedSecretsStatusConditions(st *ssv1alpha1.SealedSecretStatus, unse
 	}
 }
 
-func (c *Controller) updateSecret(newSecret *corev1.Secret) (*corev1.Secret, error) {
-	existingSecret, err := c.sclient.Secrets(newSecret.GetObjectMeta().GetNamespace()).Get(newSecret.GetObjectMeta().GetName(), metav1.GetOptions{})
+func (c *Controller) updateSecret(ctx context.Context, newSecret *corev1.Secret) (*corev1.Secret, error) {
+	existingSecret, err := c.sclient.Secrets(newSecret.GetObjectMeta().GetNamespace()).Get(ctx, newSecret.GetObjectMeta().GetName(), metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to read existing secret: %s", err)
 	}

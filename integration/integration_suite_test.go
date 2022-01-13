@@ -49,13 +49,14 @@ func clusterConfigOrDie() *rest.Config {
 	return config
 }
 
-func createNsOrDie(c corev1.NamespacesGetter, ns string) string {
+func createNsOrDie(ctx context.Context, c corev1.NamespacesGetter, ns string) string {
 	result, err := c.Namespaces().Create(
+		ctx,
 		&v1.Namespace{
 			ObjectMeta: metav1.ObjectMeta{
 				GenerateName: ns,
 			},
-		})
+		}, metav1.CreateOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
@@ -64,8 +65,8 @@ func createNsOrDie(c corev1.NamespacesGetter, ns string) string {
 	return name
 }
 
-func deleteNsOrDie(c corev1.NamespacesGetter, ns string) {
-	err := c.Namespaces().Delete(ns, &metav1.DeleteOptions{})
+func deleteNsOrDie(ctx context.Context, c corev1.NamespacesGetter, ns string) {
+	err := c.Namespaces().Delete(ctx, ns, metav1.DeleteOptions{})
 	if err != nil {
 		panic(err.Error())
 	}
@@ -112,7 +113,7 @@ func streamLog(ctx context.Context, c corev1.PodsGetter, namespace, name, contai
 		Container:    container,
 		Follow:       true,
 		SinceSeconds: &zero,
-	}).Stream()
+	}).Stream(ctx)
 	if err != nil {
 		return err
 	}

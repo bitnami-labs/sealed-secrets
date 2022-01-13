@@ -4,6 +4,7 @@ package v1alpha1
 
 import (
 	"time"
+	"context"
 
 	v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	scheme "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/scheme"
@@ -55,7 +56,7 @@ func (c *sealedSecrets) Get(name string, options v1.GetOptions) (result *v1alpha
 		Resource("sealedsecrets").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -72,7 +73,7 @@ func (c *sealedSecrets) List(opts v1.ListOptions) (result *v1alpha1.SealedSecret
 		Resource("sealedsecrets").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -89,7 +90,7 @@ func (c *sealedSecrets) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("sealedsecrets").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(context.TODO())
 }
 
 // Create takes the representation of a sealedSecret and creates it.  Returns the server's representation of the sealedSecret, and an error, if there is any.
@@ -99,7 +100,7 @@ func (c *sealedSecrets) Create(sealedSecret *v1alpha1.SealedSecret) (result *v1a
 		Namespace(c.ns).
 		Resource("sealedsecrets").
 		Body(sealedSecret).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -112,7 +113,7 @@ func (c *sealedSecrets) Update(sealedSecret *v1alpha1.SealedSecret) (result *v1a
 		Resource("sealedsecrets").
 		Name(sealedSecret.Name).
 		Body(sealedSecret).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -128,7 +129,7 @@ func (c *sealedSecrets) UpdateStatus(sealedSecret *v1alpha1.SealedSecret) (resul
 		Name(sealedSecret.Name).
 		SubResource("status").
 		Body(sealedSecret).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
@@ -140,7 +141,7 @@ func (c *sealedSecrets) Delete(name string, options *v1.DeleteOptions) error {
 		Resource("sealedsecrets").
 		Name(name).
 		Body(options).
-		Do().
+		Do(context.TODO()).
 		Error()
 }
 
@@ -156,7 +157,7 @@ func (c *sealedSecrets) DeleteCollection(options *v1.DeleteOptions, listOptions 
 		VersionedParams(&listOptions, scheme.ParameterCodec).
 		Timeout(timeout).
 		Body(options).
-		Do().
+		Do(context.TODO()).
 		Error()
 }
 
@@ -169,7 +170,7 @@ func (c *sealedSecrets) Patch(name string, pt types.PatchType, data []byte, subr
 		SubResource(subresources...).
 		Name(name).
 		Body(data).
-		Do().
+		Do(context.TODO()).
 		Into(result)
 	return
 }
