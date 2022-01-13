@@ -10,15 +10,14 @@ Ideally you should avoid configuring your software that way, instead split your 
 
 That said, there are circumstances where you just have to provide such a file to your application (perhaps because it's a legacy app) and encrypting the whole configuration file in a single SealedSecrets item is problematic:
 
-* You cannot easily update individual secret values (e.g. rotate your DB password), without first decrypting the whole configuration file.
-* Since the whole configuration file is encrypted, it's hard to view, change (and review) non-secret parts of the config.
+- You cannot easily update individual secret values (e.g. rotate your DB password), without first decrypting the whole configuration file.
+- Since the whole configuration file is encrypted, it's hard to view, change (and review) non-secret parts of the config.
 
 This example shows how to use built in support for templating encrypted secret values into a plaintext key template.
 
-To update the encrypted data in the included sealedsecret with your own value
-for `server1` you can run:
+To update the encrypted data in the included SealedSecret with your own value for `server1` you can run:
 
-```sh
+```bash
 echo -n baz | kubectl create secret generic example --dry-run=client --from-file=server1=/dev/stdin -o json \
   | kubeseal -o yaml --merge-into sealedsecret.yaml
 ```
