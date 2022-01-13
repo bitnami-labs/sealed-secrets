@@ -59,29 +59,30 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Sealed Secrets Parameters
 
-| Name                                              | Description                                                                   | Value                               |
-| ------------------------------------------------- | ----------------------------------------------------------------------------- | ----------------------------------- |
-| `image.registry`                                  | Sealed Secrets image registry                                                 | `quay.io`                           |
-| `image.repository`                                | Sealed Secrets image repository                                               | `bitnami/sealed-secrets-controller` |
-| `image.tag`                                       | Sealed Secrets image tag (immutable tags are recommended)                     | `v0.17.1`                           |
-| `image.pullPolicy`                                | Sealed Secrets image pull policy                                              | `IfNotPresent`                      |
-| `image.pullSecrets`                               | Sealed Secrets image pull secrets                                             | `[]`                                |
-| `createController`                                | Specifies whether the Sealed Secrets controller should be created             | `true`                              |
-| `secretName`                                      | The name of an existing TLS secret containing the key used to encrypt secrets | `sealed-secrets-key`                |
-| `resources.limits`                                | The resources limits for the Sealed Secret containers                         | `{}`                                |
-| `resources.requests`                              | The requested resources for the Sealed Secret containers                      | `{}`                                |
-| `podSecurityContext.enabled`                      | Enabled Sealed Secret pods' Security Context                                  | `true`                              |
-| `podSecurityContext.fsGroup`                      | Set Sealed Secret pod's Security Context fsGroup                              | `65534`                             |
-| `containerSecurityContext.enabled`                | Enabled Sealed Secret containers' Security Context                            | `true`                              |
-| `containerSecurityContext.readOnlyRootFilesystem` | Whether the Sealed Secret container has a read-only root filesystem           | `true`                              |
-| `containerSecurityContext.runAsNonRoot`           | Indicates that the Sealed Secret container must run as a non-root user        | `true`                              |
-| `containerSecurityContext.runAsUser`              | Set Sealed Secret containers' Security Context runAsUser                      | `1001`                              |
-| `podLabels`                                       | Extra labels for Sealed Secret pods                                           | `{}`                                |
-| `podAnnotations`                                  | Annotations for Sealed Secret pods                                            | `{}`                                |
-| `priorityClassName`                               | Sealed Secret pods' priorityClassName                                         | `""`                                |
-| `affinity`                                        | Affinity for Sealed Secret pods assignment                                    | `{}`                                |
-| `nodeSelector`                                    | Node labels for Sealed Secret pods assignment                                 | `{}`                                |
-| `tolerations`                                     | Tolerations for Sealed Secret pods assignment                                 | `[]`                                |
+| Name                                              | Description                                                                          | Value                               |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------- |
+| `image.registry`                                  | Sealed Secrets image registry                                                        | `quay.io`                           |
+| `image.repository`                                | Sealed Secrets image repository                                                      | `bitnami/sealed-secrets-controller` |
+| `image.tag`                                       | Sealed Secrets image tag (immutable tags are recommended)                            | `v0.17.1`                           |
+| `image.pullPolicy`                                | Sealed Secrets image pull policy                                                     | `IfNotPresent`                      |
+| `image.pullSecrets`                               | Sealed Secrets image pull secrets                                                    | `[]`                                |
+| `createController`                                | Specifies whether the Sealed Secrets controller should be created                    | `true`                              |
+| `secretName`                                      | The name of an existing TLS secret containing the key used to encrypt secrets        | `sealed-secrets-key`                |
+| `resources.limits`                                | The resources limits for the Sealed Secret containers                                | `{}`                                |
+| `resources.requests`                              | The requested resources for the Sealed Secret containers                             | `{}`                                |
+| `podSecurityContext.enabled`                      | Enabled Sealed Secret pods' Security Context                                         | `true`                              |
+| `podSecurityContext.fsGroup`                      | Set Sealed Secret pod's Security Context fsGroup                                     | `65534`                             |
+| `containerSecurityContext.enabled`                | Enabled Sealed Secret containers' Security Context                                   | `true`                              |
+| `containerSecurityContext.readOnlyRootFilesystem` | Whether the Sealed Secret container has a read-only root filesystem                  | `true`                              |
+| `containerSecurityContext.runAsNonRoot`           | Indicates that the Sealed Secret container must run as a non-root user               | `true`                              |
+| `containerSecurityContext.runAsUser`              | Set Sealed Secret containers' Security Context runAsUser                             | `1001`                              |
+| `podLabels`                                       | Extra labels for Sealed Secret pods                                                  | `{}`                                |
+| `podAnnotations`                                  | Annotations for Sealed Secret pods                                                   | `{}`                                |
+| `priorityClassName`                               | Sealed Secret pods' priorityClassName                                                | `""`                                |
+| `affinity`                                        | Affinity for Sealed Secret pods assignment                                           | `{}`                                |
+| `nodeSelector`                                    | Node labels for Sealed Secret pods assignment                                        | `{}`                                |
+| `tolerations`                                     | Tolerations for Sealed Secret pods assignment                                        | `[]`                                |
+| `updateStatus`                                    | Specifies whether the Sealed Secrets controller should update the status subresource | `true`                              |
 
 
 ### Traffic Exposure Parameters
@@ -97,7 +98,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `ingress.apiVersion`       | Force Ingress API version (automatically detected if not set)                                                                    | `""`                     |
 | `ingress.ingressClassName` | IngressClass that will be be used to implement the Ingress                                                                       | `""`                     |
 | `ingress.hostname`         | Default host for the ingress record                                                                                              | `sealed-secrets.local`   |
-| `ingress.path`             | Default path for the ingress record                                                                                              | `/v1/cert.pem`           |
+| `ingress.path`             | Default path for the ingress record                                                                                              | `ImplementationSpecific` |
 | `ingress.annotations`      | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
 | `ingress.tls`              | Enable TLS configuration for the host defined at `ingress.hostname` parameter                                                    | `false`                  |
 | `ingress.selfSigned`       | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
@@ -110,31 +111,31 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Other Parameters
 
-| Name                    | Description                                          | Value   |
-| ----------------------- | ---------------------------------------------------- | ------- |
-| `serviceAccount.create` | Specifies whether a ServiceAccount should be created | `true`  |
-| `serviceAccount.labels` | Extra labels to be added to the ServiceAccount       | `{}`    |
-| `serviceAccount.name`   | The name of the ServiceAccount to use.               | `""`    |
-| `rbac.create`           | Specifies whether RBAC resources should be created   | `true`  |
-| `rbac.labels`           | Extra labels to be added to RBAC resources           | `{}`    |
-| `rbac.pspEnabled`       | PodSecurityPolicy                                    | `false` |
+| Name                    | Description                                          | Value       |
+| ----------------------- | ---------------------------------------------------- | ----------- |
+| `serviceAccount.create` | Specifies whether a ServiceAccount should be created | `true`      |
+| `serviceAccount.labels` | Extra labels to be added to the ServiceAccount       | `undefined` |
+| `serviceAccount.name`   | The name of the ServiceAccount to use.               | `""`        |
+| `rbac.create`           | Specifies whether RBAC resources should be created   | `true`      |
+| `rbac.labels`           | Extra labels to be added to RBAC resources           | `undefined` |
+| `rbac.pspEnabled`       | PodSecurityPolicy                                    | `false`     |
 
 
 ### Metrics parameters
 
-| Name                                       | Description                                                                            | Value   |
-| ------------------------------------------ | -------------------------------------------------------------------------------------- | ------- |
-| `metrics.serviceMonitor.enabled`           | Specify if a ServiceMonitor will be deployed for Prometheus Operator                   | `false` |
-| `metrics.serviceMonitor.namespace`         | Namespace where Prometheus Operator is running in                                      | `""`    |
-| `metrics.serviceMonitor.labels`            | Extra labels for the ServiceMonitor                                                    | `{}`    |
-| `metrics.serviceMonitor.annotations`       | Extra annotations for the ServiceMonitor                                               | `{}`    |
-| `metrics.serviceMonitor.interval`          | How frequently to scrape metrics                                                       | `""`    |
-| `metrics.serviceMonitor.scrapeTimeout`     | Timeout after which the scrape is ended                                                | `""`    |
-| `metrics.serviceMonitor.metricRelabelings` | Specify additional relabeling of metrics                                               | `[]`    |
-| `metrics.serviceMonitor.relabelings`       | Specify general relabeling                                                             | `[]`    |
-| `metrics.dashboards.create`                | Specifies whether a ConfigMap with a Grafana dashboard configuration should be created | `false` |
-| `metrics.dashboards.labels`                | Extra labels to be added to the Grafana dashboard ConfigMap                            | `{}`    |
-| `metrics.dashboards.namespace`             | Namespace where Grafana dashboard ConfigMap is deployed                                | `""`    |
+| Name                                       | Description                                                                            | Value       |
+| ------------------------------------------ | -------------------------------------------------------------------------------------- | ----------- |
+| `metrics.serviceMonitor.enabled`           | Specify if a ServiceMonitor will be deployed for Prometheus Operator                   | `false`     |
+| `metrics.serviceMonitor.namespace`         | Namespace where Prometheus Operator is running in                                      | `""`        |
+| `metrics.serviceMonitor.labels`            | Extra labels for the ServiceMonitor                                                    | `undefined` |
+| `metrics.serviceMonitor.annotations`       | Extra annotations for the ServiceMonitor                                               | `undefined` |
+| `metrics.serviceMonitor.interval`          | How frequently to scrape metrics                                                       | `""`        |
+| `metrics.serviceMonitor.scrapeTimeout`     | Timeout after which the scrape is ended                                                | `""`        |
+| `metrics.serviceMonitor.metricRelabelings` | Specify additional relabeling of metrics                                               | `[]`        |
+| `metrics.serviceMonitor.relabelings`       | Specify general relabeling                                                             | `[]`        |
+| `metrics.dashboards.create`                | Specifies whether a ConfigMap with a Grafana dashboard configuration should be created | `false`     |
+| `metrics.dashboards.labels`                | Extra labels to be added to the Grafana dashboard ConfigMap                            | `undefined` |
+| `metrics.dashboards.namespace`             | Namespace where Grafana dashboard ConfigMap is deployed                                | `""`        |
 
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,

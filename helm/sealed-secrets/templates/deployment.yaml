@@ -46,10 +46,13 @@ spec:
             {{- if .Values.updateStatus }}
             - --update-status
             {{- end }}
+<<<<<<< HEAD
             {{- if .Values.keyrenewperiod }}
             - --key-renew-period
             - {{ .Values.keyrenewperiod | quote }}
             {{- end }}
+=======
+>>>>>>> b486bb3 (Enable --update-status by default in helm-chart (#709))
             - --key-prefix
             - {{ .Values.secretName | quote }}
             {{- range $value := .Values.commandArgs }}
