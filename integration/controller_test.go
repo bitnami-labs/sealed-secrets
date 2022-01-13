@@ -52,8 +52,8 @@ func getSecretType(s *v1.Secret) v1.SecretType {
 	return s.Type
 }
 
-func fetchKeys(c corev1.SecretsGetter) (map[string]*rsa.PrivateKey, []*x509.Certificate, error) {
-	list, err := c.Secrets("kube-system").List(metav1.ListOptions{
+func fetchKeys(ctx context.Context, c corev1.SecretsGetter) (map[string]*rsa.PrivateKey, []*x509.Certificate, error) {
+	list, err := c.Secrets("kube-system").List(ctx, metav1.ListOptions{
 		LabelSelector: keySelector,
 	})
 	if err != nil {
@@ -108,16 +108,18 @@ var _ = Describe("create", func() {
 	var ss *ssv1alpha1.SealedSecret
 	var s *v1.Secret
 	var pubKey *rsa.PublicKey
-	var cancelLog context.CancelFunc
+	var (
+		ctx       context.Context
+		cancelLog context.CancelFunc
+	)
 
 	BeforeEach(func() {
-		var ctx context.Context
 		ctx, cancelLog = context.WithCancel(context.Background())
 
 		conf := clusterConfigOrDie()
 		c = corev1.NewForConfigOrDie(conf)
 		ssc = ssclient.NewForConfigOrDie(conf)
-		ns = createNsOrDie(c, "create")
+		ns = createNsOrDie(ctx, c, "create")
 
 		go streamLog(ctx, c, ns, "sealed-secrets-controller", "sealed-secrets-controller", GinkgoWriter, fmt.Sprintf("[%s] ", ns))
 
@@ -134,7 +136,7 @@ var _ = Describe("create", func() {
 			},
 		}
 
-		_, certs, err := fetchKeys(c)
+		_, certs, err := fetchKeys(ctx, c)
 		Expect(err).NotTo(HaveOccurred())
 		pubKey = certs[0].PublicKey.(*rsa.PublicKey)
 
@@ -143,7 +145,7 @@ var _ = Describe("create", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	AfterEach(func() {
-		deleteNsOrDie(c, ns)
+		deleteNsOrDie(ctx, c, ns)
 		cancelLog()
 	})
 
@@ -161,10 +163,10 @@ var _ = Describe("create", func() {
 					"foo": []byte("bar"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(metav1.Object.GetLabels,
 					HaveKeyWithValue("mylabel", "myvalue")))
 
@@ -197,7 +199,7 @@ var _ = Describe("create", func() {
 					"foo": []byte("baz"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, 5*time.Second).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
@@ -214,7 +216,7 @@ var _ = Describe("create", func() {
 					"xyzzy": []byte("bar"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
@@ -233,7 +235,7 @@ var _ = Describe("create", func() {
 					"foo2": []byte("new!"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
@@ -245,14 +247,14 @@ var _ = Describe("create", func() {
 				s.Annotations = map[string]string{
 					ssv1alpha1.SealedSecretManagedAnnotation: "true",
 				}
-				c.Secrets(ns).Create(s)
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
 			})
 			It("should manage existing Secret", func() {
 				expected := map[string][]byte{
 					"foo": []byte("bar"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 				Eventually(func() (*v1.EventList, error) {
 					return c.Events(ns).Search(scheme.Scheme, ss)
@@ -260,7 +262,7 @@ var _ = Describe("create", func() {
 					containEventWithReason(Equal("Unsealed")),
 				)
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
 			})
 		})
@@ -279,7 +281,7 @@ var _ = Describe("create", func() {
 
 		It("should *not* produce a Secret", func() {
 			Consistently(func() error {
-				_, err := c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+				_, err := c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				return err
 			}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 		})
@@ -312,10 +314,10 @@ var _ = Describe("create", func() {
 			var expectedType v1.SecretType = "kubernetes.io/dockerconfigjson"
 
 			Eventually(func() (*v1.Secret, error) {
-				return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+				return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 			}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			Eventually(func() (*v1.Secret, error) {
-				return c.Secrets(ns).Get(secretName, metav1.GetOptions{})
+				return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 			}, Timeout, PollingInterval).Should(WithTransform(getSecretType, Equal(expectedType)))
 			Eventually(func() (*v1.EventList, error) {
 				return c.Events(ns).Search(scheme.Scheme, ss)
@@ -333,7 +335,7 @@ var _ = Describe("create", func() {
 			})
 			It("should *not* produce a Secret", func() {
 				Consistently(func() error {
-					_, err := c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
+					_, err := c.Secrets(ns).Get(ctx, secretName2, metav1.GetOptions{})
 					return err
 				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 			})
@@ -352,16 +354,16 @@ var _ = Describe("create", func() {
 		Context("With wrong namespace", func() {
 			var ns2 string
 			BeforeEach(func() {
-				ns2 = createNsOrDie(c, "create")
+				ns2 = createNsOrDie(ctx, c, "create")
 				ss.Namespace = ns2
 			})
 			AfterEach(func() {
-				deleteNsOrDie(c, ns2)
+				deleteNsOrDie(ctx, c, ns2)
 			})
 
 			It("should *not* produce a Secret", func() {
 				Consistently(func() error {
-					_, err := c.Secrets(ns2).Get(secretName, metav1.GetOptions{})
+					_, err := c.Secrets(ns2).Get(ctx, secretName, metav1.GetOptions{})
 					return err
 				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 			})
@@ -398,7 +400,7 @@ var _ = Describe("create", func() {
 					"foo": []byte("bar"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
+					return c.Secrets(ns).Get(ctx, secretName2, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
@@ -406,7 +408,7 @@ var _ = Describe("create", func() {
 		Context("With wrong namespace and cluster-wide annotation", func() {
 			var ns2 string
 			BeforeEach(func() {
-				ns2 = createNsOrDie(c, "create")
+				ns2 = createNsOrDie(ctx, c, "create")
 			})
 			BeforeEach(func() {
 				var err error
@@ -421,14 +423,14 @@ var _ = Describe("create", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
-				deleteNsOrDie(c, ns2)
+				deleteNsOrDie(ctx, c, ns2)
 			})
 			It("should produce expected Secret", func() {
 				expected := map[string][]byte{
 					"foo": []byte("bar"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns2).Get(secretName, metav1.GetOptions{})
+					return c.Secrets(ns2).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
@@ -454,7 +456,7 @@ var _ = Describe("create", func() {
 					"foo": []byte("bar"),
 				}
 				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(secretName2, metav1.GetOptions{})
+					return c.Secrets(ns).Get(ctx, secretName2, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
@@ -462,7 +464,7 @@ var _ = Describe("create", func() {
 		Context("With wrong namespace and namespace-wide annotation", func() {
 			var ns2 string
 			BeforeEach(func() {
-				ns2 = createNsOrDie(c, "create")
+				ns2 = createNsOrDie(ctx, c, "create")
 			})
 			BeforeEach(func() {
 				var err error
@@ -477,12 +479,12 @@ var _ = Describe("create", func() {
 				Expect(err).NotTo(HaveOccurred())
 			})
 			AfterEach(func() {
-				deleteNsOrDie(c, ns2)
+				deleteNsOrDie(ctx, c, ns2)
 			})
 
 			It("should *not* produce a Secret", func() {
 				Consistently(func() error {
-					_, err := c.Secrets(ns2).Get(secretName, metav1.GetOptions{})
+					_, err := c.Secrets(ns2).Get(ctx, secretName, metav1.GetOptions{})
 					return err
 				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 			})

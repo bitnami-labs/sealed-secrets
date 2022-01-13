@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -50,7 +51,7 @@ func writeKeyWithCreationTime(t metav1.Time) writeKeyOpt {
 	return func(opts *writeKeyOpts) { opts.creationTime = t }
 }
 
-func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, label, prefix string, optSetters ...writeKeyOpt) (string, error) {
+func writeKey(ctx context.Context, client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, label, prefix string, optSetters ...writeKeyOpt) (string, error) {
 	var opts writeKeyOpts
 	for _, o := range optSetters {
 		o(&opts)
@@ -76,7 +77,7 @@ func writeKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Ce
 		Type: v1.SecretTypeTLS,
 	}
 
-	createdSecret, err := client.CoreV1().Secrets(namespace).Create(&secret)
+	createdSecret, err := client.CoreV1().Secrets(namespace).Create(ctx, &secret, metav1.CreateOptions{})
 	if err != nil {
 		return "", err
 	}

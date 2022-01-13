@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -67,6 +68,7 @@ func TestReadKey(t *testing.T) {
 }
 
 func TestWriteKey(t *testing.T) {
+	ctx := context.Background()
 	rand := testRand()
 	key, err := rsa.GenerateKey(rand, 512)
 	if err != nil {
@@ -80,7 +82,7 @@ func TestWriteKey(t *testing.T) {
 
 	client := fake.NewSimpleClientset()
 
-	_, err = writeKey(client, key, []*x509.Certificate{cert}, "myns", "label", "mykey")
+	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "myns", "label", "mykey")
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
