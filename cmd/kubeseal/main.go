@@ -210,14 +210,16 @@ func openCertURI(uri string) (io.ReadCloser, error) {
 // openCertCluster fetches a certificate by performing an HTTP request to the controller
 // through the k8s API proxy.
 func openCertCluster(ctx context.Context, c corev1.CoreV1Interface, namespace, name string) (io.ReadCloser, error) {
-	f, err := c.
-		Services(namespace).
-		ProxyGet("http", name, "http", "/v1/cert.pem", nil).
-		Stream(ctx)
+	service, err := c.Services(namespace).Get(ctx, name, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("cannot get sealed secret service: %v", err)
+	}
+	portName := service.Spec.Ports[0].Name
+	cert, err := c.Services(namespace).ProxyGet("http", name, portName, "/v1/cert.pem", nil).Stream(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot fetch certificate: %v", err)
 	}
-	return f, nil
+	return cert, nil
 }
 
 func openCert(ctx context.Context, certURL string) (io.ReadCloser, error) {
