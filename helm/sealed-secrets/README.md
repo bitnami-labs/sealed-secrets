@@ -82,6 +82,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `affinity`                                        | Affinity for Sealed Secret pods assignment                                    | `{}`                                |
 | `nodeSelector`                                    | Node labels for Sealed Secret pods assignment                                 | `{}`                                |
 | `tolerations`                                     | Tolerations for Sealed Secret pods assignment                                 | `[]`                                |
+| `updateStatus`                                    | Controller will update the status subresource whenever it processes a sealed secret | `true`                              |
 
 
 ### Traffic Exposure Parameters

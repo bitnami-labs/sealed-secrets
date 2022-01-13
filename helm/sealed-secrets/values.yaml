@@ -101,6 +101,10 @@ nodeSelector: {}
 ##
 tolerations: []
 
+## @param updateStatus Specifies whether the Sealed Secrets controller should update the status subresource
+##
+updateStatus: true
+
 ## @section Traffic Exposure Parameters
 
 ## Sealed Secret service parameters
