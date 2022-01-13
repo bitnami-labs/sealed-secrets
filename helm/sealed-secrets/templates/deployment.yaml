@@ -43,6 +43,9 @@ spec:
           command:
             - controller
           args:
+            {{- if .Values.updateStatus }}
+            - --update-status
+            {{- end }}
             - --key-prefix
             - {{ .Values.secretName | quote }}
             {{- range $value := .Values.commandArgs }}
