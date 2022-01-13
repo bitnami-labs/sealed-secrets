@@ -258,6 +258,12 @@ metrics:
     ## @param metrics.serviceMonitor.namespace Namespace where Prometheus Operator is running in
     ##
     namespace: ""
+    ## @param metrics.serviceMonitor.labels Extra labels for the ServiceMonitor
+    ##
+    labels: {}
+    ## @param metrics.serviceMonitor.annotations Extra annotations for the ServiceMonitor
+    ##
+    annotations: {}
     ## @param metrics.serviceMonitor.interval How frequently to scrape metrics
     ## e.g:
     ## interval: 10s
