@@ -4,6 +4,13 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.17.2
+
+### Changelog
+
+- Fix issue fetching the certificate when the Sealed Secrets service has a named port ([#648](https://github.com/bitnami-labs/sealed-secrets/pull/648)
+- Drop support for Go < 1.16 and bump client-go version ([#705](https://github.com/bitnami-labs/sealed-secrets/pull/705)
+
 ## v0.17.1
 
 ### Changelog
