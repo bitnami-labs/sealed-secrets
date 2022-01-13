@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -43,17 +44,18 @@ func generateNameReactor(action ktesting.Action) (handled bool, ret runtime.Obje
 }
 
 func TestInitKeyRegistry(t *testing.T) {
+	ctx := context.Background()
 	rand := testRand()
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
+	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
 	// Add a key to the controller for second test
-	registry.generateKey()
+	registry.generateKey(ctx)
 	if !hasAction(client, "create", "secrets") {
 		t.Fatalf("Error adding initial key to registry")
 	}
@@ -61,7 +63,7 @@ func TestInitKeyRegistry(t *testing.T) {
 
 	// Due to limitations of the fake client, we cannot test whether initKeyRegistry is able
 	// to pick up existing keys
-	_, err = initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
+	_, err = initKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -71,16 +73,17 @@ func TestInitKeyRegistry(t *testing.T) {
 }
 
 func TestInitKeyRotation(t *testing.T) {
+	ctx := context.Background()
 	rand := testRand()
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
+	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	keyGenTrigger, err := initKeyRenewal(registry, 0, time.Time{})
+	keyGenTrigger, err := initKeyRenewal(ctx, registry, 0, time.Time{})
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -109,16 +112,17 @@ func TestInitKeyRotation(t *testing.T) {
 }
 
 func TestInitKeyRotationTick(t *testing.T) {
+	ctx := context.Background()
 	rand := testRand()
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", "label", 1024)
+	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(registry, 100*time.Millisecond, time.Time{})
+	_, err = initKeyRenewal(ctx, registry, 100*time.Millisecond, time.Time{})
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -144,6 +148,7 @@ func TestInitKeyRotationTick(t *testing.T) {
 }
 
 func TestReuseKey(t *testing.T) {
+	ctx := context.Background()
 	rand := testRand()
 	key, err := rsa.GenerateKey(rand, 512)
 	if err != nil {
@@ -158,19 +163,19 @@ func TestReuseKey(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	_, err = writeKey(client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix")
+	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix")
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
 
 	client.ClearActions()
 
-	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
+	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(registry, 0, time.Time{})
+	_, err = initKeyRenewal(ctx, registry, 0, time.Time{})
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -180,6 +185,7 @@ func TestReuseKey(t *testing.T) {
 }
 
 func TestRenewStaleKey(t *testing.T) {
+	ctx := context.Background()
 	rand := testRand()
 	key, err := rsa.GenerateKey(rand, 512)
 	if err != nil {
@@ -202,18 +208,18 @@ func TestRenewStaleKey(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	_, err = writeKey(client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix",
+	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix",
 		writeKeyWithCreationTime(metav1.NewTime(time.Now().Add(-oldAge))))
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
 
-	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
+	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(registry, period, time.Time{})
+	_, err = initKeyRenewal(ctx, registry, period, time.Time{})
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -236,6 +242,7 @@ func TestRenewStaleKey(t *testing.T) {
 }
 
 func TestKeyCutoff(t *testing.T) {
+	ctx := context.Background()
 	rand := testRand()
 	key, err := rsa.GenerateKey(rand, 512)
 	if err != nil {
@@ -256,13 +263,13 @@ func TestKeyCutoff(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	_, err = writeKey(client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix",
+	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix",
 		writeKeyWithCreationTime(metav1.NewTime(time.Now().Add(-oldAge))))
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
 
-	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
+	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -270,7 +277,7 @@ func TestKeyCutoff(t *testing.T) {
 	client.ClearActions()
 
 	// by setting cutoff to "now" we effectively force the creation of a new key.
-	_, err = initKeyRenewal(registry, period, time.Now())
+	_, err = initKeyRenewal(ctx, registry, period, time.Now())
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -280,7 +287,7 @@ func TestKeyCutoff(t *testing.T) {
 	}
 }
 
-func writeLegacyKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, name string) (string, error) {
+func writeLegacyKey(ctx context.Context, client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, name string) (string, error) {
 	certbytes := []byte{}
 	for _, cert := range certs {
 		certbytes = append(certbytes, pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw})...)
@@ -297,7 +304,7 @@ func writeLegacyKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x
 		Type: v1.SecretTypeTLS,
 	}
 
-	createdSecret, err := client.CoreV1().Secrets(namespace).Create(&secret)
+	createdSecret, err := client.CoreV1().Secrets(namespace).Create(ctx, &secret, metav1.CreateOptions{})
 	if err != nil {
 		return "", err
 	}
@@ -305,6 +312,7 @@ func writeLegacyKey(client kubernetes.Interface, key *rsa.PrivateKey, certs []*x
 }
 
 func TestLegacySecret(t *testing.T) {
+	ctx := context.Background()
 	rand := testRand()
 	key, err := rsa.GenerateKey(rand, 512)
 	if err != nil {
@@ -319,19 +327,19 @@ func TestLegacySecret(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	_, err = writeLegacyKey(client, key, []*x509.Certificate{cert}, "namespace", "prefix")
+	_, err = writeLegacyKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", "prefix")
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
 
 	client.ClearActions()
 
-	registry, err := initKeyRegistry(client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
+	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(registry, 0, time.Time{})
+	_, err = initKeyRenewal(ctx, registry, 0, time.Time{})
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -208,18 +209,18 @@ func openCertURI(uri string) (io.ReadCloser, error) {
 
 // openCertCluster fetches a certificate by performing an HTTP request to the controller
 // through the k8s API proxy.
-func openCertCluster(c corev1.CoreV1Interface, namespace, name string) (io.ReadCloser, error) {
+func openCertCluster(ctx context.Context, c corev1.CoreV1Interface, namespace, name string) (io.ReadCloser, error) {
 	f, err := c.
 		Services(namespace).
 		ProxyGet("http", name, "http", "/v1/cert.pem", nil).
-		Stream()
+		Stream(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot fetch certificate: %v", err)
 	}
 	return f, nil
 }
 
-func openCert(certURL string) (io.ReadCloser, error) {
+func openCert(ctx context.Context, certURL string) (io.ReadCloser, error) {
 	if certURL != "" {
 		return openCertLocal(certURL)
 	}
@@ -233,7 +234,7 @@ func openCert(certURL string) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	return openCertCluster(restClient, *controllerNs, *controllerName)
+	return openCertCluster(ctx, restClient, *controllerNs, *controllerName)
 }
 
 // Seal reads a k8s Secret resource parsed from an input reader by a given codec, encrypts all its secrets
@@ -294,7 +295,7 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 	return nil
 }
 
-func validateSealedSecret(in io.Reader, namespace, name string) error {
+func validateSealedSecret(ctx context.Context, in io.Reader, namespace, name string) error {
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -317,7 +318,7 @@ func validateSealedSecret(in io.Reader, namespace, name string) error {
 		Suffix("/v1/verify")
 
 	req.Body(content)
-	res := req.Do()
+	res := req.Do(ctx)
 	if err := res.Error(); err != nil {
 		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
 			return fmt.Errorf("unable to decrypt sealed secret")
@@ -328,7 +329,7 @@ func validateSealedSecret(in io.Reader, namespace, name string) error {
 	return nil
 }
 
-func reEncryptSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, namespace, name string) error {
+func reEncryptSealedSecret(ctx context.Context, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, namespace, name string) error {
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -351,7 +352,7 @@ func reEncryptSealedSecret(in io.Reader, out io.Writer, codecs runtimeserializer
 		Suffix("/v1/rotate")
 
 	req.Body(content)
-	res := req.Do()
+	res := req.Do(ctx)
 	if err := res.Error(); err != nil {
 		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
 			return fmt.Errorf("unable to rotate secret")
@@ -592,7 +593,7 @@ func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.Code
 	return resourceOutput(w, codecs, v1.SchemeGroupVersion, sec)
 }
 
-func run(w io.Writer, inputFileName, outputFileName, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw, allowEmptyData bool, fromFile []string, mergeInto string, unseal bool, privKeys []string) (err error) {
+func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw, allowEmptyData bool, fromFile []string, mergeInto string, unseal bool, privKeys []string) (err error) {
 	if len(fromFile) != 0 && !raw {
 		return fmt.Errorf("--from-file requires --raw")
 	}
@@ -651,14 +652,14 @@ func run(w io.Writer, inputFileName, outputFileName, secretName, controllerNs, c
 	}
 
 	if validateSecret {
-		return validateSealedSecret(input, controllerNs, controllerName)
+		return validateSealedSecret(ctx, input, controllerNs, controllerName)
 	}
 
 	if reEncrypt {
-		return reEncryptSealedSecret(input, w, scheme.Codecs, controllerNs, controllerName)
+		return reEncryptSealedSecret(ctx, input, w, scheme.Codecs, controllerNs, controllerName)
 	}
 
-	f, err := openCert(certURL)
+	f, err := openCert(ctx, certURL)
 	if err != nil {
 		return err
 	}
@@ -726,7 +727,7 @@ func main() {
 	flag.Parse()
 	goflag.CommandLine.Parse([]string{})
 
-	if err := run(os.Stdout, *inputFileName, *outputFileName, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *allowEmptyData, *fromFile, *mergeInto, *unseal, *privKeys); err != nil {
+	if err := run(context.Background(), os.Stdout, *inputFileName, *outputFileName, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *allowEmptyData, *fromFile, *mergeInto, *unseal, *privKeys); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

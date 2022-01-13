@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -46,13 +47,13 @@ func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel 
 	}
 }
 
-func (kr *KeyRegistry) generateKey() (string, error) {
+func (kr *KeyRegistry) generateKey(ctx context.Context) (string, error) {
 	key, cert, err := generatePrivateKeyAndCert(kr.keysize)
 	if err != nil {
 		return "", err
 	}
 	certs := []*x509.Certificate{cert}
-	generatedName, err := writeKey(kr.client, key, certs, kr.namespace, kr.keyLabel, kr.keyPrefix)
+	generatedName, err := writeKey(ctx, kr.client, key, certs, kr.namespace, kr.keyLabel, kr.keyPrefix)
 	if err != nil {
 		return "", err
 	}

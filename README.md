@@ -16,56 +16,54 @@ decrypted only by the controller running in the target cluster and
 nobody else (not even the original author) is able to obtain the
 original Secret from the SealedSecret.
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**
+## Table of Contents
 
-- [Overview](#overview)
-  - [SealedSecrets as templates for secrets](#sealedsecrets-as-templates-for-secrets)
-  - [Public key / Certificate](#public-key--certificate)
-  - [Scopes](#scopes)
-- [Installation](#installation)
-  - [Controller](#controller)
-  - [Kustomize](#kustomize)
-  - [Helm Chart](#helm-chart)
-  - [Operator Framework](#operator-framework)
-  - [Homebrew](#homebrew)
-  - [MacPorts](#macports)
-  - [Installation from source](#installation-from-source)
-- [Upgrade](#upgrade)
-- [Usage](#usage)
-  - [Managing existing secrets](#managing-existing-secrets)
-  - [Update existing secrets](#update-existing-secrets)
-  - [Raw mode (experimental)](#raw-mode-experimental)
-- [Secret Rotation](#secret-rotation)
-  - [Sealing key renewal](#sealing-key-renewal)
-  - [User secret rotation](#user-secret-rotation)
-  - [Early key renewal](#early-key-renewal)
-  - [Common misconceptions about key renewal](#common-misconceptions-about-key-renewal)
-  - [Manual key management (advanced)](#manual-key-management-advanced)
-  - [Re-encryption (advanced)](#re-encryption-advanced)
-- [Details (advanced)](#details-advanced)
-  - [Crypto](#crypto)
-- [Developing](#developing)
-- [FAQ](#faq)
-  - [Will you still be able to decrypt if you no longer have access to your cluster?](#will-you-still-be-able-to-decrypt-if-you-no-longer-have-access-to-your-cluster)
-  - [How can I do a backup of my SealedSecrets?](#how-can-i-do-a-backup-of-my-sealedsecrets)
-  - [Can I decrypt my secrets offline with a backup key?](#can-i-decrypt-my-secrets-offline-with-a-backup-key)
-  - [What flags are available for kubeseal?](#what-flags-are-available-for-kubeseal)
-  - [How do I update parts of JSON/YAML/TOML.. file encrypted with sealed secrets?](#how-do-i-update-parts-of-jsonyamltoml-file-encrypted-with-sealed-secrets)
-  - [Can I bring my own (pre-generated) certificates?](#can-i-bring-my-own-pre-generated-certificates)
-  - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
-- [Community](#community)
-  - [Related projects](#related-projects)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+- ["Sealed Secrets" for Kubernetes](#sealed-secrets-for-kubernetes)
+  - [Table of Contents](#table-of-contents)
+  - [Overview](#overview)
+    - [SealedSecrets as templates for secrets](#sealedsecrets-as-templates-for-secrets)
+    - [Public key / Certificate](#public-key--certificate)
+    - [Scopes](#scopes)
+  - [Installation](#installation)
+    - [Controller](#controller)
+    - [Kustomize](#kustomize)
+    - [Helm Chart](#helm-chart)
+    - [Operator Framework](#operator-framework)
+    - [Homebrew](#homebrew)
+    - [MacPorts](#macports)
+    - [Installation from source](#installation-from-source)
+  - [Upgrade](#upgrade)
+  - [Usage](#usage)
+    - [Managing existing secrets](#managing-existing-secrets)
+    - [Update existing secrets](#update-existing-secrets)
+    - [Raw mode (experimental)](#raw-mode-experimental)
+  - [Secret Rotation](#secret-rotation)
+    - [Sealing key renewal](#sealing-key-renewal)
+    - [User secret rotation](#user-secret-rotation)
+    - [Early key renewal](#early-key-renewal)
+    - [Common misconceptions about key renewal](#common-misconceptions-about-key-renewal)
+    - [Manual key management (advanced)](#manual-key-management-advanced)
+    - [Re-encryption (advanced)](#re-encryption-advanced)
+  - [Details (advanced)](#details-advanced)
+    - [Crypto](#crypto)
+  - [Developing](#developing)
+  - [FAQ](#faq)
+    - [Will you still be able to decrypt if you no longer have access to your cluster?](#will-you-still-be-able-to-decrypt-if-you-no-longer-have-access-to-your-cluster)
+    - [How can I do a backup of my SealedSecrets?](#how-can-i-do-a-backup-of-my-sealedsecrets)
+    - [Can I decrypt my secrets offline with a backup key?](#can-i-decrypt-my-secrets-offline-with-a-backup-key)
+    - [What flags are available for kubeseal?](#what-flags-are-available-for-kubeseal)
+    - [How do I update parts of JSON/YAML/TOML.. file encrypted with sealed secrets?](#how-do-i-update-parts-of-jsonyamltoml-file-encrypted-with-sealed-secrets)
+    - [Can I bring my own (pre-generated) certificates?](#can-i-bring-my-own-pre-generated-certificates)
+    - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
+  - [Community](#community)
+    - [Related projects](#related-projects)
 
 ## Overview
 
 Sealed Secrets is composed of two parts:
 
-* A cluster-side controller / operator
-* A client-side utility: `kubeseal`
+- A cluster-side controller / operator
+- A client-side utility: `kubeseal`
 
 The `kubeseal` utility uses asymmetric crypto to encrypt secrets that only the controller can decrypt.
 
@@ -159,7 +157,6 @@ data:
 As you can see, the generated `Secret` resource is a "dependent object" of the `SealedSecret` and as such
 it will be updated and deleted whenever the `SealedSecret` object gets updated or deleted.
 
-
 ### Public key / Certificate
 
 The key certificate (public key portion) is used for sealing secrets,
@@ -187,7 +184,6 @@ kubeseal --cert https://your.intranet.company.com/sealed-secrets/your-cluster.ce
 ```
 
 It also recognizes the `SEALED_SECRETS_CERT` env var. (pro-tip: see also [direnv](https://github.com/direnv/direnv)).
-
 
 > **NOTE**: we are working on providing key management mechanisms that offload the encryption to HSM based modules or managed cloud crypto solutions such as KMS.
 
@@ -220,22 +216,22 @@ That said, there are many scenarios where you might not care about this level of
 
 These are the possible scopes:
 
-* `strict` (default): the secret must be sealed with exactly the same *name* and *namespace*. These attributes become *part of the encrypted data* and thus changing name and/or namespace would lead to "decryption error".
-* `namespace-wide`: you can freely *rename* the sealed secret within a given namespace.
-* `cluster-wide`: the secret can be unsealed in *any* namespace and can be given *any* name.
+- `strict` (default): the secret must be sealed with exactly the same *name* and *namespace*. These attributes become *part of the encrypted data* and thus changing name and/or namespace would lead to "decryption error".
+- `namespace-wide`: you can freely *rename* the sealed secret within a given namespace.
+- `cluster-wide`: the secret can be unsealed in *any* namespace and can be given *any* name.
 
 In contrast to the restrictions of *name* and *namespace*, secret *items* (i.e. JSON object keys like `spec.encryptedData.my-key`) can be renamed at will without losing the ability to decrypt the sealed secret.
 
 The scope is selected with the `--scope` flag:
 
-```sh
-$ kubeseal --scope cluster-wide <secret.yaml >sealed-secret.json
+```bash
+kubeseal --scope cluster-wide <secret.yaml >sealed-secret.json
 ```
 
 It's also possible to request a scope via annotations in the input secret you pass to `kubeseal`:
 
-* `sealedsecrets.bitnami.com/namespace-wide: "true"` -> for `namespace-wide`
-* `sealedsecrets.bitnami.com/cluster-wide: "true"` -> for `cluster-wide`
+- `sealedsecrets.bitnami.com/namespace-wide: "true"` -> for `namespace-wide`
+- `sealedsecrets.bitnami.com/cluster-wide: "true"` -> for `cluster-wide`
 
 The lack of any of such annotations means `strict` mode. If both are set, `cluster-wide` takes precedence.
 
@@ -243,11 +239,11 @@ The lack of any of such annotations means `strict` mode. If both are set, `clust
 
 ## Installation
 
-See https://github.com/bitnami-labs/sealed-secrets/releases for the latest
-release and detailed installation instructions.
+See https://github.com/bitnami-labs/sealed-secrets/releases for the latest release and detailed installation instructions.
 
 Cloud platform specific notes and instructions:
-* [GKE](docs/GKE.md)
+
+- [GKE](docs/GKE.md)
 
 ### Controller
 
@@ -271,8 +267,8 @@ In some cases you might need to apply your own customizations, like set a custom
 
 The Sealed Secrets helm chart is now official supported and hosted in this GitHub repo.
 
-```
-$ helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
+```bash
+helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
 ```
 
 NOTE: The versioning scheme of the helm chart differs from the versioning scheme of the sealed secrets project itself.
@@ -301,16 +297,16 @@ NOTE: the sealed secrets operator is an independently maintained project, so ple
 
 The `kubeseal` client is also available on [homebrew](https://formulae.brew.sh/formula/kubeseal):
 
-```
-$ brew install kubeseal
+```bash
+brew install kubeseal
 ```
 
 ### MacPorts
 
 The `kubeseal` client is also available on [MacPorts](https://ports.macports.org/port/kubeseal/summary):
 
-```
-$ port install kubeseal
+```bash
+port install kubeseal
 ```
 
 ### Installation from source
@@ -318,8 +314,8 @@ $ port install kubeseal
 If you just want the latest client tool, it can be installed into
 `$GOPATH/bin` with:
 
-```sh
-% (cd /; GO111MODULE=on go get github.com/bitnami-labs/sealed-secrets/cmd/kubeseal@main)
+```bash
+(cd /; GO111MODULE=on go get github.com/bitnami-labs/sealed-secrets/cmd/kubeseal@main)
 ```
 
 You can specify a release tag or a commit SHA instead of `main`.
@@ -332,21 +328,21 @@ and/or the controller.
 
 ## Usage
 
-```sh
+```bash
 # Create a json/yaml-encoded Secret somehow:
 # (note use of `--dry-run` - this is just a local file!)
-$ echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json >mysecret.json
+echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json >mysecret.json
 
 # This is the important bit:
 # (note default format is json!)
-$ kubeseal <mysecret.json >mysealedsecret.json
+kubeseal <mysecret.json >mysealedsecret.json
 
 # mysealedsecret.json is safe to upload to github, post to twitter,
 # etc.  Eventually:
-$ kubectl create -f mysealedsecret.json
+kubectl create -f mysealedsecret.json
 
 # Profit!
-$ kubectl get secret mysecret
+kubectl get secret mysecret
 ```
 
 Note the `SealedSecret` and `Secret` must have **the same namespace and
@@ -367,6 +363,7 @@ only change from existing Kubernetes is that the *contents* of the
 `Secret` are now hidden while outside the cluster.
 
 ### Managing existing secrets
+
 If you want `SealedSecret` controller to take management of an existing `Secret` (i.e. overwrite it when unsealing a `SealedSecret` with the same name and namespace), then you have to annotate that `Secret` with the annotation `sealedsecrets.bitnami.com/managed: "true"` ahead applying the [Usage](#usage) steps.
 
 ### Update existing secrets
@@ -378,10 +375,10 @@ You must take care of sealing the updated items with a compatible name and names
 
 You can use the `--merge-into` command to update an existing sealed secrets if you don't want to copy&paste:
 
-```sh
-$ echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json \
+```bash
+echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json \
   | kubeseal > mysealedsecret.json
-$ echo -n baz | kubectl create secret generic mysecret --dry-run=client --from-file=bar=/dev/stdin -o json \
+echo -n baz | kubectl create secret generic mysecret --dry-run=client --from-file=bar=/dev/stdin -o json \
   | kubeseal --merge-into mysealedsecret.json
 ```
 
@@ -396,7 +393,7 @@ It can also be useful as a building block for editor/IDE integrations.
 The downside is that you have to be careful to be consistent with the sealing scope, the namespace and the name.
 See [Scopes](#scopes):
 
-```sh
+```console
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --name mysecret
 AgBChHUWLMx...
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --scope namespace-wide
@@ -523,6 +520,7 @@ The controller maintains a set of private/public key pairs as kubernetes
 secrets. Keys are labelled with `sealedsecrets.bitnami.com/sealed-secrets-key`
 and identified in the label as either `active` or `compromised`. On startup,
 The sealed secrets controller will...
+
 1. Search for these keys and add them to its local store if they are
 labelled as active.
 2. Create a new key
@@ -530,41 +528,11 @@ labelled as active.
 
 ### Crypto
 
-More details about crypto can be found [here](docs/crypto.md).
+More details about crypto can be found [here](docs/developer/crypto.md).
 
 ## Developing
-To be able to develop on this project, you need to have the following tools installed:
-* make
-* [Ginkgo](https://onsi.github.io/ginkgo/)
-* [Minikube](https://github.com/kubernetes/minikube)
-* [kubecfg](https://github.com/bitnami/kubecfg)
-* Go
 
-To build the `kubeseal` and controller binaries, run:
-```bash
-$ make
-```
-
-To run the unit tests:
-```bash
-$ make test
-```
-
-To run the integration tests:
-* Start Minikube
-* Build the controller for Linux, so that it can be run within a Docker image - edit the Makefile to add
-`GOOS=linux GOARCH=amd64` to `%-static`, and then run `make controller.yaml IMAGE_PULL_POLICY=Never`
-* Add the sealed-secret CRD and controller to Kubernetes - `kubectl apply -f controller.yaml`
-* Revert any changes made to the Makefile to build the Linux controller
-* Remove the binaries which were possibly built for another OS - `make clean`
-* Rebuild the binaries for your OS - `make`
-* Run the integration tests - `make integrationtest`
-
-To update the jsonnet dependencies:
-
-```
-$ jb install --jsonnetpkg-home=vendor_jsonnet
-```
+More details about crypto can be found [in the Developer Guide](docs/developer/README.md).
 
 ## FAQ
 
@@ -576,9 +544,9 @@ No, the private keys are only stored in the Secret managed by the controller (un
 
 If you do want to make a backup of the encryption private keys, it's easy to do from an account with suitable access and:
 
-```
-$ kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >master.key
-$ kubectl get secret -n kube-system sealed-secrets-key -o yaml >>master.key
+```bash
+kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >master.key
+kubectl get secret -n kube-system sealed-secrets-key -o yaml >>master.key
 ```
 
 NOTE: you need the second statement only if you ever installed sealed-secrets older than version 0.9.x on your cluster.
@@ -587,9 +555,9 @@ NOTE: This file will contains the controller's public + private keys and should 
 
 To restore from a backup after some disaster, just put that secrets back before starting the controller - or if the controller was already started, replace the newly-created secrets and restart the controller:
 
-```
-$ kubectl apply -f master.key
-$ kubectl delete pod -n kube-system -l name=sealed-secrets-controller
+```bash
+kubectl apply -f master.key
+kubectl delete pod -n kube-system -l name=sealed-secrets-controller
 ```
 
 ### Can I decrypt my secrets offline with a backup key?
@@ -625,13 +593,13 @@ to the `kubeseal` commandline tool. There are two options: You can specify the n
 
 Example:
 
-```sh
+```bash
 # Provide the namespace via the command line option
-$ kubeseal --controller-namespace sealed-secrets <mysecret.json >mysealedsecret.json
+kubeseal --controller-namespace sealed-secrets <mysecret.json >mysealedsecret.json
 
 # Provide the namespace via the environment variable
-$ export SEALED_SECRETS_CONTROLLER_NAMESPACE=sealed-secrets
-$ kubeseal <mysecret.json >mysealedsecret.json
+export SEALED_SECRETS_CONTROLLER_NAMESPACE=sealed-secrets
+kubeseal <mysecret.json >mysealedsecret.json
 ```
 
 ## Community
@@ -642,4 +610,4 @@ Click [here](http://slack.k8s.io) to sign up to the Kubernetes Slack org.
 
 ### Related projects
 
-* Visual Studio Code extension: https://marketplace.visualstudio.com/items?itemName=codecontemplator.kubeseal
+- Visual Studio Code extension: https://marketplace.visualstudio.com/items?itemName=codecontemplator.kubeseal

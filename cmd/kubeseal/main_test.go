@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
@@ -123,6 +124,7 @@ func TestParseKey(t *testing.T) {
 }
 
 func TestOpenCertFile(t *testing.T) {
+	ctx := context.Background()
 	certFile := tmpfile(t, []byte(testCert))
 
 	s := httptest.NewServer(http.FileServer(http.Dir(filepath.Dir(certFile))))
@@ -139,7 +141,7 @@ func TestOpenCertFile(t *testing.T) {
 	}
 
 	for _, certURL := range testCases {
-		f, err := openCert(certURL)
+		f, err := openCert(ctx, certURL)
 		if err != nil {
 			t.Fatalf("Error reading test cert file: %v", err)
 		}
@@ -664,8 +666,9 @@ func TestMergeInto(t *testing.T) {
 }
 
 func TestVersion(t *testing.T) {
+	ctx := context.Background()
 	var buf strings.Builder
-	err := run(&buf, "", "", "", "", "", "", true, false, false, false, false, false, nil, "", false, nil)
+	err := run(ctx, &buf, "", "", "", "", "", "", true, false, false, false, false, false, nil, "", false, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -676,8 +679,9 @@ func TestVersion(t *testing.T) {
 }
 
 func TestMainError(t *testing.T) {
+	ctx := context.Background()
 	badFileName := filepath.Join("this", "file", "cannot", "possibly", "exist", "can", "it?")
-	err := run(ioutil.Discard, "", "", "", "", "", badFileName, false, false, false, false, false, false, nil, "", false, nil)
+	err := run(ctx, ioutil.Discard, "", "", "", "", "", badFileName, false, false, false, false, false, false, nil, "", false, nil)
 
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
@@ -838,8 +842,9 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 
 	fromFile := []string{dataFile}
 
+	ctx := context.Background()
 	var buf bytes.Buffer
-	if err := run(&buf, "", "", secretName, "", "", certFilename, false, false, false, false, true, false, fromFile, "", false, nil); err != nil {
+	if err := run(ctx, &buf, "", "", secretName, "", "", certFilename, false, false, false, false, true, false, fromFile, "", false, nil); err != nil {
 		return "", err
 	}
 
@@ -872,8 +877,9 @@ data:
 	out.Close()
 	defer os.RemoveAll(out.Name())
 
+	ctx := context.Background()
 	var buf bytes.Buffer
-	if err := run(&buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil); err != nil {
+	if err := run(ctx, &buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil); err != nil {
 		t.Fatal(err)
 	}
 
@@ -919,8 +925,9 @@ metadata:
 	out.Close()
 	defer os.RemoveAll(out.Name())
 
+	ctx := context.Background()
 	var buf bytes.Buffer
-	if err := run(&buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil); err == nil {
+	if err := run(ctx, &buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil); err == nil {
 		t.Errorf("expecting error")
 	}
 
