@@ -195,6 +195,7 @@ A major refactoring of the chart has been performed to adopt several common prac
 - `controller.create` renamed as `createController`.
 - `securityContext.*` parameters are deprecated in favor of `podSecurityContext.*`, and `containerSecurityContext.*` ones.
 - `image.repository` changed to `image.registry`/`image.repository`.
+- `ingress.hosts[0]` changed to `ingress.hostname`.
 
 Consult the [Parameters](#parameters) section to obtain more info about the available parameters.
 
