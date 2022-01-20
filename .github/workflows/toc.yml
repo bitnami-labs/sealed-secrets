@@ -12,6 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: TOC Generator
-        uses: technote-space/toc-generator@v2
+        uses: technote-space/toc-generator@v4
         with:
+          CHECK_ONLY_DEFAULT_BRANCH: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_PATHS: README.md
+          TOC_TITLE: '## Table of Contents'
