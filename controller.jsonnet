@@ -23,7 +23,7 @@ controller {
       {
         apiGroups: [''],
         resources: ['secrets'],
-        verbs: ['get', 'create', 'update', 'delete'],
+        verbs: ['get', 'list', 'create', 'update', 'delete'],
       },
       {
         apiGroups: [''],
@@ -46,6 +46,22 @@ controller {
 
   serviceProxierRole: kube.Role('sealed-secrets-service-proxier') + $.namespace {
     rules: [
+      {
+        apiGroups: [
+          '',
+        ],
+        resources: [
+          'services',
+        ],
+        resourceNames: [
+          'sealed-secrets-controller',
+        ],
+        // kubeseal dynamically obtains the service port name so later on
+        // can access the service using a proxy
+        verbs: [
+          'get',
+        ],
+      },
       {
         apiGroups: [
           '',
