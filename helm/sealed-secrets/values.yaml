@@ -106,11 +106,18 @@ tolerations: []
 updateStatus: true
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 ## @param keyrenewperiod Specifies key renew period. Default 30 days
 ##
 keyrenewperiod: "720h30m"
 =======
 >>>>>>> b486bb3 (Enable --update-status by default in helm-chart (#709))
+=======
+## @param keyrenewperiod Specifies key renew period. The renewal time of 30d is a reasonable default, but it can be tweaked as needed with this parameter
+##
+keyrenewperiod: "720h30m"
+
+>>>>>>> 513a987 (rebase from main)
 ## @section Traffic Exposure Parameters
 
 ## Sealed Secret service parameters

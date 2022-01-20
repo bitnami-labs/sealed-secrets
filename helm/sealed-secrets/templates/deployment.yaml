@@ -47,12 +47,18 @@ spec:
             - --update-status
             {{- end }}
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 513a987 (rebase from main)
             {{- if .Values.keyrenewperiod }}
             - --key-renew-period
             - {{ .Values.keyrenewperiod | quote }}
             {{- end }}
+<<<<<<< HEAD
 =======
 >>>>>>> b486bb3 (Enable --update-status by default in helm-chart (#709))
+=======
+>>>>>>> 513a987 (rebase from main)
             - --key-prefix
             - {{ .Values.secretName | quote }}
             {{- range $value := .Values.commandArgs }}
