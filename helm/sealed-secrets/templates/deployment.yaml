@@ -1,99 +1,83 @@
-{{- if .Values.controller.create -}}
-apiVersion: apps/v1
+{{- if .Values.createController }}
+apiVersion: {{ include "sealed-secrets.deployment.apiVersion" . }}
 kind: Deployment
 metadata:
-  name: {{ template "sealed-secrets.fullname" . }}
-  namespace: {{ template "sealed-secrets.namespace" . }}
-  labels:
-    app.kubernetes.io/name: {{ template "sealed-secrets.name" . }}
-    helm.sh/chart: {{ template "sealed-secrets.chart" . }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/version: {{ .Chart.AppVersion }}
-    {{- if .Values.controller.labels }}
-{{ toYaml .Values.controller.labels | indent 4 }}
-    {{- end }}
+  name: {{ include "sealed-secrets.fullname" . }}
+  namespace: {{ include "sealed-secrets.namespace" . }}
+  labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
 spec:
   selector:
-    matchLabels:
-      app.kubernetes.io/name: {{ template "sealed-secrets.name" . }}
-      app.kubernetes.io/instance: {{ .Release.Name }}
+    matchLabels: {{- include "sealed-secrets.matchLabels" . | nindent 6 }}
   template:
     metadata:
-      annotations:
-      {{- with .Values.podAnnotations }}
-        {{- toYaml . | nindent 8 }}
+      {{- if .Values.podAnnotations }}
+      annotations: {{- toYaml .Values.podAnnotations | nindent 8 }}
       {{- end }}
-      labels:
-        app.kubernetes.io/name: {{ template "sealed-secrets.name" . }}
-        app.kubernetes.io/instance: {{ .Release.Name }}
+      labels: {{- include "sealed-secrets.matchLabels" . | nindent 8 }}
         {{- if .Values.podLabels }}
-{{ toYaml .Values.podLabels | indent 8 }}
+        {{- toYaml .Values.podLabels | nindent 8 }}
         {{- end }}
     spec:
       {{- if .Values.image.pullSecret }}
       imagePullSecrets:
         - name: {{ .Values.image.pullSecret }}
       {{- end }}
-      serviceAccountName: {{ template "sealed-secrets.serviceAccountName" . }}
-      {{- if .Values.priorityClassName }}
-      priorityClassName: "{{ .Values.priorityClassName }}"
+      {{- if .Values.affinity }}
+      affinity: {{- toYaml .Values.affinity | nindent 8 }}
       {{- end }}
+      {{- if .Values.nodeSelector }}
+      nodeSelector: {{- toYaml .Values.nodeSelector | nindent 8 }}
+      {{- end }}
+      {{- if .Values.tolerations }}
+      tolerations: {{- toYaml .Values.tolerations | nindent 8 }}
+      {{- end }}
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.podSecurityContext.enabled }}
+      securityContext: {{- omit .Values.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "sealed-secrets.serviceAccountName" . }}
       containers:
-        - name: {{ template "sealed-secrets.fullname" . }}
+        - name: controller
           command:
             - controller
           args:
-            - "--key-prefix"
-            - "{{ .Values.secretName }}"
-            {{- if .Values.controller.keyrenewperiod }}
-            - "--key-renew-period"
-            - "{{ .Values.controller.keyrenewperiod }}"
+            {{- if .Values.updateStatus }}
+            - --update-status
             {{- end }}
+            {{- if .Values.keyrenewperiod }}
+            - --key-renew-period
+            - {{ .Values.keyrenewperiod | quote }}
+            {{- end }}
+            - --key-prefix
+            - {{ .Values.secretName | quote }}
             {{- range $value := .Values.commandArgs }}
             - {{ $value | quote }}
             {{- end }}
-          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          image: {{ printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - containerPort: 8080
               name: http
-          volumeMounts:
-          - mountPath: /tmp
-            name: tmp
           livenessProbe:
             httpGet:
               path: /healthz
-              port: 8080
+              port: http
           readinessProbe:
             httpGet:
               path: /healthz
-              port: 8080
-          securityContext:
-            readOnlyRootFilesystem: true
-            {{- if .Values.securityContext.runAsUser }}
-            runAsNonRoot: true
-            runAsUser: {{ .Values.securityContext.runAsUser }}
-            {{- end }}
-          resources:
-{{ toYaml .Values.resources | indent 12 }}
-      {{- if .Values.securityContext.fsGroup }}
-      securityContext:
-        fsGroup: {{ .Values.securityContext.fsGroup }}
-      {{- end }}
+              port: http
+          {{- if .Values.resources }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          {{- if .Values.containerSecurityContext.enabled }}
+          securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
+          volumeMounts:
+            - mountPath: /tmp
+              name: tmp
       volumes:
-      - name: tmp
-        emptyDir: {}
-    {{- with .Values.nodeSelector }}
-      nodeSelector:
-{{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.affinity }}
-      affinity:
-{{ toYaml . | indent 8 }}
-    {{- end }}
-    {{- with .Values.tolerations }}
-      tolerations:
-{{ toYaml . | indent 8 }}
-    {{- end }}
+        - name: tmp
+          emptyDir: {}
 {{- end }}

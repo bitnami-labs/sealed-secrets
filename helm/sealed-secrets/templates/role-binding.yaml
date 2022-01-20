@@ -2,45 +2,35 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ template "sealed-secrets.fullname" . }}-key-admin
-  namespace: {{ template "sealed-secrets.namespace" . }}
-  labels:
-    app.kubernetes.io/name: {{ template "sealed-secrets.name" . }}
-    helm.sh/chart: {{ template "sealed-secrets.chart" . }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+  name: {{ printf "%s-key-admin" (include "sealed-secrets.fullname" .) }}
+  namespace: {{ include "sealed-secrets.namespace" . }}
+  labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
     {{- if .Values.rbac.labels }}
-{{ toYaml .Values.rbac.labels | indent 4 }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.rbac.labels "context" $) | nindent 4 }}
     {{- end }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ template "sealed-secrets.fullname" . }}-key-admin
+  name: {{ printf "%s-key-admin" (include "sealed-secrets.fullname" .) }}
 subjects:
   - apiGroup: ""
     kind: ServiceAccount
-    name: {{ template "sealed-secrets.serviceAccountName" . }}
-    namespace: {{ template "sealed-secrets.namespace" . }}
+    name: {{ include "sealed-secrets.serviceAccountName" . }}
+    namespace: {{ include "sealed-secrets.namespace" . }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ template "sealed-secrets.fullname" . }}-service-proxier
-  namespace: {{ template "sealed-secrets.namespace" . }}
-  labels:
-    app.kubernetes.io/name: {{ template "sealed-secrets.name" . }}
-    helm.sh/chart: {{ template "sealed-secrets.chart" . }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+  name: {{ printf "%s-service-proxier" (include "sealed-secrets.fullname" .) }}
+  namespace: {{ include "sealed-secrets.namespace" . }}
+  labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
     {{- if .Values.rbac.labels }}
-{{ toYaml .Values.rbac.labels | indent 4 }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.rbac.labels "context" $) | nindent 4 }}
     {{- end }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ template "sealed-secrets.fullname" . }}-service-proxier
+  name: {{ printf "%s-service-proxier" (include "sealed-secrets.fullname" .) }}
 subjects:
 - apiGroup: rbac.authorization.k8s.io
   kind: Group
