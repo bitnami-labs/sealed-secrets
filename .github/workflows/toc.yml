@@ -15,6 +15,8 @@ jobs:
         uses: technote-space/toc-generator@v4
         with:
           CHECK_ONLY_DEFAULT_BRANCH: true
+          CREATE_PR: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_TITLE: "chore(docs): update README.md TOC (${PR_MERGE_REF})"
           TARGET_PATHS: README.md
-          TOC_TITLE: '## Table of Contents'
+          TOC_TITLE: "## Table of Contents"
