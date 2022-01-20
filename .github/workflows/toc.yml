@@ -15,4 +15,5 @@ jobs:
         uses: technote-space/toc-generator@v4
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET_PATHS: README.md
           TOC_TITLE: '## Table of Contents'
