@@ -1,17 +1,17 @@
+# Developer Guide
+
+**Table of Contents**
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [Developer Guide](#developer-guide)
-  - [Prerequisites](#prerequisites)
-  - [The Sealed Secrets Components](#the-sealed-secrets-components)
-    - [Controller](#controller)
-    - [Kubeseal](#kubeseal)
-  - [git-hooks](#git-hooks)
+- [Prerequisites](#prerequisites)
+- [The Sealed Secrets Components](#the-sealed-secrets-components)
+  - [Controller](#controller)
+  - [Kubeseal](#kubeseal)
+- [git-hooks](#git-hooks)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-# Developer Guide
 
 ## Prerequisites
 
