@@ -49,13 +49,11 @@ Please refer to the [Kubeseal Developer Guide](kubeseal.md) for the developer se
 
 ## git-hooks
 
-To avoid easily detectable issues and prevent them from reaching master, some validations have been implemented via [git hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks). To have those hooks committed in the repository we need to install a third party tool `git-hooks` (check [prerequisites](#prerequisites)), because the hooks provided by Git are stored in the `.git` directory that is not included as part of the repositories.
+To avoid easily detectable issues and prevent them from reaching master, some validations have been implemented via [git hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks). To have those hooks committed in the repository you need to install a third party tool `git-hooks` (check [prerequisites](#prerequisites)), because the hooks provided by Git are stored in the `.git` directory that is not included as part of the repositories.
 
 Currently, there's a single hook at pre-commit level. This hook ensures the Table of Contents (TOC) is updated using `doctoc` (check [prerequisites](#prerequisites)) in every `.md` and `.txt` file that uses this tool.
 
-Configure git-hooks for this specific repository (previously we installed it in the system) by running `git hooks install`.
-
-You can check with the following command if everything was configured properly:
+Configure git-hooks for this specific repository by running `git hooks install`. You can check with the following command if everything was configured properly:
 
 ```console
 Git hooks ARE installed in this repository.
