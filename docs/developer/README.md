@@ -56,6 +56,7 @@ Currently, there's a single hook at pre-commit level. This hook ensures the Tabl
 Configure git-hooks for this specific repository by running `git hooks install`. You can check with the following command if everything was configured properly:
 
 ```console
+$ git hooks list
 Git hooks ARE installed in this repository.
 project hooks
   pre-commit
