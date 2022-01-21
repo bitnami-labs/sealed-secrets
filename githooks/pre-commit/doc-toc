@@ -1,0 +1,15 @@
+#!/bin/bash
+
+current_branch="$(git rev-parse --abbrev-ref HEAD)"
+origin_commit="$(git rev-parse --short "$(git merge-base main "$current_branch")")"
+files_to_commit="$(git diff --name-only "$origin_commit")"
+
+for f in $(uniq <<< "$files_to_commit"); do
+    if [[ "$(basename $f)" =~ .*\.(md|txt) ]]; then
+        doctoc "$f"
+    fi
+done
+if [[ $(git status --porcelain --untracked-files=no | wc -l) -gt 0 ]]; then
+    git add --all
+    git status --short -uno
+fi

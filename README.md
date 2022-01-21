@@ -19,6 +19,44 @@ original Secret from the SealedSecret.
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+- [Overview](#overview)
+  - [SealedSecrets as templates for secrets](#sealedsecrets-as-templates-for-secrets)
+  - [Public key / Certificate](#public-key--certificate)
+  - [Scopes](#scopes)
+- [Installation](#installation)
+  - [Controller](#controller)
+  - [Kustomize](#kustomize)
+  - [Helm Chart](#helm-chart)
+  - [Operator Framework](#operator-framework)
+  - [Homebrew](#homebrew)
+  - [MacPorts](#macports)
+  - [Installation from source](#installation-from-source)
+- [Upgrade](#upgrade)
+- [Usage](#usage)
+  - [Managing existing secrets](#managing-existing-secrets)
+  - [Update existing secrets](#update-existing-secrets)
+  - [Raw mode (experimental)](#raw-mode-experimental)
+- [Secret Rotation](#secret-rotation)
+  - [Sealing key renewal](#sealing-key-renewal)
+  - [User secret rotation](#user-secret-rotation)
+  - [Early key renewal](#early-key-renewal)
+  - [Common misconceptions about key renewal](#common-misconceptions-about-key-renewal)
+  - [Manual key management (advanced)](#manual-key-management-advanced)
+  - [Re-encryption (advanced)](#re-encryption-advanced)
+- [Details (advanced)](#details-advanced)
+  - [Crypto](#crypto)
+- [Developing](#developing)
+- [FAQ](#faq)
+  - [Will you still be able to decrypt if you no longer have access to your cluster?](#will-you-still-be-able-to-decrypt-if-you-no-longer-have-access-to-your-cluster)
+  - [How can I do a backup of my SealedSecrets?](#how-can-i-do-a-backup-of-my-sealedsecrets)
+  - [Can I decrypt my secrets offline with a backup key?](#can-i-decrypt-my-secrets-offline-with-a-backup-key)
+  - [What flags are available for kubeseal?](#what-flags-are-available-for-kubeseal)
+  - [How do I update parts of JSON/YAML/TOML.. file encrypted with sealed secrets?](#how-do-i-update-parts-of-jsonyamltoml-file-encrypted-with-sealed-secrets)
+  - [Can I bring my own (pre-generated) certificates?](#can-i-bring-my-own-pre-generated-certificates)
+  - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
+- [Community](#community)
+  - [Related projects](#related-projects)
+
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Overview
@@ -434,7 +472,7 @@ Sure, the content of those encrypted emails is not secure, as an attacker might 
 
 The same logic applies to SealedSecrets. The ultimate goal is securing your actual "user" secrets. The "sealing" secrets are just a mechanism, an "envelope". If a secret is leaked there is no going back; what's done is done.
 
-You first need to ensure that new secrets don't get encrypted with that old compromised key (in the email analogy above that's: create a new keypair and give all your friends your new public key).
+You first need to ensure that new secrets don't get encrypted with that old compromised key (in the email analogy above that's: create a new key pair and give all your friends your new public key).
 
 The second logical step is to neutralize the damage, which depends on the nature of the secret. A simple example is a database password: if you accidentally leak your database password, the thing you're supposed to do is simply to change your database password (on the database; and revoke the old one!) *and* update the SealedSecret resource with the new password (i.e. running `kubeseal` again).
 

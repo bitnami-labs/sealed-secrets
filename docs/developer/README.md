@@ -1,3 +1,16 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Developer Guide](#developer-guide)
+  - [Prerequisites](#prerequisites)
+  - [The Sealed Secrets Components](#the-sealed-secrets-components)
+    - [Controller](#controller)
+    - [Kubeseal](#kubeseal)
+  - [git-hooks](#git-hooks)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Developer Guide
 
 ## Prerequisites
@@ -11,6 +24,8 @@ To be able to develop on this project, you need to have the following tools inst
 - [Kubernetes cluster (v1.16+)](https://kubernetes.io/docs/setup/). [Minikube](https://github.com/kubernetes/minikube) is recommended.
 - [Kubecfg](https://github.com/bitnami/kubecfg)
 - [Ginkgo](https://onsi.github.io/ginkgo/)
+- [git-hooks](https://github.com/git-hooks/git-hooks)
+- [doctoc](https://github.com/thlorenz/doctoc)
 
 ## The Sealed Secrets Components
 
@@ -31,3 +46,22 @@ Please refer to the [Sealed Secrets Controller](controller.md) for the developer
 The `kubeseal` utility uses asymmetric crypto to encrypt secrets that only the controller can decrypt.
 
 Please refer to the [Kubeseal Developer Guide](kubeseal.md) for the developer setup.
+
+## git-hooks
+
+To avoid easily detectable issues and prevent them from reaching master, some validations have been implemented via [git hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks). To have those hooks committed in the repository we need to install a third party tool `git-hooks` (check [prerequisites](#prerequisites)), because the hooks provided by Git are stored in the `.git` directory that is not included as part of the repositories.
+
+Currently, there's a single hook at pre-commit level. This hook ensures the Table of Contents (TOC) is updated using `doctoc` (check [prerequisites](#prerequisites)) in every `.md` and `.txt` file that uses this tool.
+
+Configure git-hooks for this specific repository (previously we installed it in the system) by running `git hooks install`.
+
+You can check with the following command if everything was configured properly:
+
+```console
+Git hooks ARE installed in this repository.
+project hooks
+  pre-commit
+    - doc-toc
+
+Contrib hooks
+```
