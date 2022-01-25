@@ -106,8 +106,9 @@ tolerations: []
 updateStatus: true
 
 ## @param keyrenewperiod Specifies key renewal period. Default 30 days
-##
-keyrenewperiod: "720h30m"
+## e.g
+## keyrenewperiod: "720h30m"
+keyrenewperiod: ""
 
 ## @section Traffic Exposure Parameters
 
