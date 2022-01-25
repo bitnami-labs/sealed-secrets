@@ -8,15 +8,15 @@ Latest release:
 
 ### Changelog
 
-- Fix issue fetching the certificate when the Sealed Secrets service has a named port ([#648](https://github.com/bitnami-labs/sealed-secrets/pull/648)
-- Drop support for Go < 1.16 and bump client-go version ([#705](https://github.com/bitnami-labs/sealed-secrets/pull/705)
+- Fix issue fetching the certificate when the Sealed Secrets service has a named port ([#648](https://github.com/bitnami-labs/sealed-secrets/pull/648))
+- Drop support for Go < 1.16 and bump client-go version ([#705](https://github.com/bitnami-labs/sealed-secrets/pull/705))
 
 ## v0.17.1
 
 ### Changelog
 
-- Binaries to emit the proper version ([#683](https://github.com/bitnami-labs/sealed-secrets/pull/683)
-- Re-enable publishing K8s manifests in GH releases ([#678](https://github.com/bitnami-labs/sealed-secrets/issues/678)
+- Binaries to emit the proper version ([#683](https://github.com/bitnami-labs/sealed-secrets/pull/683))
+- Re-enable publishing K8s manifests in GH releases ([#678](https://github.com/bitnami-labs/sealed-secrets/issues/678))
 
 ## v0.17.0
 
@@ -26,15 +26,15 @@ This release finally turns on the `update-status` feature flag that was introduc
 
 ### Changelog
 
-- Update rbac api version to `rbac.authorization.k8s.io/v1` ([#602](https://github.com/bitnami-labs/sealed-secrets/issues/#602))
+- Update rbac api version to `rbac.authorization.k8s.io/v1` ([#602](https://github.com/bitnami-labs/sealed-secrets/issues/602))
 - Enable `--update-status` by default ([#583](https://github.com/bitnami-labs/sealed-secrets/pull/583))
 
 ## v0.16.0
 
 ### Changelog
 
-- Add ability to template arbitrary data keys within resulting secrets ([#445](https://github.com/bitnami-labs/sealed-secrets/issues/#445))
-- Fix status CRD in controller.yaml (backport from helm chart) ([#567](https://github.com/bitnami-labs/sealed-secrets/issues/#567))
+- Add ability to template arbitrary data keys within resulting secrets ([#445](https://github.com/bitnami-labs/sealed-secrets/issues/445))
+- Fix status CRD in controller.yaml (backport from helm chart) ([#567](https://github.com/bitnami-labs/sealed-secrets/issues/567))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/26?closed=1
 
