@@ -4,6 +4,15 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.17.3
+
+### Changelog
+
+- Unseal templates even when encryptedData is empty ([#653](https://github.com/bitnami-labs/sealed-secrets/pull/653))
+- Add new RBAC rules to make Sealed Secret compatible with K8s environments with RBAC enabled ([#715](https://github.com/bitnami-labs/sealed-secrets/pull/715))
+- Allow rencrypt/validate functionalities to work with named ports defined in the Sealed Secret service ([#726](https://github.com/bitnami-labs/sealed-secrets/pull/726))
+- Fix verbose logging ([#727](https://github.com/bitnami-labs/sealed-secrets/pull/727))
+
 ## v0.17.2
 
 ### Changelog
