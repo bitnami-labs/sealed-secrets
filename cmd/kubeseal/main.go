@@ -176,6 +176,15 @@ func isFilename(name string) (bool, error) {
 	return u.Scheme == "", nil
 }
 
+// getServicePortName obtains the SealedSecrets service port name
+func getServicePortName(ctx context.Context, client corev1.CoreV1Interface, namespace, serviceName string) (string, error) {
+	service, err := client.Services(namespace).Get(ctx, serviceName, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("cannot get sealed secret service: %v", err)
+	}
+	return service.Spec.Ports[0].Name, nil
+}
+
 // openCertLocal opens a cert URI or local filename, by fetching it locally from the client
 // (as opposed as openCertCluster which fetches it via HTTP but through the k8s API proxy).
 func openCertLocal(filenameOrURI string) (io.ReadCloser, error) {
@@ -210,11 +219,10 @@ func openCertURI(uri string) (io.ReadCloser, error) {
 // openCertCluster fetches a certificate by performing an HTTP request to the controller
 // through the k8s API proxy.
 func openCertCluster(ctx context.Context, c corev1.CoreV1Interface, namespace, name string) (io.ReadCloser, error) {
-	service, err := c.Services(namespace).Get(ctx, name, metav1.GetOptions{})
+	portName, err := getServicePortName(ctx, c, namespace, name)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get sealed secret service: %v", err)
+		return nil, err
 	}
-	portName := service.Spec.Ports[0].Name
 	cert, err := c.Services(namespace).ProxyGet("http", name, portName, "/v1/cert.pem", nil).Stream(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("cannot fetch certificate: %v", err)
@@ -306,6 +314,10 @@ func validateSealedSecret(ctx context.Context, in io.Reader, namespace, name str
 	if err != nil {
 		return err
 	}
+	portName, err := getServicePortName(ctx, restClient, namespace, name)
+	if err != nil {
+		return err
+	}
 
 	content, err := ioutil.ReadAll(in)
 	if err != nil {
@@ -316,7 +328,7 @@ func validateSealedSecret(ctx context.Context, in io.Reader, namespace, name str
 		Namespace(namespace).
 		Resource("services").
 		SubResource("proxy").
-		Name(net.JoinSchemeNamePort("http", name, "")).
+		Name(net.JoinSchemeNamePort("http", name, portName)).
 		Suffix("/v1/verify")
 
 	req.Body(content)
@@ -340,6 +352,10 @@ func reEncryptSealedSecret(ctx context.Context, in io.Reader, out io.Writer, cod
 	if err != nil {
 		return err
 	}
+	portName, err := getServicePortName(ctx, restClient, namespace, name)
+	if err != nil {
+		return err
+	}
 
 	content, err := ioutil.ReadAll(in)
 	if err != nil {
@@ -350,7 +366,7 @@ func reEncryptSealedSecret(ctx context.Context, in io.Reader, out io.Writer, cod
 		Namespace(namespace).
 		Resource("services").
 		SubResource("proxy").
-		Name(net.JoinSchemeNamePort("http", name, "")).
+		Name(net.JoinSchemeNamePort("http", name, portName)).
 		Suffix("/v1/rotate")
 
 	req.Body(content)
