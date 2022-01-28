@@ -175,12 +175,14 @@ Read about kubeseal usage on [sealed-secrets docs](https://github.com/bitnami-la
 - In the case that **serviceAccount.create** is `false` and **rbac.create** is `true` it is expected for a ServiceAccount with the name **serviceAccount.name** to exist _in the same namespace as this chart_ before the installation.
 - If **serviceAccount.create** is `true` there cannot be an existing service account with the name **serviceAccount.name**.
 - If a secret with name **secretName** does not exist _in the same namespace as this chart_, then on install one will be created. If a secret already exists with this name the keys inside will be used.
-- OpenShift: unset the runAsUser and fsGroup like this:
+- OpenShift: unset the runAsUser and fsGroup like this when installing in a custom namespace:
 
 ```yaml
-securityContext:
-  runAsUser:
+podSecurityContext:
   fsGroup:
+  
+containerSecurityContext:
+  runAsUser:
 ```
 
 ## Troubleshooting
