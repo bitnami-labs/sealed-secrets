@@ -8,13 +8,13 @@ import (
 	"fmt"
 	"text/template"
 
+	"github.com/mkmik/multierror"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
-	"github.com/mkmik/multierror"
 )
 
 const (
@@ -217,7 +217,7 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 	// the input secret could come from a real secret object applied with `kubectl apply` or similar tools
 	// which put a copy of the object version at application time in an annotation in order to support
 	// strategic merge patch in subsequent updates. We need to strip those annotations or else we would
-	// be leaking secrets in clear in a way that might be non obvious to users.
+	// be leaking secrets in clear in a way that might be non-obvious to users.
 	// See https://github.com/bitnami-labs/sealed-secrets/issues/227
 	StripLastAppliedAnnotations(s.Spec.Template.ObjectMeta.Annotations)
 
@@ -324,7 +324,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 
 	// This is sometimes empty?  Fine - we know what the answer is
 	// going to be anyway.
-	//gvk := s.GetObjectKind().GroupVersionKind()
+	// gvk := s.GetObjectKind().GroupVersionKind()
 	gvk := SchemeGroupVersion.WithKind("SealedSecret")
 
 	// Refer back to owning SealedSecret

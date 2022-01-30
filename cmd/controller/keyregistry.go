@@ -10,9 +10,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	"k8s.io/client-go/kubernetes"
 	certUtil "k8s.io/client-go/util/cert"
+
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 )
 
 // A Key holds the cryptographic key pair and some metadata about it.

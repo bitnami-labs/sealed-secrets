@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package integration
@@ -13,7 +14,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
@@ -25,6 +25,8 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	clientcmdlatest "k8s.io/client-go/tools/clientcmd/api/latest"
 	certUtil "k8s.io/client-go/util/cert"
+
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 )
 
 var _ = Describe("kubeseal", func() {

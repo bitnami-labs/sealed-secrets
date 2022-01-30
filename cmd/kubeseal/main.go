@@ -18,32 +18,29 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
-	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
-	"github.com/bitnami-labs/sealed-secrets/pkg/multidocyaml"
+	"github.com/bitnami-labs/flagenv"
+	"github.com/bitnami-labs/pflagenv"
 	"github.com/google/renameio"
 	"github.com/mattn/go-isatty"
 	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	_ "k8s.io/client-go/plugin/pkg/client/auth" // Register Auth providers
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
 	"k8s.io/klog/v2"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
-
-	// Register Auth providers
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
-	"github.com/bitnami-labs/flagenv"
-	"github.com/bitnami-labs/pflagenv"
-	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	"github.com/bitnami-labs/sealed-secrets/pkg/multidocyaml"
 )
 
 const (
@@ -86,7 +83,7 @@ func init() {
 	flag.Var(&sealingScope, "scope", "Set the scope of the sealed secret: strict, namespace-wide, cluster-wide (defaults to strict). Mandatory for --raw, otherwise the 'sealedsecrets.bitnami.com/cluster-wide' and 'sealedsecrets.bitnami.com/namespace-wide' annotations on the input secret can be used to select the scope.")
 	flag.BoolVar(&reEncrypt, "rotate", false, "")
 	flag.BoolVar(&reEncrypt, "re-encrypt", false, "Re-encrypt the given sealed secret to use the latest cluster key.")
-	flag.CommandLine.MarkDeprecated("rotate", "please use --re-encrypt instead")
+	_ = flag.CommandLine.MarkDeprecated("rotate", "please use --re-encrypt instead")
 
 	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
 
@@ -388,10 +385,7 @@ func reEncryptSealedSecret(ctx context.Context, in io.Reader, out io.Writer, cod
 	ssecret.SetCreationTimestamp(metav1.Time{})
 	ssecret.SetDeletionTimestamp(nil)
 	ssecret.Generation = 0
-	if err = sealedSecretOutput(out, codecs, ssecret); err != nil {
-		return err
-	}
-	return nil
+	return sealedSecretOutput(out, codecs, ssecret)
 }
 
 func resourceOutput(out io.Writer, codecs runtimeserializer.CodecFactory, gv runtime.GroupVersioner, obj runtime.Object) error {
@@ -412,8 +406,8 @@ func resourceOutput(out io.Writer, codecs runtimeserializer.CodecFactory, gv run
 	if err != nil {
 		return err
 	}
-	out.Write(buf)
-	fmt.Fprint(out, "\n")
+	_, _ = out.Write(buf)
+	_, _ = fmt.Fprint(out, "\n")
 	return nil
 }
 
@@ -486,7 +480,7 @@ func encryptSecretItem(w io.Writer, secretName, ns string, data []byte, scope ss
 	if err != nil {
 		return err
 	}
-	fmt.Fprint(w, base64.StdEncoding.EncodeToString(out))
+	_, _ = fmt.Fprint(w, base64.StdEncoding.EncodeToString(out))
 	return nil
 }
 
@@ -617,7 +611,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 	}
 
 	if printVersion {
-		fmt.Fprintf(w, "kubeseal version: %s\n", VERSION)
+		_, _ = fmt.Fprintf(w, "kubeseal version: %s\n", VERSION)
 		return nil
 	}
 
@@ -632,7 +626,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 		input = f
 	} else if !raw && !dumpCert {
 		if isatty.IsTerminal(os.Stdin.Fd()) {
-			fmt.Fprintf(os.Stderr, "(tty detected: expecting json/yaml k8s resource in stdin)\n")
+			_, _ = fmt.Fprintf(os.Stderr, "(tty detected: expecting json/yaml k8s resource in stdin)\n")
 		}
 	}
 
@@ -655,7 +649,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 		// only write the output file if the run function exits without errors.
 		defer func() {
 			if err == nil {
-				f.CloseAtomicallyReplace()
+				_ = f.CloseAtomicallyReplace()
 			}
 		}()
 
@@ -666,7 +660,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 		return unsealSealedSecret(w, input, scheme.Codecs, privKeys)
 	}
 	if len(privKeys) != 0 && isatty.IsTerminal(os.Stderr.Fd()) {
-		fmt.Fprintf(os.Stderr, "warning: ignoring --recovery-private-key because unseal command not chosen with --recovery-unseal\n")
+		_, _ = fmt.Fprintf(os.Stderr, "warning: ignoring --recovery-private-key because unseal command not chosen with --recovery-unseal\n")
 	}
 
 	if validateSecret {
@@ -727,7 +721,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 			data, err = ioutil.ReadFile(filename)
 		} else {
 			if isatty.IsTerminal(os.Stdin.Fd()) {
-				fmt.Fprintf(os.Stderr, "(tty detected: expecting a secret to encrypt in stdin)\n")
+				_, _ = fmt.Fprintf(os.Stderr, "(tty detected: expecting a secret to encrypt in stdin)\n")
 			}
 			data, err = ioutil.ReadAll(os.Stdin)
 		}
@@ -743,10 +737,10 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 
 func main() {
 	flag.Parse()
-	goflag.CommandLine.Parse([]string{})
+	_ = goflag.CommandLine.Parse([]string{})
 
 	if err := run(context.Background(), os.Stdout, *inputFileName, *outputFileName, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *allowEmptyData, *fromFile, *mergeInto, *unseal, *privKeys); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		_, _ = fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
 }

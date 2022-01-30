@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-
 	flag "github.com/spf13/pflag"
 	"github.com/throttled/throttled"
 	"github.com/throttled/throttled/store/memstore"
@@ -33,13 +32,13 @@ type secretRotator func([]byte) ([]byte, error)
 // all users of a given cluster. It must not leak any secret material.
 // The server is started in the background and a handle to it returned so it can be shut down.
 func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Server {
-	httpRateLimiter := rateLimter()
+	httpRateLimiter := rateLimiter()
 
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		io.WriteString(w, "ok\n")
+		_, _ = io.WriteString(w, "ok\n")
 	})
 
 	mux.Handle("/metrics", promhttp.Handler())
@@ -84,7 +83,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(newSecret)
+		_, _ = w.Write(newSecret)
 	})))
 
 	mux.Handle("/v1/cert.pem", Instrument("/v1/cert.pem", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +96,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		for _, cert := range certs {
-			w.Write(pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
+			_, _ = w.Write(pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
 		}
 	})))
 
@@ -116,7 +115,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 	return &server
 }
 
-func rateLimter() throttled.HTTPRateLimiter {
+func rateLimiter() throttled.HTTPRateLimiter {
 	store, err := memstore.New(65536)
 	if err != nil {
 		log.Fatal(err)

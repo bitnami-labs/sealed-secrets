@@ -7,12 +7,13 @@ import (
 	"encoding/pem"
 	"errors"
 
-	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	certUtil "k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
+
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 )
 
 // SealedSecretsKeyLabel is that label used to locate active key pairs used to decrypt sealed secrets.
@@ -57,7 +58,7 @@ func writeKey(ctx context.Context, client kubernetes.Interface, key *rsa.Private
 		o(&opts)
 	}
 
-	certbytes := []byte{}
+	certbytes := make([]byte, 0)
 	for _, cert := range certs {
 		certbytes = append(certbytes, pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw})...)
 	}

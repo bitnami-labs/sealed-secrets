@@ -1,3 +1,4 @@
+//go:build integration
 // +build integration
 
 package integration
@@ -14,6 +15,8 @@ import (
 	"sort"
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -27,9 +30,6 @@ import (
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	ssclient "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var keySelector = fields.OneTermEqualSelector("sealedsecrets.bitnami.com/sealed-secrets-key", "active").String()
@@ -53,7 +53,7 @@ func getSecretType(s *v1.Secret) v1.SecretType {
 }
 
 func fetchKeys(ctx context.Context, c corev1.SecretsGetter) (map[string]*rsa.PrivateKey, []*x509.Certificate, error) {
-	list, err := c.Secrets("kube-system").List(ctx, metav1.ListOptions{
+	list, err := c.Secrets(metav1.NamespaceSystem).List(ctx, metav1.ListOptions{
 		LabelSelector: keySelector,
 	})
 	if err != nil {

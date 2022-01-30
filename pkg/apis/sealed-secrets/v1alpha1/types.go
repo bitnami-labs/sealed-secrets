@@ -1,7 +1,7 @@
 package v1alpha1
 
 import (
-	apiv1 "k8s.io/api/core/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -23,7 +23,7 @@ const (
 	SealedSecretNamespaceWideAnnotation = annoNs + "namespace-wide"
 
 	// SealedSecretManagedAnnotation is the name for the annotation for
-	// flaging the existing secrets be managed by SealedSecret controller.
+	// flagging the existing secrets be managed by SealedSecret controller.
 	SealedSecretManagedAnnotation = annoNs + "managed"
 )
 
@@ -37,7 +37,7 @@ type SecretTemplateSpec struct {
 
 	// Used to facilitate programmatic handling of secret data.
 	// +optional
-	Type apiv1.SecretType `json:"type,omitempty" protobuf:"bytes,3,opt,name=type,casttype=SecretType"`
+	Type corev1.SecretType `json:"type,omitempty" protobuf:"bytes,3,opt,name=type,casttype=SecretType"`
 
 	// Keys that should be templated using decrypted data
 	Data map[string]string `json:"data"`
@@ -70,7 +70,7 @@ type SealedSecretCondition struct {
 	Type SealedSecretConditionType `json:"type" protobuf:"bytes,1,opt,name=type,casttype=DeploymentConditionType"`
 	// Status of the condition for a sealed secret.
 	// Valid values for "Synced": "True", "False", or "Unknown".
-	Status apiv1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
+	Status corev1.ConditionStatus `json:"status" protobuf:"bytes,2,opt,name=status,casttype=k8s.io/api/core/v1.ConditionStatus"`
 	// The last time this condition was updated.
 	LastUpdateTime metav1.Time `json:"lastUpdateTime,omitempty" protobuf:"bytes,6,opt,name=lastUpdateTime"`
 	// Last time the condition transitioned from one status to another.
@@ -120,7 +120,7 @@ type SealedSecretList struct {
 }
 
 // ByCreationTimestamp is used to sort a list of secrets
-type ByCreationTimestamp []apiv1.Secret
+type ByCreationTimestamp []corev1.Secret
 
 func (s ByCreationTimestamp) Len() int {
 	return len(s)

@@ -16,6 +16,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/bitnami-labs/flagenv"
+	"github.com/bitnami-labs/pflagenv"
 	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -24,8 +26,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/bitnami-labs/flagenv"
-	"github.com/bitnami-labs/pflagenv"
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
@@ -64,7 +64,7 @@ func init() {
 	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
 
 	flag.DurationVar(keyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
-	flag.CommandLine.MarkDeprecated("rotate-period", "please use key-renew-period instead")
+	_ = flag.CommandLine.MarkDeprecated("rotate-period", "please use key-renew-period instead")
 
 	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
 	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
@@ -73,20 +73,12 @@ func init() {
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if f := flag.CommandLine.Lookup("logtostderr"); f != nil {
 		f.DefValue = "true"
-		f.Value.Set(f.DefValue)
+		_ = f.Value.Set(f.DefValue)
 	}
-}
-
-type controller struct {
-	clientset kubernetes.Interface
 }
 
 func initKeyPrefix(keyPrefix string) (string, error) {
-	prefix, err := validateKeyPrefix(keyPrefix)
-	if err != nil {
-		return "", err
-	}
-	return prefix, err
+	return validateKeyPrefix(keyPrefix)
 }
 
 func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
@@ -257,7 +249,7 @@ func main2() error {
 
 func main() {
 	flag.Parse()
-	goflag.CommandLine.Parse([]string{})
+	_ = goflag.CommandLine.Parse([]string{})
 
 	ssv1alpha1.AcceptDeprecatedV1Data = *acceptV1Data
 

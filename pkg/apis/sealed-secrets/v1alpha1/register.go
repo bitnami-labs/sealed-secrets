@@ -21,7 +21,7 @@ var (
 )
 
 func init() {
-	SchemeBuilder.AddToScheme(scheme.Scheme)
+	_ = SchemeBuilder.AddToScheme(scheme.Scheme)
 }
 
 // Resource takes an unqualified resource and returns a Group qualified GroupResource

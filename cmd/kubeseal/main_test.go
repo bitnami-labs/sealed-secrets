@@ -9,10 +9,8 @@ import (
 	"encoding/pem"
 	goflag "flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math/big"
-	mathrand "math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -22,8 +20,6 @@ import (
 	"testing"
 	"time"
 
-	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
-	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	flag "github.com/spf13/pflag"
@@ -33,6 +29,9 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	certUtil "k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
+
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 )
 
 const testCert = `
@@ -85,13 +84,8 @@ func TestMain(m *testing.M) {
 	goflag.Parse()
 
 	// otherwise we'd require a working KUBECONFIG file when calling `run`.
-	flag.CommandLine.Parse([]string{"-n", "default"})
+	_ = flag.CommandLine.Parse([]string{"-n", "default"})
 	os.Exit(m.Run())
-}
-
-// This is omg-not safe for real crypto use!
-func testRand() io.Reader {
-	return mathrand.New(mathrand.NewSource(42))
 }
 
 func tmpfile(t *testing.T, contents []byte) string {
@@ -484,9 +478,9 @@ func TestUnseal(t *testing.T) {
 		t.Fatal("assuming only one test key-pair")
 	}
 	for _, key := range privKeys {
-		pem.Encode(pkFile, &pem.Block{Type: keyutil.RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)})
+		_ = pem.Encode(pkFile, &pem.Block{Type: keyutil.RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)})
 	}
-	pkFile.Close()
+	_ = pkFile.Close()
 
 	const (
 		secretItemKey   = "foo"
@@ -543,7 +537,7 @@ func TestUnsealList(t *testing.T) {
 	if _, err := pkFile.Write(blst); err != nil {
 		t.Fatal(err)
 	}
-	pkFile.Close()
+	_ = pkFile.Close()
 
 	const (
 		secretItemKey   = "foo"
@@ -577,7 +571,7 @@ func TestMergeInto(t *testing.T) {
 		if _, err := f.Write(oldSealedSecret); err != nil {
 			t.Fatal(err)
 		}
-		f.Close()
+		_ = f.Close()
 
 		buf := bytes.NewBuffer(newSecret)
 		if err := sealMergingInto(buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false); err != nil {
@@ -713,8 +707,8 @@ func testingKeypairFiles(t *testing.T) (string, string, func()) {
 	}
 
 	return certFile, pkFile, func() {
-		os.RemoveAll(certFile)
-		os.RemoveAll(pkFile)
+		_ = os.RemoveAll(certFile)
+		_ = os.RemoveAll(pkFile)
 	}
 }
 
@@ -763,7 +757,7 @@ func TestRaw(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		// encrypt an iteam with data from the testCase and put it
+		// encrypt an item with data from the testCase and put it
 		// in a sealed secret with the metadata from the constants above
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			enc, err := sealTestItem(certFilename, tc.ns, tc.name, secretValue, tc.scope)
@@ -860,7 +854,7 @@ func TestWriteToFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(in.Name())
-	fmt.Fprintf(in, `apiVersion: v1
+	_, _ = fmt.Fprintf(in, `apiVersion: v1
 kind: Secret
 metadata:
   name: foo
@@ -868,13 +862,13 @@ metadata:
 data:
   super: c2VjcmV0
 `)
-	in.Close()
+	_ = in.Close()
 
 	out, err := ioutil.TempFile("", "*.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
-	out.Close()
+	_ = out.Close()
 	defer os.RemoveAll(out.Name())
 
 	ctx := context.Background()
@@ -905,13 +899,13 @@ func TestFailToWriteToFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer os.RemoveAll(in.Name())
-	fmt.Fprintf(in, `apiVersion: v1
+	_, _ = fmt.Fprintf(in, `apiVersion: v1
 kind: BadInput
 metadata:
   name: foo
   namespace: bar
 `)
-	in.Close()
+	_ = in.Close()
 
 	out, err := ioutil.TempFile("", "")
 	if err != nil {
@@ -921,8 +915,8 @@ metadata:
 	// if sealing error happens, the old content of the output file shouldn't be truncated.
 	const testOldContent = "previous content"
 
-	fmt.Fprint(out, testOldContent)
-	out.Close()
+	_, _ = fmt.Fprint(out, testOldContent)
+	_ = out.Close()
 	defer os.RemoveAll(out.Name())
 
 	ctx := context.Background()
@@ -953,7 +947,7 @@ func writeTempFile(b []byte) (string, error) {
 	defer tmp.Close()
 
 	if _, err := tmp.Write(b); err != nil {
-		os.RemoveAll(tmp.Name())
+		_ = os.RemoveAll(tmp.Name())
 		return "", err
 	}
 
@@ -976,7 +970,7 @@ func TestReadPrivKeyPEM(t *testing.T) {
 	if _, err := tmp.Write(b); err != nil {
 		t.Fatal(err)
 	}
-	tmp.Close()
+	_ = tmp.Close()
 
 	pkr, err := readPrivKey(tmp.Name())
 	if err != nil {
@@ -1011,7 +1005,7 @@ func TestReadPrivKeySecret(t *testing.T) {
 	if err := resourceOutput(tmp, scheme.Codecs, v1.SchemeGroupVersion, sec); err != nil {
 		t.Fatal(err)
 	}
-	tmp.Close()
+	_ = tmp.Close()
 
 	pkr, err := readPrivKey(tmp.Name())
 	if err != nil {

@@ -117,7 +117,7 @@ kind: SealedSecret
 metadata:
   name: mysecret
   namespace: mynamespace
-  annotation:
+  annotations:
     "kubectl.kubernetes.io/last-applied-configuration": ....
 spec:
   encryptedData:
@@ -290,7 +290,7 @@ and will be removed upon next release.
 
 ### Operator Framework
 
-Install Sealed Secrets as Kubernetes Operator via the Operator Lifecyle Manager of your cluster. The `Sealed Secrets Operator (Helm)` is published at [OperatorHub.io](https://operatorhub.io/operator/sealed-secrets-operator-helm) for Kubernetes, as community operator in OpenShift's integrated OperatorHub or at the [GitHub repository](https://github.com/disposab1e/sealed-secrets-operator-helm) of the project.
+Install Sealed Secrets as Kubernetes Operator via the Operator Lifecycle Manager of your cluster. The `Sealed Secrets Operator (Helm)` is published at [OperatorHub.io](https://operatorhub.io/operator/sealed-secrets-operator-helm) for Kubernetes, as community operator in OpenShift's integrated OperatorHub or at the [GitHub repository](https://github.com/disposab1e/sealed-secrets-operator-helm) of the project.
 
 NOTE: the sealed secrets operator is an independently maintained project, so please contact the maintainers directly for support, help or [documentation](https://sealed-secrets-operator-helm.readthedocs.io/en/latest/).
 
@@ -386,7 +386,7 @@ echo -n baz | kubectl create secret generic mysecret --dry-run=client --from-fil
 ### Raw mode (experimental)
 
 Creating temporary Secret with the `kubectl` command, only to throw it away once piped to `kubeseal` can
-be a quite unfriendly user experience. We're working on an overhaul of the the CLI experience. In the meantime,
+be a quite unfriendly user experience. We're working on an overhaul of the CLI experience. In the meantime,
 we offer an alternative mode where kubeseal only cares about encrypting a value to stdout and it's your responsibility to put it inside a SealedSecret resource (not unlike any of the other k8s resources).
 
 It can also be useful as a building block for editor/IDE integrations.
@@ -552,7 +552,7 @@ kubectl get secret -n kube-system sealed-secrets-key -o yaml >>master.key
 
 NOTE: you need the second statement only if you ever installed sealed-secrets older than version 0.9.x on your cluster.
 
-NOTE: This file will contains the controller's public + private keys and should be kept omg-safe!
+NOTE: This file will contain the controller's public + private keys and should be kept omg-safe!
 
 To restore from a backup after some disaster, just put that secrets back before starting the controller - or if the controller was already started, replace the newly-created secrets and restart the controller:
 
