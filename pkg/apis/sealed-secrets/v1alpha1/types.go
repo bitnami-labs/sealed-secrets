@@ -27,6 +27,11 @@ const (
 	SealedSecretManagedAnnotation = annoNs + "managed"
 )
 
+type TemplateDelimeters struct {
+	Left  string `json:"left"`
+	Right string `json:"right"`
+}
+
 // SecretTemplateSpec describes the structure a Secret should have
 // when created from a template
 type SecretTemplateSpec struct {
@@ -41,6 +46,9 @@ type SecretTemplateSpec struct {
 
 	// Keys that should be templated using decrypted data
 	Data map[string]string `json:"data"`
+
+	// Delimeters that should be used for templating data
+	Delimeters TemplateDelimeters `json:"delimeters"`
 }
 
 // SealedSecretSpec is the specification of a SealedSecret

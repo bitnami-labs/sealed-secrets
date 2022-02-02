@@ -285,12 +285,16 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 
 		for key, value := range s.Spec.Template.Data {
 			var plaintext bytes.Buffer
-			template, err := template.New(key).Parse(value)
+			t := template.New(key)
+			if (s.Spec.Template.Delimeters.Left != "") && (s.Spec.Template.Delimeters.Right != "") {
+				t.Delims(s.Spec.Template.Delimeters.Left, s.Spec.Template.Delimeters.Right)
+			}
+			parsedTemplate, err := t.Parse(value)
 			if err != nil {
 				errs = append(errs, multierror.Tag(key, err))
 				continue
 			}
-			err = template.Execute(&plaintext, data)
+			err = parsedTemplate.Execute(&plaintext, data)
 			if err != nil {
 				errs = append(errs, multierror.Tag(key, err))
 			}
