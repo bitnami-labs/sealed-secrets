@@ -1,0 +1,20 @@
+name: Label issues/prs
+
+on:
+  issues:
+    types:
+      - opened
+  pull_request:
+    types:
+      - opened
+
+jobs:
+  label_issues:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Label issues/prs
+        uses: andymckay/labeler@1.0.4
+        with:
+          add-labels: "triage"
+          ignore-if-labeled: true
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
