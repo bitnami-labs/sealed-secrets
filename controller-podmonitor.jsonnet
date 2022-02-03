@@ -1,4 +1,5 @@
 // Prometheus Pod Monitor manifest
+// ref: https://github.com/prometheus-operator/prometheus-operator#customresourcedefinitions
 
 local controller = import 'controller.jsonnet';
 
