@@ -17,6 +17,6 @@ jobs:
           close-pr-message: 'Due to the lack of activity in the last 7 days since it was marked as "stale", we proceed to close this Pull Request. Do not hesitate to reopen it later if necessary.'
           days-before-stale: 15
           days-before-close: 7
-          exempt-issue-labels: 'on-hold'
-          exempt-pr-labels: 'on-hold'
+          exempt-issue-labels: 'backlog,triage'
+          exempt-pr-labels: 'backlog,triage'
           operations-per-run: 500
