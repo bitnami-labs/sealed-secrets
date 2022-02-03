@@ -2,6 +2,28 @@
 
 Sealed Secrets are "one-way" encrypted K8s Secrets that can be created by anyone, but can only be decrypted by the controller running in the target cluster recovering the original object.
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [TL;DR](#tldr)
+- [Introduction](#introduction)
+- [Prerequisites](#prerequisites)
+- [Installing the Chart](#installing-the-chart)
+- [Uninstalling the Chart](#uninstalling-the-chart)
+- [Parameters](#parameters)
+  - [Common parameters](#common-parameters)
+  - [Sealed Secrets Parameters](#sealed-secrets-parameters)
+  - [Traffic Exposure Parameters](#traffic-exposure-parameters)
+  - [Other Parameters](#other-parameters)
+  - [Metrics parameters](#metrics-parameters)
+- [Using kubeseal](#using-kubeseal)
+- [Configuration and installation details](#configuration-and-installation-details)
+- [Troubleshooting](#troubleshooting)
+- [Upgrading](#upgrading)
+  - [To 2.0.0](#to-200)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 ## TL;DR
 
 ```console
@@ -68,6 +90,10 @@ The command removes all the Kubernetes components associated with the chart and 
 | `image.pullSecrets`                               | Sealed Secrets image pull secrets                                                    | `[]`                                |
 | `createController`                                | Specifies whether the Sealed Secrets controller should be created                    | `true`                              |
 | `secretName`                                      | The name of an existing TLS secret containing the key used to encrypt secrets        | `sealed-secrets-key`                |
+| `updateStatus`                                    | Specifies whether the Sealed Secrets controller should update the status subresource | `true`                              |
+| `keyrenewperiod`                                  | Specifies key renewal period. Default 30 days                                        | `""`                                |
+| `command`                                         | Override default container command                                                   | `[]`                                |
+| `args`                                            | Override default container args                                                      | `[]`                                |
 | `resources.limits`                                | The resources limits for the Sealed Secret containers                                | `{}`                                |
 | `resources.requests`                              | The requested resources for the Sealed Secret containers                             | `{}`                                |
 | `podSecurityContext.enabled`                      | Enabled Sealed Secret pods' Security Context                                         | `true`                              |
@@ -82,8 +108,6 @@ The command removes all the Kubernetes components associated with the chart and 
 | `affinity`                                        | Affinity for Sealed Secret pods assignment                                           | `{}`                                |
 | `nodeSelector`                                    | Node labels for Sealed Secret pods assignment                                        | `{}`                                |
 | `tolerations`                                     | Tolerations for Sealed Secret pods assignment                                        | `[]`                                |
-| `updateStatus`                                    | Specifies whether the Sealed Secrets controller should update the status subresource | `true`                              |
-| `keyrenewperiod`                                  | Specifies key renewal period. Default 30 days                                        | `""`                                |
 
 
 ### Traffic Exposure Parameters
@@ -180,7 +204,7 @@ Read about kubeseal usage on [sealed-secrets docs](https://github.com/bitnami-la
 ```yaml
 podSecurityContext:
   fsGroup:
-  
+
 containerSecurityContext:
   runAsUser:
 ```

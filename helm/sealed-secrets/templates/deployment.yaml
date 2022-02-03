@@ -41,8 +41,15 @@ spec:
       containers:
         - name: controller
           command:
+          {{- if .Values.command }}
+            {{- include "sealed-secrets.render" (dict "value" .Values.command "context" $) | nindent 12 }}
+          {{- else }}
             - controller
+          {{- end }}
           args:
+          {{- if .Values.args }}
+            {{- include "sealed-secrets.render" (dict "value" .Values.args "context" $) | nindent 12 }}
+          {{- else }}
             {{- if .Values.updateStatus }}
             - --update-status
             {{- end }}
@@ -52,9 +59,7 @@ spec:
             {{- end }}
             - --key-prefix
             - {{ .Values.secretName | quote }}
-            {{- range $value := .Values.commandArgs }}
-            - {{ $value | quote }}
-            {{- end }}
+          {{- end }}
           image: {{ printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
