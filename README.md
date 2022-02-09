@@ -397,14 +397,14 @@ See [Scopes](#scopes)
 
 #### strict scope (default)
 
-```console
+```bash
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --name mysecret
 AgBChHUWLMx...
 ```
 
 #### namespace-wide scope
 
-```console
+```bash
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --scope namespace-wide
 AgAbbFNkM54...
 ```
@@ -417,7 +417,7 @@ metadata:
 
 #### cluster-wide scope
 
-```console
+```bash
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --scope cluster-wide
 AgAjLKpIYV+...
 ```
