@@ -395,7 +395,7 @@ The downside is that you have to be careful to be consistent with the sealing sc
 
 See [Scopes](#scopes)
 
-#### scrict scope (default)
+#### strict scope (default)
 
 ```console
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --name mysecret
