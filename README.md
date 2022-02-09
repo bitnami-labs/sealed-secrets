@@ -401,6 +401,7 @@ See [Scopes](#scopes)
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --name mysecret
 AgBChHUWLMx...
 ```
+
 #### namespace-wide scope
 
 ```console
@@ -413,6 +414,7 @@ metadata:
   annotations:
     sealedsecrets.bitnami.com/namespace-wide: "true"
 ```
+
 #### cluster-wide scope
 
 ```console
