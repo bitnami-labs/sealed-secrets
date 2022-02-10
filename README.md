@@ -612,3 +612,5 @@ Click [here](http://slack.k8s.io) to sign up to the Kubernetes Slack org.
 ### Related projects
 
 - Visual Studio Code extension: https://marketplace.visualstudio.com/items?itemName=codecontemplator.kubeseal
+- WebSeal: generates secrets in the browser : https://socialgouv.github.io/webseal
+- HybridEncrypt TypeScript implementation : https://github.com/SocialGouv/aes-gcm-rsa-oaep
