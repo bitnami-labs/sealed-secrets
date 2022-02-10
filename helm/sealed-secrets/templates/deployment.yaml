@@ -18,9 +18,11 @@ spec:
         {{- toYaml .Values.podLabels | nindent 8 }}
         {{- end }}
     spec:
-      {{- if .Values.image.pullSecret }}
+      {{- if .Values.image.pullSecrets }}
       imagePullSecrets:
-        - name: {{ .Values.image.pullSecret }}
+      {{- range .Values.image.pullSecrets }}
+        - name: {{ . }}
+      {{- end }}
       {{- end }}
       {{- if .Values.affinity }}
       affinity: {{- toYaml .Values.affinity | nindent 8 }}
