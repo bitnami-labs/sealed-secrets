@@ -5,7 +5,7 @@ on:
       - main
       - bitnami-labs:main
     types:
-      - open
+      - opened
       - edited
       - reopened
     paths:
