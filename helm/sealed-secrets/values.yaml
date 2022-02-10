@@ -55,7 +55,6 @@ updateStatus: true
 ## @param keyrenewperiod Specifies key renewal period. Default 30 days
 ## e.g
 ## keyrenewperiod: "720h30m"
-##
 keyrenewperiod: ""
 ## @param command Override default container command
 ##
