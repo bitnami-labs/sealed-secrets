@@ -1,12 +1,15 @@
 name: Validate Helm Chart
+on:
   pull_request_target:
     branches:
       - main
-on:
-  pull_request:
-    branches: [ main ]
+      - bitnami-labs:main
+    types:
+      - open
+      - synchronize
+      - reopened
     paths:
-      - 'helm/**'
+       - 'helm/**'
 
 env:
   CSP_API_URL: https://console.cloud.vmware.com
