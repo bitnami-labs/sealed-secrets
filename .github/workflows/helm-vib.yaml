@@ -1,5 +1,7 @@
 name: Validate Helm Chart
-
+  pull_request_target:
+    branches:
+      - main
 on:
   pull_request:
     branches: [ main ]
