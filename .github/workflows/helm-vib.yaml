@@ -6,7 +6,7 @@ on:
       - bitnami-labs:main
     types:
       - open
-      - synchronize
+      - edited
       - reopened
     paths:
        - 'helm/**'
