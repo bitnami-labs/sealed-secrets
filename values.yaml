@@ -1,0 +1,9 @@
+## Create Sealed Secrets controller should be created
+createController: true
+## Secret containing the key used to encrypt secrets
+secretName: "sealed-secrets-key"
+## Renew keys every week
+keyrenewperiod: "168h"
+service:
+  type: LoadBalancer
+  port: 80
