@@ -395,16 +395,16 @@ The downside is that you have to be careful to be consistent with the sealing sc
 
 See [Scopes](#scopes)
 
-#### strict scope (default)
+`strict` scope (default):
 
-```bash
+```console
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --name mysecret
 AgBChHUWLMx...
 ```
 
-#### namespace-wide scope
+`namespace-wide` scope:
 
-```bash
+```console
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --scope namespace-wide
 AgAbbFNkM54...
 ```
@@ -415,9 +415,9 @@ metadata:
     sealedsecrets.bitnami.com/namespace-wide: "true"
 ```
 
-#### cluster-wide scope
+`cluster-wide` scope:
 
-```bash
+```console
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --scope cluster-wide
 AgAjLKpIYV+...
 ```
