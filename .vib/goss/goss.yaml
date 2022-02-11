@@ -1,0 +1,17 @@
+file:
+  /usr/local/bin/controller:
+    exists: true
+    group: root
+    mode: "0755"
+    filetype: binary
+command:
+  controller:
+    exec: controller --help
+    exit-status: 0
+    stderr:
+      - Usage of controller
+    timeout: 20000
+addr:
+  http://127.0.0.1:8080:
+    reachable: true
+    timeout: 1000
