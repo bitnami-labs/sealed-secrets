@@ -28,9 +28,7 @@
         {
           "action_id": "health-check",
           "params": {
-            "params": {
-              "endpoint": "lb-sealed-secrets-http"
-            }
+            "endpoint": "lb-sealed-secrets-http"
           }
         }
       ]
