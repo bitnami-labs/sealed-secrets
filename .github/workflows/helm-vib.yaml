@@ -1,4 +1,4 @@
-name: Validate Helm Chart
+name: Verify Helm Chart
 on:
   pull_request_target:
     branches:
@@ -20,6 +20,7 @@ jobs:
   # make sure chart is linted/safe
   vib-validate:
     runs-on: ubuntu-latest
+    name: Lint chart
     steps:
       - uses: actions/checkout@v2
         with:
@@ -38,7 +39,7 @@ jobs:
          - target-platform: gke
            target-platform-id: 91d398a2-25c4-4cda-8732-75a3cfc179a1
       fail-fast: false
-    name: K8s verify ${{ matrix.target-platform}}
+    name: Verify chart in ${{ matrix.target-platform}}
     steps:
       - uses: actions/checkout@v2
         with:
