@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package fetch
+package pubkey
 
 import (
 	"fmt"
@@ -23,17 +23,17 @@ import (
 	"github.com/spf13/viper"
 )
 
-// NewCmdFetch creates a command object for the "fetch" action.
-func NewCmdFetch() *cobra.Command {
-	fetchCmd := &cobra.Command{
+// NewCmdPubkeyFetch creates a command object for the "pubkey fetch" action.
+func NewCmdPubkeyFetch() *cobra.Command {
+	pubkeyFetchCmd := &cobra.Command{
 		Use:   "fetch",
-		Short: "Fetch public key from the controller",
-		Long: `Fetch the public key to use to encrypt secrets from the Sealed Secrets controller
+		Short: "Fetch latest public key from the controller",
+		Long: `Fetch the latest public key to use to encrypt secrets from the Sealed Secrets controller
 
 Examples:
 
-    kseal fetch                  Fetch public key and write its content to stdout.
-	kseal fetch > mycert.pem     Fetch public key and save it on a file.
+    kseal pubkey fetch                  Fetch latest public key and write its content to stdout.
+	kseal pubkey fetch > mycert.pem     Fetch latest public key and save it on a file.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			controllerName := viper.GetString("controller-name")
@@ -43,5 +43,5 @@ Examples:
 		},
 	}
 
-	return fetchCmd
+	return pubkeyFetchCmd
 }

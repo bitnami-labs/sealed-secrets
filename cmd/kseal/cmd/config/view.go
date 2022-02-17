@@ -73,7 +73,7 @@ Examples:
 			return nil
 		},
 	}
-	// Flags particular to 'history' command
+	// Flags particular to 'config view' command
 	setViewCmd.Flags().StringP("output", "o", "plaintext", "Output format.  Supported values are: json, yaml, plaintext")
 
 	return setViewCmd
