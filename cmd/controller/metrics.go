@@ -88,6 +88,8 @@ func init() {
 	prometheus.MustRegister(conditionInfo)
 	prometheus.MustRegister(httpRequestsTotal)
 	prometheus.MustRegister(httpRequestDurationSeconds)
+	// Initialise known label values so that counter exists
+	unsealErrorsTotal.WithLabelValues("fetch", "")
 }
 
 // ObserveCondition sets a `condition_info` Gauge according to a SealedSecret status.
