@@ -259,6 +259,9 @@ rbac:
   ## @param rbac.pspEnabled PodSecurityPolicy
   ##
   pspEnabled: false
+  ## @param rbac.clusterRoleName Name of the clusterrole. To run multiple instances of sealed secrets with create RBAC true you need to set differnet rolenames.
+  ##
+  clusterRoleName: secrets-unsealer
 
 ## @section Metrics parameters
 

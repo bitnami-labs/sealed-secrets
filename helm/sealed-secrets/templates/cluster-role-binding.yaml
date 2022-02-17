@@ -10,7 +10,7 @@ metadata:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: secrets-unsealer
+  name: {{ .Values.rbac.clusterRoleName }}
 subjects:
   - apiGroup: ""
     kind: ServiceAccount
