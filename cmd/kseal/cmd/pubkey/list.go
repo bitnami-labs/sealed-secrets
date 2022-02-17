@@ -36,7 +36,7 @@ func NewCmdPubkeyList() *cobra.Command {
 Examples:
 
     kseal pubkey list              List the available public keys in the controller.
-	kseal pubkey list -o json      List the available public keys in the controller in JSON format.
+    kseal pubkey list -o json      List the available public keys in the controller in JSON format.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			format, _ := cmd.Flags().GetString("output")
