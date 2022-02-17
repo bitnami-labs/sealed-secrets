@@ -45,6 +45,7 @@ rules:
       - ""
     resourceNames:
       - 'http:{{ include "sealed-secrets.fullname" . }}:'
+      - 'http:{{ include "sealed-secrets.fullname" . }}:http'
       - {{ include "sealed-secrets.fullname" . }}
     resources:
       - services/proxy
