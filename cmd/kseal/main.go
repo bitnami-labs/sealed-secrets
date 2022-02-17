@@ -19,6 +19,6 @@ package main
 import "github.com/bitnami-labs/sealed-secrets/cmd/kseal/cmd"
 
 func main() {
-	command := cmd.NewClientCommand()
+	command := cmd.NewKsealCommand()
 	command.Execute()
 }

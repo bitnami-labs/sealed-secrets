@@ -31,8 +31,8 @@ import (
 
 var cfgFile string
 
-// NewClientCommand creates the `client` command and its nested children.
-func NewClientCommand() *cobra.Command {
+// NewKsealCommand creates the `kseal` command and its nested children.
+func NewKsealCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kseal",
 		Short: "kseal is a CLI that uses asymmetric crypto to encrypt secrets that only the Sealed Secrets controller can decrypt.",
