@@ -387,20 +387,45 @@ echo -n baz | kubectl create secret generic mysecret --dry-run=client --from-fil
 
 Creating temporary Secret with the `kubectl` command, only to throw it away once piped to `kubeseal` can
 be a quite unfriendly user experience. We're working on an overhaul of the the CLI experience. In the meantime,
-we offer an alternative mode where kubeseal only cares about encrypting a value to stdout and it's your responsibility to put it inside a SealedSecret resource (not unlike any of the other k8s resources).
+we offer an alternative mode where kubeseal only cares about encrypting a value to stdout and it's your responsibility to put it inside a `SealedSecret` resource (not unlike any of the other k8s resources).
 
 It can also be useful as a building block for editor/IDE integrations.
 
 The downside is that you have to be careful to be consistent with the sealing scope, the namespace and the name.
-See [Scopes](#scopes):
+
+See [Scopes](#scopes)
+
+`strict` scope (default):
 
 ```console
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --name mysecret
 AgBChHUWLMx...
+```
+
+`namespace-wide` scope:
+
+```console
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --scope namespace-wide
 AgAbbFNkM54...
+```
+Include the `sealedsecrets.bitnami.com/namespace-wide` annotation in the `SealedSecret`
+```yaml
+metadata:
+  annotations:
+    sealedsecrets.bitnami.com/namespace-wide: "true"
+```
+
+`cluster-wide` scope:
+
+```console
 $ echo -n foo | kubeseal --raw --from-file=/dev/stdin --scope cluster-wide
 AgAjLKpIYV+...
+```
+Include the `sealedsecrets.bitnami.com/cluster-wide` annotation in the `SealedSecret`
+```yaml
+metadata:
+  annotations:
+    sealedsecrets.bitnami.com/cluster-wide: "true"
 ```
 
 ## Secret Rotation
