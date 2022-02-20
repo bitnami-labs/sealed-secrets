@@ -6,10 +6,6 @@ import (
 	"time"
 )
 
-const (
-	compromised = "compromised"
-)
-
 // ScheduleJobWithTrigger creates a long-running loop that runs a job after an initialDelay
 // and then after each period duration.
 // It returns a trigger function that runs the job early when called.

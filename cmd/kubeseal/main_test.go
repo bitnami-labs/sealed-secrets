@@ -9,10 +9,8 @@ import (
 	"encoding/pem"
 	goflag "flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math/big"
-	mathrand "math/rand"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -22,8 +20,6 @@ import (
 	"testing"
 	"time"
 
-	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
-	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	flag "github.com/spf13/pflag"
@@ -33,6 +29,9 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	certUtil "k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
+
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 )
 
 const testCert = `
@@ -87,11 +86,6 @@ func TestMain(m *testing.M) {
 	// otherwise we'd require a working KUBECONFIG file when calling `run`.
 	flag.CommandLine.Parse([]string{"-n", "default"})
 	os.Exit(m.Run())
-}
-
-// This is omg-not safe for real crypto use!
-func testRand() io.Reader {
-	return mathrand.New(mathrand.NewSource(42))
 }
 
 func tmpfile(t *testing.T, contents []byte) string {
@@ -329,7 +323,7 @@ func TestSeal(t *testing.T) {
 				t.Fatalf("Error encoding: %v", err)
 			}
 
-			t.Logf("input is: %s", string(inbuf.Bytes()))
+			t.Logf("input is: %s", inbuf.String())
 
 			outbuf := bytes.Buffer{}
 			if err := seal(&inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, "", ""); err != nil {
@@ -763,7 +757,7 @@ func TestRaw(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		// encrypt an iteam with data from the testCase and put it
+		// encrypt an item with data from the testCase and put it
 		// in a sealed secret with the metadata from the constants above
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			enc, err := sealTestItem(certFilename, tc.ns, tc.name, secretValue, tc.scope)
