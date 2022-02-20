@@ -95,7 +95,7 @@ data:
 ```
 
 This normal [kubernetes secret](https://kubernetes.io/docs/concepts/configuration/secret/) will appear in the cluster
-after a few seconds and you can use it as you would use any secret that you would have created directly (e.g. reference it from a `Pod`).
+after a few seconds you can use it as you would use any secret that you would have created directly (e.g. reference it from a `Pod`).
 
 Jump to the [Installation](#installation) section to get up and running.
 
@@ -117,7 +117,7 @@ kind: SealedSecret
 metadata:
   name: mysecret
   namespace: mynamespace
-  annotation:
+  annotations:
     "kubectl.kubernetes.io/last-applied-configuration": ....
 spec:
   encryptedData:
@@ -178,7 +178,7 @@ and use it offline with `kubeseal --cert mycert.pem`.
 The certificate is also printed to the controller log on startup.
 
 Since v0.9.x certificates get automatically renewed every 30 days. It's good practice that you and your team
-update your offline certificate periodically. To help you with that, since v0.9.2 `kubeseal` accepts URLs too. You can setup your internal automation to publish certificates somewhere you trust.
+update your offline certificate periodically. To help you with that, since v0.9.2 `kubeseal` accepts URLs too. You can set up your internal automation to publish certificates somewhere you trust.
 
 ```bash
 kubeseal --cert https://your.intranet.company.com/sealed-secrets/your-cluster.cert
@@ -285,12 +285,12 @@ However this is confusing, so our current versioning rule is:
 There can be thus multiple revisions of the helm chart, with fixes that apply only to the helm chart without
 affecting the static YAML manifests or the controller image itself.
 
-NOTE: the helm chart readme still contains a deprecation notice but it's no longer reflects reality
+NOTE: the helm chart readme still contains a deprecation notice, but it's no longer reflects reality
 and will be removed upon next release.
 
 ### Operator Framework
 
-Install Sealed Secrets as Kubernetes Operator via the Operator Lifecyle Manager of your cluster. The `Sealed Secrets Operator (Helm)` is published at [OperatorHub.io](https://operatorhub.io/operator/sealed-secrets-operator-helm) for Kubernetes, as community operator in OpenShift's integrated OperatorHub or at the [GitHub repository](https://github.com/disposab1e/sealed-secrets-operator-helm) of the project.
+Install Sealed Secrets as Kubernetes Operator via the Operator Lifecycle Manager of your cluster. The `Sealed Secrets Operator (Helm)` is published at [OperatorHub.io](https://operatorhub.io/operator/sealed-secrets-operator-helm) for Kubernetes, as community operator in OpenShift's integrated OperatorHub or at the [GitHub repository](https://github.com/disposab1e/sealed-secrets-operator-helm) of the project.
 
 NOTE: the sealed secrets operator is an independently maintained project, so please contact the maintainers directly for support, help or [documentation](https://sealed-secrets-operator-helm.readthedocs.io/en/latest/).
 
@@ -386,8 +386,8 @@ echo -n baz | kubectl create secret generic mysecret --dry-run=client --from-fil
 ### Raw mode (experimental)
 
 Creating temporary Secret with the `kubectl` command, only to throw it away once piped to `kubeseal` can
-be a quite unfriendly user experience. We're working on an overhaul of the the CLI experience. In the meantime,
-we offer an alternative mode where kubeseal only cares about encrypting a value to stdout and it's your responsibility to put it inside a `SealedSecret` resource (not unlike any of the other k8s resources).
+be a quite unfriendly user experience. We're working on an overhaul of the CLI experience. In the meantime,
+we offer an alternative mode where kubeseal only cares about encrypting a value to stdout, and it's your responsibility to put it inside a `SealedSecret` resource (not unlike any of the other k8s resources).
 
 It can also be useful as a building block for editor/IDE integrations.
 
@@ -478,7 +478,7 @@ The best practice is to periodically rotate all your actual secrets (e.g. change
 SealedSecret resource with those new secrets.
 
 But if the sealed secrets controller were not renewing the *sealing key* that rotation would be moot,
-since the attacker could just decrypt the new secrets as well. Thus you need to do both: periodically renew the sealing key and rotate your actual secrets!
+since the attacker could just decrypt the new secrets as well. Thus, you need to do both: periodically renew the sealing key and rotate your actual secrets!
 
 ### Early key renewal
 
@@ -532,7 +532,7 @@ The invocation above will produce a new sealed secret file freshly encrypted wit
 the latest key, without making the secrets leave the cluster to the client. You can then save that file
 in your version control system (`kubeseal --re-encrypt` doesn't update the in-cluster object).
 
-Currently old keys are not garbage collected automatically.
+Currently, old keys are not garbage collected automatically.
 
 It's a good idea to periodically re-encrypt your SealedSecrets. But as mentioned above, don't lull yourself in a false sense of security: you must assume the old version of the SealedSecret (the one encrypted with a key you think of as dead) is still potentially around and accessible to attackers. I.e. re-encryption is not a substitute for periodically rotating your actual secrets.
 
@@ -577,7 +577,7 @@ kubectl get secret -n kube-system sealed-secrets-key -o yaml >>master.key
 
 NOTE: you need the second statement only if you ever installed sealed-secrets older than version 0.9.x on your cluster.
 
-NOTE: This file will contains the controller's public + private keys and should be kept omg-safe!
+NOTE: This file will contain the controller's public + private keys and should be kept omg-safe!
 
 To restore from a backup after some disaster, just put that secrets back before starting the controller - or if the controller was already started, replace the newly-created secrets and restart the controller:
 
@@ -597,7 +597,7 @@ If you have backed up one or more of your private keys (see previous question), 
 
 You can check the flags available using `kubeseal --help`.
 
-### How do I update parts of JSON/YAML/TOML.. file encrypted with sealed secrets?
+### How do I update parts of JSON/YAML/TOML/.. file encrypted with sealed secrets?
 
 A kubernetes secret resource contains multiple items, basically a flat map of key/value pairs.
 SealedSecrets operate at that level, and does not care what you put in the values. In other words
@@ -608,7 +608,7 @@ Since this is a common problem, especially when dealing with legacy applications
 
 ### Can I bring my own (pre-generated) certificates?
 
-Yes, you can provide the controller with your own certificates so it will consume them.
+Yes, you can provide the controller with your own certificates, and it will consume them.
 Please check [here](docs/bring-your-own-certificates.md) for a workaround.
 
 ### How to use kubeseal if the controller is not running within the `kube-system` namespace?
