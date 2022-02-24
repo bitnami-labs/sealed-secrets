@@ -32,15 +32,13 @@ Examples:
     kseal config set controller-name "sealed-secrets"     Set "controller-name" to "sealed-secrets" in the configuration file.
     kseal config view --config "~/.foo.yaml"              Display settings in the "~/.foo.yaml" configuration file.
 `,
-		Run: runHelp,
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
+		},
 	}
 
 	// Subcommands
 	configCmd.AddCommand(NewCmdConfigSet())
 	configCmd.AddCommand(NewCmdConfigView())
 	return configCmd
-}
-
-func runHelp(cmd *cobra.Command, args []string) {
-	cmd.Help()
 }

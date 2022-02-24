@@ -17,8 +17,21 @@ limitations under the License.
 package pubkey
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
+
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
+
+type KsealConfig struct {
+	K8sConfig           *rest.Config
+	ControllerNamespace string
+	ControllerName      string
+}
+
+var k8sClientConfig clientcmd.ClientConfig
 
 // NewCmdPubkey creates a command object for the "pubkey" action.
 func NewCmdPubkey() *cobra.Command {
@@ -32,11 +45,23 @@ Examples:
     kseal pubkey fetch       Fetch public key and write its content to stdout.
     kseal pubkey list        List available public keys.
 `,
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
+		},
 	}
 
 	// Subcommands
 	pubkeyCmd.AddCommand(NewCmdPubkeyFetch())
 	pubkeyCmd.AddCommand(NewCmdPubkeyList())
+	// Initialize K8s Config
+	cobra.OnInitialize(initK8sConfig)
 
 	return pubkeyCmd
+}
+
+// initK8sConfig creates a K8s client config object
+func initK8sConfig() {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+	k8sClientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{}, os.Stdin)
 }

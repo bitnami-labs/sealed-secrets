@@ -17,13 +17,7 @@ limitations under the License.
 package pubkey
 
 import (
-	"encoding/json"
-	"errors"
-	"fmt"
-
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"sigs.k8s.io/yaml"
 )
 
 // NewCmdPubkeyList creates a command object for the "pubkey list" action.
@@ -39,32 +33,44 @@ Examples:
     kseal pubkey list -o json      List the available public keys in the controller in JSON format.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			format, _ := cmd.Flags().GetString("output")
-			controllerName := viper.GetString("controller-name")
-			controllerNamespace := viper.GetString("controller-namespace")
-			keyset := []string{"foo", "bar"}
-			fmt.Printf("I will list the keys in the controller \"%s\" in the namespace \"%s\"\n", controllerName, controllerNamespace)
-			switch format {
-			case "plaintext":
-				fmt.Println("Key set:")
-				for i, k := range keyset {
-					fmt.Printf("[%d] -> %s\n", i, k)
-				}
-			case "yaml", "json":
-				buf, err := json.MarshalIndent(keyset, "", "    ")
-				if err != nil {
-					return err
-				}
-				if format == "yaml" {
-					buf, err = yaml.JSONToYAML(buf)
-					if err != nil {
-						return err
-					}
-				}
-				fmt.Println(string(buf))
-			default:
-				return errors.New("Unknown output format: %s" + format)
-			}
+			// TODO: The API doesn't expose and endpoint to retrieve this information
+			// format, _ := cmd.Flags().GetString("output")
+			// // Obtain K8s REST config
+			// restConf, err := k8sClientConfig.ClientConfig()
+			// if err != nil {
+			// 	return fmt.Errorf("cannot obtain k8s config: %v", err)
+			// }
+			// // Create kseal config object
+			// kc := &KsealConfig{
+			// 	K8sConfig:           restConf,
+			// 	ControllerNamespace: viper.GetString("controller-namespace"),
+			// 	ControllerName:      viper.GetString("controller-name"),
+			// }
+			// keyset, err := kc.listKeys()
+			// if err != nil {
+			// 	return err
+			// }
+			// switch format {
+			// case "plaintext":
+			// 	fmt.Println("Key set:")
+			// 	for i, k := range keyset {
+			// 		fmt.Printf("[%d] -> %s\n", i, k)
+			// 	}
+			// case "yaml", "json":
+			// 	buf, err := json.MarshalIndent(keyset, "", "    ")
+			// 	if err != nil {
+			// 		return err
+			// 	}
+			// 	if format == "yaml" {
+			// 		buf, err = yaml.JSONToYAML(buf)
+			// 		if err != nil {
+			// 			return err
+			// 		}
+			// 	}
+			// 	fmt.Println(string(buf))
+			// default:
+			// 	return errors.New("Unknown output format: %s" + format)
+			// }
 			return nil
 		},
 	}

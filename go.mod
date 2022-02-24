@@ -21,11 +21,11 @@ require (
 	github.com/throttled/throttled v2.2.2+incompatible
 	golang.org/x/crypto v0.0.0-20210817164053-32db794688a5
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.22.1
-	k8s.io/apimachinery v0.22.1
-	k8s.io/client-go v0.22.1
+	k8s.io/api v0.23.3
+	k8s.io/apimachinery v0.23.3
+	k8s.io/client-go v0.23.3
 	k8s.io/code-generator v0.16.8
 	k8s.io/klog v1.0.0
-	k8s.io/klog/v2 v2.9.0
+	k8s.io/klog/v2 v2.30.0
 	sigs.k8s.io/yaml v1.2.0
 )

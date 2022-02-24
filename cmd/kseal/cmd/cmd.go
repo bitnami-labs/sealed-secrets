@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 
 	"github.com/bitnami-labs/sealed-secrets/cmd/kseal/cmd/config"
-	"github.com/bitnami-labs/sealed-secrets/cmd/kseal/cmd/encrypt"
+	"github.com/bitnami-labs/sealed-secrets/cmd/kseal/cmd/create"
 	"github.com/bitnami-labs/sealed-secrets/cmd/kseal/cmd/pubkey"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -36,14 +36,16 @@ func NewKsealCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "kseal",
 		Short: "kseal is a CLI that uses asymmetric crypto to encrypt secrets that only the Sealed Secrets controller can decrypt.",
-		Run:   runHelp,
+		Run: func(cmd *cobra.Command, args []string) {
+			cmd.Help()
+		},
 	}
 
 	// Flags common to all sub commands
 	cmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.kseal/config)")
 	// Subcommands
 	cmd.AddCommand(config.NewCmdConfig())
-	cmd.AddCommand(encrypt.NewCmdEncrypt())
+	cmd.AddCommand(create.NewCmdCreate())
 	cmd.AddCommand(pubkey.NewCmdPubkey())
 	// Initialize configuration on every sub command
 	cobra.OnInitialize(initConfig)
@@ -87,8 +89,4 @@ func initConfig() {
 			er(err)
 		}
 	}
-}
-
-func runHelp(cmd *cobra.Command, args []string) {
-	cmd.Help()
 }
