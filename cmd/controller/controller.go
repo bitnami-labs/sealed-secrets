@@ -23,7 +23,7 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	"github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	ssclientset "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssscheme "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/scheme"
 	ssv1alpha1client "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/typed/sealed-secrets/v1alpha1"
@@ -96,7 +96,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 			if err == nil {
 				queue.Add(key)
 			}
-			if ssecret, ok := obj.(*v1alpha1.SealedSecret); ok {
+			if ssecret, ok := obj.(*ssv1alpha1.SealedSecret); ok {
 				UnregisterCondition(ssecret)
 			}
 		},
@@ -206,7 +206,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 		return nil
 	}
 
-	ssecret := obj.(*v1alpha1.SealedSecret)
+	ssecret := obj.(*ssv1alpha1.SealedSecret)
 	log.Printf("Updating %s", key)
 
 	// any exit of this function at this point will cause an update to the status subresource
@@ -269,14 +269,14 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	return nil
 }
 
-func (c *Controller) updateSealedSecretStatus(ssecret *v1alpha1.SealedSecret, unsealError error) error {
+func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, unsealError error) error {
 	if !c.updateStatus {
 		klog.V(2).Infof("not updating status because updateStatus feature flag not turned on")
 		return nil
 	}
 
 	if ssecret.Status == nil {
-		ssecret.Status = &v1alpha1.SealedSecretStatus{}
+		ssecret.Status = &ssv1alpha1.SealedSecretStatus{}
 	}
 
 	// No need to update the status if we already have observed it from the
@@ -292,15 +292,15 @@ func (c *Controller) updateSealedSecretStatus(ssecret *v1alpha1.SealedSecret, un
 	return err
 }
 
-func updateSealedSecretsStatusConditions(st *v1alpha1.SealedSecretStatus, unsealError error) {
-	cond := func() *v1alpha1.SealedSecretCondition {
+func updateSealedSecretsStatusConditions(st *ssv1alpha1.SealedSecretStatus, unsealError error) {
+	cond := func() *ssv1alpha1.SealedSecretCondition {
 		for i := range st.Conditions {
-			if st.Conditions[i].Type == v1alpha1.SealedSecretSynced {
+			if st.Conditions[i].Type == ssv1alpha1.SealedSecretSynced {
 				return &st.Conditions[i]
 			}
 		}
-		st.Conditions = append(st.Conditions, v1alpha1.SealedSecretCondition{
-			Type: v1alpha1.SealedSecretSynced,
+		st.Conditions = append(st.Conditions, ssv1alpha1.SealedSecretCondition{
+			Type: ssv1alpha1.SealedSecretSynced,
 		})
 		return &st.Conditions[len(st.Conditions)-1]
 	}()
@@ -322,7 +322,7 @@ func updateSealedSecretsStatusConditions(st *v1alpha1.SealedSecretStatus, unseal
 
 // checks if the annotation equals to "true", and it's case-sensitive
 func isAnnotatedToBeManaged(secret *corev1.Secret) bool {
-	return secret.Annotations[v1alpha1.SealedSecretManagedAnnotation] == "true"
+	return secret.Annotations[ssv1alpha1.SealedSecretManagedAnnotation] == "true"
 }
 
 // AttemptUnseal tries to unseal a secret.
@@ -331,13 +331,13 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 		return false, err
 	}
 
-	object, err := runtime.Decode(scheme.Codecs.UniversalDecoder(v1alpha1.SchemeGroupVersion), content)
+	object, err := runtime.Decode(scheme.Codecs.UniversalDecoder(ssv1alpha1.SchemeGroupVersion), content)
 	if err != nil {
 		return false, err
 	}
 
 	switch s := object.(type) {
-	case *v1alpha1.SealedSecret:
+	case *ssv1alpha1.SealedSecret:
 		if _, err := c.attemptUnseal(s); err != nil {
 			return false, nil
 		}
@@ -351,19 +351,19 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 // with the latest private key. If the secret is already encrypted with the latest,
 // returns the input.
 func (c *Controller) Rotate(content []byte) ([]byte, error) {
-	object, err := runtime.Decode(scheme.Codecs.UniversalDecoder(v1alpha1.SchemeGroupVersion), content)
+	object, err := runtime.Decode(scheme.Codecs.UniversalDecoder(ssv1alpha1.SchemeGroupVersion), content)
 	if err != nil {
 		return nil, err
 	}
 
 	switch s := object.(type) {
-	case *v1alpha1.SealedSecret:
+	case *ssv1alpha1.SealedSecret:
 		secret, err := c.attemptUnseal(s)
 		if err != nil {
 			return nil, fmt.Errorf("Error decrypting secret. %v", err)
 		}
 		latestPrivKey := c.keyRegistry.latestPrivateKey()
-		resealedSecret, err := v1alpha1.NewSealedSecret(scheme.Codecs, &latestPrivKey.PublicKey, secret)
+		resealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, &latestPrivKey.PublicKey, secret)
 		if err != nil {
 			return nil, fmt.Errorf("Error creating new sealed secret. %v", err)
 		}
@@ -377,11 +377,11 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 	}
 }
 
-func (c *Controller) attemptUnseal(ss *v1alpha1.SealedSecret) (*corev1.Secret, error) {
+func (c *Controller) attemptUnseal(ss *ssv1alpha1.SealedSecret) (*corev1.Secret, error) {
 	return attemptUnseal(ss, c.keyRegistry)
 }
 
-func attemptUnseal(ss *v1alpha1.SealedSecret, keyRegistry *KeyRegistry) (*corev1.Secret, error) {
+func attemptUnseal(ss *ssv1alpha1.SealedSecret, keyRegistry *KeyRegistry) (*corev1.Secret, error) {
 	privateKeys := map[string]*rsa.PrivateKey{}
 	for k, v := range keyRegistry.keys {
 		privateKeys[k] = v.private
