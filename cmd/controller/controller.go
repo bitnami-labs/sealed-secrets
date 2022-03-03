@@ -13,7 +13,6 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -24,7 +23,6 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	"github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	ssclientset "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssscheme "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/scheme"
@@ -66,33 +64,6 @@ type Controller struct {
 	updateStatus  bool // feature flag that enables updating the status subresource.
 }
 
-func unseal(ctx context.Context, sclient v1.SecretsGetter, codecs runtimeserializer.CodecFactory, keyRegistry *KeyRegistry, ssecret *ssv1alpha1.SealedSecret) error {
-	// Important: Be careful not to reveal the namespace/name of
-	// the *decrypted* Secret (or any other detail) in error/log
-	// messages.
-
-	objName := fmt.Sprintf("%s/%s", ssecret.GetObjectMeta().GetNamespace(), ssecret.GetObjectMeta().GetName())
-	log.Printf("Updating %s", objName)
-
-	secret, err := attemptUnseal(ssecret, keyRegistry)
-	if err != nil {
-		// TODO: Add error event
-		return err
-	}
-
-	_, err = sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(ctx, secret, metav1.CreateOptions{})
-	if err != nil && errors.IsAlreadyExists(err) {
-		_, err = sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(ctx, secret, metav1.UpdateOptions{})
-	}
-	if err != nil {
-		// TODO: requeue?
-		return err
-	}
-
-	log.Printf("Updated %s", objName)
-	return nil
-}
-
 // NewController returns the main sealed-secrets controller loop.
 func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, keyRegistry *KeyRegistry) *Controller {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
@@ -125,7 +96,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 			if err == nil {
 				queue.Add(key)
 			}
-			if ssecret, ok := obj.(*v1alpha1.SealedSecret); ok {
+			if ssecret, ok := obj.(*ssv1alpha1.SealedSecret); ok {
 				UnregisterCondition(ssecret)
 			}
 		},
@@ -239,7 +210,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	log.Printf("Updating %s", key)
 
 	// any exit of this function at this point will cause an update to the status subresource
-	// of the SealedSecret custome resource. The return value of the unseal function is available
+	// of the SealedSecret custom resource. The return value of the unseal function is available
 	// to the deferred function body in the unsealErr named return value (even if explicit return
 	// statements are used to return).
 	defer func() {
@@ -286,7 +257,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	secret.ObjectMeta.Labels = newSecret.ObjectMeta.Labels
 
 	if !apiequality.Semantic.DeepEqual(origSecret, secret) {
-		secret, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(ctx, secret, metav1.UpdateOptions{})
+		_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(ctx, secret, metav1.UpdateOptions{})
 		if err != nil {
 			c.recorder.Event(ssecret, corev1.EventTypeWarning, ErrUpdateFailed, err.Error())
 			unsealErrorsTotal.WithLabelValues("update", ssecret.GetNamespace()).Inc()
@@ -349,38 +320,7 @@ func updateSealedSecretsStatusConditions(st *ssv1alpha1.SealedSecretStatus, unse
 	}
 }
 
-func (c *Controller) updateSecret(ctx context.Context, newSecret *corev1.Secret) (*corev1.Secret, error) {
-	existingSecret, err := c.sclient.Secrets(newSecret.GetObjectMeta().GetNamespace()).Get(ctx, newSecret.GetObjectMeta().GetName(), metav1.GetOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("failed to read existing secret: %s", err)
-	}
-	existingSecret = existingSecret.DeepCopy()
-	existingSecret.Data = newSecret.Data
-
-	c.updateOwnerReferences(existingSecret, newSecret)
-
-	return existingSecret, nil
-}
-
-func (c *Controller) updateOwnerReferences(existing, new *corev1.Secret) {
-	ownerRefs := existing.GetOwnerReferences()
-
-	for _, newRef := range new.GetOwnerReferences() {
-		found := false
-		for _, ref := range ownerRefs {
-			if newRef.UID == ref.UID {
-				found = true
-				break
-			}
-		}
-		if !found {
-			ownerRefs = append(ownerRefs, newRef)
-		}
-	}
-	existing.SetOwnerReferences(ownerRefs)
-}
-
-// checks if the annotation equals to "true", and it's case sensitive
+// checks if the annotation equals to "true", and it's case-sensitive
 func isAnnotatedToBeManaged(secret *corev1.Secret) bool {
 	return secret.Annotations[ssv1alpha1.SealedSecretManagedAnnotation] == "true"
 }

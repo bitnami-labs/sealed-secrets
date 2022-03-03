@@ -33,7 +33,7 @@ type secretRotator func([]byte) ([]byte, error)
 // all users of a given cluster. It must not leak any secret material.
 // The server is started in the background and a handle to it returned so it can be shut down.
 func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Server {
-	httpRateLimiter := rateLimter()
+	httpRateLimiter := rateLimiter()
 
 	mux := http.NewServeMux()
 
@@ -116,7 +116,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 	return &server
 }
 
-func rateLimter() throttled.HTTPRateLimiter {
+func rateLimiter() throttled.HTTPRateLimiter {
 	store, err := memstore.New(65536)
 	if err != nil {
 		log.Fatal(err)

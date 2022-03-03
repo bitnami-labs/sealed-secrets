@@ -18,9 +18,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
-	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
-	"github.com/bitnami-labs/sealed-secrets/pkg/multidocyaml"
 	"github.com/google/renameio"
 	"github.com/mattn/go-isatty"
 	flag "github.com/spf13/pflag"
@@ -35,6 +32,10 @@ import (
 	"k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
 	"k8s.io/klog/v2"
+
+	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	"github.com/bitnami-labs/sealed-secrets/pkg/multidocyaml"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 
@@ -388,10 +389,7 @@ func reEncryptSealedSecret(ctx context.Context, in io.Reader, out io.Writer, cod
 	ssecret.SetCreationTimestamp(metav1.Time{})
 	ssecret.SetDeletionTimestamp(nil)
 	ssecret.Generation = 0
-	if err = sealedSecretOutput(out, codecs, ssecret); err != nil {
-		return err
-	}
-	return nil
+	return sealedSecretOutput(out, codecs, ssecret)
 }
 
 func resourceOutput(out io.Writer, codecs runtimeserializer.CodecFactory, gv runtime.GroupVersioner, obj runtime.Object) error {
