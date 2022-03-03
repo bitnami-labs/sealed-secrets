@@ -24,6 +24,7 @@ import (
 	"github.com/bitnami-labs/sealed-secrets/cmd/kseal/cmd/config"
 	"github.com/bitnami-labs/sealed-secrets/cmd/kseal/cmd/create"
 	"github.com/bitnami-labs/sealed-secrets/cmd/kseal/cmd/pubkey"
+	"github.com/bitnami-labs/sealed-secrets/cmd/kseal/cmd/verify"
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -47,6 +48,7 @@ func NewKsealCommand() *cobra.Command {
 	cmd.AddCommand(config.NewCmdConfig())
 	cmd.AddCommand(create.NewCmdCreate())
 	cmd.AddCommand(pubkey.NewCmdPubkey())
+	cmd.AddCommand(verify.NewCmdVerify())
 	// Initialize configuration on every sub command
 	cobra.OnInitialize(initConfig)
 

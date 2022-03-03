@@ -17,21 +17,9 @@ limitations under the License.
 package pubkey
 
 import (
-	"os"
-
+	kc "github.com/bitnami-labs/sealed-secrets/cmd/kseal/pkg/config"
 	"github.com/spf13/cobra"
-
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 )
-
-type KsealConfig struct {
-	K8sConfig           *rest.Config
-	ControllerNamespace string
-	ControllerName      string
-}
-
-var k8sClientConfig clientcmd.ClientConfig
 
 // NewCmdPubkey creates a command object for the "pubkey" action.
 func NewCmdPubkey() *cobra.Command {
@@ -54,14 +42,7 @@ Examples:
 	pubkeyCmd.AddCommand(NewCmdPubkeyFetch())
 	pubkeyCmd.AddCommand(NewCmdPubkeyList())
 	// Initialize K8s Config
-	cobra.OnInitialize(initK8sConfig)
+	cobra.OnInitialize(kc.InitConfig)
 
 	return pubkeyCmd
-}
-
-// initK8sConfig creates a K8s client config object
-func initK8sConfig() {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	k8sClientConfig = clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{}, os.Stdin)
 }

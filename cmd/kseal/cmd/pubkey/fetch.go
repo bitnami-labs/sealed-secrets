@@ -22,13 +22,9 @@ import (
 	"io"
 	"os"
 
+	kc "github.com/bitnami-labs/sealed-secrets/cmd/kseal/pkg/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
-
-	// Register Auth providers
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
 // NewCmdPubkeyFetch creates a command object for the "pubkey fetch" action.
@@ -44,18 +40,9 @@ Examples:
 	kseal pubkey fetch > mycert.pem     Fetch latest public key and save it on a file.
 `,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// Obtain K8s REST config
-			restConf, err := k8sClientConfig.ClientConfig()
-			if err != nil {
-				return fmt.Errorf("cannot obtain k8s config: %v", err)
-			}
-			// Create kseal config object
-			kc := &KsealConfig{
-				K8sConfig:           restConf,
-				ControllerNamespace: viper.GetString("controller-namespace"),
-				ControllerName:      viper.GetString("controller-name"),
-			}
-			key, err := kc.fetchLatestKey()
+			kc.GlobalConfig.ControllerNamespace = viper.GetString("controller-namespace")
+			kc.GlobalConfig.ControllerName = viper.GetString("controller-name")
+			key, err := fetchLatestKey(kc.GlobalConfig)
 			if err != nil {
 				return err
 			}
@@ -72,36 +59,16 @@ Examples:
 	return pubkeyFetchCmd
 }
 
-// getServicePortName obtains the controller service port name
-func (kc *KsealConfig) getServicePortName() (string, error) {
-	restClient, err := corev1.NewForConfig(kc.K8sConfig)
-	if err != nil {
-		return "", fmt.Errorf("cannot create k8s client: %v", err)
-	}
-	service, err := restClient.
-		Services(kc.ControllerNamespace).
-		Get(context.Background(), kc.ControllerName, metav1.GetOptions{})
-	if err != nil {
-		return "", fmt.Errorf("cannot get controller service: %v", err)
-	}
-	return service.Spec.Ports[0].Name, nil
-}
-
 // fetchLatestKey fetches the latest public key by performing an
 // HTTP request to the controller through the k8s API proxy.
-func (kc *KsealConfig) fetchLatestKey() (io.ReadCloser, error) {
-	portName, err := kc.getServicePortName()
+func fetchLatestKey(c kc.Config) (io.ReadCloser, error) {
+	portName, err := c.GetServicePortName()
 	if err != nil {
 		return nil, fmt.Errorf("cannot get controller service port: %v", err)
 	}
-	kc.K8sConfig.AcceptContentTypes = "application/x-pem-file, */*"
-	restClient, err := corev1.NewForConfig(kc.K8sConfig)
-	if err != nil {
-		return nil, fmt.Errorf("cannot create k8s client: %v", err)
-	}
-	cert, err := restClient.
-		Services(kc.ControllerNamespace).
-		ProxyGet("http", kc.ControllerName, portName, "/v1/cert.pem", nil).
+	cert, err := c.K8sClient.
+		Services(c.ControllerNamespace).
+		ProxyGet("http", c.ControllerName, portName, "/v1/cert.pem", nil).
 		Stream(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("cannot fetch certificate: %v", err)
