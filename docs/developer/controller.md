@@ -1,6 +1,24 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Controller Developer Guide](#controller-developer-guide)
+  - [Download the controller source code](#download-the-controller-source-code)
+    - [Building the `controller` binary](#building-the-controller-binary)
+    - [Running unit tests](#running-unit-tests)
+    - [Building the controller image](#building-the-controller-image)
+    - [Building the controller manifests](#building-the-controller-manifests)
+    - [Running integration tests](#running-integration-tests)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Controller Developer Guide
 
 The controller is in charge of keeping the current state of `SealedSecret` objects in sync with the declared desired state.
+
+The controller exposes an API defined using the Swagger or OpenAPI v3 specification. You can download the definition from the link below:
+
+- [swagger.yml](swagger.yml)
 
 ## Download the controller source code
 
