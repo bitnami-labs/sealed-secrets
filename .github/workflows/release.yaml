@@ -22,7 +22,7 @@ jobs:
       - name: Setup kubecfg
         run: |
           mkdir -p ~/bin
-          curl -sLf https://github.com/bitnami/kubecfg/releases/download/v0.16.0/kubecfg-linux-amd64 >~/bin/kubecfg
+          curl -sLf https://github.com/kubecfg/kubecfg/releases/download/v0.25.0/kubecfg_Linux_X64 >~/bin/kubecfg
           chmod +x ~/bin/kubecfg
 
       # Run tests
