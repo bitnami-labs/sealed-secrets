@@ -26,6 +26,7 @@ import (
 
 	"github.com/bitnami-labs/flagenv"
 	"github.com/bitnami-labs/pflagenv"
+
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
@@ -77,16 +78,8 @@ func init() {
 	}
 }
 
-type controller struct {
-	clientset kubernetes.Interface
-}
-
 func initKeyPrefix(keyPrefix string) (string, error) {
-	prefix, err := validateKeyPrefix(keyPrefix)
-	if err != nil {
-		return "", err
-	}
-	return prefix, err
+	return validateKeyPrefix(keyPrefix)
 }
 
 func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
