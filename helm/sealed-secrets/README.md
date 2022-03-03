@@ -94,6 +94,27 @@ The command removes all the Kubernetes components associated with the chart and 
 | `keyrenewperiod`                                  | Specifies key renewal period. Default 30 days                                        | `""`                                |
 | `command`                                         | Override default container command                                                   | `[]`                                |
 | `args`                                            | Override default container args                                                      | `[]`                                |
+| `livenessProbe.enabled`                           | Enable livenessProbe on Sealed Secret containers                                     | `true`                              |
+| `livenessProbe.initialDelaySeconds`               | Initial delay seconds for livenessProbe                                              | `0`                                 |
+| `livenessProbe.periodSeconds`                     | Period seconds for livenessProbe                                                     | `10`                                |
+| `livenessProbe.timeoutSeconds`                    | Timeout seconds for livenessProbe                                                    | `1`                                 |
+| `livenessProbe.failureThreshold`                  | Failure threshold for livenessProbe                                                  | `3`                                 |
+| `livenessProbe.successThreshold`                  | Success threshold for livenessProbe                                                  | `1`                                 |
+| `readinessProbe.enabled`                          | Enable readinessProbe on Sealed Secret containers                                    | `true`                              |
+| `readinessProbe.initialDelaySeconds`              | Initial delay seconds for readinessProbe                                             | `0`                                 |
+| `readinessProbe.periodSeconds`                    | Period seconds for readinessProbe                                                    | `10`                                |
+| `readinessProbe.timeoutSeconds`                   | Timeout seconds for readinessProbe                                                   | `1`                                 |
+| `readinessProbe.failureThreshold`                 | Failure threshold for readinessProbe                                                 | `3`                                 |
+| `readinessProbe.successThreshold`                 | Success threshold for readinessProbe                                                 | `1`                                 |
+| `startupProbe.enabled`                            | Enable startupProbe on Sealed Secret containers                                      | `false`                             |
+| `startupProbe.initialDelaySeconds`                | Initial delay seconds for startupProbe                                               | `0`                                 |
+| `startupProbe.periodSeconds`                      | Period seconds for startupProbe                                                      | `10`                                |
+| `startupProbe.timeoutSeconds`                     | Timeout seconds for startupProbe                                                     | `1`                                 |
+| `startupProbe.failureThreshold`                   | Failure threshold for startupProbe                                                   | `3`                                 |
+| `startupProbe.successThreshold`                   | Success threshold for startupProbe                                                   | `1`                                 |
+| `customLivenessProbe`                             | Custom livenessProbe that overrides the default one                                  | `{}`                                |
+| `customReadinessProbe`                            | Custom readinessProbe that overrides the default one                                 | `{}`                                |
+| `customStartupProbe`                              | Custom startupProbe that overrides the default one                                   | `{}`                                |
 | `resources.limits`                                | The resources limits for the Sealed Secret containers                                | `{}`                                |
 | `resources.requests`                              | The requested resources for the Sealed Secret containers                             | `{}`                                |
 | `podSecurityContext.enabled`                      | Enabled Sealed Secret pods' Security Context                                         | `true`                              |

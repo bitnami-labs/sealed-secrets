@@ -67,14 +67,29 @@ spec:
           ports:
             - containerPort: 8080
               name: http
-          livenessProbe:
+          {{- if .Values.startupProbe.enabled }}
+          startupProbe: {{- include "sealed-secrets.render" (dict "value" (omit .Values.startupProbe "enabled") "context" $) | nindent 12 }}
+            tcpSocket:
+              port: http
+          {{- else if .Values.customStartupProbe }}
+          startupProbe: {{- include "sealed-secrets.render" (dict "value" .Values.customStartupProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.livenessProbe.enabled }}
+          livenessProbe: {{- include "sealed-secrets.render" (dict "value" (omit .Values.livenessProbe "enabled") "context" $) | nindent 12 }}
             httpGet:
               path: /healthz
               port: http
-          readinessProbe:
+          {{- else if .Values.customLivenessProbe }}
+          livenessProbe: {{- include "sealed-secrets.render" (dict "value" .Values.customLivenessProbe "context" $) | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe.enabled }}
+          readinessProbe: {{- include "sealed-secrets.render" (dict "value" (omit .Values.readinessProbe "enabled") "context" $) | nindent 12 }}
             httpGet:
               path: /healthz
               port: http
+          {{- else if .Values.customReadinessProbe }}
+          readinessProbe: {{- include "sealed-secrets.render" (dict "value" .Values.customReadinessProbe "context" $) | nindent 12 }}
+          {{- end }}
           {{- if .Values.resources }}
           resources: {{- toYaml .Values.resources | nindent 12 }}
           {{- end }}
