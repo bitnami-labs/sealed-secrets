@@ -31,7 +31,7 @@ To be able to develop on this project, you need to have the following tools inst
 
 Sealed Secrets is composed of three parts:
 
-- A [custom resource](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources/) named `SealedSecret`
+- A [custom resource](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/custom-resources) named `SealedSecret`
 - A cluster-side controller / operator that manages the `SealedSecret` objects
 - A client-side utility: kubeseal
 

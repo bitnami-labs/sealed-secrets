@@ -1,0 +1,118 @@
+openapi: 3.0.3
+info:
+  title: Sealed Secrets Controller
+  description: Sealed Secrets are "one-way" encrypted K8s Secrets that can be created by anyone, but can only be decrypted by the controller running in the target cluster, recovering the original Secret object.
+  version: 0.17.3
+servers:
+  - url: http://sealed-secrets-controller/v1
+    description: Sealed Secrets Controller API
+paths:
+  /cert.pem:
+    get:
+      summary: Get public key certificate to use to sign Sealed Secrets
+      responses:
+        200:
+          description: Certificate
+          content:
+            application/x-pem-file:
+              schema:
+                type: string
+                format: binary
+        500:
+          description: Internal Server Error
+        default:
+          description: Unexpected error
+  /verify:
+    post:
+      summary: Validate Sealed Secrets object
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SealedSecret'
+      responses:
+        200:
+          description: Validation OK
+        400:
+          description: Bad Request
+        409:
+          description: Conflict
+        500:
+          description: Internal Server Error
+  /rotate:
+    post:
+      summary: Re-encrypt Sealed Secrets object
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SealedSecret'
+      responses:
+        200:
+          description: Sealed Secrets re-encrypted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SealedSecret'
+        400:
+          description: Bad Request
+        409:
+          description: Conflict
+        500:
+          description: Internal Server Error
+components:
+  schemas:
+    SealedSecret:
+      type: object
+      properties:
+        apiVersion:
+          type: string
+          description: Sealed Secrets API version
+          example: bitnami.com/v1alpha1
+        kind:
+          type: string
+          description: Sealed Secrets Object Type
+          example: SealedSecret
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        spec:
+          $ref: "#/components/schemas/Spec"
+      required:
+        - apiVersion
+        - kind
+    Metadata:
+      type: object
+      description: Sealed Secrets Object metadata
+      properties:
+        name:
+          type: string
+          description: Sealed Secrets Object name
+          example: secret-name
+        namespace:
+          type: string
+          description: Sealed Secrets Object namespace
+          example: default
+        creationTimestamp:
+          type: string
+          description: Sealed Secrets Object creation stamp
+      required:
+        - name
+        - namespace
+    Spec:
+      type: object
+      description: Sealed Secrets spec
+      properties:
+        encryptedData:
+          type: object
+          description: Sealed Secrets encrypted data
+        template:
+          type: object
+          description: Sealed Secrets template
+          properties:
+            metadata:
+              $ref: "#/components/schemas/Metadata"
+            data:
+              type: string
+              description: Sealed Secrets data

@@ -1,0 +1,119 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# Constants
+RESET='\033[0m'
+GREEN='\033[38;5;2m'
+RED='\033[38;5;1m'
+YELLOW='\033[38;5;3m'
+
+# Axiliar functions
+########################
+# Log message to stderr
+# Arguments:
+#   $1 - Message to log
+#########################
+log() {
+  printf "%b\n" "${*}" >&2
+}
+
+########################
+# Log error message
+# Arguments:
+#   $1 - Message to log
+#########################
+error() {
+  log "${RED}ERROR ${RESET} ==> ${*}"
+}
+
+#########################
+# Redirects output to /dev/null unless debug mode is enabled
+# Globals:
+#   DEBUG_MODE
+# Arguments:
+#   $@ - Command to execute
+# Returns:
+#   None
+#########################
+silence() {
+    if ${DEBUG_MODE:-false}; then
+        "$@"
+    else
+        "$@" >/dev/null 2>&1
+    fi
+}
+
+print_menu() {
+    local script
+    script=$(basename "${BASH_SOURCE[0]}")
+    log "${RED}NAME${RESET}"
+    log "    $(basename -s .sh "${BASH_SOURCE[0]}")"
+    log ""
+    log "${RED}SYNOPSIS${RESET}"
+    log "    $script [${YELLOW}-h${RESET}] [${YELLOW}-n ${GREEN}\"namespace\"${RESET}] [${YELLOW}-s ${GREEN}\"service_account\"${RESET}]"
+    log ""
+    log "${RED}DESCRIPTION${RESET}"
+    log "    Script to run kubeseal using a service account credentials."
+    log ""
+    log "    The options are as follow:"
+    log ""
+    log "      ${YELLOW}-n, --namespace ${GREEN}[namespace]${RESET}                Namespace to use."
+    log "      ${YELLOW}-s, --service-account ${GREEN}[service_account]${RESET}    ServiceAccount to use."
+    log ""
+    log "${RED}EXAMPLES${RESET}"
+    log "      $script --help"
+    log "      $script --service-account \"sealed-secrets\""
+    log "      $script --service-account \"sealed-secrets\" --namespace \"kube-system\""
+    log ""
+}
+
+namespace="default"
+service_account=""
+help_menu=0
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        -h|--help)
+            help_menu=1
+            ;;
+        -n|--namespace)
+            shift; namespace="${1:?missing namespace}"
+            ;;
+        -s|--service-account)
+            shift; service_account="${1:?missing service account}"
+            ;;
+        *)
+            error "Invalid command line flag $1" >&2
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [[ "$help_menu" -eq 1 ]]; then
+    print_menu
+    exit 0
+fi
+
+if [[ -z "$service_account" ]]; then
+    error "Missing ServiceAccount"
+    exit 1
+fi
+
+TMPKUBE=$(mktemp)
+kubectl config view --flatten --minify > "$TMPKUBE"
+export KUBECONFIG="$TMPKUBE"
+if ! silence kubectl --kubeconfig "$TMPKUBE" -n "$namespace" get sa "$service_account"; then
+    error "Missing ServiceAccount \"$service_account\" in namespace \"$namespace\""
+    exit 1
+fi
+sa_secret="$(kubectl --kubeconfig "$TMPKUBE" -n "$namespace" get sa "$service_account" -o jsonpath='{.secrets[0].name}')"
+sa_token="$(kubectl --kubeconfig "$TMPKUBE" -n "$namespace" get secret "$sa_secret" -o jsonpath='{.data.token}')"
+silence kubectl --kubeconfig "$TMPKUBE" config set-credentials "kubesudo:$namespace:$service_account" --token="$(echo "$sa_token" | base64 --decode)"
+silence kubectl --kubeconfig "$TMPKUBE" config set-context "$(kubectl config current-context)" --user="kubesudo:$namespace:$service_account"
+# We assume the controller is running in the same namespace as the ServiceAccount
+# and the controller service name is the same used for the ServiceAccount name
+kubeseal --controller-name="$service_account" --controller-namespace="$namespace" "$@"
+rm "$TMPKUBE"
