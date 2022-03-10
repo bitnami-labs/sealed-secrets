@@ -39,7 +39,10 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		io.WriteString(w, "ok\n")
+		_, err := io.WriteString(w, "ok\n")
+		if err != nil {
+			log.Fatal(err)
+		}
 	})
 
 	mux.Handle("/metrics", promhttp.Handler())
@@ -84,7 +87,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
-		w.Write(newSecret)
+		_, _ = w.Write(newSecret)
 	})))
 
 	mux.Handle("/v1/cert.pem", Instrument("/v1/cert.pem", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -97,7 +100,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 
 		w.Header().Set("Content-Type", "application/x-pem-file")
 		for _, cert := range certs {
-			w.Write(pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
+			_, _ = w.Write(pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
 		}
 	})))
 

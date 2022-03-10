@@ -87,7 +87,7 @@ func init() {
 	flag.Var(&sealingScope, "scope", "Set the scope of the sealed secret: strict, namespace-wide, cluster-wide (defaults to strict). Mandatory for --raw, otherwise the 'sealedsecrets.bitnami.com/cluster-wide' and 'sealedsecrets.bitnami.com/namespace-wide' annotations on the input secret can be used to select the scope.")
 	flag.BoolVar(&reEncrypt, "rotate", false, "")
 	flag.BoolVar(&reEncrypt, "re-encrypt", false, "Re-encrypt the given sealed secret to use the latest cluster key.")
-	flag.CommandLine.MarkDeprecated("rotate", "please use --re-encrypt instead")
+	_ = flag.CommandLine.MarkDeprecated("rotate", "please use --re-encrypt instead")
 
 	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
 
@@ -410,7 +410,7 @@ func resourceOutput(out io.Writer, codecs runtimeserializer.CodecFactory, gv run
 	if err != nil {
 		return err
 	}
-	out.Write(buf)
+	_, _ = out.Write(buf)
 	fmt.Fprint(out, "\n")
 	return nil
 }
@@ -653,7 +653,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 		// only write the output file if the run function exits without errors.
 		defer func() {
 			if err == nil {
-				f.CloseAtomicallyReplace()
+				_ = f.CloseAtomicallyReplace()
 			}
 		}()
 
@@ -741,7 +741,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 
 func main() {
 	flag.Parse()
-	goflag.CommandLine.Parse([]string{})
+	_ = goflag.CommandLine.Parse([]string{})
 
 	if err := run(context.Background(), os.Stdout, *inputFileName, *outputFileName, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *allowEmptyData, *fromFile, *mergeInto, *unseal, *privKeys); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)

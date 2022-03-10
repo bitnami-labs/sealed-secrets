@@ -31,6 +31,13 @@ func (c *testCertStore) setCert(cert *x509.Certificate) {
 	c.cert = cert
 }
 
+func shutdownServer(server *http.Server, t *testing.T) (){
+    err := server.Shutdown(context.Background())
+    if err != nil {
+        t.Fatal(err)
+    }
+}
+
 func TestHttpCert(t *testing.T) {
 	_, certBefore, err := generatePrivateKeyAndCert(2048)
 	if err != nil {
@@ -44,7 +51,7 @@ func TestHttpCert(t *testing.T) {
 
 	cs := &testCertStore{}
 	server := httpserver(cs.getCert, nil, nil)
-	defer server.Shutdown(context.Background())
+	defer shutdownServer(server, t)
 	hp := *listenAddr
 	if strings.HasPrefix(hp, ":") {
 		hp = fmt.Sprintf("localhost%s", hp)

@@ -9,7 +9,7 @@ import (
 )
 
 func initKeyGenSignalListener(trigger func()) {
-	sigChannel := make(chan os.Signal)
+	sigChannel := make(chan os.Signal, 1)
 	signal.Notify(sigChannel, syscall.SIGUSR1)
 	go func() {
 		for {

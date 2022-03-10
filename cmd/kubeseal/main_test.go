@@ -84,7 +84,7 @@ func TestMain(m *testing.M) {
 	goflag.Parse()
 
 	// otherwise we'd require a working KUBECONFIG file when calling `run`.
-	flag.CommandLine.Parse([]string{"-n", "default"})
+	_ = flag.CommandLine.Parse([]string{"-n", "default"})
 	os.Exit(m.Run())
 }
 
@@ -478,7 +478,10 @@ func TestUnseal(t *testing.T) {
 		t.Fatal("assuming only one test key-pair")
 	}
 	for _, key := range privKeys {
-		pem.Encode(pkFile, &pem.Block{Type: keyutil.RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)})
+		err := pem.Encode(pkFile, &pem.Block{Type: keyutil.RSAPrivateKeyBlockType, Bytes: x509.MarshalPKCS1PrivateKey(key)})
+		if err != nil {
+			t.Fatal(err)
+		}
 	}
 	pkFile.Close()
 

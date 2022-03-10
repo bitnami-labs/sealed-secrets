@@ -5,6 +5,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/kubernetes/scheme"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 )
 
 // GroupName is the group name used in this package
@@ -21,7 +22,7 @@ var (
 )
 
 func init() {
-	SchemeBuilder.AddToScheme(scheme.Scheme)
+	utilruntime.Must(SchemeBuilder.AddToScheme(scheme.Scheme))
 }
 
 // Resource takes an unqualified resource and returns a Group qualified GroupResource
