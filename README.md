@@ -584,7 +584,7 @@ To restore from a backup after some disaster, just put that secrets back before 
 
 ```bash
 kubectl apply -f master.key
-kubectl delete pod -n kube-system -l name=sealed-secrets-controller
+kubectl delete pod -n kube-system -l app.kubernetes.io/instance=sealed-secrets-controller
 ```
 
 ### Can I decrypt my secrets offline with a backup key?
