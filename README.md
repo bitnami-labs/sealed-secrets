@@ -289,6 +289,14 @@ affecting the static YAML manifests or the controller image itself.
 NOTE: the helm chart readme still contains a deprecation notice, but it's no longer reflects reality
 and will be removed upon next release.
 
+NOTE: the helm chart by default installs the controller with the name `sealed-secrets`, while the `kubeseal` command line interface (CLI) tries to access the controller with the name `sealed-secrets-controller`. You can explicitly pass `--controller-name` to the CLI:
+
+```bash
+kubeseal --controller-name sealed-secrets <args>
+```
+
+Alternatively, you can override `fullnameOverride` on the helm chart install.
+
 ### Operator Framework
 
 Install Sealed Secrets as Kubernetes Operator via the Operator Lifecycle Manager of your cluster. The `Sealed Secrets Operator (Helm)` is published at [OperatorHub.io](https://operatorhub.io/operator/sealed-secrets-operator-helm) for Kubernetes, as community operator in OpenShift's integrated OperatorHub or at the [GitHub repository](https://github.com/disposab1e/sealed-secrets-operator-helm) of the project.
