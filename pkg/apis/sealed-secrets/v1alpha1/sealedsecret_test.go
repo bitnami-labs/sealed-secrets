@@ -10,12 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	fuzz "github.com/google/gofuzz"
-
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/apitesting/fuzzer"
-	rttesting "k8s.io/apimachinery/pkg/api/apitesting/roundtrip"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -46,14 +43,20 @@ func TestSealingScope(t *testing.T) {
 		}
 
 		var s SealingScope
-		s.Set(tc.name)
+		err := s.Set(tc.name)
+		if err != nil {
+			t.Fatal(err)
+		}
 		if got, want := s, tc.scope; got != want {
 			t.Errorf("got: %d, want: %d", got, want)
 		}
 	}
 
 	var s SealingScope
-	s.Set("")
+	err := s.Set("")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if got, want := s, StrictScope; got != want {
 		t.Errorf("got: %d, want: %d", got, want)
 	}
@@ -166,39 +169,7 @@ func TestSerialize(t *testing.T) {
 		t.Errorf("Error encoding: %v", err)
 	}
 
-	t.Logf("text is %s", string(buf.Bytes()))
-}
-
-func ssecretFuzzerFuncs(codecs serializer.CodecFactory) []interface{} {
-	return []interface{}{
-		func(obj *SealedSecretList, c fuzz.Continue) {
-			c.FuzzNoCustom(obj)
-			obj.Items = make([]SealedSecret, c.Intn(10))
-			for i := range obj.Items {
-				c.Fuzz(&obj.Items[i])
-			}
-		},
-	}
-}
-
-// TestRoundTrip tests that the third-party kinds can be marshaled and
-// unmarshaled correctly to/from JSON without the loss of
-// information. Moreover, deep copy is tested.
-//
-// Disabled because of spurious diffs caused by nil != []foo{}, e.g. in annotations
-// labels, or other slices.
-// TODO(mkm): fix
-func disabledTestRoundTrip(t *testing.T) {
-	scheme := runtime.NewScheme()
-	codecs := serializer.NewCodecFactory(scheme)
-
-	SchemeBuilder.AddToScheme(scheme)
-
-	seed := mathrand.Int63()
-	fuzzer := fuzzer.FuzzerFor(ssecretFuzzerFuncs, mathrand.NewSource(seed), codecs)
-
-	rttesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("SealedSecret"), scheme, codecs, fuzzer, nil)
-	rttesting.RoundTripSpecificKindWithoutProtobuf(t, SchemeGroupVersion.WithKind("SealedSecretList"), scheme, codecs, fuzzer, nil)
+	t.Logf("text is %s", buf.String())
 }
 
 // This is omg-not safe for real crypto use!
@@ -430,8 +401,8 @@ func TestSealMetadataPreservation(t *testing.T) {
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)
 
-	SchemeBuilder.AddToScheme(scheme)
-	v1.SchemeBuilder.AddToScheme(scheme)
+	utilruntime.Must(SchemeBuilder.AddToScheme(scheme))
+	utilruntime.Must(v1.SchemeBuilder.AddToScheme(scheme))
 
 	key, _ := generateTestKey(t, testRand(), 2048)
 
@@ -547,8 +518,8 @@ func sealSecret(t *testing.T, secret *v1.Secret, newSealedSecret func(serializer
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)
 
-	SchemeBuilder.AddToScheme(scheme)
-	v1.SchemeBuilder.AddToScheme(scheme)
+	utilruntime.Must(SchemeBuilder.AddToScheme(scheme))
+	utilruntime.Must(v1.SchemeBuilder.AddToScheme(scheme))
 
 	key, keys := generateTestKey(t, testRand(), 2048)
 
