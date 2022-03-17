@@ -215,6 +215,14 @@ kubeseal --fetch-cert \
 
 Read about kubeseal usage on [sealed-secrets docs](https://github.com/bitnami-labs/sealed-secrets#usage).
 
+NOTE: the helm chart by default installs the controller with the name `sealed-secrets`, while the `kubeseal` command line interface (CLI) tries to access the controller with the name `sealed-secrets-controller`. You can explicitly pass `--controller-name` to the CLI:
+
+```bash
+kubeseal --controller-name sealed-secrets <args>
+```
+
+Alternatively, you can override `fullnameOverride` on the helm chart install.
+
 ## Configuration and installation details
 
 - In the case that **serviceAccount.create** is `false` and **rbac.create** is `true` it is expected for a ServiceAccount with the name **serviceAccount.name** to exist _in the same namespace as this chart_ before the installation.
