@@ -1,5 +1,6 @@
 GO = go
 GOFMT = gofmt
+GOLANGCILINT=golangci-lint
 
 export GO111MODULE = on
 GO_FLAGS =
@@ -108,6 +109,9 @@ vet:
 
 fmt:
 	$(GOFMT) -s -w $(GO_FILES)
+
+lint:
+	 $(GOLANGCILINT) run --timeout=5m
 
 clean:
 	$(RM) ./controller ./kubeseal
