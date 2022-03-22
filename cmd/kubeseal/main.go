@@ -499,7 +499,7 @@ func parseFromFile(s string) (string, string) {
 }
 
 func readPrivKeysFromFile(filename string) ([]*rsa.PrivateKey, error) {
-	b, err := ioutil.ReadFile(filename)
+	b, err := ioutil.ReadFile(filename) /* #nosec G304 -- Necessary for CLI Tool use */
 	if err != nil {
 		return nil, err
 	}
