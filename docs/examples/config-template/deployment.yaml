@@ -20,6 +20,8 @@ spec:
         volumeMounts:
         - name: config-volume
           mountPath: /config
+        securityContext:
+          allowPrivilegeEscalation: false  
         command: ["sh", "-c"]
         args:
         - |
