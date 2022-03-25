@@ -9,6 +9,7 @@ Latest release:
 ### Changelog
 
 - Fix linter errors running golangci-lint ([#751](https://github.com/bitnami-labs/sealed-secrets/pull/751))([#771](https://github.com/bitnami-labs/sealed-secrets/pull/771))
+- Added kubeseal support for darwin/arm64 ([#752](https://github.com/bitnami-labs/sealed-secrets/pull/752))
 
 ## v0.17.3
 
