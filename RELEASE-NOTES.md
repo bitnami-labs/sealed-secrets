@@ -4,6 +4,13 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.17.4
+
+### Changelog
+
+- Fix linter errors running golangci-lint ([#751](https://github.com/bitnami-labs/sealed-secrets/pull/751))([#771](https://github.com/bitnami-labs/sealed-secrets/pull/771))
+- Added kubeseal support for darwin/arm64 ([#752](https://github.com/bitnami-labs/sealed-secrets/pull/752))
+
 ## v0.17.3
 
 ### Changelog
