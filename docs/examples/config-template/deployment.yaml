@@ -21,7 +21,8 @@ spec:
         - name: config-volume
           mountPath: /config
         securityContext:
-          allowPrivilegeEscalation: false  
+          allowPrivilegeEscalation: false
+          runAsNonRoot: true
         command: ["sh", "-c"]
         args:
         - |
