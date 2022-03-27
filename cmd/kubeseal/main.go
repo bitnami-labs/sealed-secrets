@@ -193,7 +193,7 @@ func openCertLocal(filenameOrURI string) (io.ReadCloser, error) {
 	if ok, err := isFilename(filenameOrURI); err != nil {
 		return nil, err
 	} else if ok {
-		return os.Open(filenameOrURI)
+		return os.Open(filenameOrURI) /* #nosec G304 -- Necessary for CLI Tool use */
 	}
 	return openCertURI(filenameOrURI)
 }
@@ -428,7 +428,7 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 }
 
 func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool) error {
-	b, err := ioutil.ReadFile(filename)
+	b, err := ioutil.ReadFile(filename) /* #nosec G304 -- Necessary for CLI Tool use */
 	if err != nil {
 		return err
 	}
@@ -499,7 +499,7 @@ func parseFromFile(s string) (string, string) {
 }
 
 func readPrivKeysFromFile(filename string) ([]*rsa.PrivateKey, error) {
-	b, err := ioutil.ReadFile(filename)
+	b, err := ioutil.ReadFile(filename) /* #nosec G304 -- Necessary for CLI Tool use */
 	if err != nil {
 		return nil, err
 	}
@@ -621,7 +621,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 
 	var input io.Reader = os.Stdin
 	if inputFileName != "" {
-		f, err := os.Open(inputFileName)
+		f, err := os.Open(inputFileName) /* #nosec G304 -- Necessary for CLI Tool use */
 		if err != nil {
 			return nil
 		}
@@ -722,7 +722,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 			}
 
 			_, filename := parseFromFile(fromFile[0])
-			data, err = ioutil.ReadFile(filename)
+			data, err = ioutil.ReadFile(filename) /* #nosec G304 -- Necessary for CLI Tool use */
 		} else {
 			if isatty.IsTerminal(os.Stdin.Fd()) {
 				fmt.Fprintf(os.Stderr, "(tty detected: expecting a secret to encrypt in stdin)\n")
