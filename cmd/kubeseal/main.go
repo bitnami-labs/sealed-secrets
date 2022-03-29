@@ -473,7 +473,7 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	// The actual permissions will be filtered by the user's umask.
 	// We still drop any permissions to the other group because despite the sealed secret
 	// being encrypted, we still don't know how the end users feel about it.
-	return ioutil.WriteFile(filename, out.Bytes(), 0660)
+	return ioutil.WriteFile(filename, out.Bytes(), 0600)
 }
 
 func encryptSecretItem(w io.Writer, secretName, ns string, data []byte, scope ssv1alpha1.SealingScope, pubKey *rsa.PublicKey) error {
