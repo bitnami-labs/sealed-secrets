@@ -625,6 +625,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 		if err != nil {
 			return nil
 		}
+		// #nosec: G307 -- this deferred close is fine because it is not on a writable file
 		defer f.Close()
 
 		input = f
