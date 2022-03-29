@@ -1,5 +1,5 @@
 FROM bitnami/minideb:buster
-MAINTAINER sre@bitnami.com
+LABEL org.opencontainers.image.authors="sre@bitnami.com"
 
 ARG jsonnet_version=0.14.0
 ARG kubectl_version=v1.13.0
