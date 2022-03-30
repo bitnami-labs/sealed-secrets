@@ -722,7 +722,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 			}
 
 			_, filename := parseFromFile(fromFile[0])
-			data, err = ioutil.ReadFile(filename)
+			data, err = ioutil.ReadFile(filename) /* #nosec G304 -- Necessary for CLI Tool use */
 		} else {
 			if isatty.IsTerminal(os.Stdin.Fd()) {
 				fmt.Fprintf(os.Stderr, "(tty detected: expecting a secret to encrypt in stdin)\n")
