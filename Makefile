@@ -115,7 +115,7 @@ lint:
 	 $(GOLANGCILINT) run --timeout=5m
 
 lint-gosec:
-	 $(GOSEC) -r
+	 $(GOSEC) -r --severity medium
 
 clean:
 	$(RM) ./controller ./kubeseal
