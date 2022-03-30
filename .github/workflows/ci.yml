@@ -18,6 +18,7 @@ jobs:
         go: ["1.17.8", "1.18.0"]
         os: [ubuntu-latest]
         golangci-lint: ["1.44.2"]
+        gosec: ["2.11.0"]
     steps:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
@@ -31,6 +32,7 @@ jobs:
     - name: Install dependencies
       run: |
         go install github.com/golangci/golangci-lint/cmd/golangci-lint@v${{ matrix.golangci-lint }}
+        go install github.com/securego/gosec/v2/cmd/gosec@v${{ matrix.gosec }}
 
     - name: Run linter
       run: make lint
