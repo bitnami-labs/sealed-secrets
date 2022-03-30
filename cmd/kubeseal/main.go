@@ -193,7 +193,7 @@ func openCertLocal(filenameOrURI string) (io.ReadCloser, error) {
 	if ok, err := isFilename(filenameOrURI); err != nil {
 		return nil, err
 	} else if ok {
-		return os.Open(filenameOrURI)
+		return os.Open(filenameOrURI) /* #nosec G304 -- Necessary for CLI Tool use */
 	}
 	return openCertURI(filenameOrURI)
 }
