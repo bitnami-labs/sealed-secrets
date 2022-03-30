@@ -428,7 +428,7 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 }
 
 func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool) error {
-	b, err := ioutil.ReadFile(filename)
+	b, err := ioutil.ReadFile(filename) /* #nosec G304 -- Necessary for CLI Tool use */
 	if err != nil {
 		return err
 	}
