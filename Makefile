@@ -1,6 +1,7 @@
 GO = go
 GOFMT = gofmt
 GOLANGCILINT=golangci-lint
+GOSEC=gosec
 
 export GO111MODULE = on
 GO_FLAGS =
@@ -113,10 +114,13 @@ fmt:
 lint:
 	 $(GOLANGCILINT) run --timeout=5m
 
+lint-gosec:
+	 $(GOSEC) -r
+
 clean:
 	$(RM) ./controller ./kubeseal
 	$(RM) *-static*
 	$(RM) controller*.yaml
 	$(RM) controller.image*
 
-.PHONY: all kubeseal controller test clean vet fmt
+.PHONY: all kubeseal controller test clean vet fmt lint-gosec
