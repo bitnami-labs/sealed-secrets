@@ -117,6 +117,9 @@ lint:
 lint-gosec:
 	 $(GOSEC) -r --severity medium
 
+lint-gosec:
+	 $(GOSEC) -r
+
 clean:
 	$(RM) ./controller ./kubeseal
 	$(RM) *-static*
