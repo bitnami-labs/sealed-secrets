@@ -26,6 +26,7 @@ To be able to develop on this project, you need to have the following tools inst
 - [Ginkgo](https://onsi.github.io/ginkgo/)
 - [git-hooks](https://github.com/git-hooks/git-hooks)
 - [doctoc](https://github.com/thlorenz/doctoc)
+- [golangci-lint](https://github.com/golangci/golangci-lint)
 
 ## The Sealed Secrets Components
 
@@ -51,7 +52,7 @@ Please refer to the [Kubeseal Developer Guide](kubeseal.md) for the developer se
 
 To avoid easily detectable issues and prevent them from reaching master, some validations have been implemented via [git hooks](https://git-scm.com/book/en/v2/Customizing-Git-Git-Hooks). To have those hooks committed in the repository you need to install a third party tool `git-hooks` (check [prerequisites](#prerequisites)), because the hooks provided by Git are stored in the `.git` directory that is not included as part of the repositories.
 
-Currently, there's a single hook at pre-commit level. This hook ensures the Table of Contents (TOC) is updated using `doctoc` (check [prerequisites](#prerequisites)) in every `.md` and `.txt` file that uses this tool.
+Currently, there are two hooks at pre-commit level. A first one ensures the Table of Contents (TOC) is updated using `doctoc` (check [prerequisites](#prerequisites)) in every `.md` and `.txt` file that uses this tool. A second one ensures that mistakes are caught early-on by running the project linters (using `make lint`).
 
 Configure git-hooks for this specific repository by running `git hooks install`. You can check with the following command if everything was configured properly:
 
