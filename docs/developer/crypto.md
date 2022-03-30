@@ -1,6 +1,6 @@
 # **Cryptographic documentation**
 
-## **Protocols and cryptograhic tools used**
+## **Protocols and cryptographic tools used**
 
 Sealed-secrets uses the following protocols for the secrets management :
 
@@ -32,7 +32,7 @@ For further information about those API :
 - [Windows](https://download.microsoft.com/download/1/c/9/1c9813b8-089c-4fef-b2ad-ad80e79403ba/Whitepaper%20-%20The%20Windows%2010%20random%20number%20generation%20infrastructure.pdf)
 - [WASM](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/getRandomValues)
 
-## **Functionning**
+## **Functioning**
 
 ### **Public/private key pair management**
 
