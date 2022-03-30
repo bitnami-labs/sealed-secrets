@@ -8,7 +8,7 @@ Note that during decryption by the controller, the SealedSecret's namespace/name
 
 When using the namespace-wide scope, the OAEP input (aka label) only contains the namespace and in cluster-wide scope the label is an empty string.
 
-# **Post-quantum cryptography consideration**
+# **Post-quantum cryptography considerations**
 
 ## **Entropy source**
 
