@@ -621,7 +621,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 
 	var input io.Reader = os.Stdin
 	if inputFileName != "" {
-		f, err := os.Open(inputFileName)
+		f, err := os.Open(inputFileName) /* #nosec G304 -- Necessary for CLI Tool use */
 		if err != nil {
 			return nil
 		}
