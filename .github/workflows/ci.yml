@@ -64,6 +64,13 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v2
 
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@main
+
+    - name: Distroless verify
+      run: |
+        cosign verify --key "https://raw.githubusercontent.com/GoogleContainerTools/distroless/main/cosign.pub" "$(grep FROM Dockerfile | awk '{print $2}')"
+
     - name: Setup kubecfg
       run: |
         mkdir -p ~/bin
