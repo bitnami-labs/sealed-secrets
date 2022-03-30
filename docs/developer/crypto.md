@@ -14,7 +14,7 @@ When using the namespace-wide scope, the OAEP input (aka label) only contains th
 
 ### **Analysis**
 
-Even if QRNG (Quantum Random Number Generator) are considered better that PRNG (Pseudo Random Number Generator) in a quantum cryptography context as well as in a non-quantum context, QRNG rely on a quantum mechanic phenomenon. It requires a physical device, therefore QRNG usage is out of Sealed Secrets scope, which will stay on the `crypto/rand` usage.
+Even if QRNG (Quantum Random Number Generator) are considered better than PRNG (Pseudo Random Number Generator) in a quantum cryptography context as well as in a non-quantum context, QRNG relies on a quantum mechanical phenomenon. It requires a physical device, therefore QRNG usage is out of Sealed Secrets scope, which will stay on the `crypto/rand` usage.
 
 ### **Associated documentation**
 
@@ -33,7 +33,7 @@ Nevertheless, since AES uses unchangeable 128 bits blocks, Grover algorithm can 
 AES-256-GCM quantum security is not a concern.
 Cases with a bruteforce complexity of 2⁶⁴ are unlikely for Sealed Secret considering how AES is used in the project.
 Even assuming that 2⁶⁴ bruteforce is likely, it can still be considered secure today (but not in the long run).
-A recommendation is to look for a AES replacement that provide 128 bits post-quantum cryptographic security in any cases, such as ChaCha20-Poly1305. Apply this recommendation is considered low priority.
+A recommendation is to look for a AES replacement that provide 128 bits post-quantum cryptographic security in any cases, such as ChaCha20-Poly1305. Applying this recommendation is considered low priority.
 
 ### **Associated documentation**
 
@@ -50,7 +50,7 @@ A recommendation is to look for a AES replacement that provide 128 bits post-qua
 
 SHA-256 is quantum resistant.
 Grover Algorithm can reduce the bruteforce from 2²⁵⁶ to 2¹²⁸ which is considered very secure.
-It is computationaly cheaper to use a non-quantum algorithm to generate a collision than to employ a quantum computer.
+It is computationally cheaper to use a non-quantum algorithm to generate a collision than to employ a quantum computer.
 
 ### **Recommendations**
 
