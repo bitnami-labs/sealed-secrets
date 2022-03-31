@@ -65,7 +65,7 @@ func init() {
 	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
 
 	flag.DurationVar(keyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
-	flag.CommandLine.MarkDeprecated("rotate-period", "please use key-renew-period instead")
+	_ = flag.CommandLine.MarkDeprecated("rotate-period", "please use key-renew-period instead")
 
 	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
 	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
@@ -74,7 +74,7 @@ func init() {
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if f := flag.CommandLine.Lookup("logtostderr"); f != nil {
 		f.DefValue = "true"
-		f.Value.Set(f.DefValue)
+		_ = f.Value.Set(f.DefValue)
 	}
 }
 
@@ -250,7 +250,7 @@ func main2() error {
 
 func main() {
 	flag.Parse()
-	goflag.CommandLine.Parse([]string{})
+	_ = goflag.CommandLine.Parse([]string{})
 
 	ssv1alpha1.AcceptDeprecatedV1Data = *acceptV1Data
 

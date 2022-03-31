@@ -5,6 +5,7 @@ import (
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	v1 "k8s.io/api/core/v1"
 )
@@ -82,7 +83,7 @@ var (
 func init() {
 	// Register metrics with Prometheus
 	prometheus.MustRegister(buildInfo)
-	prometheus.MustRegister(prometheus.NewBuildInfoCollector())
+	prometheus.MustRegister(collectors.NewBuildInfoCollector())
 	prometheus.MustRegister(unsealRequestsTotal)
 	prometheus.MustRegister(unsealErrorsTotal)
 	prometheus.MustRegister(conditionInfo)
