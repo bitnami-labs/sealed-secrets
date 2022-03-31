@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.17.8"]
+        go: ["1.17.8", "1.18.0"]
         os: [ubuntu-latest]
         golangci-lint: ["1.44.2"]
     steps:
@@ -40,7 +40,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go: ["1.17.8"]
+        go: ["1.17.8", "1.18.0"]
         os: [macos-latest, windows-latest, ubuntu-latest]
     steps:
 
