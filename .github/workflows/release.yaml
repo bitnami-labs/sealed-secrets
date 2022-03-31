@@ -44,6 +44,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
+      # Setup Cosign
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v2.1.0
+      - name: Write Cosign key
+        run: echo "$COSIGN_KEY" > /tmp/cosign.key
+        env:
+          COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
+
+
       # Build & Release binaries
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
@@ -53,6 +62,7 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
       # Build & Publish multi-arch image
       - name: Login to Quay
