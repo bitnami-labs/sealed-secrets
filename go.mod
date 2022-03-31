@@ -6,7 +6,7 @@ require (
 	github.com/bitnami-labs/flagenv v0.0.0-20190607135054-a87af7a1d6fc
 	github.com/bitnami-labs/pflagenv v0.0.0-20190702160147-b4d9f048d98f
 	github.com/google/go-cmp v0.5.7
-	github.com/google/renameio v1.0.1
+	github.com/google/renameio v0.1.0
 	github.com/mattn/go-isatty v0.0.14
 	github.com/mkmik/multierror v0.3.0
 	github.com/onsi/ginkgo v1.16.5
