@@ -65,7 +65,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Install Cosign
-      uses: sigstore/cosign-installer@main
+      uses: sigstore/cosign-installer@v2.1.0
 
     - name: Distroless verify
       run: |
