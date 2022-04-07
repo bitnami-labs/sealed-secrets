@@ -69,7 +69,12 @@ jobs:
 
     - name: Distroless verify
       run: |
-        cosign verify --key "https://raw.githubusercontent.com/GoogleContainerTools/distroless/main/cosign.pub" "$(grep FROM Dockerfile | awk '{print $2}')"
+        cosign verify --key /dev/stdin "$(grep FROM Dockerfile | awk '{print $2}')" <<EOF
+        -----BEGIN PUBLIC KEY-----
+        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWZzVzkb8A+DbgDpaJId/bOmV8n7Q
+        OqxYbK0Iro6GzSmOzxkn+N2AKawLyXi84WSwJQBK//psATakCgAQKkNTAA==
+        -----END PUBLIC KEY-----
+        EOF
 
     - name: Setup kubecfg
       run: |
