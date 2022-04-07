@@ -31,11 +31,11 @@ func (c *testCertStore) setCert(cert *x509.Certificate) {
 	c.cert = cert
 }
 
-func shutdownServer(server *http.Server, t *testing.T) (){
-    err := server.Shutdown(context.Background())
-    if err != nil {
-        t.Fatal(err)
-    }
+func shutdownServer(server *http.Server, t *testing.T) {
+	err := server.Shutdown(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 func TestHttpCert(t *testing.T) {
