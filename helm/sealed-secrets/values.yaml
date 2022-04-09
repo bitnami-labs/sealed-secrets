@@ -138,12 +138,16 @@ podSecurityContext:
 ## @param containerSecurityContext.readOnlyRootFilesystem Whether the Sealed Secret container has a read-only root filesystem
 ## @param containerSecurityContext.runAsNonRoot Indicates that the Sealed Secret container must run as a non-root user
 ## @param containerSecurityContext.runAsUser Set Sealed Secret containers' Security Context runAsUser
+## @param containerSecurityContext.runAsGroup Set Sealed Secret containers' Security Context runAsGroup
+## @param containerSecurityContext.allowPrivilegeEscalation Set Sealed Secret containers' Security Context allowPrivilegeEscalation
 ##
 containerSecurityContext:
   enabled: true
   readOnlyRootFilesystem: true
   runAsNonRoot: true
-  runAsUser: 1001
+  runAsUser: 10001
+  runAsGroup: 10001
+  allowPrivilegeEscalation: false
 ## @param podLabels [object] Extra labels for Sealed Secret pods
 ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 ##
