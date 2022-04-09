@@ -54,7 +54,9 @@ local namespace = 'kube-system';
               securityContext+: {
                 readOnlyRootFilesystem: true,
                 runAsNonRoot: true,
-                runAsUser: 1001,
+                allowPrivilegeEscalation: false,
+                runAsUser: 10001,
+                runAsGroup: 10001,
               },
               volumeMounts_+: {
                 tmp: {
