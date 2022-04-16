@@ -193,7 +193,8 @@ func openCertLocal(filenameOrURI string) (io.ReadCloser, error) {
 	if ok, err := isFilename(filenameOrURI); err != nil {
 		return nil, err
 	} else if ok {
-		return os.Open(filenameOrURI) /* #nosec G304 -- Necessary for CLI Tool use */
+		// #nosec G304 -- should open user provided file
+		return os.Open(filenameOrURI)
 	}
 	return openCertURI(filenameOrURI)
 }
@@ -428,7 +429,8 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 }
 
 func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool) error {
-	b, err := ioutil.ReadFile(filename) /* #nosec G304 -- Necessary for CLI Tool use */
+	// #nosec G304 -- should open user provided file
+	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
@@ -499,7 +501,8 @@ func parseFromFile(s string) (string, string) {
 }
 
 func readPrivKeysFromFile(filename string) ([]*rsa.PrivateKey, error) {
-	b, err := ioutil.ReadFile(filename) /* #nosec G304 -- Necessary for CLI Tool use */
+	// #nosec G304 -- should open user provided file
+	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -621,7 +624,8 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 
 	var input io.Reader = os.Stdin
 	if inputFileName != "" {
-		f, err := os.Open(inputFileName) /* #nosec G304 -- Necessary for CLI Tool use */
+		// #nosec G304 -- should open user provided file
+		f, err := os.Open(inputFileName)
 		if err != nil {
 			return nil
 		}
@@ -722,7 +726,8 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 			}
 
 			_, filename := parseFromFile(fromFile[0])
-			data, err = ioutil.ReadFile(filename) /* #nosec G304 -- Necessary for CLI Tool use */
+			// #nosec G304 -- should open user provided file
+			data, err = ioutil.ReadFile(filename)
 		} else {
 			if isatty.IsTerminal(os.Stdin.Fd()) {
 				fmt.Fprintf(os.Stderr, "(tty detected: expecting a secret to encrypt in stdin)\n")
