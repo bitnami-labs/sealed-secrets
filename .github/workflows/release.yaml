@@ -52,7 +52,6 @@ jobs:
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
 
-
       # Build & Release binaries
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
@@ -81,8 +80,7 @@ jobs:
           tags: ${{ env.image_name }}:latest,${{ env.image_name }}:${{ github.ref_name }}
       - name: Sign image with a key
         run: |
-          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key $TAG_LATEST
-          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key $TAG_CURRENT
+          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key $TAG_LATEST $TAG_CURRENT
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           TAG_LATEST: ${{ env.image_name }}:latest
