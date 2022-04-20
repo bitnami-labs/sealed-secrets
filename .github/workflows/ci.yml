@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  CONTROLLER_IMAGE: quay.io/bitnami/sealed-secrets-controller:latest
+  CONTROLLER_IMAGE: docker.io/bitnami/sealed-secrets-controller:latest
 
 jobs:
   linter:
