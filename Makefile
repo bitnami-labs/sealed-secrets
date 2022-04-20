@@ -10,7 +10,7 @@ KUBECFG = kubecfg
 DOCKER = docker
 GINKGO = ginkgo -p
 
-CONTROLLER_IMAGE = quay.io/bitnami/sealed-secrets-controller:latest
+CONTROLLER_IMAGE = docker.io/bitnami/sealed-secrets-controller:latest
 INSECURE_REGISTRY = false # useful for local registry
 IMAGE_PULL_POLICY = Always
 KUBECONFIG ?= $(HOME)/.kube/config
