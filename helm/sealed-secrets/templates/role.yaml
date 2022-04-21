@@ -37,6 +37,8 @@ metadata:
 rules:
   - apiGroups:
       - ""
+    resourceNames:
+      - {{ include "sealed-secrets.fullname" . }}
     resources:
       - services
     verbs:
