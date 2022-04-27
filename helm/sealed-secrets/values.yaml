@@ -155,6 +155,9 @@ podAnnotations: {}
 ## @param priorityClassName Sealed Secret pods' priorityClassName
 ##
 priorityClassName: ""
+## @param runtimeClassName Sealed Secret pods' runtimeClassName
+##
+runtimeClassName: ""
 ## @param affinity [object] Affinity for Sealed Secret pods assignment
 ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
 ##

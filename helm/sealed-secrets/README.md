@@ -126,6 +126,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `podLabels`                                       | Extra labels for Sealed Secret pods                                                  | `{}`                                |
 | `podAnnotations`                                  | Annotations for Sealed Secret pods                                                   | `{}`                                |
 | `priorityClassName`                               | Sealed Secret pods' priorityClassName                                                | `""`                                |
+| `runtimeClassName`                                | Sealed Secret pods' runtimeClassName                                                 | `""`                                |
 | `affinity`                                        | Affinity for Sealed Secret pods assignment                                           | `{}`                                |
 | `nodeSelector`                                    | Node labels for Sealed Secret pods assignment                                        | `{}`                                |
 | `tolerations`                                     | Tolerations for Sealed Secret pods assignment                                        | `[]`                                |
