@@ -123,6 +123,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `containerSecurityContext.readOnlyRootFilesystem` | Whether the Sealed Secret container has a read-only root filesystem                  | `true`                              |
 | `containerSecurityContext.runAsNonRoot`           | Indicates that the Sealed Secret container must run as a non-root user               | `true`                              |
 | `containerSecurityContext.runAsUser`              | Set Sealed Secret containers' Security Context runAsUser                             | `1001`                              |
+| `automountServiceAccountToken`                    | Whether to automatically mount the service account API-token to a particular pod     | `""`                                |
 | `podLabels`                                       | Extra labels for Sealed Secret pods                                                  | `{}`                                |
 | `podAnnotations`                                  | Annotations for Sealed Secret pods                                                   | `{}`                                |
 | `priorityClassName`                               | Sealed Secret pods' priorityClassName                                                | `""`                                |
@@ -158,14 +159,15 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Other Parameters
 
-| Name                    | Description                                          | Value   |
-| ----------------------- | ---------------------------------------------------- | ------- |
-| `serviceAccount.create` | Specifies whether a ServiceAccount should be created | `true`  |
-| `serviceAccount.labels` | Extra labels to be added to the ServiceAccount       | `{}`    |
-| `serviceAccount.name`   | The name of the ServiceAccount to use.               | `""`    |
-| `rbac.create`           | Specifies whether RBAC resources should be created   | `true`  |
-| `rbac.labels`           | Extra labels to be added to RBAC resources           | `{}`    |
-| `rbac.pspEnabled`       | PodSecurityPolicy                                    | `false` |
+| Name                                          | Description                                               | Value   |
+| --------------------------------------------- | --------------------------------------------------------- | ------- |
+| `serviceAccount.create`                       | Specifies whether a ServiceAccount should be created      | `true`  |
+| `serviceAccount.labels`                       | Extra labels to be added to the ServiceAccount            | `{}`    |
+| `serviceAccount.name`                         | The name of the ServiceAccount to use.                    | `""`    |
+| `serviceAccount.automountServiceAccountToken` | Specifies, whether to mount the service account API-token | `""`    |
+| `rbac.create`                                 | Specifies whether RBAC resources should be created        | `true`  |
+| `rbac.labels`                                 | Extra labels to be added to RBAC resources                | `{}`    |
+| `rbac.pspEnabled`                             | PodSecurityPolicy                                         | `false` |
 
 
 ### Metrics parameters
