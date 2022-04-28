@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/renameio"
 	"github.com/mattn/go-isatty"
@@ -127,6 +128,10 @@ func parseKey(r io.Reader) (*rsa.PublicKey, error) {
 	cert, ok := certs[0].PublicKey.(*rsa.PublicKey)
 	if !ok {
 		return nil, fmt.Errorf("Expected RSA public key but found %v", certs[0].PublicKey)
+	}
+
+	if time.Now().After(certs[0].NotAfter) {
+		return nil, fmt.Errorf("failed to encrypt using an expired certificate on %v", certs[0].NotBefore.Format("January 2, 2006"))
 	}
 
 	return cert, nil

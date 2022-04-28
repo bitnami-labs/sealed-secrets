@@ -10,7 +10,7 @@ KUBECFG = kubecfg
 DOCKER = docker
 GINKGO = ginkgo -p
 
-CONTROLLER_IMAGE = quay.io/bitnami/sealed-secrets-controller:latest
+CONTROLLER_IMAGE = docker.io/bitnami/sealed-secrets-controller:latest
 INSECURE_REGISTRY = false # useful for local registry
 IMAGE_PULL_POLICY = Always
 KUBECONFIG ?= $(HOME)/.kube/config
@@ -42,7 +42,7 @@ GO_LD_FLAGS = -X main.VERSION=$(VERSION)
 all: controller kubeseal
 
 generate: $(GO_FILES)
-	$(GO) generate $(GO_PACKAGES)
+	$(GO) mod vendor && $(GO) generate $(GO_PACKAGES)
 
 controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/controller
