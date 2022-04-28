@@ -83,9 +83,9 @@ The command removes all the Kubernetes components associated with the chart and 
 
 | Name                                                | Description                                                                          | Value                               |
 | --------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------- |
-| `image.registry`                                    | Sealed Secrets image registry                                                        | `quay.io`                           |
+| `image.registry`                                    | Sealed Secrets image registry                                                        | `docker.io`                         |
 | `image.repository`                                  | Sealed Secrets image repository                                                      | `bitnami/sealed-secrets-controller` |
-| `image.tag`                                         | Sealed Secrets image tag (immutable tags are recommended)                            | `v0.17.4`                           |
+| `image.tag`                                         | Sealed Secrets image tag (immutable tags are recommended)                            | `v0.17.5`                           |
 | `image.pullPolicy`                                  | Sealed Secrets image pull policy                                                     | `IfNotPresent`                      |
 | `image.pullSecrets`                                 | Sealed Secrets image pull secrets                                                    | `[]`                                |
 | `createController`                                  | Specifies whether the Sealed Secrets controller should be created                    | `true`                              |
@@ -128,6 +128,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `podLabels`                                         | Extra labels for Sealed Secret pods                                                  | `{}`                                |
 | `podAnnotations`                                    | Annotations for Sealed Secret pods                                                   | `{}`                                |
 | `priorityClassName`                                 | Sealed Secret pods' priorityClassName                                                | `""`                                |
+| `runtimeClassName`                                  | Sealed Secret pods' runtimeClassName                                                 | `""`                                |
 | `affinity`                                          | Affinity for Sealed Secret pods assignment                                           | `{}`                                |
 | `nodeSelector`                                      | Node labels for Sealed Secret pods assignment                                        | `{}`                                |
 | `tolerations`                                       | Tolerations for Sealed Secret pods assignment                                        | `[]`                                |

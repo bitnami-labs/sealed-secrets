@@ -34,3 +34,6 @@
 
 # GoReleaser output dir
 dist/
+
+# Vendor folder
+vendor/

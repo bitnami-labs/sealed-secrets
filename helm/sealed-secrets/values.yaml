@@ -19,7 +19,7 @@ extraDeploy: []
 ## @section Sealed Secrets Parameters
 
 ## Sealed Secrets image
-## ref: https://quay.io/repository/bitnami/sealed-secrets-controller?tab=tags
+## ref: https://hub.docker.com/r/bitnami/sealed-secrets-controller/tags
 ## @param image.registry Sealed Secrets image registry
 ## @param image.repository Sealed Secrets image repository
 ## @param image.tag Sealed Secrets image tag (immutable tags are recommended)
@@ -27,9 +27,9 @@ extraDeploy: []
 ## @param image.pullSecrets [array]  Sealed Secrets image pull secrets
 ##
 image:
-  registry: quay.io
+  registry: docker.io
   repository: bitnami/sealed-secrets-controller
-  tag: v0.17.4
+  tag: v0.17.5
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -159,6 +159,9 @@ podAnnotations: {}
 ## @param priorityClassName Sealed Secret pods' priorityClassName
 ##
 priorityClassName: ""
+## @param runtimeClassName Sealed Secret pods' runtimeClassName
+##
+runtimeClassName: ""
 ## @param affinity [object] Affinity for Sealed Secret pods assignment
 ## ref: https://kubernetes.io/docs/concepts/configuration/assign-pod-node/#affinity-and-anti-affinity
 ##

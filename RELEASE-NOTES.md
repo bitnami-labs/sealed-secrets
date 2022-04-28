@@ -4,6 +4,13 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.17.5
+
+### Changelog
+
+- Switch to dockerhub([#823](https://github.com/bitnami-labs/sealed-secrets/pull/823))
+- Sign the release using cosign ([#814](https://github.com/bitnami-labs/sealed-secrets/pull/814))
+
 ## v0.17.4
 
 ### Changelog
