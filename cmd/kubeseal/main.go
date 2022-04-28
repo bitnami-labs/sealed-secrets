@@ -204,6 +204,7 @@ func openCertURI(uri string) (io.ReadCloser, error) {
 	// and escape the filename properly.
 
 	t := &http.Transport{}
+	// #nosec: G111 -- we want to allow all files to be opened
 	t.RegisterProtocol("file", http.NewFileTransport(http.Dir("/")))
 	c := &http.Client{Transport: t}
 
@@ -625,6 +626,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 		if err != nil {
 			return nil
 		}
+		// #nosec: G307 -- this deferred close is fine because it is not on a writable file
 		defer f.Close()
 
 		input = f

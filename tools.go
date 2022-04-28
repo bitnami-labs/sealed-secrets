@@ -2,6 +2,7 @@
 // code generation tools.
 // The build tag below ensures this dep is not pulled during normal builds.
 
+//go:build tools
 // +build tools
 
 package sealedsecrets

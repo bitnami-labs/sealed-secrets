@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  CONTROLLER_IMAGE: quay.io/bitnami/sealed-secrets-controller:latest
+  CONTROLLER_IMAGE: docker.io/bitnami/sealed-secrets-controller:latest
 
 jobs:
   linter:
@@ -63,6 +63,18 @@ jobs:
 
     - name: Check out code
       uses: actions/checkout@v2
+
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v2.1.0
+
+    - name: Distroless verify
+      run: |
+        cosign verify --key /dev/stdin "$(grep FROM Dockerfile | awk '{print $2}')" <<EOF
+        -----BEGIN PUBLIC KEY-----
+        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWZzVzkb8A+DbgDpaJId/bOmV8n7Q
+        OqxYbK0Iro6GzSmOzxkn+N2AKawLyXi84WSwJQBK//psATakCgAQKkNTAA==
+        -----END PUBLIC KEY-----
+        EOF
 
     - name: Setup kubecfg
       run: |
