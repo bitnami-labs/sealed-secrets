@@ -42,7 +42,7 @@ GO_LD_FLAGS = -X main.VERSION=$(VERSION)
 all: controller kubeseal
 
 generate: $(GO_FILES)
-	$(GO) generate $(GO_PACKAGES)
+	$(GO) mod vendor && $(GO) generate $(GO_PACKAGES)
 
 controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/controller
