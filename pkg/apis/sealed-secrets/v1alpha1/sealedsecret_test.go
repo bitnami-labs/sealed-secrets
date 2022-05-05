@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
-	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
+	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 
 	// Install standard API types

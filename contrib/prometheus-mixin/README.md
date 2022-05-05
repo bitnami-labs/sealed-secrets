@@ -65,7 +65,7 @@ This project includes a [PodMonitor](../../controller-podmonitor.jsonnet
 Compile jsonnet to yaml:
 ```
 $ make controller-podmonitor.yaml 
-kubecfg show -V CONTROLLER_IMAGE=quay.io/bitnami/sealed-secrets-controller:latest -V IMAGE_PULL_POLICY=Always -o yaml controller-podmonitor.jsonnet > controller-podmonitor.yaml.tmp
+kubecfg show -V CONTROLLER_IMAGE=docker.io/bitnami/sealed-secrets-controller:latest -V IMAGE_PULL_POLICY=Always -o yaml controller-podmonitor.jsonnet > controller-podmonitor.yaml.tmp
 mv controller-podmonitor.yaml.tmp controller-podmonitor.yaml
 ```
 

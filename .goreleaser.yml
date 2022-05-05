@@ -55,3 +55,4 @@ release:
   extra_files:
     - glob: ./controller.yaml
     - glob: ./controller-norbac.yaml
+    - glob: ./.github/workflows/cosign.pub

@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  CONTROLLER_IMAGE: quay.io/bitnami/sealed-secrets-controller:latest
+  CONTROLLER_IMAGE: docker.io/bitnami/sealed-secrets-controller:latest
 
 jobs:
   linter:
@@ -15,14 +15,14 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.16", "1.17"]
+        go: ["1.17.8", "1.18.0"]
         os: [ubuntu-latest]
         golangci-lint: ["1.44.2"]
     steps:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^${{ matrix.go }}
+        go-version: ${{ matrix.go }}
       id: go
 
     - name: Check out code into the Go module directory
@@ -40,14 +40,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go: ["1.16", "1.17"]
+        go: ["1.17.8", "1.18.0"]
         os: [macos-latest, windows-latest, ubuntu-latest]
     steps:
 
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^${{ matrix.go }}
+        go-version: ${{ matrix.go }}
       id: go
 
     - name: Check out code into the Go module directory
@@ -64,6 +64,18 @@ jobs:
     - name: Check out code
       uses: actions/checkout@v2
 
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v2.1.0
+
+    - name: Distroless verify
+      run: |
+        cosign verify --key /dev/stdin "$(grep FROM Dockerfile | awk '{print $2}')" <<EOF
+        -----BEGIN PUBLIC KEY-----
+        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWZzVzkb8A+DbgDpaJId/bOmV8n7Q
+        OqxYbK0Iro6GzSmOzxkn+N2AKawLyXi84WSwJQBK//psATakCgAQKkNTAA==
+        -----END PUBLIC KEY-----
+        EOF
+
     - name: Setup kubecfg
       run: |
         mkdir -p ~/bin
@@ -73,7 +85,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.17
+        go-version: 1.17.8
       id: go
 
     - name: Docker build
@@ -113,12 +125,12 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ^1.16
+        go-version: 1.17.8
       id: go
 
     - name: Set up Ginkgo
       run: |
-        (cd /tmp; GO111MODULE=on go get github.com/onsi/ginkgo/ginkgo@v1.14.2)
+        (cd /tmp; GO111MODULE=on go install github.com/onsi/ginkgo/ginkgo@v1.14.2)
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2

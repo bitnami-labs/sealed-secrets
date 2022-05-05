@@ -17,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/google/renameio"
 	"github.com/mattn/go-isatty"
@@ -129,6 +130,10 @@ func parseKey(r io.Reader) (*rsa.PublicKey, error) {
 		return nil, fmt.Errorf("Expected RSA public key but found %v", certs[0].PublicKey)
 	}
 
+	if time.Now().After(certs[0].NotAfter) {
+		return nil, fmt.Errorf("failed to encrypt using an expired certificate on %v", certs[0].NotBefore.Format("January 2, 2006"))
+	}
+
 	return cert, nil
 }
 
@@ -193,6 +198,7 @@ func openCertLocal(filenameOrURI string) (io.ReadCloser, error) {
 	if ok, err := isFilename(filenameOrURI); err != nil {
 		return nil, err
 	} else if ok {
+		// #nosec G304 -- should open user provided file
 		return os.Open(filenameOrURI)
 	}
 	return openCertURI(filenameOrURI)
@@ -204,6 +210,7 @@ func openCertURI(uri string) (io.ReadCloser, error) {
 	// and escape the filename properly.
 
 	t := &http.Transport{}
+	// #nosec: G111 -- we want to allow all files to be opened
 	t.RegisterProtocol("file", http.NewFileTransport(http.Dir("/")))
 	c := &http.Client{Transport: t}
 
@@ -509,6 +516,7 @@ func parseFromFile(s string) (string, string) {
 }
 
 func readPrivKeysFromFile(filename string) ([]*rsa.PrivateKey, error) {
+	// #nosec G304 -- should open user provided file
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
@@ -631,10 +639,12 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 
 	var input io.Reader = os.Stdin
 	if inputFileName != "" {
+		// #nosec G304 -- should open user provided file
 		f, err := os.Open(inputFileName)
 		if err != nil {
 			return nil
 		}
+		// #nosec: G307 -- this deferred close is fine because it is not on a writable file
 		defer f.Close()
 
 		input = f
@@ -732,6 +742,7 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 			}
 
 			_, filename := parseFromFile(fromFile[0])
+			// #nosec G304 -- should open user provided file
 			data, err = ioutil.ReadFile(filename)
 		} else {
 			if isatty.IsTerminal(os.Stdin.Fd()) {
