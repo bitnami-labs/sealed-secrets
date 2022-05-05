@@ -435,10 +435,12 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 }
 
 func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool) error {
+	// #nosec G304 -- should open user provided file
 	f, err := os.OpenFile(filename, os.O_RDWR, 0)
 	if err != nil {
 		return err
 	}
+	// #nosec G307 -- we are explicitly managing a potential error from f.Close() at the end of the function
 	defer f.Close()
 
 	b, err := io.ReadAll(f)
@@ -488,6 +490,10 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 		return err
 	}
 	if _, err := io.Copy(f, &out); err != nil {
+		return err
+	}
+	// we explicitly call f.Close() to return a pontential error when closing the file that wouldn't be returned in the deferred f.Close()
+	if err := f.Close(); err != nil {
 		return err
 	}
 	return nil
