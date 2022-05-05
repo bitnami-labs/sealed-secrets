@@ -46,7 +46,7 @@ jobs:
 
       # Setup Cosign
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v2.1.0
+        uses: sigstore/cosign-installer@v2.3.0
       - name: Write Cosign key
         run: echo "$COSIGN_KEY" > /tmp/cosign.key
         env:
