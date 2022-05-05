@@ -432,6 +432,7 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	if err != nil {
 		return err
 	}
+	defer f.Close()
 
 	b, err := io.ReadAll(f)
 	if err != nil {
