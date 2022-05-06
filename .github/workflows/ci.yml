@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.16", "1.17"]
+        go: ["1.17.8", "1.18.0"]
         os: [ubuntu-latest]
         gosec: ["2.11.0"]
     steps:
