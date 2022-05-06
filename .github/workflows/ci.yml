@@ -35,6 +35,31 @@ jobs:
     - name: Run linter
       run: make lint
 
+  gosec:
+    name: Run gosec
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go: ["1.17.8", "1.18.0"]
+        os: [ubuntu-latest]
+        gosec: ["2.11.0"]
+    steps:
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: ${{ matrix.go }}
+      id: go
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        go install github.com/securego/gosec/v2/cmd/gosec@v${{ matrix.gosec }}
+
+    - name: Run gosec
+      run: make lint-gosec
+
   test:
     name: Build
     runs-on: ${{ matrix.os }}
