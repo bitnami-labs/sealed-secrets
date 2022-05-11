@@ -26,9 +26,9 @@ original Secret from the SealedSecret.
   - [Scopes](#scopes)
 - [Installation](#installation)
   - [Controller](#controller)
-  - [Kustomize](#kustomize)
-  - [Helm Chart](#helm-chart)
-  - [Operator Framework](#operator-framework)
+    - [Kustomize](#kustomize)
+    - [Helm Chart](#helm-chart)
+    - [Operator Framework](#operator-framework)
   - [Homebrew](#homebrew)
   - [MacPorts](#macports)
   - [Installation from source](#installation-from-source)
@@ -257,7 +257,7 @@ After a few moments, the controller will start, generate a key pair,
 and be ready for operation.  If it does not, check the controller
 logs.
 
-### Kustomize
+#### Kustomize
 
 The official controller manifest installation mechanism is just a YAML file.
 
@@ -265,7 +265,7 @@ In some cases you might need to apply your own customizations, like set a custom
 
 `kubectl` has native support for that, see [kustomize](https://kustomize.io/).
 
-### Helm Chart
+#### Helm Chart
 
 The Sealed Secrets helm chart is now official supported and hosted in this GitHub repo.
 
@@ -297,7 +297,7 @@ kubeseal --controller-name sealed-secrets <args>
 
 Alternatively, you can override `fullnameOverride` on the helm chart install.
 
-### Operator Framework
+#### Operator Framework
 
 Install Sealed Secrets as Kubernetes Operator via the Operator Lifecycle Manager of your cluster. The `Sealed Secrets Operator (Helm)` is published at [OperatorHub.io](https://operatorhub.io/operator/sealed-secrets-operator-helm) for Kubernetes, as community operator in OpenShift's integrated OperatorHub or at the [GitHub repository](https://github.com/disposab1e/sealed-secrets-operator-helm) of the project.
 
