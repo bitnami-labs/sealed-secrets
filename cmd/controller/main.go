@@ -248,21 +248,6 @@ func main2() error {
 		}
 	}
 
-	if !*namespaceAll && *addNamespaces != "" {
-		namespaces := strings.Split(*addNamespaces, ",")
-		var inf ssinformers.SharedInformerFactory
-		var ctlr *Controller
-
-		for _, ns := range namespaces {
-			inf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
-			ctlr = NewController(clientset, ssclientset, inf, keyRegistry)
-			ctlr.oldGCBehavior = *oldGCBehavior
-			ctlr.updateStatus = *updateStatus
-			log.Printf("Starting new informer for namespace: %s\n", ns)
-			go ctlr.Run(stop)
-		}
-	}
-
 	cp := func() ([]*x509.Certificate, error) {
 		cert, err := keyRegistry.getCert()
 		if err != nil {
