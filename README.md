@@ -28,7 +28,6 @@ original Secret from the SealedSecret.
   - [Controller](#controller)
     - [Kustomize](#kustomize)
     - [Helm Chart](#helm-chart)
-    - [Operator Framework](#operator-framework)
   - [Homebrew](#homebrew)
   - [MacPorts](#macports)
   - [Installation from source](#installation-from-source)
@@ -296,12 +295,6 @@ kubeseal --controller-name sealed-secrets <args>
 ```
 
 Alternatively, you can override `fullnameOverride` on the helm chart install.
-
-#### Operator Framework
-
-Install Sealed Secrets as Kubernetes Operator via the Operator Lifecycle Manager of your cluster. The `Sealed Secrets Operator (Helm)` is published at [OperatorHub.io](https://operatorhub.io/operator/sealed-secrets-operator-helm) for Kubernetes, as community operator in OpenShift's integrated OperatorHub or at the [GitHub repository](https://github.com/disposab1e/sealed-secrets-operator-helm) of the project.
-
-NOTE: the sealed secrets operator is an independently maintained project, so please contact the maintainers directly for support, help or [documentation](https://sealed-secrets-operator-helm.readthedocs.io/en/latest/).
 
 ### Homebrew
 
