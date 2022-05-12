@@ -48,6 +48,7 @@ var (
 	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
 	keyCutoffTime  = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
 	namespaceAll   = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
+	addNamespaces  = flag.String("add-namespaces", "", "Comma-separated list of additional namespaces to be scanned. Use --all-namespaces=false with this option.")
 	labelSelector  = flag.String("label-selector", "", "Label selector which can be used to filter sealed secrets.")
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
@@ -212,6 +213,7 @@ func main2() error {
 	namespace := v1.NamespaceAll
 	if !*namespaceAll {
 		namespace = myNamespace()
+		log.Printf("Starting informer for namespace: %s\n", namespace)
 	}
 
 	var tweakopts func(*metav1.ListOptions) = nil
@@ -230,6 +232,36 @@ func main2() error {
 	defer close(stop)
 
 	go controller.Run(stop)
+
+	if !*namespaceAll && *addNamespaces != "" {
+		namespaces := strings.Split(*addNamespaces, ",")
+		var inf ssinformers.SharedInformerFactory
+		var ctlr *Controller
+
+		for _, ns := range namespaces {
+			inf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
+			ctlr = NewController(clientset, ssclientset, inf, keyRegistry)
+			ctlr.oldGCBehavior = *oldGCBehavior
+			ctlr.updateStatus = *updateStatus
+			log.Printf("Starting new informer for namespace: %s\n", ns)
+			go ctlr.Run(stop)
+		}
+	}
+
+	if !*namespaceAll && *addNamespaces != "" {
+		namespaces := strings.Split(*addNamespaces, ",")
+		var inf ssinformers.SharedInformerFactory
+		var ctlr *Controller
+
+		for _, ns := range namespaces {
+			inf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
+			ctlr = NewController(clientset, ssclientset, inf, keyRegistry)
+			ctlr.oldGCBehavior = *oldGCBehavior
+			ctlr.updateStatus = *updateStatus
+			log.Printf("Starting new informer for namespace: %s\n", ns)
+			go ctlr.Run(stop)
+		}
+	}
 
 	cp := func() ([]*x509.Certificate, error) {
 		cert, err := keyRegistry.getCert()
