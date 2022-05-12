@@ -54,6 +54,7 @@ original Secret from the SealedSecret.
   - [How do I update parts of JSON/YAML/TOML/.. file encrypted with sealed secrets?](#how-do-i-update-parts-of-jsonyamltoml-file-encrypted-with-sealed-secrets)
   - [Can I bring my own (pre-generated) certificates?](#can-i-bring-my-own-pre-generated-certificates)
   - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
+  - [How to verify the image?](#how-to-verify-the-images)
 - [Community](#community)
   - [Related projects](#related-projects)
 
@@ -628,6 +629,23 @@ kubeseal --controller-namespace sealed-secrets <mysecret.json >mysealedsecret.js
 # Provide the namespace via the environment variable
 export SEALED_SECRETS_CONTROLLER_NAMESPACE=sealed-secrets
 kubeseal <mysecret.json >mysealedsecret.json
+```
+
+### How to verify the images?
+
+Our images are being signed using [cosign](https://github.com/sigstore/cosign). The signatures have been saved in our [GitHub Container Registry](https://github.com/bitnami-labs/sealed-secrets/pkgs/container/sealed-secrets/signs).
+
+It is pretty simple to verify the images:
+
+```bash
+# export the COSIGN_VARIABLE setting up the GitHub container registry signs path
+export COSIGN_REPOSITORY=ghcr.io/bitnami-labs/sealed-secrets-controller/signs
+
+# verify the image uploaded in GHCR
+cosign verify --key .github/workflows/cosign.pub ghcr.io/bitnami-labs/sealed-secrets-controller:latest
+
+# verify the image uploaded in Dockerhub
+cosign verify --key .github/workflows/cosign.pub docker.io/bitnami/sealed-secrets-controller:latest
 ```
 
 ## Community

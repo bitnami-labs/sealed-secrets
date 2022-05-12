@@ -10,7 +10,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      image_name: docker.io/bitnami/sealed-secrets-controller
+      dockerhub_image_name: docker.io/bitnami/sealed-secrets-controller
+      ghcr_image_name: ghcr.io/${{ github.repository }}-controller
     steps:
       # Checkout and set env
       - name: Checkout
@@ -33,7 +34,7 @@ jobs:
       - name: K8s manifests
         run: |
           export PATH=~/bin:$PATH
-          make CONTROLLER_IMAGE=${{ env.image_name }}:${{ github.ref_name }} controller.yaml controller-norbac.yaml
+          make CONTROLLER_IMAGE=${{ env.dockerhub_image_name }}:${{ github.ref_name }} controller.yaml controller-norbac.yaml
 
       # Setup env for multi-arch builds
       - name: Set up QEMU
@@ -69,6 +70,19 @@ jobs:
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Login to GHRC
+        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: |
+            ${{ env.dockerhub_image_name }}
+            ${{ env.ghcr_image_name }}
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2
@@ -76,11 +90,11 @@ jobs:
           context: .
           platforms: linux/amd64,linux/arm64,linux/arm
           push: true
-          tags: ${{ env.image_name }}:latest,${{ env.image_name }}:${{ github.ref_name }}
-      - name: Sign image with a key
+          tags: ${{ steps.meta.outputs.tags }}
+      - name: Sign image with a key in GHCR
         run: |
-          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key $TAG_LATEST $TAG_CURRENT
+          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key $TAG_CURRENT
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-          TAG_LATEST: ${{ env.image_name }}:latest
-          TAG_CURRENT: ${{ env.image_name }}:${{ github.ref_name }}
+          TAG_CURRENT: ${{ steps.meta.outputs.tags }}
+          COSIGN_REPOSITORY: ${{ env.ghcr_image_name }}/signs
