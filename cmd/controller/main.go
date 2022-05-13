@@ -39,17 +39,17 @@ const (
 )
 
 var (
-	keyPrefix      = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
-	keySize        = flag.Int("key-size", 4096, "Size of encryption key.")
-	validFor       = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
-	myCN           = flag.String("my-cn", "", "Common name to be used as issuer/subject DN in generated certificate.")
-	printVersion   = flag.Bool("version", false, "Print version information and exit")
-	keyRenewPeriod = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation disabled if 0)")
-	acceptV1Data   = flag.Bool("accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
-	keyCutoffTime  = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
-	namespaceAll   = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
-	addNamespaces  = flag.String("add-namespaces", "", "Comma-separated list of additional namespaces to be scanned. Use --all-namespaces=false with this option.")
-	labelSelector  = flag.String("label-selector", "", "Label selector which can be used to filter sealed secrets.")
+	keyPrefix            = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
+	keySize              = flag.Int("key-size", 4096, "Size of encryption key.")
+	validFor             = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
+	myCN                 = flag.String("my-cn", "", "Common name to be used as issuer/subject DN in generated certificate.")
+	printVersion         = flag.Bool("version", false, "Print version information and exit")
+	keyRenewPeriod       = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation disabled if 0)")
+	acceptV1Data         = flag.Bool("accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
+	keyCutoffTime        = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
+	namespaceAll         = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
+	additionalNamespaces = flag.String("additional-namespaces", "", "Comma-separated list of additional namespaces to be scanned.")
+	labelSelector        = flag.String("label-selector", "", "Label selector which can be used to filter sealed secrets.")
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
@@ -233,18 +233,21 @@ func main2() error {
 
 	go controller.Run(stop)
 
-	if !*namespaceAll && *addNamespaces != "" {
-		namespaces := strings.Split(*addNamespaces, ",")
+	if *additionalNamespaces != "" {
+		addNS := strings.Split(*additionalNamespaces, ",")
+
 		var inf ssinformers.SharedInformerFactory
 		var ctlr *Controller
 
-		for _, ns := range namespaces {
-			inf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
-			ctlr = NewController(clientset, ssclientset, inf, keyRegistry)
-			ctlr.oldGCBehavior = *oldGCBehavior
-			ctlr.updateStatus = *updateStatus
-			log.Printf("Starting new informer for namespace: %s\n", ns)
-			go ctlr.Run(stop)
+		for _, ns := range addNS {
+			if ns != namespace {
+				inf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
+				ctlr = NewController(clientset, ssclientset, inf, keyRegistry)
+				ctlr.oldGCBehavior = *oldGCBehavior
+				ctlr.updateStatus = *updateStatus
+				log.Printf("Starting informer for namespace: %s\n", ns)
+				go ctlr.Run(stop)
+			}
 		}
 	}
 
