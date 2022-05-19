@@ -54,7 +54,7 @@ original Secret from the SealedSecret.
   - [How do I update parts of JSON/YAML/TOML/.. file encrypted with sealed secrets?](#how-do-i-update-parts-of-jsonyamltoml-file-encrypted-with-sealed-secrets)
   - [Can I bring my own (pre-generated) certificates?](#can-i-bring-my-own-pre-generated-certificates)
   - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
-  - [How to verify the image?](#how-to-verify-the-images)
+  - [How to verify the images?](#how-to-verify-the-images)
 - [Community](#community)
   - [Related projects](#related-projects)
 
