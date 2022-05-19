@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       dockerhub_image_name: docker.io/bitnami/sealed-secrets-controller
-      ghcr_image_name: ghcr.io/${{ github.repository }}-controller
+      ghcr_image_name: ghcr.io/bitnami-labs/sealed-secrets-controller
     steps:
       # Checkout and set env
       - name: Checkout
