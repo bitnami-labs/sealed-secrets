@@ -314,11 +314,12 @@ port install kubeseal
 
 ### Nixpkgs
 
-The `kubeseal` client is also available on [Nixpkgs](https://search.nixos.org/packages?channel=unstable&show=kubeseal&from=0&size=50&sort=relevance&type=packages&query=kubeseal):
+The `kubeseal` client is also available on [Nixpkgs](https://search.nixos.org/packages?channel=unstable&show=kubeseal&from=0&size=50&sort=relevance&type=packages&query=kubeseal): (**DISCLAIMER**: Not maintained by bitnami-labs)
 
 ```bash
 nix-env -iA nixpkgs.kubeseal
 ```
+
 
 ### Installation from source
 
