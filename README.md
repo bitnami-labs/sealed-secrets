@@ -55,6 +55,8 @@ original Secret from the SealedSecret.
   - [Can I bring my own (pre-generated) certificates?](#can-i-bring-my-own-pre-generated-certificates)
   - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
   - [How to verify the images?](#how-to-verify-the-images)
+  - [How to use one controller for a subset of namespaces](#How-to-use-one-controller-for-a-subset-of-namespaces)
+
 - [Community](#community)
   - [Related projects](#related-projects)
 
@@ -647,6 +649,10 @@ cosign verify --key .github/workflows/cosign.pub ghcr.io/bitnami-labs/sealed-sec
 # verify the image uploaded in Dockerhub
 cosign verify --key .github/workflows/cosign.pub docker.io/bitnami/sealed-secrets-controller:latest
 ```
+
+### How to use one controller for a subset of namespaces
+
+If you want to use one controller for more than one namespace, but not all namespaces, you can provide additional namespaces using the command line flag `--additional-namespaces=<namespace1>,<namespace2>,<...>`. Make sure you provide appropriate roles and rolebindings in the target namespaces, so the controller can manage the secrets in there.
 
 ## Community
 
