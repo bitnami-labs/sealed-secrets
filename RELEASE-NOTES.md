@@ -4,6 +4,15 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.18.0
+
+### Changelog
+
+- Add capability to watch multiple namespaces ([#572](https://github.com/bitnami-labs/sealed-secrets/pull/572))
+- Bump `gopkg.in/yaml.v3` to avoid CVE-2022-28948 ([#852](https://github.com/bitnami-labs/sealed-secrets/pull/852))
+- Bump `prometheus/client_golang` and `crypto` dependencies to avoid CVE-2022-21698 and CVE-2022-27191 ([#831](https://github.com/bitnami-labs/sealed-secrets/pull/831))
+- Sign container images with cosign ([#810](https://github.com/bitnami-labs/sealed-secrets/pull/810) and [#851](https://github.com/bitnami-labs/sealed-secrets/pull/851))
+
 ## v0.17.5
 
 ### Changelog
