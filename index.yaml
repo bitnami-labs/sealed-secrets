@@ -4,6 +4,29 @@ entries:
   - annotations:
       category: DeveloperTools
     apiVersion: v2
+    appVersion: v0.18.0
+    created: "2022-06-02T16:33:57.993175865Z"
+    description: Helm chart for the sealed-secrets controller.
+    digest: 1a56176c47e7914208c2f5eb4234530a7408eb1bd11f8798caa5307cd172b18c
+    home: https://github.com/bitnami-labs/sealed-secrets
+    icon: https://bitnami.com/assets/stacks/sealed-secrets/img/sealed-secrets-stack-220x234.png
+    keywords:
+    - secrets
+    - sealed-secrets
+    kubeVersion: '>=1.16.0-0'
+    maintainers:
+    - email: containers@bitnami.com
+      name: Bitnami
+    - email: mmikulicic@gmail.com
+      name: mkmik
+    name: sealed-secrets
+    type: application
+    urls:
+    - https://github.com/bitnami-labs/sealed-secrets/releases/download/helm-v2.2.0/sealed-secrets-2.2.0.tgz
+    version: 2.2.0
+  - annotations:
+      category: DeveloperTools
+    apiVersion: v2
     appVersion: v0.17.5
     created: "2022-05-05T11:57:58.978087385Z"
     description: Helm chart for the sealed-secrets controller.
@@ -419,4 +442,4 @@ entries:
     urls:
     - https://github.com/bitnami-labs/sealed-secrets/releases/download/helm-v1.13.2-r2/sealed-secrets-1.13.2-r2.tgz
     version: 1.13.2-r2
-generated: "2022-05-05T11:57:58.978266686Z"
+generated: "2022-06-02T16:33:57.993401567Z"
