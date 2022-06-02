@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.17.8", "1.18.0"]
+        go: ["1.17.11", "1.18.3"]
         os: [ubuntu-latest]
         golangci-lint: ["1.44.2"]
     steps:
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.17.8", "1.18.0"]
+        go: ["1.17.11", "1.18.3"]
         os: [ubuntu-latest]
         gosec: ["2.11.0"]
     steps:
@@ -65,7 +65,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go: ["1.17.8", "1.18.0"]
+        go: ["1.17.11", "1.18.3"]
         os: [macos-latest, windows-latest, ubuntu-latest]
     steps:
 
@@ -90,7 +90,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Install Cosign
-      uses: sigstore/cosign-installer@v2.1.0
+      uses: sigstore/cosign-installer@v2.3.0
 
     - name: Distroless verify
       run: |
@@ -110,7 +110,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: 1.17.8
+        go-version: 1.18.3
       id: go
 
     - name: Docker build
@@ -150,7 +150,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: 1.17.8
+        go-version: 1.18.3
       id: go
 
     - name: Set up Ginkgo
