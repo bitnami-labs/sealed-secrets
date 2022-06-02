@@ -652,7 +652,7 @@ cosign verify --key .github/workflows/cosign.pub docker.io/bitnami/sealed-secret
 
 ### How to use one controller for a subset of namespaces
 
-In case you are using a multi tenant kubernetes cluster (shared cluster), and you're lacking clusterwide permissions to run a controller, but you want to use one controller for more than one namespace, you can provide all additional namespaces with the command line flags "all-namespaces=false" and "add-namespaces=<namespace1>,<namespace2>,<...>". Make sure you provide appropriate roles and rolebindings in the target namespaces, so the controller can manage the secrets in there.
+If you want to use one controller for more than one namespace, but not all namespaces, you can provide additional namespaces using the command line flag `--additional-namespaces=<namespace1>,<namespace2>,<...>`. Make sure you provide appropriate roles and rolebindings in the target namespaces, so the controller can manage the secrets in there.
 
 ## Community
 

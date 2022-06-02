@@ -211,7 +211,7 @@ func main2() error {
 	initKeyGenSignalListener(trigger)
 
 	namespace := v1.NamespaceAll
-	if !*namespaceAll {
+	if !*namespaceAll || *additionalNamespaces != "" {
 		namespace = myNamespace()
 		log.Printf("Starting informer for namespace: %s\n", namespace)
 	}
@@ -234,12 +234,19 @@ func main2() error {
 	go controller.Run(stop)
 
 	if *additionalNamespaces != "" {
-		addNS := strings.Split(*additionalNamespaces, ",")
+		addNS := removeDuplicates(strings.Split(*additionalNamespaces, ","))
 
 		var inf ssinformers.SharedInformerFactory
 		var ctlr *Controller
 
 		for _, ns := range addNS {
+			if _, err := clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{}); err != nil {
+				if errors.IsNotFound(err) {
+					log.Printf("Warning: namespace '%s' doesn't exist\n", ns)
+					continue
+				}
+				return err
+			}
 			if ns != namespace {
 				inf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
 				ctlr = NewController(clientset, ssclientset, inf, keyRegistry)
