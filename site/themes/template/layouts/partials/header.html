@@ -1,7 +1,7 @@
 {{ $latest := (cond (.Site.Params.docs_versioning) .Site.Params.docs_latest "") }}
 <header>
 	<div class="wrapper">
-		<a href="{{ .Site.BaseURL }}"><img class="image" src="/img/vmware-logo.svg" alt="Logo" /></a>
+		<a href="{{ .Site.BaseURL }}"><img class="image" src="/img/sealedsecrets-logo.svg" alt="Logo" /></a>
 		<ul class="desktop-links">
 			<li><a href="/" {{ if (eq .RelPermalink "/")  }}class="active"{{ end }}>Home</a></li>
 			<li><a href="/plugins/" {{ if (eq .RelPermalink "/plugins/")  }}class="active"{{ end }}>Plugins</a></li>
