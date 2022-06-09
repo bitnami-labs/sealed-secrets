@@ -1,6 +1,6 @@
 baseURL: "https://sealed-secrets.netlify.app"
 languageCode: "en-us"
-title: "Template"
+title: "Sealed Secrets"
 theme: "template"
 outputs:
   home: [ "HTML", "REDIRECTS" ]
