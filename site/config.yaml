@@ -1,4 +1,4 @@
-baseURL: "https://template.dev/"
+baseURL: "https://sealed-secrets.netlify.app"
 languageCode: "en-us"
 title: "Template"
 theme: "template"
