@@ -1,0 +1,22 @@
+extends: metric
+message: "Try to keep the Flesch-Kincaid grade level (%s) below 15 (College junior) ."
+link: https://en.wikipedia.org/wiki/Flesch%E2%80%93Kincaid_readability_tests
+
+formula: |
+  (0.39 * (words / sentences)) + (11.8 * (syllables / words)) - 15.59
+
+condition: "> 15"
+
+# grade
+# 17 College graduate
+# 16 College senior
+# 15 College junior
+# 14 College sophomore
+# 13 College freshman
+# 12 High school senior
+# 11 High school junior
+# 10 High school sophomore
+# 9 High school freshman
+# 8 Eighth grade
+# 7 Seventh grade
+# 6 Sixth grade

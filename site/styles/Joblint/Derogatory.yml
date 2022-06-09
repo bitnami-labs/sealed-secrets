@@ -1,0 +1,15 @@
+extends: existence
+message: "Avoid using '%s'"
+description: "When you use '%s,' you're being discriminatory."
+ignorecase: true
+level: error
+tokens:
+  - 'bia?tch(?:es)?'
+  - 'bimbos?'
+  - 'hoes?'
+  - 'hunks?'
+  - 'milfs?'
+  - 'slags?'
+  - 'sluts?'
+  - 'stallions?'
+  - 'studs?'

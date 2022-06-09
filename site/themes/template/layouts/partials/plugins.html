@@ -1,0 +1,48 @@
+<div class="grid three">
+    {{ $limit := int (.Scratch.Get "limit") }}
+    {{ $pages := sort (.Site.GetPage "/plugins/list").Resources "Name" }}
+
+    {{ if gt $limit 0 }}
+        {{ $pages = first $limit $pages }}
+    {{ end }}
+
+    {{ range $index, $page := $pages }}
+    <div class="col">
+        <div class="content plugins">
+            {{ if .Params.link }}
+                <h3><a href="{{ .Params.link }}">{{ .Title }}</a></h3>
+            {{ else }}
+                <h3>{{ .Title }}</h3>
+            {{ end }}
+            <p>{{ .Content }}</p>
+            {{ if .Params.objectStorage }}
+                <img src="https://img.shields.io/badge/Object Storage-supported-green">
+            {{ end }}
+            {{ if .Params.volumesnapshotter }}
+                <img src="https://img.shields.io/badge/VolumeSnapshotter-supported-green">
+            {{ end }}
+            {{ if .Params.localStorage }}
+                <img src="https://img.shields.io/badge/Local Storage-supported-green">
+            {{ end }}
+            {{ if .Params.supportedByVeleroTeam }}
+                <img src="https://img.shields.io/badge/Supported%20By-Velero%20team-blue">
+            {{ end }}
+            {{ if .Params.BackupItemAction }}
+                <img src="https://img.shields.io/badge/BackupItemAction-supported-green">
+            {{ end }}
+            {{ if .Params.RestoreItemAction }}
+                <img src="https://img.shields.io/badge/RestoreItemAction-supported-green">
+            {{ end }}
+            {{ if .Params.beta }}
+                <img src="https://img.shields.io/badge/Beta-true-yellow">
+            {{ end }}
+        </div>
+    </div>
+    {{ $currentIndex := add $index 1 }}
+    {{ $row := mod $currentIndex 3 }}
+    {{ if eq $row 0 }}
+</div>
+<div class="grid three">
+    {{ end }}
+    {{ end }}
+</div>

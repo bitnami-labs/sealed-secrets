@@ -1,0 +1,17 @@
+{{ define "main" }}
+	<main>
+		<div class="hero subpage-hero">
+			<div class="wrapper">
+				<h1>Blog</h1>
+			</div>
+		</div>
+		<div class="wrapper blog landing">
+			<div class="grid three">
+				{{ range (.Paginator 9).Pages.ByDate }}
+					{{ partial "blog-post-card.html" . }}
+				{{ end }}
+			</div>
+			{{ partial "pagination.html" . }}
+		</div>
+	</main>
+{{ end }}

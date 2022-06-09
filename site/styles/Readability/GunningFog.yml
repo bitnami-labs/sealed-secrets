@@ -1,0 +1,22 @@
+extends: metric
+message: "Try to keep the Gunning-Fog index (%s) below 15 (College junior)."
+link: https://en.wikipedia.org/wiki/Gunning_fog_index
+
+formula: |
+  0.4 * ((words / sentences) + 100 * (complex_words / words))
+
+# Fog Index Reading level by grade
+# 17 College graduate
+# 16 College senior
+# 15 College junior
+# 14 College sophomore
+# 13 College freshman
+# 12 High school senior
+# 11 High school junior
+# 10 High school sophomore
+# 9 High school freshman
+# 8 Eighth grade
+# 7 Seventh grade
+# 6 Sixth grade
+
+condition: "> 15"

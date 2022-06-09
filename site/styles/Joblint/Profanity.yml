@@ -1,0 +1,13 @@
+extends: existence
+message: "Remove '%s'"
+ignorecase: true
+level: warning
+tokens:
+  - 'bloody'
+  - 'bugger'
+  - 'cunt'
+  - 'damn'
+  - 'fuck(?:er|ing)?'
+  - 'piss(?:ing)?'
+  - 'shit'
+  - 'motherfuck(?:ers?|ing)'

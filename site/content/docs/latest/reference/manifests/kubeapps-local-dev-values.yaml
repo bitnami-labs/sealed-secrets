@@ -1,0 +1,36 @@
+# Copyright 2019-2022 the Kubeapps contributors.
+# SPDX-License-Identifier: Apache-2.0
+
+frontend:
+  replicaCount: 1
+  service:
+    type: NodePort
+    nodePorts:
+      http: 30000
+assetsvc:
+  replicaCount: 1
+dashboard:
+  replicaCount: 1
+kubeops:
+  replicaCount: 1
+postgresql:
+  architecture: standalone
+  auth:
+    existingSecret: postgresql-db
+  primary:
+    persistence:
+      enabled: false
+kubeappsapis:
+  replicaCount: 1
+ingress:
+  enabled: true
+  hostname: localhost
+  tls: true
+  extraTls:
+    - hosts:
+        - localhost
+      secretName: localhost-tls
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+    # Required for ingress-nginx 1.0.0 for a valid ingress.
+    kubernetes.io/ingress.class: nginx

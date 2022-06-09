@@ -1,0 +1,8 @@
+extends: existence
+message: "Avoid using '%s'"
+description: "Something feels off when you need to reassure someone of something that should definitely not be an issue in any workplace."
+ignorecase: true
+level: suggestion
+tokens:
+  - 'drama[ -]*free'
+  - 'stress[ -]*free'

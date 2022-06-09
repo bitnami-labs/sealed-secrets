@@ -1,0 +1,15 @@
+extends: existence
+message: "Avoid using '%s'"
+description: "Legacy technologies can reduce the number of people interested in a job."
+ignorecase: true
+level: suggestion
+tokens:
+  - 'cobol'
+  - 'cvs'
+  - 'front[ -]*page'
+  - 'rcs'
+  - 'sccs'
+  - 'source[ -]*safe'
+  - 'vb\\s*6'
+  - 'visual[ -]*basic\\s*6'
+  - 'vbscript'

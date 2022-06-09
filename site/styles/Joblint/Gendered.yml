@@ -1,0 +1,40 @@
+extends: existence
+message: "Avoid using '%s'"
+description: "Use of '%s' could indicate that you're discriminating in favour of a certain gender."
+ignorecase: true
+level: error
+tokens:
+  - 'boys?'
+  - 'bros?'
+  - 'broth(?:a|er)s?'
+  - 'chicks?'
+  - 'dads?'
+  - 'dudes?'
+  - 'fathers?'
+  - 'females?'
+  - 'gentlem[ae]n'
+  - 'girls?'
+  - 'grandfathers?'
+  - 'grandmas?'
+  - 'grandmothers?'
+  - 'grandpas?'
+  - 'gran'
+  - 'grann(?:y|ies)'
+  - 'guys?'
+  - 'husbands?'
+  - 'lad(y|ies)?'
+  - 'm[ae]n'
+  - 'm[ou]ms?'
+  - 'males?'
+  - 'momm(?:y|ies)'
+  - 'mommas?'
+  - 'mothers?'
+  - 'papas?'
+  - 'sist(?:a|er)s?'
+  - 'wi(?:fe|ves)'
+  - 'wom[ae]n'
+  - he
+  - her
+  - him
+  - his
+  - she

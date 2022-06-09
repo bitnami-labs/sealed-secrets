@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="{{ .Site.LanguageCode | default "en-us" }}">
+<head>
+	<!-- OneTrust Cookies Consent Notice and Google Tag Manager -->
+  <meta content="{{ .Site.Params.oneTrustId }}" name="onetrust-data-domain">
+  <meta content="https://tags.tiqcdn.com/utag/vmware/microsites-privacy/prod/utag.js" name="microsites-utag">
+  <script src="https://code.jquery.com/jquery-3.4.1.slim.min.js" integrity="sha384-J6qa4849blE2+poT4WnyKhv5vZF5SrPo0iEjwBvKU7imGFAV0wwj1yYfoRSJoZ+n" crossorigin="anonymous"></script>
+  <script src="//www.vmware.com/files/templates/inc/utag_data.js"></script>
+  <script src="//tags.tiqcdn.com/utag/vmware/microsites-privacy/prod/utag.sync.js"></script>
+  <script>
+    function OptanonWrapper() { { window.dataLayer.push({ event: 'OneTrustGroupsUpdated' }); } }
+  </script>
+  <script>
+    function setGTM(w,d,s,l,i){ w[l]=w[l]||[]; w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'}); var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:''; j.async=true; j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f); } 
+    if (document.cookie.indexOf('OptanonConsent') > -1 && document.cookie.indexOf('groups=') > -1) { setGTM(window,document,'script','dataLayer','{{ .Site.Params.gtmId }}'); } else{ waitForOnetrustActiveGroups(); } var timer; function waitForOnetrustActiveGroups() { if (document.cookie.indexOf('OptanonConsent') > -1 && document.cookie.indexOf('groups=') > -1) { clearTimeout(timer); setGTM(window,document,'script','dataLayer','{{ .Site.Params.gtmId }}'); } else{ timer=setTimeout(waitForOnetrustActiveGroups, 250); } }
+  </script>
+  <!-- OneTrust Cookies Consent Notice and Google Tag Manager end -->
+
+
+  <meta
+    name="google-site-verification"
+    content="{{ .Site.Params.googleSiteVerification }}"
+  />
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>{{ if .Title }}{{ .Title }}{{ else }}Documentation{{ end }}</title>
+	{{ with .Site.Params.description }}
+	<meta name="description" content="{{ . }}">{{ end }}
+	{{ with .Site.Params.author }}
+	<meta name="author" content="{{ . }}">{{ end }}
+
+<!-- begin extra meta tags -->
+<!-- -- lightly modified from https://www.skcript.com/svr/perfect-seo-meta-tags-with-hugo/ -->
+<meta property="og:title" content="{{ .Title }} - {{ .Site.Title }}" />
+<meta name="twitter:title" content="{{ .Title }} - {{ .Site.Title }}" />
+<meta itemprop="name" content="{{ .Title }} - {{ .Site.Title }}" />
+<meta name="application-name" content="{{ .Title }} - {{ .Site.Title }}" />
+<meta property="og:site_name" content="{{ .Site.Params.sitename }}" />
+<meta name="description" content="{{ .Site.Params.description }}" />
+<meta itemprop="description" content="{{ .Site.Params.description }}" />
+<meta property="og:description" content="{{ .Site.Params.description }}" />
+<meta name="twitter:description" content="{{ .Site.Params.description }}" />
+<base href="{{ .Permalink }}" />
+<link rel="canonical" href="{{ .Permalink }}" itemprop="url" />
+<meta name="url" content="{{ .Permalink }}" />
+<meta name="twitter:url" content="{{ .Permalink }}" />
+<meta property="og:url" content="{{ .Permalink }}" />
+<meta property="og:locale" content="{{ .Language.Lang }}" />
+<meta name="language" content="{{ .Language.LanguageName }}" />
+<meta property="og:updated_time" content={{ .Lastmod.Format "2006-01-02T15:04:05Z0700" | safeHTML }} />
+<meta name="robots" content="index,follow" />
+<meta name="googlebot" content="index,follow" />
+<meta name="twitter:site" content="{{ .Site.Params.twitter }}" />
+<meta name="twitter:creator" content="{{ .Site.Params.twitter }}" />
+<meta name="keywords" content="" />
+<meta name="imagemode" content="force" />
+<meta name="coverage" content="Worldwide" />
+<meta name="distribution" content="Global" />
+<meta name="HandheldFriendly" content="True" />
+<meta name="msapplication-tap-highlight" content="no" />
+<meta name="apple-mobile-web-app-title" content="{{ .Site.Params.sitename }}" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta  name="apple-mobile-web-app-status-bar-style"  content="black-translucent"/>
+<meta name="apple-touch-fullscreen" content="yes" />
+<!-- end extra meta tags -->
+{{ $options := (dict "targetPath" "css/style.css" "outputStyle" "compressed" "enableSourceMap" true "includePaths" (slice "node_modules/myscss")) }}
+{{ $style := resources.Get "scss/site.scss" | resources.ToCSS $options }}
+<link rel="stylesheet" href="{{ $style.Permalink }}" integrity="{{ $style.Data.Integrity }}" media="screen">
+<link rel="icon" type="image/png" href="/img/favicon.png">
+<script src="{{ "js/main.js" | relURL }}" type="text/javascript"></script>
+{{ with .OutputFormats.Get "RSS" -}}
+	{{ printf `<link rel="%s" type="%s" href="%s" title="%s">` .Rel .MediaType.Type .RelPermalink $.Site.Title | safeHTML }}
+{{- end }}
+</head>
+<body>
+	{{ partial "base-header" . }}
+	{{ block "main" . }}{{ end }}
+	{{ partial "base-getting-started" . }}
+	{{ partial "base-footer" . }}
+    {{ if .Site.Params.docs_search }}
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@algolia/algoliasearch-netlify-frontend@1/dist/algoliasearchNetlify.css" />
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@algolia/algoliasearch-netlify-frontend@1/dist/algoliasearchNetlify.js"></script>
+    <script type="text/javascript">
+      algoliasearchNetlify({
+        appId: '{{ .Site.Params.docs_search_app_id }}',
+        apiKey: '{{ .Site.Params.docs_search_api_key }}',
+        siteId: '{{ .Site.Params.docs_search_site_id }}',
+        branch: 'main',
+        selector: 'div#search',
+      });
+    </script>
+    {{ end }}
+</body>
+</html>

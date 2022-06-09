@@ -1,0 +1,9 @@
+apiVersion: packaging.carvel.dev/v1alpha1
+kind: PackageRepository
+metadata:
+  name: tanzu-community-edition
+  namespace: kapp-controller-packaging-global
+spec:
+  fetch:
+    imgpkgBundle:
+      image: projects.registry.vmware.com/tce/main:latest

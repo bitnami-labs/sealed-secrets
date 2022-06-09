@@ -1,0 +1,22 @@
+# Copyright 2019-2022 the Kubeapps contributors.
+# SPDX-License-Identifier: Apache-2.0
+
+authProxy:
+  enabled: true
+  provider: oidc
+  clientID: default
+  clientSecret: ZXhhbXBsZS1hcHAtc2VjcmV0
+  cookieSecret: bm90LWdvb2Qtc2VjcmV0Cg==
+  #  If you are serving Kubeapps under a subpath "example.com/subpath", both oauthLoginURI and oauthLogoutURI have to be changed
+  # oauthLoginURI: /subpath/oauth2/login
+  # oauthLogoutURI: /subpath/oauth2/logout
+  extraFlags:
+    - --oidc-issuer-url=https://172.18.0.2:32000
+    # Overwrite the scope option to include the other cluster's clientids in the audience.
+    - --scope=openid email groups audience:server:client_id:second-cluster audience:server:client_id:third-cluster
+    # TODO: Update to provide the dex ca via --provider-ca-file and mounting etc.
+    - --ssl-insecure-skip-verify=true
+    # If you need to access the actual token in the frontend for testing, uncomment the following.
+    # - --set-authorization-header=true
+    # If you are serving Kubeapps under a subpath "example.com/subpath" it would be "proxy-prefix=/subpath/oauth2"
+    # - --proxy-prefix=/subpath/oauth2

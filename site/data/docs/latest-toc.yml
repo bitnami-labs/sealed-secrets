@@ -1,0 +1,93 @@
+toc:
+  - title: About Kubeapps
+    subfolderitems:
+      - page: What is Kubeapps
+        url: /project/readme
+      - page: Kubeapps chart
+        url: /project/chart-readme
+
+  - title: Tutorials
+    subfolderitems:
+      - url: /tutorials/getting-started
+        page: Get Started with Kubeapps
+      - url: /tutorials/using-an-oidc-provider
+        page: Using an OIDC provider
+      - url: /tutorials/managing-carvel-packages/
+        page: Managing Carvel packages
+      - url: /tutorials/managing-flux-packages/
+        page: Managing Flux packages
+      - url: /tutorials/kubeapps-on-tkg/
+        page: Kubeapps on TKG
+        subitems:
+          - subpage: Introduction
+            suburl: /tutorials/kubeapps-on-tkg/introduction
+          - subpage: "Step 1: Configure an Identity Management Provider in the Cluster"
+            suburl: /tutorials/kubeapps-on-tkg/step-1
+          - subpage: "Step 2: Configure and Install Kubeapps"
+            suburl: /tutorials/kubeapps-on-tkg/step-2
+          - subpage: "Step 3: Add Application Repositories to Kubeapps"
+            suburl: /tutorials/kubeapps-on-tkg/step-3
+          - subpage: "Step 4: Deploy and Manage Applications with Kubeapps"
+            suburl: /tutorials/kubeapps-on-tkg/step-4
+          - subpage: Conclusion
+            suburl: /tutorials/kubeapps-on-tkg/conclusion
+
+  - title: How-to guides
+    subfolderitems:
+      - url: /howto/dashboard
+        page: Using the dashboard
+      - url: /howto/access-control/
+        page: Access Control
+      - url: /howto/basic-form-support/
+        page: Basic Form Support
+      - url: /howto/custom-app-view-support/
+        page: Custon App View Support
+      - url: /howto/custom-form-component-support/
+        page: Custom Form Component Support
+      - url: /howto/deploying-to-multiple-clusters/
+        page: Multi-cluster Support
+      - url: /howto/offline-installation/
+        page: Offline installation
+      - url: /howto/private-app-repository/
+        page: Private Package Repository
+      - url: /howto/syncing-apprepository-webhook/
+        page: Syncing Package Repositories
+      - url: /howto/oidc/using-an-oidc-provider-with-pinniped
+        page: Using an OIDC provider with Pinniped
+
+  - title: Background
+    subfolderitems:
+      - url: /background/architecture/
+        page: Architecture
+      - url: /background/update-api-docs/
+        page: Kubeapps API documentation
+
+  - title: Reference
+    subfolderitems:
+      - url: /reference/proposals/
+        page: Proposals
+      - url: /reference/developer
+        page: Developer guides
+      - url: /reference/testing/testing-environment/
+        page: CI configuration
+      - url: /reference/testing/ci/
+        page: End-to-end testing configuration
+      - url: /reference/translations/translate-kubeapps/
+        page: Translations
+
+  - title: About the project
+    subfolderitems:
+      - page: Adopters
+        url: /project/adopters
+      - page: Code of Conduct
+        url: /project/code-of-conduct
+      - page: Contributing
+        url: /project/contributing
+      - page: Governance
+        url: /project/governance
+      - page: Maintainers
+        url: /project/maintainers
+      - page: Roadmap
+        url: /project/roadmap
+      - page: Security
+        url: /project/security

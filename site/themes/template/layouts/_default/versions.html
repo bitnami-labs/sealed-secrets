@@ -1,0 +1,22 @@
+{{ if .Site.Params.Use_advanced_docs }}
+    <div class="dropdown">
+        {{ if .Site.Params.docs_versioning }}
+            <button class="btn btn-primary dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false" onclick="docsVersionToggle()">
+                {{ .CurrentSection.Params.version }}
+            </button>
+            <div class="dropdown-menu" id="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                {{ $original_version := printf "/%s/" .CurrentSection.Params.version }}
+                {{ $latest_url := replace .Params.url .CurrentSection.Params.version .Site.Params.docs_latest | relURL }}
+                {{ $currentUrl := .Permalink }}
+                {{ range .Site.Params.docs_versions }}
+                    {{ $new_version := printf "/%s/" . }}
+                    <a class="dropdown-item"
+                        href="{{ replace $currentUrl $original_version $new_version | relURL }}">{{ . }}</a>
+                {{ end }}
+            </div>
+        {{ else }}
+            <span>{{ .Site.Params.docs_latest }}</span>
+        {{ end }}
+    </div>
+{{ end }}

@@ -1,0 +1,128 @@
+# Copyright 2019-2022 the Kubeapps contributors.
+# SPDX-License-Identifier: Apache-2.0
+
+https:
+  enabled: true
+certs:
+  web:
+    create: false
+config:
+  expiry:
+    signingKeys: 2160h
+  # TODO: Don't assume that kind network will be the first non-default bridged network (ie. 172.18.0.2)
+  # This means we'll need to generate the certs as well, rather than pre-configuring them.
+  # Or check if we can use cert generated for tls with k8s node?
+  issuer: https://172.18.0.2:32000
+  web:
+    tlsCert: /etc/dex/tls/https/server/tls.crt
+    tlsKey: /etc/dex/tls/https/server/tls.key
+  enablePasswordDB: true
+  storage:
+    type: memory
+  # Instead of reading from an external storage, use this list of clients.
+  staticClients:
+    # The default client is in this setup the client used by Kubeapps'
+    # auth-proxy, though importantly, any additional clients used by additional
+    # k8s api servers trust this first client as a peer so that it can create
+    # tokens which can be used against those additional clients which trust this
+    # one.
+    - id: default
+      redirectURIs:
+        - "http://localhost/oauth2/callback"
+        - "https://localhost/oauth2/callback"
+        - "http://kubeapps.kubeapps/oauth2/callback"
+      name: "Default-Cluster"
+      secret: ZXhhbXBsZS1hcHAtc2VjcmV0
+    # The second-cluster clientid exists for the additional cluster but not used
+    # by Kubeapps at all. Importantly, it lists the client-id used by Kubeapps as
+    # a trusted peer.
+    - id: second-cluster
+      redirectURIs:
+        - "http://localhost/oauth2/callback"
+        - "https://localhost/oauth2/callback"
+        - "http://kubeapps.kubeapps/oauth2/callback"
+      name: "Second-Cluster"
+      secret: ZXhhbXBsZS1hcHAtc2VjcmV0LXNlY29uZC1jbHVzdGVy
+      trustedPeers:
+        - default
+    # The thired-cluster clientid is completely fabricated and exists only to
+    # verify that more than one additional audience will be present on the
+    # returned id_token.
+    - id: third-cluster
+      redirectURIs:
+        - "http://localhost/oauth2/callback"
+        - "https://localhost/oauth2/callback"
+      name: "Third-Cluster"
+      secret: ZXhhbXBsZS1hcHAtc2VjcmV0LXNlY29uZC1jbHVzdGVy
+      trustedPeers:
+        - default
+  staticPasswords:
+    # Both users have a bcrypt hash of the string "password"
+    - email: "kubeapps-operator@example.com"
+      hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+      username: "admin"
+      userID: "08a8684b-db88-4b73-90a9-3cd1661f5466"
+    - email: "kubeapps-user@example.com"
+      hash: "$2a$10$2b2cU8CPhOTaGrs1HRQuAueS7JTT5ZHsHSzYiFPm1leZck7Mc8T4W"
+      username: "kubeapps-user"
+      userID: "08a8684b-db88-4b73-90a9-3cd1661f5467"
+  connectors:
+    - type: ldap
+      name: OpenLDAP
+      id: ldap
+      config:
+        host: ldap-openldap.ldap:389
+
+        # No TLS for this setup.
+        insecureNoSSL: true
+
+        # This would normally be a read-only user.
+        bindDN: cn=admin,dc=example,dc=org
+        bindPW: password
+
+        usernamePrompt: Email Address
+
+        userSearch:
+          baseDN: ou=People,dc=example,dc=org
+          filter: "(objectClass=person)"
+          username: mail
+          # "DN" (case sensitive) is a special attribute name. It indicates that
+          # this value should be taken from the entity's DN not an attribute on
+          # the entity.
+          idAttr: DN
+          emailAttr: mail
+          nameAttr: cn
+
+        groupSearch:
+          baseDN: ou=Groups,dc=example,dc=org
+          filter: "(objectClass=groupOfNames)"
+
+          # A user is a member of a group when their DN matches
+          # the value of a "member" attribute on the group entity.
+          userAttr: DN
+          groupAttr: member
+
+          # The group name should be the "cn" value.
+          nameAttr: cn
+grpc:
+  enabled: false
+service:
+  type: NodePort
+  ports:
+    https:
+      nodePort: 32000
+volumes:
+  - name: https-tls
+    secret:
+      defaultMode: 420
+      secretName: dex-web-server-tls
+volumeMounts:
+  - mountPath: /etc/dex/tls/https/server
+    name: https-tls
+resources:
+  limits:
+    cpu: 500m
+    memory: 256Mi
+  requests:
+    cpu: 50m
+    memory: 64Mi

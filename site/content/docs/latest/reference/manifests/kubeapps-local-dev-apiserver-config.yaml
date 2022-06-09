@@ -1,0 +1,31 @@
+# Copyright 2020-2022 the Kubeapps contributors.
+# SPDX-License-Identifier: Apache-2.0
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+          extraArgs:
+            oidc-issuer-url: https://172.18.0.2:32000
+            oidc-client-id: default
+            oidc-ca-file: /etc/kubernetes/pki/apiserver.crt
+            oidc-username-claim: email
+            oidc-username-prefix: "oidc:"
+            oidc-groups-claim: groups
+            oidc-groups-prefix: "oidc:"
+    extraPortMappings:
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP

@@ -1,0 +1,13 @@
+{{ define "main" }}
+	<main>
+		<div class="hero subpage-hero">
+			<div class="wrapper">
+				<h1>Plugins</h1>
+			</div>
+		</div>
+		<div class="wrapper subpage">
+            {{ .Content }}
+			{{ partial "plugins.html" . }}
+		</div>
+	</main>
+{{ end }}

@@ -1,0 +1,23 @@
+# Copyright 2020-2022 the Kubeapps contributors.
+# SPDX-License-Identifier: Apache-2.0
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraMounts:
+      - readOnly: true
+        hostPath: ./devel/dex.crt
+        containerPath: /etc/ssl/certs/dex.crt
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+          extraArgs:
+            oidc-issuer-url: https://172.18.0.2:32000
+            oidc-client-id: second-cluster
+            oidc-ca-file: /etc/ssl/certs/dex.crt
+            oidc-username-claim: email
+            oidc-username-prefix: "oidc:"
+            oidc-groups-claim: groups
+            oidc-groups-prefix: "oidc:"

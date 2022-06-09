@@ -1,0 +1,16 @@
+{{ $latest := (cond (.Site.Params.docs_versioning) .Site.Params.docs_latest "")
+}}
+<div class="getting-started">
+  <div class="wrapper clearfix">
+    <div class="left-side">
+      <h2>Getting started</h2>
+      <p>
+        Discover how to deploy Kubeapps in your cluster, add some package
+        repositories and start managing your applications!
+      </p>
+    </div>
+    <div class="right-side">
+      <a href="/docs/{{ $latest }}" class="button">Read the docs</a>
+    </div>
+  </div>
+</div>

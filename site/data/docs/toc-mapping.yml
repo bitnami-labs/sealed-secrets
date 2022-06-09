@@ -1,0 +1,5 @@
+# This file can be used to explicitly map a release to a specific table-of-contents
+# (TOC). You'll want to use this after any revamps to information architecture, to ensure
+# that the navigation for older versions still work.
+
+latest: latest-toc

@@ -1,0 +1,60 @@
+baseURL: "https://sealed-secrets.netlify.app/"
+languageCode: "en-us"
+title: "Sealed Secrets"
+theme: "template"
+outputs:
+  home: ["HTML", "REDIRECTS"]
+pygmentsCodefences: true
+pygmentsStyle: "pygments"
+markup:
+  highlight:
+    anchorLineNos: false
+    codeFences: true
+    guessSyntax: true
+    hl_Lines: ""
+    lineAnchors: ""
+    lineNoStart: 1
+    lineNos: false
+    lineNumbersInTable: true
+    noClasses: true
+    style: friendly
+    tabWidth: 4
+## Only used if use_advanced_docs=false
+# menu:
+#   docs:
+#   - name: Overview
+#     url: /docs/
+params:
+  author: Kubeapps
+  description: Kubeapps website
+  docs_latest: latest
+  docs_right_sidebar: true
+  docs_search: true
+  docs_search_app_id: 0HGZRK5XA0
+  docs_search_api_key: 8de7a24cc24afe13aca93276dd0cdbc7
+  docs_search_site_id: 7e0e2833-1d75-43f6-b006-632d359bb83b
+  docs_search_index_name: index_name
+  docs_versioning: true
+  github_base_url: "https://github.com/bitnami-labs/sealed-secrets/"
+  github_url: "https://github.com/bitnami-labs/sealed-secrets/"
+  googleSiteVerification: xxxx
+  gtmId: GTM-PGL7FMT
+  oneTrustId: xxxx
+  sitename: Sealed Secrets
+  slack_url: "https://kubernetes.slack.com/messages/sealed-secrets"
+  twitter: bitnami
+  twitter_url: "https://twitter.com/bitnami"
+  use_advanced_docs: true
+  docs_versions:
+    - latest
+privacy:
+  youtube:
+    privacyEnhanced: true
+mediaTypes:
+  "text/netlify":
+    delimiter: ""
+outputFormats:
+  REDIRECTS:
+    mediaType: "text/netlify"
+    baseName: "_redirects"
+enableRobotsTXT: true

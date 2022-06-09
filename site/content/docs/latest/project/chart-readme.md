@@ -1,0 +1,1 @@
+../../../../../chart/kubeapps/README.md

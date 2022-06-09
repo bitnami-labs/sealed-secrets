@@ -1,0 +1,108 @@
+<div class="wrapper use-cases">
+  <h2>What is Kubeapps?</h2>
+  {{- $pc := .Page.Site.Config.Privacy.YouTube | default true -}} {{- if not
+  $pc.Disable -}} {{- $ytHost := cond $pc.PrivacyEnhanced
+  "www.youtube-nocookie.com" "www.youtube.com" -}} {{- $id := "MHylHSDJqvc" -}}
+  {{- $title := "What is Kubeapps?" -}}
+  <div
+    style="
+      position: relative;
+      padding-bottom: 56.25%;
+      height: 0;
+      overflow: hidden;
+    "
+  >
+    <iframe
+      src="https://{{ $ytHost }}/embed/{{ $id }}"
+      style="
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      "
+      allowfullscreen
+      title="{{ $title }}"
+    >
+    </iframe>
+  </div>
+  {{ end -}}
+
+</br>
+
+  <div class="grid two">
+    <div class="col image">
+      <img alt="Square with three little and connected squares" src="/img/administration.svg" />
+    </div>
+    <div class="col text">
+      <p class="strong">Step 1: Install Kubeapps (for demo purposes)</p>
+      <div class="home-snippet">
+            {{ highlight `
+    helm repo add bitnami https://charts.bitnami.com/bitnami
+    ` "" "" }}
+
+            {{ highlight `
+    helm install -n kubeapps --create-namespace kubeapps bitnami/kubeapps
+    ` "" "" }}
+        </div>
+    </div>
+  </div>
+  <div class="grid two image-right">
+    <div class="col text">
+      <p class="strong">
+        Step 2: Create a demo credential with which to access Kubeapps and
+        Kubernetes
+      </p>
+      <div class="home-snippet">
+        {{ highlight `
+    kubectl create --namespace default serviceaccount kubeapps-operator
+    ` "" "" }}
+      </div>
+
+      <div class="home-snippet">
+        {{ highlight `
+    kubectl create clusterrolebinding kubeapps-operator --clusterrole=cluster-admin --serviceaccount=default:kubeapps-operator
+    ` "" "" }}
+      </div>
+
+      <div class="home-snippet">
+        {{ highlight `
+    cat <<EOF | kubectl apply -f -
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: kubeapps-operator-token
+      namespace: default
+      annotations:
+        kubernetes.io/service-account.name: kubeapps-operator
+    type: kubernetes.io/service-account-token
+    EOF
+    ` "" "" }}
+      </div>
+
+      <div class="home-snippet">
+        {{ highlight `
+    kubectl get --namespace default secret kubeapps-operator-token -o jsonpath='{.data.token}' -o go-template='{{.data.token | base64decode}}' && echo
+        ` "" "" }}
+      </div>
+    </div>
+    <div class="col image">
+      <img alt="Business card" src="/img/authentication.svg" />
+    </div>
+  </div>
+  <div class="grid two">
+    <div class="col image">
+      <img alt="Icon user inside a shield" src="/img/security.svg" />
+    </div>
+    <div class="col text">
+      <p class="strong">Step 3: Start the Kubeapps Dashboard</p>
+      <div class="home-snippet">
+        {{ highlight `
+    kubectl port-forward -n kubeapps svc/kubeapps 8080:80
+        ` "" "" }}
+      </div>
+      <p><a target="_blank" rel="noopener" href="http://localhost:8080" class="button tertiary">Go to localhost:8080</a></p>
+    </div>
+  </div>
+</div>

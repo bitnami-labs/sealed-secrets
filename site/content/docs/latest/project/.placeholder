@@ -1,0 +1,11 @@
+This directory is expected to contain symlinks to certain files of the root project directory. This way, these files will be rendered in Hugo.
+
+mklink readme.md ..\..\..\..\..\README.md
+mklink code-of-conduct.md ..\..\..\..\..\CODE_OF_CONDUCT.md
+mklink contributing.md ..\..\..\..\..\CONTRIBUTING.md
+mklink governance.md ..\..\..\..\..\GOVERNANCE.md
+mklink maintainers.md ..\..\..\..\..\MAINTAINERS.md
+mklink roadmap.md  ..\..\..\..\..\ROADMAP.md
+mklink security.md  ..\..\..\..\..\SECURITY.md
+mklink adopters.md  ..\..\..\..\..\ADOPTERS.md
+mklink chart-readme.md  ..\..\..\..\..\chart\kubeapps\README.md

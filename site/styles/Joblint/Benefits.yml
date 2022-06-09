@@ -1,0 +1,26 @@
+extends: existence
+message: "Avoid using '%s'"
+description: "Benefits such as '%s' are not bad in themselves, but their appearance in a job post often disguises the fact that there are few real benefits to working for a company."
+ignorecase: true
+level: warning
+tokens:
+  - 'ales?'
+  - 'beers?'
+  - 'brewskis?'
+  - 'coffee'
+  - '(?:foos|fuss)[ -]*ball'
+  - 'happy[ -]*hours?'
+  - 'keg(erator)?s?'
+  - 'lagers?'
+  - 'nerf[ -]*guns?'
+  - 'ping[ -]*pong?'
+  - 'pints?'
+  - 'pizzas?'
+  - 'play\\s*stations?'
+  - 'pool[ -]*table|pool'
+  - 'rock[ -]*walls?'
+  - 'table[ -]*football'
+  - 'table[ -]*tennis'
+  - 'wiis?'
+  - 'xbox(?:es|s)?'
+  - 'massages?'

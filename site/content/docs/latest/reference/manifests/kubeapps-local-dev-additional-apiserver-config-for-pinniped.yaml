@@ -1,0 +1,11 @@
+# Copyright 2021-2022 the Kubeapps contributors.
+# SPDX-License-Identifier: Apache-2.0
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    extraMounts:
+      - readOnly: true
+        hostPath: ./devel/dex.crt
+        containerPath: /etc/ssl/certs/dex.crt

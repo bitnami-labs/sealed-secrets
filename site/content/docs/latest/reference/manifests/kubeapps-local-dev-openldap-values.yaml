@@ -1,0 +1,51 @@
+# Copyright 2019-2022 the Kubeapps contributors.
+# SPDX-License-Identifier: Apache-2.0
+
+adminPassword: password
+customLdifFiles:
+  01-kubeapps-dev.ldif: |-
+    dn: ou=People,dc=example,dc=org
+    objectClass: organizationalUnit
+    ou: People
+
+    dn: cn=jane,ou=People,dc=example,dc=org
+    objectClass: person
+    objectClass: inetOrgPerson
+    sn: doe
+    cn: jane
+    mail: kubeapps-operator-ldap@example.org
+    userpassword: password
+
+    dn: cn=john,ou=People,dc=example,dc=org
+    objectClass: person
+    objectClass: inetOrgPerson
+    sn: doe
+    cn: john
+    mail: kubeapps-user-ldap@example.org
+    userpassword: password
+
+    # Group definitions.
+    dn: ou=Groups,dc=example,dc=org
+    objectClass: organizationalUnit
+    ou: Groups
+
+    dn: cn=admins,ou=Groups,dc=example,dc=org
+    objectClass: groupOfNames
+    cn: admins
+    member: cn=john,ou=People,dc=example,dc=org
+    member: cn=jane,ou=People,dc=example,dc=org
+
+    dn: cn=developers,ou=Groups,dc=example,dc=org
+    objectClass: groupOfNames
+    cn: developers
+    member: cn=jane,ou=People,dc=example,dc=org
+
+    dn: cn=kubeapps-operators,ou=Groups,dc=example,dc=org
+    objectClass: groupOfNames
+    cn: kubeapps-operators
+    member: cn=jane,ou=People,dc=example,dc=org
+
+    dn: cn=kubeapps-users,ou=Groups,dc=example,dc=org
+    objectClass: groupOfNames
+    cn: kubeapps-users
+    member: cn=john,ou=People,dc=example,dc=org

@@ -1,0 +1,38 @@
+<div class="col">
+    <div class="content">
+        <p class="resource-title">{{ ( .Get "title") }}</p>
+        <p class="resource-date">{{ ( .Get "date") }}</p>
+        </div>
+    {{- if eq (.Get "type") "video" -}}
+    <!-- <div class="embed-responsive"> -->
+    <div>
+        {{- $pc := .Page.Site.Config.Privacy.YouTube | default true -}}
+        {{- if not $pc.Disable -}}
+        {{- $ytHost := cond $pc.PrivacyEnhanced "www.youtube-nocookie.com" "www.youtube.com" -}}
+        {{- $id := .Get "videoID" | default (.Get 0) -}}
+        {{- $class := .Get "class" | default (.Get 1) -}}
+        {{- $title := .Get "text" | default "YouTube Video" }}
+        <div {{ with $class }}class="{{ . }}" {{ else
+            }}style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden;" {{ end }}>
+            <iframe src="https://{{ $ytHost }}/embed/{{ $id }}{{ with .Get "autoplay" }}{{ if eq . "true" }}?autoplay=1{{ end }}{{ end }}" {{ if not $class }}style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border:0;" {{ end }}allowfullscreen title="{{ $title }}"></iframe>
+        </div>
+        {{ end -}}
+    </div>
+    {{ else }}
+    <div class="icon">
+        <a target="_blank" rel="noopener" href="{{ (.Get "url") }}"> <img class="resource-icon" src="/img/{{ (.Get "icon") }}" /></a>
+    </div>
+    {{ end }}
+    <div class="content">
+        {{- if eq (.Get "type") "video" -}}
+        {{- $pc := .Page.Site.Config.Privacy.YouTube | default true -}}
+        {{- $ytHost := cond $pc.PrivacyEnhanced "www.youtube-nocookie.com" "www.youtube.com" -}}
+        {{- $id := .Get "videoID" | default (.Get 0) -}}
+        <p><a target="_blank" rel="noopener" href="https://www.youtube.com/watch?v={{ $id }} {{ (.Get "url") }}">{{ (.Get "text")
+                }}</a>.
+            {{ else }}
+        <p><a target="_blank" rel="noopener" href="{{ (.Get "url") }}">{{ (.Get "text") }}</a>.
+            {{ end }}
+        </p>
+    </div>
+</div>

@@ -1,0 +1,46 @@
+<div class="team">
+  <div class="wrapper">
+    <h2>Meet the Kubeapps team:</h2>
+    <div class="grid three">
+      {{ $contributors := .Site.GetPage "/contributors" }} {{ range
+      $contributors.Resources }}
+      <div class="bio">
+        <div class="image avatar">
+          <img
+            class="rounded-circle"
+            src="{{ .Params.image }}"
+            alt="{{ .Params.full_name }}"
+          />
+        </div>
+        <div class="info">
+          <p class="name">
+            <a
+              target="_blank"
+              rel="noopener"
+              href="https://github.com/{{ .Params.github_handle }}"
+              >{{ .Params.full_name }}
+            </a>
+          </p>
+          <p class="position">{{ .Params.role }}</p>
+        </div>
+      </div>
+      {{ end }}
+    </div>
+    <h3>Contributing</h3>
+    <p>
+      Kubeapps is released as open-source software and provides community
+      support through our GitHub project page. If you encounter an issue or have
+      a question, feel free to reach out on the
+      <a
+        target="_blank"
+        rel="noopener"
+        href="{{$.Site.Params.github_base_url}}/issues/new">GitHub issues page for Kubeapps</a>.
+    </p>
+    <p>
+      The Kubeapps project team welcomes contributions from the community —
+      please have a look at our
+      <a href="/docs/latest/project/contributing/">contributing documentation</a
+      >.
+    </p>
+  </div>
+</div>
