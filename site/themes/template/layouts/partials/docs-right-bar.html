@@ -3,10 +3,11 @@
     <div class="right-nav-content">
         <ul class="buttons">
             {{ if (or .IsNode .IsPage) }}
-                {{ $issueTitle := printf "[Docs] ADD-A-TITLE" }}
-                {{ $issueBody := printf "#### On Page: [%s](%s)\n\n Describe the issue" .RelPermalink .Permalink | htmlEscape }}
-                {{ $issueQuery := (querify "body" $issueBody "title" $issueTitle) }}
+                {{ $issueBody := printf "**On Page:** [%s](%s)" .Title .Permalink | htmlEscape }}
+                {{ $issueQuery := (querify "body" $issueBody) }}
                 <li><a href="{{ $.Site.Params.github_base_url }}/issues/new?{{ $issueQuery | safeURL }}" target="_blank">Report Issues</a></li>
+                {{ $editQuery := (querify "description" "Signed-off-by: NAME <EMAIL_ADDRESS>\n\n") }}
+                <li><a href="{{ $.Site.Params.github_base_url }}/edit/master/content/{{ with .File }}{{ .Path }}{{ end }}?{{ $editQuery | safeURL }}" target="_blank"><img src="/img/github-blue.svg" /> Edit</a></li>
             {{ end }}
         </ul>
         {{ if ne .TableOfContents "<nav id=\"TableOfContents\"></nav>" }}

@@ -1,0 +1,12 @@
+{{ $latest := (cond (.Site.Params.docs_versioning) .Site.Params.docs_latest "") }}
+<div class="getting-started">
+	<div class="wrapper clearfix">
+		<div class="left-side">
+			<h2>Purus faucibus</h2>
+			<p>Dignissim suspendisse in est ante in nibh mauris.</p>
+		</div>
+		<div class="right-side">
+			<a href="/docs/{{ $latest }}" class="button">Velit sed</a>
+		</div>
+	</div>
+</div>

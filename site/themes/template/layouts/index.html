@@ -1,7 +1,20 @@
 {{ define "main" }}
-<main>
-  {{ partial "home-hero.html" . }} {{ partial "home-grid.html" . }}
-  {{ partial "home-grey-block.html" . }}
-  {{ partial "use-cases.html" . }} {{ partial "home-contributors.html" . }}
-</main>
+	<main>
+		{{ partial "hero.html" . }}
+		{{ partial "homepage-grid.html" . }}
+		<div class="bg-grey introduction">
+			<div class="wrapper grid two">
+				<div class="col">
+					<p class="strong">Egestas pretium aenean</p>
+					<p><a href="#">Vitae proin sagittis</a> pharetra magna ac placerat vestibulum.</p>
+				</div>
+				<div class="col">
+					<p class="strong">Rhoncus mattis rhoncus</p>
+					<p>Ante in nibh mauris cursus mattis elementum <a href="#">eu facilisis sed odio</a>.</p>
+				</div>
+			</div>
+		</div>
+		{{ partial "use-cases.html" . }}
+		{{ partial "contributors.html" . }}
+	</main>
 {{ end }}

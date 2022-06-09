@@ -7,5 +7,5 @@
     {{ end }}
 {{ end }}
 <p>
-    <img src="{{ $link | safeURL }}" alt="{{ .Text }}" {{ with .Title}} title="{{ . }}"{{ end }} />
+    <img src="{{ .Destination | safeURL }}" alt="{{ .Text }}" {{ with .Title}} title="{{ . }}"{{ end }} />
 </p>

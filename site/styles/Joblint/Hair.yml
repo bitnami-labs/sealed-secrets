@@ -1,8 +1,0 @@
-extends: existence
-message: "Avoid using '%s'"
-description: "The use of '%s' indicates that you're only looking for male developers."
-ignorecase: true
-level: error
-tokens:
-  - 'beard(?:ed|s|y)?'
-  - 'grizzl(?:ed|y)'

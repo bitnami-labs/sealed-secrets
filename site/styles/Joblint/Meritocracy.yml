@@ -1,6 +1,0 @@
-extends: existence
-message: "Reevaluate the use of '%s'"
-ignorecase: true
-level: suggestion
-tokens:
-  - 'meritocra(?:cy|cies|tic)'

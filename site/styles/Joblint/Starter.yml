@@ -1,9 +1,0 @@
-extends: existence
-message: "Avoid using '%s'"
-description: "Terms like '%s' and others can indicate that the person writing a job post is unaware of the time and effort involved in preparing a new starter for work."
-ignorecase: true
-level: suggestion
-tokens:
-  - 'hit[ -]the[ -]ground[ -]running'
-  - 'juggle'
-  - 'tight deadlines?'

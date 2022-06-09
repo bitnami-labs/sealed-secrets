@@ -1,0 +1,33 @@
+{{ $latest := (cond (.Site.Params.docs_versioning) .Site.Params.docs_latest "") }}
+<header>
+	<div class="wrapper">
+		<a href="{{ .Site.BaseURL }}"><img class="image" src="/img/vmware-logo.svg" alt="Logo" /></a>
+		<ul class="desktop-links">
+			<li><a href="/" {{ if (eq .RelPermalink "/")  }}class="active"{{ end }}>Home</a></li>
+			<li><a href="/plugins/" {{ if (eq .RelPermalink "/plugins/")  }}class="active"{{ end }}>Plugins</a></li>
+			<li><a href="/community/" {{ if (eq .RelPermalink "/community/")  }}class="active"{{ end }}>Community</a></li>
+			<li><a href="/resources/" {{ if (eq .RelPermalink "/resources/")  }}class="active"{{ end }}>Resources</a></li>
+			<li><a href="/blog/" {{ if or (eq .Page.Section "posts") (eq .Page.Section "tags") }}class="active"{{ end }}>Blog</a></li>
+			<li><a href="/docs/{{ $latest }}" {{ if (eq .Page.Section "docs") }}class="active"{{ end }}>Documentation</a></li>
+		</ul>
+		<button type="button" class="mobile" onclick="mobileNavToggle()">
+			<img class="collapsed-icon" src="/img/hamburger.svg" alt="Mobile nav icon">
+			<img class="expanded-icon" src="/img/close.svg" alt="Mobile nav icon">
+		</button>
+		<div id="mobile-menu" class="mobile-menu mobile">
+			<ul class="header-links">
+				<li><a href="/" {{ if (eq .RelPermalink "/")  }}class="active"{{ end }}>Home</a></li>
+				<li><a href="/plugins/" {{ if (eq .RelPermalink "/plugins/")  }}class="active"{{ end }}>Plugins</a></li>
+				<li><a href="/community/" {{ if (eq .RelPermalink "/community/")  }}class="active"{{ end }}>Community</a></li>
+				<li><a href="/resources/" {{ if (eq .RelPermalink "/resources/")  }}class="active"{{ end }}>Resources</a></li>
+				<li><a href="/blog/" {{ if or (eq .Page.Section "posts") (eq .Page.Section "tags") }}class="active"{{ end }}>Blog</a></li>
+				<li><a href="/docs/{{ $latest }}" {{ if (eq .Page.Section "docs") }}class="active"{{ end }}>Documentation</a></li>
+			</ul>
+			<div class="social">
+				<a href="#"><img src="/img/twitter.png" />Twitter</a>
+				<a href="#"><img src="/img/github.svg" />GitHub</a>
+				<a href="#"><img src="/img/slack.png" />Slack</a>
+			</div>
+		</div>
+	</div>
+</header>
