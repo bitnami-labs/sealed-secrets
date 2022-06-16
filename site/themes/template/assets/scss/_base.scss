@@ -154,6 +154,10 @@ noscript {
     margin: 0 20px 20px 0;
 }
 
+.filter-blue{
+    filter: brightness(0) saturate(100%) invert(39%) sepia(55%) saturate(4454%) hue-rotate(177deg) brightness(99%) contrast(104%);
+}
+
 // Metropolis
 @font-face {
     font-family: "Metropolis-Bold";

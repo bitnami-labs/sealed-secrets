@@ -33,10 +33,10 @@ menu:
   - name: Update Images
     url: /docs/contributing/
 params:
-  twitter_url: "https://twitter.com/"
-  github_url: "https://github.com/"
-  slack_url: "https://slack.com/"
-  github_base_url: "https://github.com/smalltalk-ai/vmware-open-source-template"
+  twitter_url: "https://twitter.com/bitnami"
+  github_url: "https://github.com/bitnami-labs/sealed-secrets"
+  slack_url: "https://kubernetes.slack.com/messages/sealed-secrets"
+  github_base_url: "https://github.com/bitnami-labs/sealed-secrets"
   use_advanced_docs: true
   docs_right_sidebar: true
   docs_search: false

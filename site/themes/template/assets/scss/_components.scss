@@ -181,6 +181,15 @@
     }
 }
 
+.avatar {
+    filter: grayscale(100%);
+    transition: filter 0.6s ease-in-out;
+
+    &:hover {
+      filter: grayscale(0%);
+    }
+  }
+
 .hero.subpage-hero {
     //background-image: url(/img/blog-hero-image.png);
     background-position: center center;
