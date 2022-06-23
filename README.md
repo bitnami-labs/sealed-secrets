@@ -320,7 +320,6 @@ The `kubeseal` client is also available on [Nixpkgs](https://search.nixos.org/pa
 nix-env -iA nixpkgs.kubeseal
 ```
 
-
 ### Installation from source
 
 If you just want the latest client tool, it can be installed into
