@@ -59,6 +59,12 @@ updateStatus: true
 keyrenewperiod: ""
 ## @param command Override default container command
 ##
+ratelimitburst: 2
+## @param command Override default container command
+##
+ratelimitdelay: 2
+## @param command Override default container command
+##
 command: []
 ## @param args Override default container args
 ##
