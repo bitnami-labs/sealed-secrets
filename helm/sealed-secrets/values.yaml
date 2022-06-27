@@ -60,7 +60,7 @@ keyrenewperiod: ""
 ## @param command Override default container command
 ##
 ratelimitburst: 2
-## @param command Override default container command
+## @param ratelimitdelay Number of seconds to sleep between bursts for verify endpoint
 ##
 ratelimitdelay: 2
 ## @param command Override default container command
