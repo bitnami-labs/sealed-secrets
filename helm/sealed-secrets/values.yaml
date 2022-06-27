@@ -57,7 +57,7 @@ updateStatus: true
 ## keyrenewperiod: "720h30m"
 ##
 keyrenewperiod: ""
-## @param command Override default container command
+## @param ratelimitburst Number of requests per burst for verify endpoint
 ##
 ratelimitburst: 2
 ## @param ratelimitdelay Number of seconds to sleep between bursts for verify endpoint
