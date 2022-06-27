@@ -50,7 +50,7 @@ var (
 	namespaceAll         = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
 	additionalNamespaces = flag.String("additional-namespaces", "", "Comma-separated list of additional namespaces to be scanned.")
 	labelSelector        = flag.String("label-selector", "", "Label selector which can be used to filter sealed secrets.")
-	rateLimitBurst       = flag.Int("rate-limit-burst", 2, "Number of requests per burst")
+	rateLimitBurst       = flag.Int("rate-limit-burst", 2, "Number of requests per burst for verify endpoint")
 	rateLimitDelay       = flag.Int("rate-limit-delay", 2, "Number of seconds to sleep between bursts")
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
