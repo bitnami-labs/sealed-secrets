@@ -77,6 +77,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `fullnameOverride` | String to fully override sealed-secrets.fullname        | `""`  |
 | `namespace`        | Namespace where to deploy the Sealed Secrets controller | `""`  |
 | `extraDeploy`      | Array of extra objects to deploy with the release       | `[]`  |
+| `commonAnnotations`| Annotations to add to all deployed resources            | `[]`  |
 
 
 ### Sealed Secrets Parameters
