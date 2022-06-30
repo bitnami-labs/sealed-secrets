@@ -4,6 +4,9 @@ kind: Service
 metadata:
   name: {{ include "sealed-secrets.fullname" . }}
   namespace: {{ include "sealed-secrets.namespace" . }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- toYaml .Values.commonAnnotations | nindent 4 }}
+  {{- end }}
   labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
     {{- if .Values.service.labels }}
     {{- include "sealed-secrets.render" ( dict "value" .Values.service.labels "context" $) | nindent 4 }}

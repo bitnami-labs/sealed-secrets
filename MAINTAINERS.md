@@ -5,8 +5,8 @@
 | Maintainer         | GitHub ID                                           |                              Affiliation |
 | ------------------ | --------------------------------------------------- | ---------------------------------------: |
 | Alvaro Neira Ayuso | [alvneiayu](https://github.com/alvneiayu)           | [VMware](https://www.github.com/vmware/) |
-| Alejandro Moreno   | [alemorcuq](https://github.com/alemorcuq) | [VMware](https://www.github.com/vmware/) |
-| Alfredo Garcia     | [agarcia-oss](https://github.com/agarcia-oss)      | [VMware](https://www.github.com/vmware/) |
+| Alejandro Moreno   | [alemorcuq](https://github.com/alemorcuq)           | [VMware](https://www.github.com/vmware/) |
+| Alfredo Garcia     | [agarcia-oss](https://github.com/agarcia-oss)       | [VMware](https://www.github.com/vmware/) |
 
 ## Emeritus Maintainers
 
@@ -14,4 +14,5 @@
 - Marko Mikulicic ([mkmik](https://github.com/mkmik))
 - Juan Ariza ([juan131](https://github.com/juan131))
 
-Full list of [Sealed Secrets contributors](https://github.com/bitnami-labs/sealed-secrets/graphs/contributors)
+=======
+Full list of [Sealed Secrets contributors](https://github.com/bitnami-labs/sealed-secrets/graphs/contributors).
