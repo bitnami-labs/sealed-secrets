@@ -5,9 +5,6 @@ metadata:
   name: {{ include "sealed-secrets.fullname" . }}
   namespace: {{ include "sealed-secrets.namespace" . }}
   labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
-  {{- if .Values.commonAnnotations }}
-  annotations: {{- toYaml .Values.commonAnnotations | nindent 4 }}
-  {{- end }}
 spec:
   selector:
     matchLabels: {{- include "sealed-secrets.matchLabels" . | nindent 6 }}
@@ -64,6 +61,14 @@ spec:
             {{- if .Values.keyrenewperiod }}
             - --key-renew-period
             - {{ .Values.keyrenewperiod | quote }}
+            {{- end }}
+            {{- if .Values.ratelimit }}
+            - --rate-limit
+            - {{ .Values.ratelimit | quote }}
+            {{- end }}
+            {{- if .Values.ratelimitburst }}
+            - --rate-limit-burst
+            - {{ .Values.ratelimitburst | quote }}
             {{- end }}
             - --key-prefix
             - {{ .Values.secretName | quote }}
