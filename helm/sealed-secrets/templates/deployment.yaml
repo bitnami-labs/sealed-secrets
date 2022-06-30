@@ -5,6 +5,9 @@ metadata:
   name: {{ include "sealed-secrets.fullname" . }}
   namespace: {{ include "sealed-secrets.namespace" . }}
   labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
+  {{- if .Values.commonAnnotations }}
+  annotations: {{- toYaml .Values.commonAnnotations | nindent 4 }}
+  {{- end }}
 spec:
   selector:
     matchLabels: {{- include "sealed-secrets.matchLabels" . | nindent 6 }}

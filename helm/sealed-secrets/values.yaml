@@ -15,6 +15,10 @@ namespace: ""
 ## @param extraDeploy [array] Array of extra objects to deploy with the release
 ##
 extraDeploy: []
+## @param commonAnnotations [object] Annotations to add to all deployed resources
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+##
+commonAnnotations: {}
 
 ## @section Sealed Secrets Parameters
 
