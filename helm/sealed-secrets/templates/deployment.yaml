@@ -62,14 +62,6 @@ spec:
             - --key-renew-period
             - {{ .Values.keyrenewperiod | quote }}
             {{- end }}
-            {{- if .Values.ratelimitburst }}
-            - --rate-limit-burst
-            - {{ .Values.ratelimitburst | quote }}
-            {{- end }}
-            {{- if .Values.ratelimitdelay }}
-            - --rate-limit-delay
-            - {{ .Values.ratelimitdelay | quote }}
-            {{- end }}
             - --key-prefix
             - {{ .Values.secretName | quote }}
           {{- end }}
