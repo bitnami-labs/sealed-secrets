@@ -65,13 +65,13 @@ spec:
             - --key-renew-period
             - {{ .Values.keyrenewperiod | quote }}
             {{- end }}
-            {{- if .Values.ratelimit }}
+            {{- if .Values.rateLimit }}
             - --rate-limit
-            - {{ .Values.ratelimit | quote }}
+            - {{ .Values.rateLimit | quote }}
             {{- end }}
-            {{- if .Values.ratelimitburst }}
+            {{- if .Values.rateLimitBurst }}
             - --rate-limit-burst
-            - {{ .Values.ratelimitburst | quote }}
+            - {{ .Values.rateLimitBurst | quote }}
             {{- end }}
             - --key-prefix
             - {{ .Values.secretName | quote }}
