@@ -1,5 +1,5 @@
 ---
-version: v0.30.0
+version: latest
 cascade:
   layout: docs
 ---

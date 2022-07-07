@@ -43,10 +43,9 @@ params:
   docs_search_index_name: index_name
   docs_search_api_key: api_key
   docs_versioning: true
-  docs_latest: v0.40.0
+  docs_latest: latest
   docs_versions:
-    - v0.30.0
-    - v0.40.0
+    - latest
 mediaTypes:
   "text/netlify":
     delimiter: ""
