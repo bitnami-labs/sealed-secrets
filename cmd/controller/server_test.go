@@ -50,7 +50,7 @@ func TestHttpCert(t *testing.T) {
 	}
 
 	cs := &testCertStore{}
-	server := httpserver(cs.getCert, nil, nil)
+	server := httpserver(cs.getCert, nil, nil, 2, 2)
 	defer shutdownServer(server, t)
 	hp := *listenAddr
 	if strings.HasPrefix(hp, ":") {

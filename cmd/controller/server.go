@@ -32,8 +32,8 @@ type secretRotator func([]byte) ([]byte, error)
 // or secret rotation and validation. This endpoint is designed to be accessible by
 // all users of a given cluster. It must not leak any secret material.
 // The server is started in the background and a handle to it returned so it can be shut down.
-func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Server {
-	httpRateLimiter := rateLimiter()
+func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, rate int) *http.Server {
+	httpRateLimiter := rateLimiter(burst, rate)
 
 	mux := http.NewServeMux()
 
@@ -119,13 +119,13 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator) *http.Serve
 	return &server
 }
 
-func rateLimiter() throttled.HTTPRateLimiter {
+func rateLimiter(burst int, rate int) throttled.HTTPRateLimiter {
 	store, err := memstore.New(65536)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	quota := throttled.RateQuota{MaxRate: throttled.PerSec(2), MaxBurst: 2}
+	quota := throttled.RateQuota{MaxRate: throttled.PerSec(rate), MaxBurst: burst}
 	rateLimiter, err := throttled.NewGCRARateLimiter(store, quota)
 	if err != nil {
 		log.Fatal(err)

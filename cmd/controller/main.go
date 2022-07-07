@@ -50,6 +50,8 @@ var (
 	namespaceAll         = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
 	additionalNamespaces = flag.String("additional-namespaces", "", "Comma-separated list of additional namespaces to be scanned.")
 	labelSelector        = flag.String("label-selector", "", "Label selector which can be used to filter sealed secrets.")
+	rateLimitPerSecond   = flag.Int("rate-limit", 2, "Number of allowed sustained request per second for verify endpoint")
+	rateLimitBurst       = flag.Int("rate-limit-burst", 2, "Number of requests allowed to exceed the rate limit per second for verify endpoint")
 
 	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
@@ -266,7 +268,7 @@ func main2() error {
 		return []*x509.Certificate{cert}, nil
 	}
 
-	server := httpserver(cp, controller.AttemptUnseal, controller.Rotate)
+	server := httpserver(cp, controller.AttemptUnseal, controller.Rotate, *rateLimitBurst, *rateLimitPerSecond)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
