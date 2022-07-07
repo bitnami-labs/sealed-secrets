@@ -1,0 +1,55 @@
+baseURL: "https://sealed-secrets.netlify.app"
+languageCode: "en-us"
+title: "Sealed Secrets"
+theme: "template"
+outputs:
+  home: [ "HTML", "REDIRECTS" ]
+pygmentsCodefences: true
+pygmentsStyle: "pygments"
+markup:
+  highlight:
+    anchorLineNos: false
+    codeFences: true
+    guessSyntax: false
+    hl_Lines: ""
+    lineAnchors: ""
+    lineNoStart: 1
+    lineNos: false
+    lineNumbersInTable: true
+    noClasses: true
+    style: native
+    tabWidth: 4
+menu:
+  docs:
+  - name: Overview
+    url: /docs/
+    weight: 100
+  - name: Architecture
+    url: /docs/architecture/
+    name: Demo
+    url: /docs/demo/
+  - name: Scope
+    url: /docs/scope/
+  - name: Update Images
+    url: /docs/contributing/
+params:
+  twitter_url: "https://twitter.com/bitnami"
+  github_url: "https://github.com/bitnami-labs/sealed-secrets"
+  slack_url: "https://kubernetes.slack.com/messages/sealed-secrets"
+  github_base_url: "https://github.com/bitnami-labs/sealed-secrets"
+  use_advanced_docs: true
+  docs_right_sidebar: true
+  docs_search: false
+  docs_search_index_name: index_name
+  docs_search_api_key: api_key
+  docs_versioning: true
+  docs_latest: latest
+  docs_versions:
+    - latest
+mediaTypes:
+  "text/netlify":
+    delimiter: ""
+outputFormats:
+  REDIRECTS:
+    mediaType: "text/netlify"
+    baseName: "_redirects"

@@ -1,0 +1,33 @@
+<div class="side-nav">
+    {{ if .Site.Params.use_advanced_docs }}
+        <noscript>Please enable javascript to use dropdown navigation</noscript>
+        {{ $version := .CurrentSection.Params.version }}
+        {{ .Render "versions" }}
+        {{ .Render "search" }}
+        {{ if $version }}
+            {{ $tocTemplateName := index (index $.Site.Data.docs "toc-mapping") $version }}
+            {{ if not $tocTemplateName }}
+                {{ $tocTemplateName = "default" }}
+            {{ end }}
+            {{ $toc := (index $.Site.Data "docs" $tocTemplateName).toc }}
+            {{ range $toc }}
+                <h4>{{ .title }}</h4>
+                <ul>
+                    {{ range .subfolderitems }}
+                    <li>
+                        {{ $url :=  (index (print "/docs/" $version .url "/"))  }}
+                        <a href="{{ $url }}" {{ if (eq  $.Page.RelPermalink $url)  }}class="active"{{ end }}>{{ .page }}</a>
+                    </li>
+                    {{ end }}
+                </ul>
+            {{ end }}
+        {{ end }}
+    {{ else }}
+        <ul>
+            {{ $currentPage := . }}
+            {{ range .Site.Menus.docs }}
+                <li><a href="{{ .URL }}" {{ if (eq $currentPage.RelPermalink .URL)  }}class="active"{{ end }}>{{ .Name }}</a></li>
+            {{ end }}
+        </ul>
+    {{ end }}
+</div>

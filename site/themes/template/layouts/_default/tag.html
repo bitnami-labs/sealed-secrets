@@ -1,0 +1,16 @@
+{{ define "main" }}
+    <main>
+        <div class="hero subpage-hero blog">
+            <div class="wrapper">
+                <h1>Blog Posts by {{ .Title }}</h1>
+            </div>
+        </div>
+        <div class="wrapper blog landing">
+            <div class="grid three">
+                {{ range .Pages.ByDate }}
+					{{ partial "blog-post-card.html" . }}
+				{{ end }}
+            </div>
+        </div>
+    </main>
+{{ end }}

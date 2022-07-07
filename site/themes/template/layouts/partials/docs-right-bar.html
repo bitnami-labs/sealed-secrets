@@ -1,0 +1,19 @@
+{{ if .Site.Params.docs_right_sidebar }}
+<div class="right-nav" id="right-nav">
+    <div class="right-nav-content">
+        <ul class="buttons">
+            {{ if (or .IsNode .IsPage) }}
+                {{ $issueBody := printf "**On Page:** [%s](%s)" .Title .Permalink | htmlEscape }}
+                {{ $issueQuery := (querify "body" $issueBody) }}
+                <li><a href="{{ $.Site.Params.github_base_url }}/issues/new?{{ $issueQuery | safeURL }}" target="_blank">Report Issues</a></li>
+                {{ $editQuery := (querify "description" "Signed-off-by: NAME <EMAIL_ADDRESS>\n\n") }}
+                <li><a href="{{ $.Site.Params.github_base_url }}/edit/master/content/{{ with .File }}{{ .Path }}{{ end }}?{{ $editQuery | safeURL }}" target="_blank"><img src="/img/github-blue.svg" /> Edit</a></li>
+            {{ end }}
+        </ul>
+        {{ if ne .TableOfContents "<nav id=\"TableOfContents\"></nav>" }}
+            <h4 class="strong">On this page:</h4>
+            {{ .TableOfContents }}
+        {{ end }}
+    </div>
+</div>
+{{ end }}

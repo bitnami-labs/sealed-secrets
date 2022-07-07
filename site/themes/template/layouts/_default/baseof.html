@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="{{ .Site.LanguageCode | default "en-us" }}">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>{{ if .Title }}{{ .Title }}{{ else }}Documentation{{ end }}</title>
+	{{ with .Site.Params.description }}<meta name="description" content="{{ . }}">{{ end }}
+	{{ with .Site.Params.author }}<meta name="author" content="{{ . }}">{{ end }}
+	{{ $options := (dict "targetPath" "css/style.css" "outputStyle" "compressed" "enableSourceMap" true "includePaths" (slice "node_modules/myscss")) }}
+	{{ $style := resources.Get "scss/site.scss" | resources.ToCSS $options }}
+	<link rel="stylesheet" href="{{ $style.Permalink }}" integrity="{{ $style.Data.Integrity }}" media="screen">
+	<link rel="icon" type="image/png" href="/img/favicon.png">
+	<script src="{{ "js/main.js" | relURL }}" type="text/javascript"></script>
+	{{ with .OutputFormats.Get "RSS" -}}
+		{{ printf `<link rel="%s" type="%s" href="%s" title="%s">` .Rel .MediaType.Type .RelPermalink $.Site.Title | safeHTML }}
+	{{- end }}
+</head>
+<body>
+	{{ partial "header" . }}
+	{{ block "main" . }}{{ end }}
+	{{ partial "getting-started" . }}
+	{{ partial "footer" . }}
+    {{ if .Site.Params.docs_search }}
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/docsearch.js@2/dist/cdn/docsearch.min.js"></script>
+    <script type="text/javascript"> docsearch({
+        apiKey: '{{ .Site.Params.Docs_search_api_key }}',
+        indexName: '{{ .Site.Params.Docs_search_index_name }}',
+        inputSelector: '.docsearch-input',
+        algoliaOptions: {'facetFilters': ["version:{{ .CurrentSection.Params.version }}"]},
+        debug: false // Set debug to true if you want to inspect the dropdown
+      });
+    </script>
+    {{ end }}
+</body>
+</html>

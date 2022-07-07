@@ -1,0 +1,4 @@
+{{ $latest := (cond (.Site.Params.docs_versioning) .Site.Params.docs_latest "") }}
+/docs                          /docs/{{ $latest }}     301!
+/docs/latest                   /docs/{{ $latest }}
+/docs/latest/*                 /docs/{{ $latest }}/:splat

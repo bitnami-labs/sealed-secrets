@@ -1,0 +1,33 @@
+<div class="wrapper use-cases">
+    <h2>Features</h2>
+    <div class="grid two">
+        <div class="col image">
+            <img src="/img/administration.svg" />
+        </div>
+        <div class="col text">
+            <p class="strong">One-way Encryption</p>
+            <p>SealedSecrets are a "write only" device. The idea is that the SealedSecret can be decrypted only by the controller running in the target cluster and nobody else (not even the original author) is able to obtain the original Secret from the SealedSecret.</p>
+            <p><a href="https://github.com/bitnami-labs/sealed-secrets#readme" class="button tertiary">Learn more</a></p>
+        </div>
+    </div>
+    <div class="grid two image-right">
+        <div class="col text">
+            <p class="strong">Sealing key renewal</p>
+            <p>Sealing keys are automatically renewed every 30 days. Which means a new sealing key is created and appended to the set of active sealing keys the controller can use to unseal Sealed Secret resources.</p>
+            <p><a href="https://github.com/bitnami-labs/sealed-secrets#sealing-key-renewal" class="button tertiary">Learn more</a></p>
+        </div>
+        <div class="col image">
+            <img src="/img/authentication.svg" />
+        </div>
+    </div>
+    <div class="grid two">
+        <div class="col image">
+            <img src="/img/security.svg" />
+        </div>
+        <div class="col text">
+            <p class="strong">Sealed Secrets Metrics</p>
+            <p>The Sealed Secrets Controller running in Kubernetes exposes Prometheus metrics. These metrics enable operators to observe how it is performing. For example how many SealedSecret unseals have been attempted and how many errors may have occured due to RBAC permissions, wrong key, corrupted data, etc.</p>
+            <p><a href="https://github.com/bitnami-labs/sealed-secrets/tree/main/contrib/prometheus-mixin#readme" class="button tertiary">Learn more</a></p>
+        </div>
+    </div>
+</div>

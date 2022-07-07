@@ -14,4 +14,5 @@
 - Marko Mikulicic ([mkmik](https://github.com/mkmik))
 - Juan Ariza ([juan131](https://github.com/juan131))
 
+=======
 Full list of [Sealed Secrets contributors](https://github.com/bitnami-labs/sealed-secrets/graphs/contributors).

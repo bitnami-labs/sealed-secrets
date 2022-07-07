@@ -1,0 +1,103 @@
+@import 'variables';
+@import 'mixins';
+@import 'base';
+
+header {
+    .wrapper {
+        padding: 10px 20px;
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .desktop-links {
+        padding-left: 0px;
+    }
+    a {
+        color: $darkgrey;
+        font-family: $metropolis-light;
+        &.active {
+            font-family: $metropolis-medium;
+        }
+    }
+    li img {
+        vertical-align: bottom;
+        margin-right: 10px;
+    }
+    .mobile {
+       display: none;
+    }
+    @include breakpoint(medium) {
+        .desktop-links li {
+            padding-right: 10px;
+        }
+    }
+    @include breakpoint(small) {
+        .expanded-icon {
+            display: none;
+            padding: 11px 3px 0px 0px;
+        }
+        .collapsed-icon {
+            padding-top: 12px;
+        }
+        .mobile-menu-visible {
+            .mobile {
+                display: block;
+                .collapsed-icon {
+                    display: none;
+                }
+                .expanded-icon {
+                    display: block;
+                }
+            }
+        }
+        position: relative;
+        .desktop-links {
+            display: none;
+        }
+        .mobile {
+            display: block;
+        }
+        button {
+            float: right;
+            &:focus {
+                outline: none;
+            }
+        }
+        ul {
+            padding-left: 0px;
+            li {
+                display: block;
+                margin: 20px 0px;
+            }
+        }
+        .mobile-menu {
+            position: absolute;
+            background-color: #fff;
+            width: 100%;
+            top: 70px;
+            left: 0px;
+            padding-bottom: 20px;
+            display: none;
+            z-index: 10;
+            .header-links {
+                margin: 0px 20px;
+            }
+            .social {
+                margin: 0px 20px;
+                padding-top: 20px;
+                img {
+                    vertical-align: middle;
+                    padding-right: 10px;
+                }
+                a {
+                    font-size: 14px;
+                    padding-right: 35px;
+                    &:last-of-type {
+                        padding-right: 0px;
+                    }
+                }
+            }
+        }
+    }
+}

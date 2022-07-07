@@ -1,0 +1,32 @@
+<div class="team">
+  <div class="wrapper">
+      <h2>Meet the Sealed Secrets team:</h2>
+      <div class="grid three">
+        {{ $contributors := .Site.GetPage "/contributors" }}
+        {{ range $contributors.Resources }}
+          <div class="bio">
+              <div class="image avatar"><img class="rounded-circle" src="{{ .Params.image }}" alt="{{ .Params.first_name }} {{ .Params.last_name }}" /></div>
+              <div class="info">
+                  <p class="name"><a href="https://github.com/{{ .Params.github_handle }}">{{ .Params.first_name }} {{ .Params.last_name }}</a></p>
+                  <p class="position">{{ .Content }}</p>
+              </div>
+          </div>
+          {{ end }}
+      </div>
+      <h3>Contributing</h3>
+      <p>
+        Sealed Secrets is released as open-source software and provides community
+        support through our GitHub project page. If you encounter an issue or have
+        a question, feel free to reach out on the
+        <a
+          target="_blank"
+          rel="noopener"
+          href="{{$.Site.Params.github_base_url}}/issues/new">GitHub issues page for Sealed Secrets</a>.
+      </p>
+      <p>
+        The Sealed Secrets project team welcomes contributions from the community —
+        please have a look at our
+        <a href="https://github.com/bitnami-labs/sealed-secrets/blob/main/CONTRIBUTING.md">contributing documentation</a>.
+      </p>
+  </div>
+</div>

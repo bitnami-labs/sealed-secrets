@@ -1,0 +1,20 @@
+{{ define "main" }}
+	<main>
+		{{ partial "hero.html" . }}
+		{{ partial "homepage-grid.html" . }}
+		<div class="bg-grey introduction">
+			<div class="wrapper grid two">
+				<div class="col">
+					<p class="strong"><a href='https://github.com/bitnami-labs/sealed-secrets/blob/main/README.md'>Learn More About Sealed Secrets</a></p>
+					<p>Learn more about Sealed Secrets and how to create secure Secrets in Kubernetes</p>
+				</div>
+				<div class="col">
+					<p class="strong"><a href='https://github.com/bitnami-labs/sealed-secrets/blob/main/docs/developer/crypto.md#cryptographic-documentation'>Advanced Cryptography with Sealed Secrets</a></p>
+					<p>How to apply the best possible encryption to your Sealed Secrets, from using customized Certificates to post-quantum recomendations.</p>
+				</div>
+			</div>
+		</div>
+		{{ partial "use-cases.html" . }}
+		{{ partial "contributors.html" . }}
+	</main>
+{{ end }}
