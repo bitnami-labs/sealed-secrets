@@ -23,6 +23,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
+	"k8s.io/client-go/informers"
+
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	ssclientset "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssscheme "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/scheme"
@@ -55,6 +57,7 @@ const (
 type Controller struct {
 	queue       workqueue.RateLimitingInterface
 	informer    cache.SharedIndexInformer
+	infsecret   cache.SharedIndexInformer
 	sclient     v1.SecretsGetter
 	ssclient    ssv1alpha1client.SealedSecretsGetter
 	recorder    record.EventRecorder
@@ -102,8 +105,28 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 		},
 	})
 
+	infsecret := informers.NewSharedInformerFactory(clientset, 0).Core().V1().Secrets().Informer()
+	infsecret.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		DeleteFunc: func(obj interface{}) {
+			key, err := cache.MetaNamespaceKeyFunc(obj)
+			if err == nil {
+				ns, name, err := cache.SplitMetaNamespaceKey(key)
+				if err == nil {
+					ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
+					if err == nil {
+						key, err := cache.MetaNamespaceKeyFunc(ssecret)
+						if err == nil {
+							queue.Add(key)
+						}
+					}
+				}
+			}
+		},
+	})
+
 	return &Controller{
 		informer:    informer,
+		infsecret:   infsecret,
 		queue:       queue,
 		sclient:     clientset.CoreV1(),
 		ssclient:    ssclientset.BitnamiV1alpha1(),
@@ -135,6 +158,7 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 	defer c.queue.ShutDown()
 
 	go c.informer.Run(stopCh)
+	go c.infsecret.Run(stopCh)
 
 	if !cache.WaitForCacheSync(stopCh, c.HasSynced) {
 		utilruntime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))

@@ -267,6 +267,28 @@ var _ = Describe("create", func() {
 				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
 			})
 		})
+
+		Context("Secret recreation", func() {
+			BeforeEach(func() {
+				c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+			})
+			It("should the Secret exists", func() {
+				expected := map[string][]byte{
+					"foo": []byte("bar"),
+				}
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+			})
+		})
 	})
 
 	Describe("Same name, wrong key", func() {
