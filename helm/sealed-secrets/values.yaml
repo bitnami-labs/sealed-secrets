@@ -148,6 +148,10 @@ containerSecurityContext:
   readOnlyRootFilesystem: true
   runAsNonRoot: true
   runAsUser: 1001
+
+## @param automountServiceAccountToken whether to automatically mount the service account API-token to a particular pod
+automountServiceAccountToken: ""
+
 ## @param podLabels [object] Extra labels for Sealed Secret pods
 ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
 ##
@@ -307,6 +311,8 @@ serviceAccount:
   ## If not set and create is true, a name is generated using the sealed-secrets.fullname template
   ##
   name: ""
+  ## @param serviceAccount.automountServiceAccountToken Specifies, whether to mount the service account API-token
+  automountServiceAccountToken: ""
 ## RBAC configuration
 ##
 rbac:
