@@ -24,8 +24,8 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"github.com/bitnami-labs/flagenv"
-	"github.com/bitnami-labs/pflagenv"
+	"github.com/bitnami-labs/sealed-secrets/pkg/flagenv"
+	"github.com/bitnami-labs/sealed-secrets/pkg/pflagenv"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"

@@ -43,8 +43,8 @@ import (
 	// Register Auth providers
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
-	"github.com/bitnami-labs/flagenv"
-	"github.com/bitnami-labs/pflagenv"
+	"github.com/bitnami-labs/sealed-secrets/pkg/flagenv"
+	"github.com/bitnami-labs/sealed-secrets/pkg/pflagenv"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 )
 
