@@ -4,6 +4,12 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.18.1
+
+### Changelog
+
+- Add flags to set the rate limit for the verify endpoint ([#873](https://github.com/bitnami-labs/sealed-secrets/pull/873))
+
 ## v0.18.0
 
 ### Changelog
