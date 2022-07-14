@@ -10,8 +10,8 @@ keywords:
   - sealed-secrets
 kubeVersion: ">=1.16.0-0"
 maintainers:
-  - email: containers@bitnami.com
-    name: Bitnami
+  - name: Bitnami
+    url: https://github.com/bitnami-labs/sealed-secrets
 name: sealed-secrets
 type: application
 version: 2.4.0
