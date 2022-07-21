@@ -54,7 +54,7 @@ const (
 
 var (
 	// TODO: Verify k8s server signature against cert in kube client config.
-	certURL        = flag.String("cert", "", "Certificate / public key file/URL to use for encryption. Overrides --controller-*")
+	certURL        = flag.String("cert", "", "Certificate/public key file/URL to use for encryption. Overrides --controller-*")
 	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
 	outputFormat   = flag.StringP("format", "o", "json", "Output format for sealed secret. Either json or yaml")
