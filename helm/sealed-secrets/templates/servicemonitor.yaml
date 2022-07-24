@@ -19,7 +19,7 @@ spec:
   endpoints:
     - port: http
       {{- if .Values.metrics.serviceMonitor.honorLabels }}
-      honorLabels: true
+      honorLabels: {{ .Values.metrics.serviceMonitor.honorLabels }}
       {{- end }}
       {{- if .Values.metrics.serviceMonitor.interval }}
       interval: {{ .Values.metrics.serviceMonitor.interval }}
