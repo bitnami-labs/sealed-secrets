@@ -14,4 +14,4 @@ maintainers:
     url: https://github.com/bitnami-labs/sealed-secrets
 name: sealed-secrets
 type: application
-version: 2.5.0
+version: 2.5.2
