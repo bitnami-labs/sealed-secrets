@@ -363,6 +363,9 @@ metrics:
     ## scrapeTimeout: 10s
     ##
     scrapeTimeout: ""
+    ## @param metrics.serviceMonitor.honorLabels Specify if ServiceMonitor endPoints will honor labels
+    ##
+    honorLabels: true
     ## @param metrics.serviceMonitor.metricRelabelings [array] Specify additional relabeling of metrics
     ##
     metricRelabelings: []
