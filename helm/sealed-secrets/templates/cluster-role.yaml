@@ -39,4 +39,14 @@ rules:
     verbs:
       - create
       - patch
+  {{- if .Values.additionalNamespaces }}
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    resourceNames:
+      {{- include "sealed-secrets.render" (dict "value" .Values.additionalNamespaces "context" $) | nindent 6 }}
+    verbs:
+      - get
+  {{- end }}
 {{ end }}

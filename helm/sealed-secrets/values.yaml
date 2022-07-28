@@ -67,6 +67,9 @@ rateLimit:
 ## @param rateLimitBurst Number of requests allowed to exceed the rate limit per second for verify endpoint
 ##
 rateLimitBurst: 
+## @param additionalNamespaces List of namespaces used to manage the Sealed Secrets
+##
+additionalNamespaces: []
 ## @param command Override default container command
 ##
 command: []
