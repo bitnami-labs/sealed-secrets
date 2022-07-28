@@ -93,6 +93,9 @@ The command removes all the Kubernetes components associated with the chart and 
 | `secretName`                                      | The name of an existing TLS secret containing the key used to encrypt secrets        | `sealed-secrets-key`                |
 | `updateStatus`                                    | Specifies whether the Sealed Secrets controller should update the status subresource | `true`                              |
 | `keyrenewperiod`                                  | Specifies key renewal period. Default 30 days                                        | `""`                                |
+| `rateLimit`                                       | Number of allowed sustained request per second for verify endpoint                   | `""`                                |
+| `rateLimitBurst`                                  | Number of requests allowed to exceed the rate limit per second for verify endpoint   | `""`                                |
+| `additionalNamespaces`                            | List of namespaces used to manage the Sealed Secrets                                 | `[]`                                |
 | `command`                                         | Override default container command                                                   | `[]`                                |
 | `args`                                            | Override default container args                                                      | `[]`                                |
 | `livenessProbe.enabled`                           | Enable livenessProbe on Sealed Secret containers                                     | `true`                              |
