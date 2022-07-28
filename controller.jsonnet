@@ -30,6 +30,11 @@ controller {
         resources: ['events'],
         verbs: ['create', 'patch'],
       },
+      {
+        apiGroups: [''],
+        resources: ['namespaces'],
+        verbs: ['get'],
+      },
     ],
   },
 
