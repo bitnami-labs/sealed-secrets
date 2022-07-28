@@ -180,6 +180,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `metrics.serviceMonitor.labels`            | Extra labels for the ServiceMonitor                                                    | `{}`    |
 | `metrics.serviceMonitor.annotations`       | Extra annotations for the ServiceMonitor                                               | `{}`    |
 | `metrics.serviceMonitor.interval`          | How frequently to scrape metrics                                                       | `""`    |
+| `metrics.serviceMonitor.honorLabels`       | Specify if ServiceMonitor endPoints will honor labels                                  | `true`  |
 | `metrics.serviceMonitor.scrapeTimeout`     | Timeout after which the scrape is ended                                                | `""`    |
 | `metrics.serviceMonitor.metricRelabelings` | Specify additional relabeling of metrics                                               | `[]`    |
 | `metrics.serviceMonitor.relabelings`       | Specify general relabeling                                                             | `[]`    |
