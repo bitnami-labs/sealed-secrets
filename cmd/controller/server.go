@@ -4,7 +4,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"time"
@@ -48,7 +47,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 	mux.Handle("/metrics", promhttp.Handler())
 
 	mux.Handle("/v1/verify", Instrument("/v1/verify", httpRateLimiter.RateLimit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		content, err := ioutil.ReadAll(r.Body)
+		content, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Printf("Error handling /v1/verify request: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -71,7 +70,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 
 	// TODO(mkm): rename to re-encrypt
 	mux.Handle("/v1/rotate", Instrument("/v1/rotate", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		content, err := ioutil.ReadAll(r.Body)
+		content, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Printf("Error handling /v1/rotate request: %v", err)
 			w.WriteHeader(http.StatusBadRequest)

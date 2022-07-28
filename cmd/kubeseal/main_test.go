@@ -9,7 +9,7 @@ import (
 	"encoding/pem"
 	goflag "flag"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -89,7 +89,7 @@ func TestMain(m *testing.M) {
 }
 
 func tmpfile(t *testing.T, contents []byte) string {
-	f, err := ioutil.TempFile("", "testdata")
+	f, err := os.CreateTemp("", "testdata")
 	if err != nil {
 		t.Fatalf("Failed to create tempfile: %v", err)
 	}
@@ -140,7 +140,7 @@ func TestOpenCertFile(t *testing.T) {
 			t.Fatalf("Error reading test cert file: %v", err)
 		}
 
-		data, err := ioutil.ReadAll(f)
+		data, err := io.ReadAll(f)
 		if err != nil {
 			t.Fatalf("Error reading from test cert file: %v", err)
 		}
@@ -468,7 +468,7 @@ func newTestKeyPair(t *testing.T) (*rsa.PublicKey, map[string]*rsa.PrivateKey) {
 
 func TestUnseal(t *testing.T) {
 	pubKey, privKeys := newTestKeyPair(t)
-	pkFile, err := ioutil.TempFile("", "")
+	pkFile, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -508,7 +508,7 @@ func TestUnseal(t *testing.T) {
 
 func TestUnsealList(t *testing.T) {
 	pubKey, privKeys := newTestKeyPair(t)
-	pkFile, err := ioutil.TempFile("", "")
+	pkFile, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -567,7 +567,7 @@ func TestMergeInto(t *testing.T) {
 	pubKey, privKeys := newTestKeyPair(t)
 
 	merge := func(t *testing.T, newSecret, oldSealedSecret []byte) *ssv1alpha1.SealedSecret {
-		f, err := ioutil.TempFile("", "*.json")
+		f, err := os.CreateTemp("", "*.json")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -581,7 +581,7 @@ func TestMergeInto(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		b, err := ioutil.ReadFile(f.Name())
+		b, err := os.ReadFile(f.Name())
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -678,7 +678,7 @@ func TestVersion(t *testing.T) {
 func TestMainError(t *testing.T) {
 	ctx := context.Background()
 	badFileName := filepath.Join("this", "file", "cannot", "possibly", "exist", "can", "it?")
-	err := run(ctx, ioutil.Discard, "", "", "", "", "", badFileName, false, false, false, false, false, false, nil, "", false, nil)
+	err := run(ctx, io.Discard, "", "", "", "", "", badFileName, false, false, false, false, false, false, nil, "", false, nil)
 
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
@@ -822,11 +822,11 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 	defer func(s ssv1alpha1.SealingScope) { sealingScope = s }(sealingScope)
 	sealingScope = scope
 	/*
-		if got, want := run(ioutil.Discard, "", "", "", certFilename, false, false, false, false, true, nil, "", false, nil), "must provide the --name flag with --raw and --scope strict"; got == nil || got.Error() != want {
+		if got, want := run(io.Discard, "", "", "", certFilename, false, false, false, false, true, nil, "", false, nil), "must provide the --name flag with --raw and --scope strict"; got == nil || got.Error() != want {
 			t.Fatalf("want matching: %q, got: %q", want, got.Error())
 		}
 
-		if got, want := run(ioutil.Discard, secretName, "", "", certFilename, false, false, false, false, true, nil, "", false, nil), "must provide the --from-file flag with --raw"; got == nil || got.Error() != want {
+		if got, want := run(io.Discard, secretName, "", "", certFilename, false, false, false, false, true, nil, "", false, nil), "must provide the --from-file flag with --raw"; got == nil || got.Error() != want {
 			t.Fatalf("want matching: %q, got: %q", want, got.Error())
 		}
 	*/
@@ -852,7 +852,7 @@ func TestWriteToFile(t *testing.T) {
 	certFilename, _, cleanup := testingKeypairFiles(t)
 	defer cleanup()
 
-	in, err := ioutil.TempFile("", "")
+	in, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -867,7 +867,7 @@ data:
 `)
 	in.Close()
 
-	out, err := ioutil.TempFile("", "*.yaml")
+	out, err := os.CreateTemp("", "*.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -884,7 +884,7 @@ data:
 		t.Errorf("got: %d, want: %d", got, want)
 	}
 
-	b, err := ioutil.ReadFile(out.Name())
+	b, err := os.ReadFile(out.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -897,7 +897,7 @@ func TestFailToWriteToFile(t *testing.T) {
 	certFilename, _, cleanup := testingKeypairFiles(t)
 	defer cleanup()
 
-	in, err := ioutil.TempFile("", "")
+	in, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -910,7 +910,7 @@ metadata:
 `)
 	in.Close()
 
-	out, err := ioutil.TempFile("", "")
+	out, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -932,7 +932,7 @@ metadata:
 		t.Errorf("got: %d, want: %d", got, want)
 	}
 
-	b, err := ioutil.ReadFile(out.Name())
+	b, err := os.ReadFile(out.Name())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -943,7 +943,7 @@ metadata:
 
 // writeTempFile creates a temporary file, writes data into it and closes it.
 func writeTempFile(b []byte) (string, error) {
-	tmp, err := ioutil.TempFile("", "")
+	tmp, err := os.CreateTemp("", "")
 	if err != nil {
 		return "", err
 	}
@@ -964,7 +964,7 @@ func TestReadPrivKeyPEM(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tmp, err := ioutil.TempFile("", "")
+	tmp, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -999,7 +999,7 @@ func TestReadPrivKeySecret(t *testing.T) {
 		},
 	}
 
-	tmp, err := ioutil.TempFile("", "")
+	tmp, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}

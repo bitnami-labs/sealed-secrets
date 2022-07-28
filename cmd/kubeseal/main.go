@@ -11,7 +11,6 @@ import (
 	goflag "flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -110,7 +109,7 @@ func init() {
 }
 
 func parseKey(r io.Reader) (*rsa.PublicKey, error) {
-	data, err := ioutil.ReadAll(r)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +137,7 @@ func parseKey(r io.Reader) (*rsa.PublicKey, error) {
 }
 
 func readSecret(codec runtime.Decoder, r io.Reader) (*v1.Secret, error) {
-	data, err := ioutil.ReadAll(r)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
@@ -327,7 +326,7 @@ func validateSealedSecret(ctx context.Context, in io.Reader, namespace, name str
 		return err
 	}
 
-	content, err := ioutil.ReadAll(in)
+	content, err := io.ReadAll(in)
 	if err != nil {
 		return err
 	}
@@ -365,7 +364,7 @@ func reEncryptSealedSecret(ctx context.Context, in io.Reader, out io.Writer, cod
 		return err
 	}
 
-	content, err := ioutil.ReadAll(in)
+	content, err := io.ReadAll(in)
 	if err != nil {
 		return err
 	}
@@ -523,7 +522,7 @@ func parseFromFile(s string) (string, string) {
 
 func readPrivKeysFromFile(filename string) ([]*rsa.PrivateKey, error) {
 	// #nosec G304 -- should open user provided file
-	b, err := ioutil.ReadFile(filename)
+	b, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
@@ -616,7 +615,7 @@ func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.Code
 		return err
 	}
 
-	b, err := ioutil.ReadAll(in)
+	b, err := io.ReadAll(in)
 	if err != nil {
 		return err
 	}
@@ -749,12 +748,12 @@ func run(ctx context.Context, w io.Writer, inputFileName, outputFileName, secret
 
 			_, filename := parseFromFile(fromFile[0])
 			// #nosec G304 -- should open user provided file
-			data, err = ioutil.ReadFile(filename)
+			data, err = os.ReadFile(filename)
 		} else {
 			if isatty.IsTerminal(os.Stdin.Fd()) {
 				fmt.Fprintf(os.Stderr, "(tty detected: expecting a secret to encrypt in stdin)\n")
 			}
-			data, err = ioutil.ReadAll(os.Stdin)
+			data, err = io.ReadAll(os.Stdin)
 		}
 		if err != nil {
 			return err
