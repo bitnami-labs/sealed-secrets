@@ -297,7 +297,11 @@ NOTE: the helm chart by default installs the controller with the name `sealed-se
 kubeseal --controller-name sealed-secrets <args>
 ```
 
-Alternatively, you can override `fullnameOverride` on the helm chart install.
+Alternatively, you can override `fullnameOverride` on the helm chart install. Note also that `kubeseal` assumes that the controller is installed within the `kube-system` namespace by default. So if you want to use the `kubeseal` CLI withut havving to pass the expected controller name and namespace you should install the Helm Chart like this:
+
+```bash
+helm install sealed-secrets -n kube-system --set-string fullnameOverride=sealed-secrets-controller sealed-secrets/sealed-secrets 
+```
 
 ### Homebrew
 
@@ -329,10 +333,16 @@ If you just want the latest client tool, it can be installed into
 `$GOPATH/bin` with:
 
 ```bash
-(cd /; GO111MODULE=on go get github.com/bitnami-labs/sealed-secrets/cmd/kubeseal@main)
+go install github.com/bitnami-labs/sealed-secrets/cmd/kubeseal@main
 ```
 
 You can specify a release tag or a commit SHA instead of `main`.
+
+The `go install` command will place the `kubeseal` binary at `$GOPATH/bin`:
+
+```bash
+$(go env GOPATH)/bin/kubeseal
+```
 
 ## Upgrade
 
@@ -643,7 +653,7 @@ kubeseal <mysecret.json >mysealedsecret.json
 
 ### How to verify the images?
 
-Our images are being signed using [cosign](https://github.com/sigstore/cosign). The signatures have been saved in our [GitHub Container Registry](https://github.com/bitnami-labs/sealed-secrets/pkgs/container/sealed-secrets/signs).
+Our images are being signed using [cosign](https://github.com/sigstore/cosign). The signatures have been saved in our [GitHub Container Registry](https://ghcr.io/bitnami-labs/sealed-secrets-controller).
 
 It is pretty simple to verify the images:
 
