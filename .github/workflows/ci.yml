@@ -67,6 +67,7 @@ jobs:
       matrix:
         go: ["1.17.11", "1.18.3"]
         os: [macos-latest, windows-latest, ubuntu-latest]
+        gotestsum: ["1.8.1"]
     steps:
 
     - name: Set up Go 1.x
@@ -77,6 +78,10 @@ jobs:
 
     - name: Check out code into the Go module directory
       uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        go install gotest.tools/gotestsum@v${{ matrix.gotestsum }}
 
     - name: Test
       run: make test
