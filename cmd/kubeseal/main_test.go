@@ -19,6 +19,8 @@ import (
 	"testing"
 	"time"
 
+	flag "github.com/spf13/pflag"
+
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
@@ -91,8 +93,19 @@ func tmpfile(t *testing.T, contents []byte) string {
 	return f.Name()
 }
 
+func testConfigOverrides() *clientcmd.ConfigOverrides {
+	flagset := flag.NewFlagSet("test", flag.PanicOnError)
+	testOverrides := initUsualKubectlFlags(flagset)
+	err := flagset.Parse([]string{"-n", "default"})
+	if err != nil {
+		fmt.Printf("flagset parse err: %v\n", err)
+		os.Exit(1)
+	}
+	return testOverrides
+}
+
 func testClientConfig() clientcmd.ClientConfig {
-	return initClient("", clientcmd.ConfigOverrides{}, os.Stdout)
+	return initClient("", *testConfigOverrides(), os.Stdout)
 }
 
 func TestParseKey(t *testing.T) {

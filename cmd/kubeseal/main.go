@@ -73,7 +73,7 @@ var (
 	privKeys       = flag.StringSlice("recovery-private-key", nil, "Private key filename used by the --recovery-unseal command. Multiple files accepted either via comma separated list or by repetition of the flag. Either PEM encoded private keys or a backup of a json/yaml encoded k8s sealed-secret controller secret (and v1.List) are accepted. ")
 	kubeconfig     = flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
 
-	overrides clientcmd.ConfigOverrides // config overrides from flags
+	globalOverrides *clientcmd.ConfigOverrides // config overrides from flags
 
 	// VERSION set from Makefile
 	VERSION = buildinfo.DefaultVersion
@@ -91,10 +91,7 @@ func initFlags() {
 
 	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
 
-	// The "usual" clientcmd/kubectl flags
-	overrides = clientcmd.ConfigOverrides{}
-	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	clientcmd.BindOverrideFlags(&overrides, flag.CommandLine, kflags)
+	globalOverrides = initUsualKubectlFlags(flag.CommandLine)
 
 	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
 
@@ -104,8 +101,15 @@ func initFlags() {
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 }
 
+func initUsualKubectlFlags(flagset *flag.FlagSet) *clientcmd.ConfigOverrides {
+	overrides := clientcmd.ConfigOverrides{}
+	kflags := clientcmd.RecommendedConfigOverrideFlags("")
+	clientcmd.BindOverrideFlags(&overrides, flagset, kflags)
+	return &overrides
+}
+
 func initClientFromFlags() clientcmd.ClientConfig {
-	return initClient(*kubeconfig, overrides, os.Stdout)
+	return initClient(*kubeconfig, *globalOverrides, os.Stdout)
 }
 
 func initClient(kubeConfigPath string, cfgOverrides clientcmd.ConfigOverrides, w io.Reader) clientcmd.ClientConfig {
