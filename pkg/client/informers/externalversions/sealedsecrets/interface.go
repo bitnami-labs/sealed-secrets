@@ -4,7 +4,7 @@ package bitnami
 
 import (
 	internalinterfaces "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/sealed-secrets/v1alpha1"
+	v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/sealedsecrets/v1alpha1"
 )
 
 // Interface provides access to each of this group's versions.
