@@ -10,8 +10,10 @@ import (
 )
 
 // SealedSecretLister helps list SealedSecrets.
+// All objects returned here must be treated as read-only.
 type SealedSecretLister interface {
 	// List lists all SealedSecrets in the indexer.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.SealedSecret, err error)
 	// SealedSecrets returns an object that can list and get SealedSecrets.
 	SealedSecrets(namespace string) SealedSecretNamespaceLister
@@ -42,10 +44,13 @@ func (s *sealedSecretLister) SealedSecrets(namespace string) SealedSecretNamespa
 }
 
 // SealedSecretNamespaceLister helps list and get SealedSecrets.
+// All objects returned here must be treated as read-only.
 type SealedSecretNamespaceLister interface {
 	// List lists all SealedSecrets in the indexer for a given namespace.
+	// Objects returned here must be treated as read-only.
 	List(selector labels.Selector) (ret []*v1alpha1.SealedSecret, err error)
 	// Get retrieves the SealedSecret from the indexer for a given namespace and name.
+	// Objects returned here must be treated as read-only.
 	Get(name string) (*v1alpha1.SealedSecret, error)
 	SealedSecretNamespaceListerExpansion
 }

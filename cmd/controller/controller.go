@@ -288,7 +288,7 @@ func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, 
 	ssecret.Status.ObservedGeneration = ssecret.ObjectMeta.Generation
 	updateSealedSecretsStatusConditions(ssecret.Status, unsealError)
 
-	_, err := c.ssclient.SealedSecrets(ssecret.GetObjectMeta().GetNamespace()).UpdateStatus(ssecret)
+	_, err := c.ssclient.SealedSecrets(ssecret.GetObjectMeta().GetNamespace()).UpdateStatus(context.Background(), ssecret, metav1.UpdateOptions{})
 	return err
 }
 

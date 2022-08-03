@@ -3,6 +3,7 @@
 package v1alpha1
 
 import (
+	"context"
 	time "time"
 
 	sealedsecretsv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
@@ -45,13 +46,13 @@ func NewFilteredSealedSecretInformer(client versioned.Interface, namespace strin
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.BitnamiV1alpha1().SealedSecrets(namespace).List(options)
+				return client.BitnamiV1alpha1().SealedSecrets(namespace).List(context.TODO(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.BitnamiV1alpha1().SealedSecrets(namespace).Watch(options)
+				return client.BitnamiV1alpha1().SealedSecrets(namespace).Watch(context.TODO(), options)
 			},
 		},
 		&sealedsecretsv1alpha1.SealedSecret{},
