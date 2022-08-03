@@ -7,7 +7,6 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	goflag "flag"
 	"fmt"
 	"io"
 	"math/big"
@@ -22,11 +21,11 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/tools/clientcmd"
 	certUtil "k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
 
@@ -78,16 +77,6 @@ func init() {
 	}
 }
 
-func TestMain(m *testing.M) {
-	// ensure that the -test.* flags inserted by go test are properly processed
-	// otherwise the pflag.Parse invocation below will interfere with test flags.
-	goflag.Parse()
-
-	// otherwise we'd require a working KUBECONFIG file when calling `run`.
-	_ = flag.CommandLine.Parse([]string{"-n", "default"})
-	os.Exit(m.Run())
-}
-
 func tmpfile(t *testing.T, contents []byte) string {
 	f, err := os.CreateTemp("", "testdata")
 	if err != nil {
@@ -100,6 +89,10 @@ func tmpfile(t *testing.T, contents []byte) string {
 		t.Fatalf("Failed to close tempfile: %v", err)
 	}
 	return f.Name()
+}
+
+func testClientConfig() clientcmd.ClientConfig {
+	return initClient("", clientcmd.ConfigOverrides{}, os.Stdout)
 }
 
 func TestParseKey(t *testing.T) {
@@ -135,7 +128,7 @@ func TestOpenCertFile(t *testing.T) {
 	}
 
 	for _, certURL := range testCases {
-		f, err := openCert(ctx, certURL)
+		f, err := openCert(testClientConfig(), ctx, certURL)
 		if err != nil {
 			t.Fatalf("Error reading test cert file: %v", err)
 		}
@@ -325,8 +318,9 @@ func TestSeal(t *testing.T) {
 
 			t.Logf("input is: %s", inbuf.String())
 
+			namespaceFromClientConfig := initNamespaceFuncFromClient(testClientConfig())
 			outbuf := bytes.Buffer{}
-			if err := seal(&inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, "", ""); err != nil {
+			if err := seal(&inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, "", "", namespaceFromClientConfig); err != nil {
 				t.Fatalf("seal() returned error: %v", err)
 			}
 
@@ -433,8 +427,9 @@ func mkTestSecret(t *testing.T, key, value string, opts ...mkTestSecretOpt) []by
 
 func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string, opts ...mkTestSecretOpt) []byte {
 	inbuf := bytes.NewBuffer(mkTestSecret(t, key, value, opts...))
+	namespaceFromClientConfig := initNamespaceFuncFromClient(testClientConfig())
 	var outbuf bytes.Buffer
-	if err := seal(inbuf, &outbuf, scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, "", ""); err != nil {
+	if err := seal(inbuf, &outbuf, scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, "", "", namespaceFromClientConfig); err != nil {
 		t.Fatalf("seal() returned error: %v", err)
 	}
 
@@ -576,8 +571,9 @@ func TestMergeInto(t *testing.T) {
 		}
 		f.Close()
 
+		namespaceFromClientConfig := initNamespaceFuncFromClient(testClientConfig())
 		buf := bytes.NewBuffer(newSecret)
-		if err := sealMergingInto(buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false); err != nil {
+		if err := sealMergingInto(buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, namespaceFromClientConfig); err != nil {
 			t.Fatal(err)
 		}
 
@@ -665,7 +661,9 @@ func TestMergeInto(t *testing.T) {
 func TestVersion(t *testing.T) {
 	ctx := context.Background()
 	var buf strings.Builder
-	err := run(ctx, &buf, "", "", "", "", "", "", true, false, false, false, false, false, nil, "", false, nil)
+	testClient := testClientConfig()
+	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
+	err := run(testClient, ctx, &buf, "", "", "", "", "", "", true, false, false, false, false, false, nil, "", false, nil, namespaceFromClientConfig)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -678,7 +676,9 @@ func TestVersion(t *testing.T) {
 func TestMainError(t *testing.T) {
 	ctx := context.Background()
 	badFileName := filepath.Join("this", "file", "cannot", "possibly", "exist", "can", "it?")
-	err := run(ctx, io.Discard, "", "", "", "", "", badFileName, false, false, false, false, false, false, nil, "", false, nil)
+	testClient := testClientConfig()
+	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
+	err := run(testClient, ctx, io.Discard, "", "", "", "", "", badFileName, false, false, false, false, false, false, nil, "", false, nil, namespaceFromClientConfig)
 
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
@@ -812,15 +812,13 @@ func TestRaw(t *testing.T) {
 }
 
 func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope ssv1alpha1.SealingScope) (string, error) {
-	// we use a global k8s config from which we take the namespace (either default or set by flag).
-	// it's a mess, for now let's hook in a test getter and restore the original getter after the test.
-	defer func(s func() (string, bool, error)) { namespaceFromClientConfig = s }(namespaceFromClientConfig)
-	namespaceFromClientConfig = func() (string, bool, error) { return secretNS, false, nil }
+	namespaceFromClientConfig := func() (string, bool, error) { return secretNS, false, nil }
 
-	// sadly, sealingscope is also global
+	// sadly, sealingscope is global
 	// TODO(mkm): refactor this mess
 	defer func(s ssv1alpha1.SealingScope) { sealingScope = s }(sealingScope)
 	sealingScope = scope
+<<<<<<< HEAD
 	/*
 		if got, want := run(io.Discard, "", "", "", certFilename, false, false, false, false, true, nil, "", false, nil), "must provide the --name flag with --raw and --scope strict"; got == nil || got.Error() != want {
 			t.Fatalf("want matching: %q, got: %q", want, got.Error())
@@ -830,6 +828,8 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 			t.Fatalf("want matching: %q, got: %q", want, got.Error())
 		}
 	*/
+=======
+>>>>>>> dad7265 (Remove clientconfig and related global variables)
 
 	dataFile, err := writeTempFile([]byte(secretValue))
 	if err != nil {
@@ -841,7 +841,7 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 
 	ctx := context.Background()
 	var buf bytes.Buffer
-	if err := run(ctx, &buf, "", "", secretName, "", "", certFilename, false, false, false, false, true, false, fromFile, "", false, nil); err != nil {
+	if err := run(testClientConfig(), ctx, &buf, "", "", secretName, "", "", certFilename, false, false, false, false, true, false, fromFile, "", false, nil, namespaceFromClientConfig); err != nil {
 		return "", err
 	}
 
@@ -876,7 +876,9 @@ data:
 
 	ctx := context.Background()
 	var buf bytes.Buffer
-	if err := run(ctx, &buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil); err != nil {
+	testClient := testClientConfig()
+	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
+	if err := run(testClient, ctx, &buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil, namespaceFromClientConfig); err != nil {
 		t.Fatal(err)
 	}
 
@@ -924,7 +926,9 @@ metadata:
 
 	ctx := context.Background()
 	var buf bytes.Buffer
-	if err := run(ctx, &buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil); err == nil {
+	testClient := testClientConfig()
+	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
+	if err := run(testClient, ctx, &buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil, namespaceFromClientConfig); err == nil {
 		t.Errorf("expecting error")
 	}
 
