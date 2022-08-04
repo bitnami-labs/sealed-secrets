@@ -105,7 +105,7 @@ func testConfigOverrides() *clientcmd.ConfigOverrides {
 }
 
 func testClientConfig() clientcmd.ClientConfig {
-	return initClient("", *testConfigOverrides(), os.Stdout)
+	return initClient("", *testConfigOverrides(), os.Stdin)
 }
 
 func TestParseKey(t *testing.T) {
