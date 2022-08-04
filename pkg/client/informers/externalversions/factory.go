@@ -9,7 +9,7 @@ import (
 
 	versioned "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/internalinterfaces"
-	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/sealed-secrets"
+	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/sealedsecrets"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	schema "k8s.io/apimachinery/pkg/runtime/schema"

@@ -4,8 +4,8 @@ package fake
 
 import (
 	clientset "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
-	bitnamiv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/typed/sealed-secrets/v1alpha1"
-	fakebitnamiv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/typed/sealed-secrets/v1alpha1/fake"
+	bitnamiv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/typed/sealedsecrets/v1alpha1"
+	fakebitnamiv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/typed/sealedsecrets/v1alpha1/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
