@@ -153,7 +153,7 @@ var _ = Describe("create", func() {
 	JustBeforeEach(func() {
 		var err error
 		fmt.Fprintf(GinkgoWriter, "Creating SealedSecret: %#v\n", ss)
-		ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Create(ss)
+		ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Create(context.Background(), ss, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -191,7 +191,7 @@ var _ = Describe("create", func() {
 				ss.ResourceVersion = resVer
 
 				fmt.Fprintf(GinkgoWriter, "Updating to SealedSecret: %#v\n", ss)
-				ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Update(ss)
+				ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Update(context.Background(), ss, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
