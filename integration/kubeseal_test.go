@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"io"
-	"io/ioutil"
 	"os"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
@@ -55,7 +54,7 @@ var _ = Describe("kubeseal", func() {
 	})
 
 	JustBeforeEach(func() {
-		f, err := ioutil.TempFile("", "kubeconfig")
+		f, err := os.CreateTemp("", "kubeconfig")
 		Expect(err).NotTo(HaveOccurred())
 
 		buf, err := runtime.Encode(clientcmdlatest.Codec, config)
@@ -165,7 +164,7 @@ var _ = Describe("kubeseal", func() {
 
 		BeforeEach(func() {
 			var err error
-			certfile, err = ioutil.TempFile("", "kubeseal-test")
+			certfile, err = os.CreateTemp("", "kubeseal-test")
 			Expect(err).NotTo(HaveOccurred())
 
 			for _, cert := range certs {
@@ -313,7 +312,7 @@ var _ = Describe("kubeseal --cert", func() {
 	})
 
 	JustBeforeEach(func() {
-		err := runKubeseal(args, input, ioutil.Discard, runAppWithStderr(output))
+		err := runKubeseal(args, input, io.Discard, runAppWithStderr(output))
 		Expect(err).To(HaveOccurred())
 	})
 
@@ -366,7 +365,7 @@ var _ = Describe("kubeseal --recovery-unseal", func() {
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		backupKeysFile, err = ioutil.TempFile("", "master")
+		backupKeysFile, err = os.CreateTemp("", "master")
 		Expect(err).NotTo(HaveOccurred())
 		defer backupKeysFile.Close()
 
