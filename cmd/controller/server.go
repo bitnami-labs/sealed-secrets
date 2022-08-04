@@ -104,10 +104,11 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 	})))
 
 	server := http.Server{
-		Addr:         *listenAddr,
-		Handler:      mux,
-		ReadTimeout:  *readTimeout,
-		WriteTimeout: *writeTimeout,
+		Addr:              *listenAddr,
+		Handler:           mux,
+		ReadTimeout:       *readTimeout,
+		ReadHeaderTimeout: *readTimeout,
+		WriteTimeout:      *writeTimeout,
 	}
 
 	log.Printf("HTTP server serving on %s", server.Addr)
