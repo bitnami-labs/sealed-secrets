@@ -1,4 +1,5 @@
 GO = go
+GOTESTSUM = gotestsum
 GOFMT = gofmt
 GOLANGCILINT=golangci-lint
 GOSEC=gosec
@@ -97,7 +98,7 @@ controller-norbac.yaml: controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixe
 controller-podmonitor.yaml: controller.jsonnet controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixes.libsonnet
 
 test:
-	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
+	$(GOTESTSUM) $(GO_FLAGS) $(GO_PACKAGES)
 
 integrationtest: kubeseal controller
 	# Assumes a k8s cluster exists, with controller already installed
