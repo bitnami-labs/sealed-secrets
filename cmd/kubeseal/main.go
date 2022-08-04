@@ -116,7 +116,7 @@ func initClient(kubeConfigPath string, cfgOverrides clientcmd.ConfigOverrides, r
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 	loadingRules.ExplicitPath = kubeConfigPath
-	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &cfgOverrides, w)
+	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &cfgOverrides, r)
 }
 
 func initNamespaceFuncFromClient(clientConfig clientcmd.ClientConfig) namespaceFn {
