@@ -44,10 +44,11 @@ all: controller kubeseal
 
 generate: $(GO_FILES)
 	$(GO) mod vendor && $(GO) generate $(GO_PACKAGES)
-	@# code-generator insists in generating the file under diretory:
-	@# github.com/bitnami-labs/sealeds-secrets
-	@# instead of just updating ./pkg for that reason we generate at gentmp
-	@# and then move to ./pkg
+	@# TODO: remove as soon as a proper way forward is found:
+	@# code-generator insists in generating the file under directory:
+	@# github.com/bitnami-labs/sealeds-secrets/...
+	@# instead of just updating ./pkg 
+	@# for that reason we generate at gentmp and then move it all to ./pkg
 	cp -r gentmp/github.com/bitnami-labs/sealed-secrets/pkg . && rm gentmp/ -rf
 
 controller: $(GO_FILES)
