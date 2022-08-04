@@ -171,7 +171,7 @@ There are three serious candidates to use instead of RSA: LMS and XMSS, which ar
 Those three algorithms are serious candidates for RSA replacement and the choice must be done carefully, without forgetting to study other algorithms such as NTRU.
 
 It is important to qualify this recommendation with a couple of prerequisites:
-- An standard or clear recommended replacement Public Key Cryptography Algorithm emerges in the industry.
+- A standard or clear recommended Public Key Cryptography Algorithm replacement emerges in the industry.
 - A reliable Go implementation is available in a compatible Open Source license.
 
 Without such prerequisites in place, an RSA replacement cannot be commited upon.
