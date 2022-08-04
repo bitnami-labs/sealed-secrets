@@ -109,10 +109,10 @@ func initUsualKubectlFlags(flagset *flag.FlagSet) *clientcmd.ConfigOverrides {
 }
 
 func initClientFromFlags() clientcmd.ClientConfig {
-	return initClient(*kubeconfig, *globalOverrides, os.Stdout)
+	return initClient(*kubeconfig, *globalOverrides, os.Stdin)
 }
 
-func initClient(kubeConfigPath string, cfgOverrides clientcmd.ConfigOverrides, w io.Reader) clientcmd.ClientConfig {
+func initClient(kubeConfigPath string, cfgOverrides clientcmd.ConfigOverrides, r io.Reader) clientcmd.ClientConfig {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 	loadingRules.ExplicitPath = kubeConfigPath
