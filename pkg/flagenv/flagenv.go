@@ -8,16 +8,16 @@
 // This example will make it possible to set the default of --my_flag also via the MY_PROG_MY_FLAG
 // env var:
 //
-//    var myflag = flag.String("my_flag", "", "some flag")
+//	var myflag = flag.String("my_flag", "", "some flag")
 //
-//    func init() {
-//        flagenv.SetFlagsFromEnv("MY_PROG", flag.CommandLine)
-//    }
+//	func init() {
+//	    flagenv.SetFlagsFromEnv("MY_PROG", flag.CommandLine)
+//	}
 //
-//    func main() {
-//        flags.Parse()
-//        ...
-//    }
+//	func main() {
+//	    flags.Parse()
+//	    ...
+//	}
 package flagenv
 
 import (
