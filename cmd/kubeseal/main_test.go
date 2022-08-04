@@ -831,18 +831,6 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 	// TODO(mkm): refactor this mess
 	defer func(s ssv1alpha1.SealingScope) { sealingScope = s }(sealingScope)
 	sealingScope = scope
-<<<<<<< HEAD
-	/*
-		if got, want := run(io.Discard, "", "", "", certFilename, false, false, false, false, true, nil, "", false, nil), "must provide the --name flag with --raw and --scope strict"; got == nil || got.Error() != want {
-			t.Fatalf("want matching: %q, got: %q", want, got.Error())
-		}
-
-		if got, want := run(io.Discard, secretName, "", "", certFilename, false, false, false, false, true, nil, "", false, nil), "must provide the --from-file flag with --raw"; got == nil || got.Error() != want {
-			t.Fatalf("want matching: %q, got: %q", want, got.Error())
-		}
-	*/
-=======
->>>>>>> dad7265 (Remove clientconfig and related global variables)
 
 	dataFile, err := writeTempFile([]byte(secretValue))
 	if err != nil {
