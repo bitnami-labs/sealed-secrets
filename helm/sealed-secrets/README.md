@@ -163,15 +163,16 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Other Parameters
 
-| Name                                          | Description                                               | Value   |
-| --------------------------------------------- | --------------------------------------------------------- | ------- |
-| `serviceAccount.create`                       | Specifies whether a ServiceAccount should be created      | `true`  |
-| `serviceAccount.labels`                       | Extra labels to be added to the ServiceAccount            | `{}`    |
-| `serviceAccount.name`                         | The name of the ServiceAccount to use.                    | `""`    |
-| `serviceAccount.automountServiceAccountToken` | Specifies, whether to mount the service account API-token | `""`    |
-| `rbac.create`                                 | Specifies whether RBAC resources should be created        | `true`  |
-| `rbac.labels`                                 | Extra labels to be added to RBAC resources                | `{}`    |
-| `rbac.pspEnabled`                             | PodSecurityPolicy                                         | `false` |
+| Name                                          | Description                                                   | Value   |
+| --------------------------------------------- | ------------------------------------------------------------- | ------- |
+| `serviceAccount.create`                       | Specifies whether a ServiceAccount should be created          | `true`  |
+| `serviceAccount.labels`                       | Extra labels to be added to the ServiceAccount                | `{}`    |
+| `serviceAccount.name`                         | The name of the ServiceAccount to use.                        | `""`    |
+| `serviceAccount.automountServiceAccountToken` | Specifies, whether to mount the service account API-token     | `""`    |
+| `rbac.create`                                 | Specifies whether RBAC resources should be created            | `true`  |
+| `rbac.clusterRole`                            | Specifies whether the Cluster Role resource should be created | `true`  |
+| `rbac.labels`                                 | Extra labels to be added to RBAC resources                    | `{}`    |
+| `rbac.pspEnabled`                             | PodSecurityPolicy                                             | `false` |
 
 
 ### Metrics parameters
