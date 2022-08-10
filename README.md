@@ -94,7 +94,7 @@ metadata:
   name: mysecret
   namespace: mynamespace
 data:
-  foo: bar  # <- base64 encoded "bar"
+  foo: YmFy  # <- base64 encoded "bar"
 ```
 
 This normal [kubernetes secret](https://kubernetes.io/docs/concepts/configuration/secret/) will appear in the cluster
