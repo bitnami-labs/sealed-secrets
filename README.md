@@ -30,6 +30,7 @@ original Secret from the SealedSecret.
     - [Helm Chart](#helm-chart)
   - [Homebrew](#homebrew)
   - [MacPorts](#macports)
+  - [Linux](#linux)
   - [Installation from source](#installation-from-source)
 - [Upgrade](#upgrade)
 - [Usage](#usage)
@@ -326,6 +327,16 @@ The `kubeseal` client is also available on [Nixpkgs](https://search.nixos.org/pa
 ```bash
 nix-env -iA nixpkgs.kubeseal
 ```
+
+### Linux
+
+The `kubeseal` client can be installed on Linux, using below commands:
+
+```bash
+wget https://github.com/bitnami-labs/sealed-secrets/releases/download/<release-tag>/kubeseal-linux-amd64 -O kubeseal
+sudo install -m 755 kubeseal /usr/local/bin/kubeseal
+```
+where `release-tag` is [version tag](https://github.com/bitnami-labs/sealed-secrets/tags) of the kubeseal release you want to use. For example `v0.18.0`
 
 ### Installation from source
 
