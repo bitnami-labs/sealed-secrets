@@ -333,7 +333,8 @@ nix-env -iA nixpkgs.kubeseal
 The `kubeseal` client can be installed on Linux, using below commands:
 
 ```bash
-wget https://github.com/bitnami-labs/sealed-secrets/releases/download/<release-tag>/kubeseal-linux-amd64 -O kubeseal
+wget https://github.com/bitnami-labs/sealed-secrets/releases/download/<release-tag>/kubeseal-<version>-linux-amd64.tar.gz
+tar -xvzf kubeseal-<version>-linux-amd64.tar.gz kubeseal
 sudo install -m 755 kubeseal /usr/local/bin/kubeseal
 ```
 where `release-tag` is [version tag](https://github.com/bitnami-labs/sealed-secrets/tags) of the kubeseal release you want to use. For example `v0.18.0`
