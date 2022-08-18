@@ -43,7 +43,7 @@ var (
 	validFor             = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
 	myCN                 = flag.String("my-cn", "", "Common name to be used as issuer/subject DN in generated certificate.")
 	printVersion         = flag.Bool("version", false, "Print version information and exit")
-	keyRenewPeriod       = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation disabled if 0)")
+	keyRenewPeriod       = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation deactivated if 0)")
 	acceptV1Data         = flag.Bool("accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
 	keyCutoffTime        = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
 	namespaceAll         = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
@@ -135,7 +135,7 @@ func myNamespace() string {
 }
 
 // Initialises the first key and starts the rotation job. returns an early trigger function.
-// A period of 0 disables automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
+// A period of 0 deactivates automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
 // is still honoured.
 func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period time.Duration, cutoffTime time.Time) (func(), error) {
 	// Create a new key if it's the first key,

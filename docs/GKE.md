@@ -12,7 +12,7 @@ kubectl create clusterrolebinding $USER-cluster-admin-binding --clusterrole=clus
 ## Private GKE clusters
 
 If you are using a **private GKE cluster**, `kubeseal` won't be able to fetch the public key from the controller
-because there is firewall that prevents the master to talk directly to the nodes.
+because there is firewall that prevents the control plane to talk directly to the nodes.
 
 There are currently two workarounds:
 
@@ -29,19 +29,19 @@ Once you have the cert this is how you seal secrets:
 kubeseal --cert=cert.pem <secret.yaml
 ```
 
-### Master-to-Node firewall
+### Control Plane to Node firewall
 
-You are required to create a Master-to-Node firewall rule to allow GKE to communicate to the kubeseal container endpoint port tcp/8080.
+You are required to create a Control Plane to Node firewall rule to allow GKE to communicate to the kubeseal container endpoint port tcp/8080.
 
 ```bash
 CLUSTER_NAME=foo-cluster
 gcloud config set compute/zone your-zone-or-region
 ```
 
-Get the `MASTER_IPV4_CIDR`.
+Get the `CP_IPV4_CIDR`.
 
 ```bash
-MASTER_IPV4_CIDR=$(gcloud container clusters describe $CLUSTER_NAME \
+CP_IPV4_CIDR=$(gcloud container clusters describe $CLUSTER_NAME \
   | grep "masterIpv4CidrBlock: " \
   | awk '{print $2}')
 ```
@@ -66,7 +66,7 @@ NETWORK_TARGET_TAG=$(gcloud compute firewall-rules list \
 Check the values.
 
 ```bash
-echo $MASTER_IPV4_CIDR $NETWORK $NETWORK_TARGET_TAG
+echo $CP_IPV4_CIDR $NETWORK $NETWORK_TARGET_TAG
 
 # example output
 10.0.0.0/28 foo-network gke-foo-cluster-c1ecba83-node
@@ -78,7 +78,7 @@ Create the firewall rule.
 gcloud compute firewall-rules create gke-to-kubeseal-8080 \
   --network "$NETWORK" \
   --allow "tcp:8080" \
-  --source-ranges "$MASTER_IPV4_CIDR" \
+  --source-ranges "$CP_IPV4_CIDR" \
   --target-tags "$NETWORK_TARGET_TAG" \
   --priority 1000
 ```

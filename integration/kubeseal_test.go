@@ -360,16 +360,16 @@ var _ = Describe("kubeseal --recovery-unseal", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	BeforeEach(func() {
-		master, err := c.Secrets("kube-system").List(ctx, metav1.ListOptions{
+		key, err := c.Secrets("kube-system").List(ctx, metav1.ListOptions{
 			LabelSelector: keySelector,
 		})
 		Expect(err).NotTo(HaveOccurred())
 
-		backupKeysFile, err = os.CreateTemp("", "master")
+		backupKeysFile, err = os.CreateTemp("", "key")
 		Expect(err).NotTo(HaveOccurred())
 		defer backupKeysFile.Close()
 
-		json, err := json.Marshal(master)
+		json, err := json.Marshal(key)
 		Expect(err).NotTo(HaveOccurred())
 
 		backupKeysFile.Write(json)

@@ -173,7 +173,7 @@ ensure you are using the correct one.
 (requires secure access to the Kubernetes API server), which is
 convenient for interactive use, but it's known to be brittle when users
 have clusters with special configurations such as [private GKE clusters](docs/GKE.md#private-gke-clusters) that have
-firewalls between master and nodes.
+firewalls between control plane and nodes.
 
 An alternative workflow
 is to store the certificate somewhere (e.g. local disk) with
@@ -215,7 +215,7 @@ seal a secret for a namespace, it cannot be moved in another namespace and decry
 We don't technically use an independent private key for each namespace, but instead we *include* the namespace name
 during the encryption process, effectively achieving the same result.
 
-Furthermore, namespaces are not the only level at which RBAC configurations can decide who can see which secret. In fact, it's possible that users can access a secret called `foo` in a given namespace but not any other secret in the same namespace. We cannot thus by default let users freely rename SealedSecret resources otherwise a malicious user would be able to decrypt any SealedSecret for that namespace by just renaming it to overwrite the one secret she does have access to. We use the same mechanism used to include the namespace in the encryption key to also include the secret name.
+Furthermore, namespaces are not the only level at which RBAC configurations can decide who can see which secret. In fact, it's possible that users can access a secret called `foo` in a given namespace but not any other secret in the same namespace. We cannot thus by default let users freely rename SealedSecret resources otherwise a malicious user would be able to decrypt any SealedSecret for that namespace by just renaming it to overwrite the one secret they do have access to. We use the same mechanism used to include the namespace in the encryption key to also include the secret name.
 
 That said, there are many scenarios where you might not care about this level of protection. For example, the only people who have access to your clusters are either admins or they cannot read any secret resource at all. You might have a use case for moving a sealed secret to other namespaces (e.g. you might not know the namespace name upfront), or you might not know the name of the secret (e.g. it could contain a unique suffix based on the hash of the contents etc).
 
@@ -486,7 +486,7 @@ The renewal time of 30d is a reasonable default, but it can be tweaked as needed
 with the `--key-renew-period=<value>` flag for the command in the pod template of the sealed secret controller. The `value` field can be given as golang
 duration flag (eg: `720h30m`).
 
-A value of `0` will disable automatic key renewal. Of course, it's possible you have a valid use case for disabling automatic sealing key renewal; but experience has shown that new users often tend to jump to conclusions that they want control over key renewal, before fully understanding how sealed secrets work. Read more about this in the [common misconceptions](#common-misconceptions-about-key-renewal) section below.
+A value of `0` will deactivate automatic key renewal. Of course, it's possible you have a valid use case for deactivating automatic sealing key renewal; but experience has shown that new users often tend to jump to conclusions that they want control over key renewal, before fully understanding how sealed secrets work. Read more about this in the [common misconceptions](#common-misconceptions-about-key-renewal) section below.
 
 > Unfortunately you cannot use e.g. "d" as a unit for days because that's not supported by the Go stdlib. Instead of hitting your face with a palm, take this as an opportunity to meditate on the [falsehoods programmers believe about time](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time).
 
@@ -607,8 +607,8 @@ No, the private keys are only stored in the Secret managed by the controller (un
 If you do want to make a backup of the encryption private keys, it's easy to do from an account with suitable access and:
 
 ```bash
-kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >master.key
-kubectl get secret -n kube-system sealed-secrets-key -o yaml >>master.key
+kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >main.key
+kubectl get secret -n kube-system sealed-secrets-key -o yaml >>main.key
 ```
 
 NOTE: you need the second statement only if you ever installed sealed-secrets older than version 0.9.x on your cluster.
@@ -618,7 +618,7 @@ NOTE: This file will contain the controller's public + private keys and should b
 To restore from a backup after some disaster, just put that secrets back before starting the controller - or if the controller was already started, replace the newly-created secrets and restart the controller:
 
 ```bash
-kubectl apply -f master.key
+kubectl apply -f main.key
 kubectl delete pod -n kube-system -l name=sealed-secrets-controller
 ```
 

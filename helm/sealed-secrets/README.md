@@ -255,7 +255,7 @@ Find more information about how to deal with common errors related to Bitnami's 
 
 ### To 2.0.0
 
-A major refactoring of the chart has been performed to adopt several common practices for Helm charts. Upgrades from previous chart versions should work, however, the values structure suffered several changes and you'll have to adapt your custom values/parameters so they're aligned with the new structure. For instance, these are a couple of examples:
+A major refactoring of the chart has been performed to adopt several common practices for Helm charts. Upgrades from previous chart versions should work, however, the values structure experienced several changes and you'll have to adapt your custom values/parameters so they're aligned with the new structure. For instance, these are a couple of examples:
 
 - `controller.create` renamed as `createController`.
 - `securityContext.*` parameters are deprecated in favor of `podSecurityContext.*`, and `containerSecurityContext.*` ones.
