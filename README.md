@@ -551,7 +551,7 @@ A core value proposition of this tool is:
 
 > Encrypt your Secret into a SealedSecret, which *is* safe to store - even inside a public repository.
 
-If you store anything in a version control storage, and in a public one, in particular, you must assume
+If you store anything in a version control storage, and in a public one in particular, you must assume
 you cannot ever delete that information.
 
 *If* a sealing key somehow leaks out of the cluster you must consider all your `SealedSecret` resources
