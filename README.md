@@ -337,7 +337,8 @@ wget https://github.com/bitnami-labs/sealed-secrets/releases/download/<release-t
 tar -xvzf kubeseal-<version>-linux-amd64.tar.gz kubeseal
 sudo install -m 755 kubeseal /usr/local/bin/kubeseal
 ```
-where `release-tag` is [version tag](https://github.com/bitnami-labs/sealed-secrets/tags) of the kubeseal release you want to use. For example `v0.18.0`
+
+where `release-tag` is the [version tag](https://github.com/bitnami-labs/sealed-secrets/tags) of the kubeseal release you want to use. For example: `v0.18.0`.
 
 ### Installation from source
 
