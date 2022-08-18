@@ -61,7 +61,7 @@ Latest release:
 
 ### Announcements
 
-This release finally turns on the `update-status` feature flag that was introduced back in v0.12.0. The feature is considered stable (if it doesn't work for you, you can disable it by setting `SEALED_SECRETS_UPDATE_STATUS=0` in the controller manifest).
+This release finally turns on the `update-status` feature flag that was introduced back in v0.12.0. The feature is considered stable (if it doesn't work for you, you can deactivate it by setting `SEALED_SECRETS_UPDATE_STATUS=0` in the controller manifest).
 
 ### Changelog
 
@@ -202,7 +202,7 @@ In order to turn it back on you need to manually pass the `--update-status` flag
 ### Changelog
 
 - Make it easier to use --raw from stdin ([#386](https://github.com/bitnami-labs/sealed-secrets/issues/386))
-- Disable status updates unless a feature flag is explicitly passed ([#388](https://github.com/bitnami-labs/sealed-secrets/issues/388))
+- Deactivate status updates unless a feature flag is explicitly passed ([#388](https://github.com/bitnami-labs/sealed-secrets/issues/388))
 
 The full Changelog is maintained in https://github.com/bitnami-labs/sealed-secrets/milestone/18?closed=1
 
@@ -439,7 +439,7 @@ $ kubectl create secret generic mysecret --dry-run -o json --from-file=bar=/tmp/
 - Rename "key rotation" to "key renewal" since the terminology was confusing.
 - Key renewal is enabled by default every 30 days ([#236](https://github.com/bitnami-labs/sealed-secrets/issues/236))
 - You can now use env vars such as SEALED_SECRETS_FOO_BAR to customize the controller ([#234](https://github.com/bitnami-labs/sealed-secrets/issues/234))
-- Disabling by default deprecated "v1" encrypted data format (used by pre-v0.7.0 clients) ([#235](https://github.com/bitnami-labs/sealed-secrets/issues/235))
+- Deactivating by default deprecated "v1" encrypted data format (used by pre-v0.7.0 clients) ([#235](https://github.com/bitnami-labs/sealed-secrets/issues/235))
 - Fix RBAC rules for /v1/rotate and /v1/validate fixing #166 for good ([#249](https://github.com/bitnami-labs/sealed-secrets/issues/249))
 - Implement the --merge-into command ([#253](https://github.com/bitnami-labs/sealed-secrets/issues/253))
 - Add the `-o` alias for `--format` ([#261](https://github.com/bitnami-labs/sealed-secrets/issues/261))

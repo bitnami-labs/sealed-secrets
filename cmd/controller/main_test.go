@@ -184,7 +184,7 @@ func TestReuseKey(t *testing.T) {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
 	if hasAction(client, "create", "secrets") {
-		t.Errorf("initKeyRenewal() should not create a new secret when one already exist and rotation is disabled")
+		t.Errorf("initKeyRenewal() should not create a new secret when one already exist and rotation is deactivated")
 	}
 }
 
@@ -348,6 +348,6 @@ func TestLegacySecret(t *testing.T) {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
 	if hasAction(client, "create", "secrets") {
-		t.Errorf("initKeyRenewal() should not create a new secret when one already exist and rotation is disabled")
+		t.Errorf("initKeyRenewal() should not create a new secret when one already exist and rotation is deactivated")
 	}
 }
