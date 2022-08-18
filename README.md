@@ -617,7 +617,7 @@ in your version control system (`kubeseal --re-encrypt` doesn't update the in-cl
 
 Currently, old keys are not garbage collected automatically.
 
-It's a good idea to periodically re-encrypt your SealedSecrets. But as mentioned above, don't lull yourself in a false sense of security: you must assume the old version of the `SealedSecret` resouece (the one encrypted with a key you think of as dead) is still potentially around and accessible to attackers. I.e. re-encryption is not a substitute for periodically rotating your actual secrets.
+It's a good idea to periodically re-encrypt your SealedSecrets. But as mentioned above, don't lull yourself in a false sense of security: you must assume the old version of the `SealedSecret` resource (the one encrypted with a key you think of as dead) is still potentially around and accessible to attackers. I.e. re-encryption is not a substitute for periodically rotating your actual secrets.
 
 ## Details (advanced)
 
