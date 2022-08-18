@@ -330,7 +330,7 @@ nix-env -iA nixpkgs.kubeseal
 
 ### Linux
 
-The `kubeseal` client can be installed on Linux, using below commands:
+The `kubeseal` client can be installed on Linux, using the below commands:
 
 ```bash
 wget https://github.com/bitnami-labs/sealed-secrets/releases/download/<release-tag>/kubeseal-<version>-linux-amd64.tar.gz
