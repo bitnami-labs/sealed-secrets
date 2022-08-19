@@ -484,7 +484,11 @@ The most recently created sealing key is the one used to seal new secrets when y
 
 The renewal time of 30d is a reasonable default, but it can be tweaked as needed
 with the `--key-renew-period=<value>` flag for the command in the pod template of the sealed secret controller. The `value` field can be given as golang
-duration flag (eg: `720h30m`).
+duration flag (eg: `720h30m`). Assuming that you've installed Sealed Secrets into the `kube-system` namespace, use the following command to edit the Deployment controller, and add the `--key-renew-period` parameter. Once you close your text editor, and the Deployment controller has been modified, a new Pod will be automatically created to replace the old Pod.
+
+```
+kubectl edit deployment/sealed-secrets-controller --namespace=kube-system
+```
 
 A value of `0` will deactivate automatic key renewal. Of course, it's possible you have a valid use case for deactivating automatic sealing key renewal; but experience has shown that new users often tend to jump to conclusions that they want control over key renewal, before fully understanding how sealed secrets work. Read more about this in the [common misconceptions](#common-misconceptions-about-key-renewal) section below.
 
