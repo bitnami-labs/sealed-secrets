@@ -52,27 +52,6 @@ const (
 )
 
 var (
-	// TODO: Verify k8s server signature against cert in kube client config.
-	certURL        = flag.String("cert", "", "Certificate / public key file/URL to use for encryption. Overrides --controller-*")
-	controllerNs   = flag.String("controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
-	controllerName = flag.String("controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
-	outputFormat   = flag.StringP("format", "o", "json", "Output format for sealed secret. Either json or yaml")
-	outputFileName = flag.StringP("sealed-secret-file", "w", "", "Sealed-secret (output) file")
-	inputFileName  = flag.StringP("secret-file", "f", "", "Secret (input) file")
-	dumpCert       = flag.Bool("fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
-	allowEmptyData = flag.Bool("allow-empty-data", false, "Allow empty data in the secret object")
-	printVersion   = flag.Bool("version", false, "Print version information and exit")
-	validateSecret = flag.Bool("validate", false, "Validate that the sealed secret can be decrypted")
-	mergeInto      = flag.String("merge-into", "", "Merge items from secret into an existing sealed secret file, updating the file in-place instead of writing to stdout.")
-	raw            = flag.Bool("raw", false, "Encrypt a raw value passed via the --from-* flags instead of the whole secret object")
-	secretName     = flag.String("name", "", "Name of the sealed secret (required with --raw and default (strict) scope)")
-	fromFile       = flag.StringSlice("from-file", nil, "(only with --raw) Secret items can be sourced from files. Pro-tip: you can use /dev/stdin to read pipe input. This flag tries to follow the same syntax as in kubectl")
-	sealingScope   ssv1alpha1.SealingScope
-	reEncrypt      bool // re-encrypt command
-	unseal         = flag.Bool("recovery-unseal", false, "Decrypt a sealed secrets file obtained from stdin, using the private key passed with --recovery-private-key. Intended to be used in disaster recovery mode.")
-	privKeys       = flag.StringSlice("recovery-private-key", nil, "Private key filename used by the --recovery-unseal command. Multiple files accepted either via comma separated list or by repetition of the flag. Either PEM encoded private keys or a backup of a json/yaml encoded k8s sealed-secret controller secret (and v1.List) are accepted. ")
-	kubeconfig     = flag.String("kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
-
 	globalOverrides *clientcmd.ConfigOverrides // config overrides from flags
 
 	// VERSION set from Makefile
@@ -81,13 +60,61 @@ var (
 
 type namespaceFn func() (string, bool, error)
 
-func initFlags() {
-	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
+type Flags struct {
+	certURL        string
+	controllerNs   string
+	controllerName string
+	outputFormat   string
+	outputFileName string
+	inputFileName  string
+	kubeconfig     string
+	dumpCert       bool
+	allowEmptyData bool
+	printVersion   bool
+	validateSecret bool
+	mergeInto      string
+	raw            bool
+	secretName     string
+	fromFile       []string
+	sealingScope   ssv1alpha1.SealingScope
+	reEncrypt      bool
+	unseal         bool
+	privKeys       []string
+}
 
-	flag.Var(&sealingScope, "scope", "Set the scope of the sealed secret: strict, namespace-wide, cluster-wide (defaults to strict). Mandatory for --raw, otherwise the 'sealedsecrets.bitnami.com/cluster-wide' and 'sealedsecrets.bitnami.com/namespace-wide' annotations on the input secret can be used to select the scope.")
-	flag.BoolVar(&reEncrypt, "rotate", false, "")
-	flag.BoolVar(&reEncrypt, "re-encrypt", false, "Re-encrypt the given sealed secret to use the latest cluster key.")
-	_ = flag.CommandLine.MarkDeprecated("rotate", "please use --re-encrypt instead")
+func (f *Flags) Bind(fs *flag.FlagSet) {
+	if fs == nil {
+		fs = flag.CommandLine
+	}
+
+	// TODO: Verify k8s server signature against cert in kube client config.
+	fs.StringVar(&f.certURL, "cert", "", "Certificate / public key file/URL to use for encryption. Overrides --controller-*")
+	fs.StringVar(&f.controllerNs, "controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
+	fs.StringVar(&f.controllerName, "controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
+	fs.StringVarP(&f.outputFormat, "format", "o", "json", "Output format for sealed secret. Either json or yaml")
+	fs.StringVarP(&f.outputFileName, "sealed-secret-file", "w", "", "Sealed-secret (output) file")
+	fs.StringVarP(&f.inputFileName, "secret-file", "f", "", "Secret (input) file")
+	fs.BoolVar(&f.dumpCert, "fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
+	fs.BoolVar(&f.allowEmptyData, "allow-empty-data", false, "Allow empty data in the secret object")
+	fs.BoolVar(&f.printVersion, "version", false, "Print version information and exit")
+	fs.BoolVar(&f.validateSecret, "validate", false, "Validate that the sealed secret can be decrypted")
+	fs.StringVar(&f.mergeInto, "merge-into", "", "Merge items from secret into an existing sealed secret file, updating the file in-place instead of writing to stdout.")
+	fs.BoolVar(&f.raw, "raw", false, "Encrypt a raw value passed via the --from-* flags instead of the whole secret object")
+	fs.StringVar(&f.secretName, "name", "", "Name of the sealed secret (required with --raw and default (strict) scope)")
+	fs.StringSliceVar(&f.fromFile, "from-file", nil, "(only with --raw) Secret items can be sourced from files. Pro-tip: you can use /dev/stdin to read pipe input. This flag tries to follow the same syntax as in kubectl")
+	fs.StringVar(&f.kubeconfig, "kubeconfig", "", "Path to a kube config. Only required if out-of-cluster")
+
+	fs.Var(&f.sealingScope, "scope", "Set the scope of the sealed secret: strict, namespace-wide, cluster-wide (defaults to strict). Mandatory for --raw, otherwise the 'sealedsecrets.bitnami.com/cluster-wide' and 'sealedsecrets.bitnami.com/namespace-wide' annotations on the input secret can be used to select the scope.")
+	fs.BoolVar(&f.reEncrypt, "rotate", false, "")
+	fs.BoolVar(&f.reEncrypt, "re-encrypt", false, "Re-encrypt the given sealed secret to use the latest cluster key.")
+	flag.CommandLine.MarkDeprecated("rotate", "please use --re-encrypt instead")
+
+	fs.BoolVar(&f.unseal, "recovery-unseal", false, "Decrypt a sealed secrets file obtained from stdin, using the private key passed with --recovery-private-key. Intended to be used in disaster recovery mode.")
+	fs.StringSliceVar(&f.privKeys, "recovery-private-key", nil, "Private key filename used by the --recovery-unseal command. Multiple files accepted either via comma separated list or by repetition of the flag. Either PEM encoded private keys or a backup of a json/yaml encoded k8s sealed-secret controller secret (and v1.List) are accepted. ")
+}
+
+func initFlags() *Flags {
+	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
 
 	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
 
@@ -99,6 +126,10 @@ func initFlags() {
 	klog.InitFlags(nil)
 	// Standard goflags (glog in particular)
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+
+	var flags Flags
+	flags.Bind(nil)
+	return &flags
 }
 
 func initUsualKubectlFlags(flagset *flag.FlagSet) *clientcmd.ConfigOverrides {
@@ -106,10 +137,6 @@ func initUsualKubectlFlags(flagset *flag.FlagSet) *clientcmd.ConfigOverrides {
 	kflags := clientcmd.RecommendedConfigOverrideFlags("")
 	clientcmd.BindOverrideFlags(&overrides, flagset, kflags)
 	return &overrides
-}
-
-func initClientFromFlags() clientcmd.ClientConfig {
-	return initClient(*kubeconfig, *globalOverrides, os.Stdin)
 }
 
 func initClient(kubeConfigPath string, cfgOverrides clientcmd.ConfigOverrides, r io.Reader) clientcmd.ClientConfig {
@@ -252,7 +279,7 @@ func openCertCluster(ctx context.Context, c corev1.CoreV1Interface, namespace, n
 	return cert, nil
 }
 
-func openCert(clientConfig clientcmd.ClientConfig, ctx context.Context, certURL string) (io.ReadCloser, error) {
+func openCert(flags *Flags, clientConfig clientcmd.ClientConfig, ctx context.Context, certURL string) (io.ReadCloser, error) {
 	if certURL != "" {
 		return openCertLocal(certURL)
 	}
@@ -266,13 +293,13 @@ func openCert(clientConfig clientcmd.ClientConfig, ctx context.Context, certURL 
 	if err != nil {
 		return nil, err
 	}
-	return openCertCluster(ctx, restClient, *controllerNs, *controllerName)
+	return openCertCluster(ctx, restClient, flags.controllerNs, flags.controllerName)
 }
 
 // Seal reads a k8s Secret resource parsed from an input reader by a given codec, encrypts all its secrets
 // with a given public key, using the name and namespace found in the input secret, unless explicitly overridden
 // by the overrideName and overrideNamespace arguments.
-func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string, namespaceFromClientConfig namespaceFn) error {
+func seal(flags *Flags, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string, namespaceFromClientConfig namespaceFn) error {
 	secret, err := readSecret(codecs.UniversalDecoder(), in)
 	if err != nil {
 		return err
@@ -321,7 +348,7 @@ func seal(in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pu
 	if err != nil {
 		return err
 	}
-	if err = sealedSecretOutput(out, codecs, ssecret); err != nil {
+	if err = sealedSecretOutput(out, flags, codecs, ssecret); err != nil {
 		return err
 	}
 	return nil
@@ -365,7 +392,7 @@ func validateSealedSecret(clientConfig clientcmd.ClientConfig, ctx context.Conte
 	return nil
 }
 
-func reEncryptSealedSecret(clientConfig clientcmd.ClientConfig, ctx context.Context, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, namespace, name string) error {
+func reEncryptSealedSecret(flags *Flags, clientConfig clientcmd.ClientConfig, ctx context.Context, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, namespace, name string) error {
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -410,18 +437,21 @@ func reEncryptSealedSecret(clientConfig clientcmd.ClientConfig, ctx context.Cont
 	ssecret.SetCreationTimestamp(metav1.Time{})
 	ssecret.SetDeletionTimestamp(nil)
 	ssecret.Generation = 0
-	return sealedSecretOutput(out, codecs, ssecret)
+	if err = sealedSecretOutput(out, flags, codecs, ssecret); err != nil {
+		return err
+	}
+	return nil
 }
 
-func resourceOutput(out io.Writer, codecs runtimeserializer.CodecFactory, gv runtime.GroupVersioner, obj runtime.Object) error {
+func resourceOutput(out io.Writer, flags *Flags, codecs runtimeserializer.CodecFactory, gv runtime.GroupVersioner, obj runtime.Object) error {
 	var contentType string
-	switch strings.ToLower(*outputFormat) {
+	switch strings.ToLower(flags.outputFormat) {
 	case "json", "":
 		contentType = runtime.ContentTypeJSON
 	case "yaml":
 		contentType = runtime.ContentTypeYAML
 	default:
-		return fmt.Errorf("unsupported output format: %s", *outputFormat)
+		return fmt.Errorf("unsupported output format: %s", flags.outputFormat)
 	}
 	prettyEnc, err := prettyEncoder(codecs, contentType, gv)
 	if err != nil {
@@ -436,8 +466,8 @@ func resourceOutput(out io.Writer, codecs runtimeserializer.CodecFactory, gv run
 	return nil
 }
 
-func sealedSecretOutput(out io.Writer, codecs runtimeserializer.CodecFactory, ssecret *ssv1alpha1.SealedSecret) error {
-	return resourceOutput(out, codecs, ssv1alpha1.SchemeGroupVersion, ssecret)
+func sealedSecretOutput(out io.Writer, flags *Flags, codecs runtimeserializer.CodecFactory, ssecret *ssv1alpha1.SealedSecret) error {
+	return resourceOutput(out, flags, codecs, ssv1alpha1.SchemeGroupVersion, ssecret)
 }
 
 func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1alpha1.SealedSecret, error) {
@@ -448,7 +478,7 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 	return &ss, nil
 }
 
-func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, namespaceFromClientConfig namespaceFn) error {
+func sealMergingInto(flags *Flags, in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, namespaceFromClientConfig namespaceFn) error {
 	// #nosec G304 -- should open user provided file
 	f, err := os.OpenFile(filename, os.O_RDWR, 0)
 	if err != nil {
@@ -468,7 +498,7 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 	}
 
 	var buf bytes.Buffer
-	if err := seal(in, &buf, codecs, pubKey, scope, allowEmptyData, orig.Name, orig.Namespace, namespaceFromClientConfig); err != nil {
+	if err := seal(flags, in, &buf, codecs, pubKey, scope, allowEmptyData, orig.Name, orig.Namespace, namespaceFromClientConfig); err != nil {
 		return err
 	}
 
@@ -493,7 +523,7 @@ func sealMergingInto(in io.Reader, filename string, codecs runtimeserializer.Cod
 
 	// updated sealed secret file in-place avoiding clobbering the file upon rendering errors.
 	var out bytes.Buffer
-	if err := sealedSecretOutput(&out, codecs, orig); err != nil {
+	if err := sealedSecretOutput(&out, flags, codecs, orig); err != nil {
 		return err
 	}
 
@@ -624,7 +654,7 @@ func readPrivKeys(filenames []string) (map[string]*rsa.PrivateKey, error) {
 	return res, nil
 }
 
-func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.CodecFactory, privKeyFilenames []string) error {
+func unsealSealedSecret(flags *Flags, w io.Writer, in io.Reader, codecs runtimeserializer.CodecFactory, privKeyFilenames []string) error {
 	privKeys, err := readPrivKeys(privKeyFilenames)
 	if err != nil {
 		return err
@@ -644,23 +674,23 @@ func unsealSealedSecret(w io.Writer, in io.Reader, codecs runtimeserializer.Code
 		return err
 	}
 
-	return resourceOutput(w, codecs, v1.SchemeGroupVersion, sec)
+	return resourceOutput(w, flags, codecs, v1.SchemeGroupVersion, sec)
 }
 
-func run(clientConfig clientcmd.ClientConfig, ctx context.Context, w io.Writer, inputFileName, outputFileName, secretName, controllerNs, controllerName, certURL string, printVersion, validateSecret, reEncrypt, dumpCert, raw, allowEmptyData bool, fromFile []string, mergeInto string, unseal bool, privKeys []string, namespaceFromClientConfig namespaceFn) (err error) {
-	if len(fromFile) != 0 && !raw {
+func run(w io.Writer, flags *Flags, clientConfig clientcmd.ClientConfig, ctx context.Context, namespaceFromClientConfig namespaceFn) (err error) {
+	if len(flags.fromFile) != 0 && !flags.raw {
 		return fmt.Errorf("--from-file requires --raw")
 	}
 
-	if printVersion {
+	if flags.printVersion {
 		fmt.Fprintf(w, "kubeseal version: %s\n", VERSION)
 		return nil
 	}
 
 	var input io.Reader = os.Stdin
-	if inputFileName != "" {
+	if flags.inputFileName != "" {
 		// #nosec G304 -- should open user provided file
-		f, err := os.Open(inputFileName)
+		f, err := os.Open(flags.inputFileName)
 		if err != nil {
 			return nil
 		}
@@ -668,7 +698,7 @@ func run(clientConfig clientcmd.ClientConfig, ctx context.Context, w io.Writer, 
 		defer f.Close()
 
 		input = f
-	} else if !raw && !dumpCert {
+	} else if !flags.raw && !flags.dumpCert {
 		if isatty.IsTerminal(os.Stdin.Fd()) {
 			fmt.Fprintf(os.Stderr, "(tty detected: expecting json/yaml k8s resource in stdin)\n")
 		}
@@ -676,17 +706,16 @@ func run(clientConfig clientcmd.ClientConfig, ctx context.Context, w io.Writer, 
 
 	// reEncrypt is the only "in-place" update subcommand. When the user only provides one file (the input file)
 	// we'll use the same file for output (see #405).
-	if reEncrypt && (outputFileName == "" && inputFileName != "") {
-		outputFileName = inputFileName
+	if flags.reEncrypt && (flags.outputFileName == "" && flags.inputFileName != "") {
+		flags.outputFileName = flags.inputFileName
 	}
-	if outputFileName != "" {
-		// TODO(mkm): get rid of these horrible global variables
-		if ext := filepath.Ext(outputFileName); ext == ".yaml" || ext == ".yml" {
-			*outputFormat = "yaml"
+	if flags.outputFileName != "" {
+		if ext := filepath.Ext(flags.outputFileName); ext == ".yaml" || ext == ".yml" {
+			flags.outputFormat = "yaml"
 		}
 
 		var f *renameio.PendingFile
-		f, err = renameio.TempFile("", outputFileName)
+		f, err = renameio.TempFile("", flags.outputFileName)
 		if err != nil {
 			return err
 		}
@@ -700,28 +729,28 @@ func run(clientConfig clientcmd.ClientConfig, ctx context.Context, w io.Writer, 
 		w = f
 	}
 
-	if unseal {
-		return unsealSealedSecret(w, input, scheme.Codecs, privKeys)
+	if flags.unseal {
+		return unsealSealedSecret(flags, w, input, scheme.Codecs, flags.privKeys)
 	}
-	if len(privKeys) != 0 && isatty.IsTerminal(os.Stderr.Fd()) {
+	if len(flags.privKeys) != 0 && isatty.IsTerminal(os.Stderr.Fd()) {
 		fmt.Fprintf(os.Stderr, "warning: ignoring --recovery-private-key because unseal command not chosen with --recovery-unseal\n")
 	}
 
-	if validateSecret {
-		return validateSealedSecret(clientConfig, ctx, input, controllerNs, controllerName)
+	if flags.validateSecret {
+		return validateSealedSecret(clientConfig, ctx, input, flags.controllerNs, flags.controllerName)
 	}
 
-	if reEncrypt {
-		return reEncryptSealedSecret(clientConfig, ctx, input, w, scheme.Codecs, controllerNs, controllerName)
+	if flags.reEncrypt {
+		return reEncryptSealedSecret(flags, clientConfig, ctx, input, w, scheme.Codecs, flags.controllerNs, flags.controllerName)
 	}
 
-	f, err := openCert(clientConfig, ctx, certURL)
+	f, err := openCert(flags, clientConfig, ctx, flags.certURL)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	if dumpCert {
+	if flags.dumpCert {
 		_, err := io.Copy(w, f)
 		return err
 	}
@@ -731,37 +760,37 @@ func run(clientConfig clientcmd.ClientConfig, ctx context.Context, w io.Writer, 
 		return err
 	}
 
-	if mergeInto != "" {
-		return sealMergingInto(input, mergeInto, scheme.Codecs, pubKey, sealingScope, allowEmptyData, namespaceFromClientConfig)
+	if flags.mergeInto != "" {
+		return sealMergingInto(flags, input, flags.mergeInto, scheme.Codecs, pubKey, flags.sealingScope, flags.allowEmptyData, namespaceFromClientConfig)
 	}
 
-	if raw {
+	if flags.raw {
 		var (
 			ns  string
 			err error
 		)
-		if sealingScope < ssv1alpha1.ClusterWideScope {
+		if flags.sealingScope < ssv1alpha1.ClusterWideScope {
 			ns, _, err = namespaceFromClientConfig()
 			if err != nil {
 				return err
 			}
 
 			if ns == "" {
-				return fmt.Errorf("must provide the --namespace flag with --raw and --scope %s", sealingScope.String())
+				return fmt.Errorf("must provide the --namespace flag with --raw and --scope %s", flags.sealingScope.String())
 			}
 
-			if secretName == "" && sealingScope < ssv1alpha1.NamespaceWideScope {
-				return fmt.Errorf("must provide the --name flag with --raw and --scope %s", sealingScope.String())
+			if flags.secretName == "" && flags.sealingScope < ssv1alpha1.NamespaceWideScope {
+				return fmt.Errorf("must provide the --name flag with --raw and --scope %s", flags.sealingScope.String())
 			}
 		}
 
 		var data []byte
-		if len(fromFile) > 0 {
-			if len(fromFile) > 1 {
+		if len(flags.fromFile) > 0 {
+			if len(flags.fromFile) > 1 {
 				return fmt.Errorf("must provide only one --from-file when encrypting a single item with --raw")
 			}
 
-			_, filename := parseFromFile(fromFile[0])
+			_, filename := parseFromFile(flags.fromFile[0])
 			// #nosec G304 -- should open user provided file
 			data, err = os.ReadFile(filename)
 		} else {
@@ -774,20 +803,20 @@ func run(clientConfig clientcmd.ClientConfig, ctx context.Context, w io.Writer, 
 			return err
 		}
 
-		return encryptSecretItem(w, secretName, ns, data, sealingScope, pubKey)
+		return encryptSecretItem(w, flags.secretName, ns, data, flags.sealingScope, pubKey)
 	}
 
-	return seal(input, w, scheme.Codecs, pubKey, sealingScope, allowEmptyData, secretName, "", namespaceFromClientConfig)
+	return seal(flags, input, w, scheme.Codecs, pubKey, flags.sealingScope, flags.allowEmptyData, flags.secretName, "", namespaceFromClientConfig)
 }
 
 func main() {
-	initFlags()
+	flags := initFlags()
 	flag.Parse()
 	_ = goflag.CommandLine.Parse([]string{})
 
-	clientConfig := initClientFromFlags()
+	clientConfig := initClient(flags.kubeconfig, *globalOverrides, os.Stdin)
 	namespaceFromClientConfig := initNamespaceFuncFromClient(clientConfig)
-	if err := run(clientConfig, context.Background(), os.Stdout, *inputFileName, *outputFileName, *secretName, *controllerNs, *controllerName, *certURL, *printVersion, *validateSecret, reEncrypt, *dumpCert, *raw, *allowEmptyData, *fromFile, *mergeInto, *unseal, *privKeys, namespaceFromClientConfig); err != nil {
+	if err := run(os.Stdout, flags, clientConfig, context.Background(), namespaceFromClientConfig); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}
