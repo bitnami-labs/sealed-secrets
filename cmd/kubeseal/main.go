@@ -11,6 +11,7 @@ import (
 	goflag "flag"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -118,18 +119,16 @@ func (f *Flags) Bind(fs *flag.FlagSet) {
 	fs.StringSliceVar(&f.privKeys, "recovery-private-key", nil, "Private key filename used by the --recovery-unseal command. Multiple files accepted either via comma separated list or by repetition of the flag. Either PEM encoded private keys or a backup of a json/yaml encoded k8s sealed-secret controller secret (and v1.List) are accepted. ")
 }
 
-func initUsualKubectlFlags(flagset *flag.FlagSet) *clientcmd.ConfigOverrides {
-	overrides := clientcmd.ConfigOverrides{}
+func initUsualKubectlFlags(overrides *clientcmd.ConfigOverrides, flagset *flag.FlagSet) {
 	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	clientcmd.BindOverrideFlags(&overrides, flagset, kflags)
-	return &overrides
+	clientcmd.BindOverrideFlags(overrides, flagset, kflags)
 }
 
-func initClient(kubeConfigPath string, cfgOverrides clientcmd.ConfigOverrides, r io.Reader) clientcmd.ClientConfig {
+func initClient(kubeConfigPath string, cfgOverrides *clientcmd.ConfigOverrides, r io.Reader) clientcmd.ClientConfig {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
 	loadingRules.ExplicitPath = kubeConfigPath
-	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, &cfgOverrides, r)
+	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, cfgOverrides, r)
 }
 
 func initNamespaceFuncFromClient(clientConfig clientcmd.ClientConfig) namespaceFn {
@@ -137,11 +136,15 @@ func initNamespaceFuncFromClient(clientConfig clientcmd.ClientConfig) namespaceF
 }
 
 func initConfigFromFlags() *Config {
+	var flags Flags
+	flags.Bind(nil)
+
 	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
 
 	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
 
-	overrides := initUsualKubectlFlags(flag.CommandLine)
+	var overrides clientcmd.ConfigOverrides
+	initUsualKubectlFlags(&overrides, flag.CommandLine)
 
 	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
 
@@ -150,9 +153,12 @@ func initConfigFromFlags() *Config {
 	// Standard goflags (glog in particular)
 	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 
-	var flags Flags
-	flags.Bind(nil)
-	clientConfig := initClient(flags.kubeconfig, *overrides, os.Stdin)
+	flag.Parse()
+	if err := goflag.CommandLine.Parse([]string{}); err != nil {
+		log.Fatalf("error: %v\n", err)
+	}
+
+	clientConfig := initClient(flags.kubeconfig, &overrides, os.Stdin)
 	config := Config{
 		flags:          &flags,
 		clientConfig:   clientConfig,
@@ -824,9 +830,6 @@ func run(w io.Writer, cfg *Config) (err error) {
 
 func main() {
 	cfg := initConfigFromFlags()
-	flag.Parse()
-	_ = goflag.CommandLine.Parse([]string{})
-
 	if err := run(os.Stdout, cfg); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
