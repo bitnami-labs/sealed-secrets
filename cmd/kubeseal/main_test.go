@@ -701,7 +701,7 @@ func TestVersion(t *testing.T) {
 }
 
 func TestMainError(t *testing.T) {
-	const badFileName = "/?this/file/cannot/possibly/exist/can/it?"
+	badFileName := filepath.Join("this", "file", "cannot", "possibly", "exist", "can", "it?")
 	flags := Flags{certURL: badFileName}
 
 	err := run(io.Discard, testConfig(&flags))
