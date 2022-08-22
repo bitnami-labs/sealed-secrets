@@ -52,8 +52,6 @@ const (
 )
 
 var (
-	globalOverrides *clientcmd.ConfigOverrides // config overrides from flags
-
 	// VERSION set from Makefile
 	VERSION = buildinfo.DefaultVersion
 )
@@ -80,6 +78,13 @@ type Flags struct {
 	reEncrypt      bool
 	unseal         bool
 	privKeys       []string
+}
+
+type Config struct {
+	flags          *Flags
+	clientConfig   clientcmd.ClientConfig
+	ctx            context.Context
+	solveNamespace namespaceFn
 }
 
 func (f *Flags) Bind(fs *flag.FlagSet) {
@@ -113,25 +118,6 @@ func (f *Flags) Bind(fs *flag.FlagSet) {
 	fs.StringSliceVar(&f.privKeys, "recovery-private-key", nil, "Private key filename used by the --recovery-unseal command. Multiple files accepted either via comma separated list or by repetition of the flag. Either PEM encoded private keys or a backup of a json/yaml encoded k8s sealed-secret controller secret (and v1.List) are accepted. ")
 }
 
-func initFlags() *Flags {
-	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
-
-	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
-
-	globalOverrides = initUsualKubectlFlags(flag.CommandLine)
-
-	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
-
-	// add klog flags to goflags flagset
-	klog.InitFlags(nil)
-	// Standard goflags (glog in particular)
-	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
-
-	var flags Flags
-	flags.Bind(nil)
-	return &flags
-}
-
 func initUsualKubectlFlags(flagset *flag.FlagSet) *clientcmd.ConfigOverrides {
 	overrides := clientcmd.ConfigOverrides{}
 	kflags := clientcmd.RecommendedConfigOverrideFlags("")
@@ -148,6 +134,32 @@ func initClient(kubeConfigPath string, cfgOverrides clientcmd.ConfigOverrides, r
 
 func initNamespaceFuncFromClient(clientConfig clientcmd.ClientConfig) namespaceFn {
 	return func() (string, bool, error) { return clientConfig.Namespace() }
+}
+
+func initConfigFromFlags() *Config {
+	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
+
+	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
+
+	overrides := initUsualKubectlFlags(flag.CommandLine)
+
+	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
+
+	// add klog flags to goflags flagset
+	klog.InitFlags(nil)
+	// Standard goflags (glog in particular)
+	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
+
+	var flags Flags
+	flags.Bind(nil)
+	clientConfig := initClient(flags.kubeconfig, *overrides, os.Stdin)
+	config := Config{
+		flags:          &flags,
+		clientConfig:   clientConfig,
+		ctx:            context.Background(),
+		solveNamespace: initNamespaceFuncFromClient(clientConfig),
+	}
+	return &config
 }
 
 func parseKey(r io.Reader) (*rsa.PublicKey, error) {
@@ -279,12 +291,12 @@ func openCertCluster(ctx context.Context, c corev1.CoreV1Interface, namespace, n
 	return cert, nil
 }
 
-func openCert(flags *Flags, clientConfig clientcmd.ClientConfig, ctx context.Context, certURL string) (io.ReadCloser, error) {
+func openCert(cfg *Config, certURL string) (io.ReadCloser, error) {
 	if certURL != "" {
 		return openCertLocal(certURL)
 	}
 
-	conf, err := clientConfig.ClientConfig()
+	conf, err := cfg.clientConfig.ClientConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -293,13 +305,13 @@ func openCert(flags *Flags, clientConfig clientcmd.ClientConfig, ctx context.Con
 	if err != nil {
 		return nil, err
 	}
-	return openCertCluster(ctx, restClient, flags.controllerNs, flags.controllerName)
+	return openCertCluster(cfg.ctx, restClient, cfg.flags.controllerNs, cfg.flags.controllerName)
 }
 
 // Seal reads a k8s Secret resource parsed from an input reader by a given codec, encrypts all its secrets
 // with a given public key, using the name and namespace found in the input secret, unless explicitly overridden
 // by the overrideName and overrideNamespace arguments.
-func seal(flags *Flags, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string, namespaceFromClientConfig namespaceFn) error {
+func seal(cfg *Config, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string) error {
 	secret, err := readSecret(codecs.UniversalDecoder(), in)
 	if err != nil {
 		return err
@@ -326,7 +338,7 @@ func seal(flags *Flags, in io.Reader, out io.Writer, codecs runtimeserializer.Co
 	}
 
 	if ssv1alpha1.SecretScope(secret) != ssv1alpha1.ClusterWideScope && secret.GetNamespace() == "" {
-		ns, _, err := namespaceFromClientConfig()
+		ns, _, err := cfg.solveNamespace()
 		if clientcmd.IsEmptyConfig(err) {
 			return fmt.Errorf("input secret has no namespace and cannot infer the namespace automatically when no kube config is available")
 		} else if err != nil {
@@ -348,14 +360,14 @@ func seal(flags *Flags, in io.Reader, out io.Writer, codecs runtimeserializer.Co
 	if err != nil {
 		return err
 	}
-	if err = sealedSecretOutput(out, flags, codecs, ssecret); err != nil {
+	if err = sealedSecretOutput(out, cfg.flags, codecs, ssecret); err != nil {
 		return err
 	}
 	return nil
 }
 
-func validateSealedSecret(clientConfig clientcmd.ClientConfig, ctx context.Context, in io.Reader, namespace, name string) error {
-	conf, err := clientConfig.ClientConfig()
+func validateSealedSecret(cfg *Config, in io.Reader, namespace, name string) error {
+	conf, err := cfg.clientConfig.ClientConfig()
 	if err != nil {
 		return err
 	}
@@ -363,7 +375,7 @@ func validateSealedSecret(clientConfig clientcmd.ClientConfig, ctx context.Conte
 	if err != nil {
 		return err
 	}
-	portName, err := getServicePortName(ctx, restClient, namespace, name)
+	portName, err := getServicePortName(cfg.ctx, restClient, namespace, name)
 	if err != nil {
 		return err
 	}
@@ -381,7 +393,7 @@ func validateSealedSecret(clientConfig clientcmd.ClientConfig, ctx context.Conte
 		Suffix("/v1/verify")
 
 	req.Body(content)
-	res := req.Do(ctx)
+	res := req.Do(cfg.ctx)
 	if err := res.Error(); err != nil {
 		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
 			return fmt.Errorf("unable to decrypt sealed secret")
@@ -392,8 +404,8 @@ func validateSealedSecret(clientConfig clientcmd.ClientConfig, ctx context.Conte
 	return nil
 }
 
-func reEncryptSealedSecret(flags *Flags, clientConfig clientcmd.ClientConfig, ctx context.Context, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, namespace, name string) error {
-	conf, err := clientConfig.ClientConfig()
+func reEncryptSealedSecret(cfg *Config, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, namespace, name string) error {
+	conf, err := cfg.clientConfig.ClientConfig()
 	if err != nil {
 		return err
 	}
@@ -401,7 +413,7 @@ func reEncryptSealedSecret(flags *Flags, clientConfig clientcmd.ClientConfig, ct
 	if err != nil {
 		return err
 	}
-	portName, err := getServicePortName(ctx, restClient, namespace, name)
+	portName, err := getServicePortName(cfg.ctx, restClient, namespace, name)
 	if err != nil {
 		return err
 	}
@@ -419,7 +431,7 @@ func reEncryptSealedSecret(flags *Flags, clientConfig clientcmd.ClientConfig, ct
 		Suffix("/v1/rotate")
 
 	req.Body(content)
-	res := req.Do(ctx)
+	res := req.Do(cfg.ctx)
 	if err := res.Error(); err != nil {
 		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
 			return fmt.Errorf("unable to rotate secret")
@@ -437,7 +449,7 @@ func reEncryptSealedSecret(flags *Flags, clientConfig clientcmd.ClientConfig, ct
 	ssecret.SetCreationTimestamp(metav1.Time{})
 	ssecret.SetDeletionTimestamp(nil)
 	ssecret.Generation = 0
-	if err = sealedSecretOutput(out, flags, codecs, ssecret); err != nil {
+	if err = sealedSecretOutput(out, cfg.flags, codecs, ssecret); err != nil {
 		return err
 	}
 	return nil
@@ -478,7 +490,7 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 	return &ss, nil
 }
 
-func sealMergingInto(flags *Flags, in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, namespaceFromClientConfig namespaceFn) error {
+func sealMergingInto(cfg *Config, in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool) error {
 	// #nosec G304 -- should open user provided file
 	f, err := os.OpenFile(filename, os.O_RDWR, 0)
 	if err != nil {
@@ -498,7 +510,7 @@ func sealMergingInto(flags *Flags, in io.Reader, filename string, codecs runtime
 	}
 
 	var buf bytes.Buffer
-	if err := seal(flags, in, &buf, codecs, pubKey, scope, allowEmptyData, orig.Name, orig.Namespace, namespaceFromClientConfig); err != nil {
+	if err := seal(cfg, in, &buf, codecs, pubKey, scope, allowEmptyData, orig.Name, orig.Namespace); err != nil {
 		return err
 	}
 
@@ -523,7 +535,7 @@ func sealMergingInto(flags *Flags, in io.Reader, filename string, codecs runtime
 
 	// updated sealed secret file in-place avoiding clobbering the file upon rendering errors.
 	var out bytes.Buffer
-	if err := sealedSecretOutput(&out, flags, codecs, orig); err != nil {
+	if err := sealedSecretOutput(&out, cfg.flags, codecs, orig); err != nil {
 		return err
 	}
 
@@ -677,7 +689,8 @@ func unsealSealedSecret(flags *Flags, w io.Writer, in io.Reader, codecs runtimes
 	return resourceOutput(w, flags, codecs, v1.SchemeGroupVersion, sec)
 }
 
-func run(w io.Writer, flags *Flags, clientConfig clientcmd.ClientConfig, ctx context.Context, namespaceFromClientConfig namespaceFn) (err error) {
+func run(w io.Writer, cfg *Config) (err error) {
+	flags := cfg.flags
 	if len(flags.fromFile) != 0 && !flags.raw {
 		return fmt.Errorf("--from-file requires --raw")
 	}
@@ -737,14 +750,14 @@ func run(w io.Writer, flags *Flags, clientConfig clientcmd.ClientConfig, ctx con
 	}
 
 	if flags.validateSecret {
-		return validateSealedSecret(clientConfig, ctx, input, flags.controllerNs, flags.controllerName)
+		return validateSealedSecret(cfg, input, flags.controllerNs, flags.controllerName)
 	}
 
 	if flags.reEncrypt {
-		return reEncryptSealedSecret(flags, clientConfig, ctx, input, w, scheme.Codecs, flags.controllerNs, flags.controllerName)
+		return reEncryptSealedSecret(cfg, input, w, scheme.Codecs, flags.controllerNs, flags.controllerName)
 	}
 
-	f, err := openCert(flags, clientConfig, ctx, flags.certURL)
+	f, err := openCert(cfg, flags.certURL)
 	if err != nil {
 		return err
 	}
@@ -761,7 +774,7 @@ func run(w io.Writer, flags *Flags, clientConfig clientcmd.ClientConfig, ctx con
 	}
 
 	if flags.mergeInto != "" {
-		return sealMergingInto(flags, input, flags.mergeInto, scheme.Codecs, pubKey, flags.sealingScope, flags.allowEmptyData, namespaceFromClientConfig)
+		return sealMergingInto(cfg, input, flags.mergeInto, scheme.Codecs, pubKey, flags.sealingScope, flags.allowEmptyData)
 	}
 
 	if flags.raw {
@@ -770,7 +783,7 @@ func run(w io.Writer, flags *Flags, clientConfig clientcmd.ClientConfig, ctx con
 			err error
 		)
 		if flags.sealingScope < ssv1alpha1.ClusterWideScope {
-			ns, _, err = namespaceFromClientConfig()
+			ns, _, err = cfg.solveNamespace()
 			if err != nil {
 				return err
 			}
@@ -806,17 +819,15 @@ func run(w io.Writer, flags *Flags, clientConfig clientcmd.ClientConfig, ctx con
 		return encryptSecretItem(w, flags.secretName, ns, data, flags.sealingScope, pubKey)
 	}
 
-	return seal(flags, input, w, scheme.Codecs, pubKey, flags.sealingScope, flags.allowEmptyData, flags.secretName, "", namespaceFromClientConfig)
+	return seal(cfg, input, w, scheme.Codecs, pubKey, flags.sealingScope, flags.allowEmptyData, flags.secretName, "")
 }
 
 func main() {
-	flags := initFlags()
+	cfg := initConfigFromFlags()
 	flag.Parse()
 	_ = goflag.CommandLine.Parse([]string{})
 
-	clientConfig := initClient(flags.kubeconfig, *globalOverrides, os.Stdin)
-	namespaceFromClientConfig := initNamespaceFuncFromClient(clientConfig)
-	if err := run(os.Stdout, flags, clientConfig, context.Background(), namespaceFromClientConfig); err != nil {
+	if err := run(os.Stdout, cfg); err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
 		os.Exit(1)
 	}

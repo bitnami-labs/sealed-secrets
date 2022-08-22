@@ -124,8 +124,17 @@ func TestParseKey(t *testing.T) {
 	}
 }
 
+func testConfig(flags *Flags) *Config {
+	clientConfig := testClientConfig()
+	return &Config{
+		flags:          flags,
+		clientConfig:   clientConfig,
+		ctx:            context.Background(),
+		solveNamespace: initNamespaceFuncFromClient(clientConfig),
+	}
+}
+
 func TestOpenCertFile(t *testing.T) {
-	ctx := context.Background()
 	var flags Flags
 	certFile := tmpfile(t, []byte(testCert))
 
@@ -143,7 +152,7 @@ func TestOpenCertFile(t *testing.T) {
 	}
 
 	for _, certURL := range testCases {
-		f, err := openCert(&flags, testClientConfig(), ctx, certURL)
+		f, err := openCert(testConfig(&flags), certURL)
 		if err != nil {
 			t.Fatalf("Error reading test cert file: %v", err)
 		}
@@ -334,9 +343,8 @@ func TestSeal(t *testing.T) {
 
 			t.Logf("input is: %s", inbuf.String())
 
-			namespaceFromClientConfig := initNamespaceFuncFromClient(testClientConfig())
 			outbuf := bytes.Buffer{}
-			if err := seal(&flags, &inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, "", "", namespaceFromClientConfig); err != nil {
+			if err := seal(testConfig(&flags), &inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, "", ""); err != nil {
 				t.Fatalf("seal() returned error: %v", err)
 			}
 
@@ -444,9 +452,8 @@ func mkTestSecret(t *testing.T, key, value string, opts ...mkTestSecretOpt) []by
 func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string, opts ...mkTestSecretOpt) []byte {
 	var flags Flags
 	inbuf := bytes.NewBuffer(mkTestSecret(t, key, value, opts...))
-	namespaceFromClientConfig := initNamespaceFuncFromClient(testClientConfig())
 	var outbuf bytes.Buffer
-	if err := seal(&flags, inbuf, &outbuf, scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, "", "", namespaceFromClientConfig); err != nil {
+	if err := seal(testConfig(&flags), inbuf, &outbuf, scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, "", ""); err != nil {
 		t.Fatalf("seal() returned error: %v", err)
 	}
 
@@ -593,9 +600,8 @@ func TestMergeInto(t *testing.T) {
 		}
 		f.Close()
 
-		namespaceFromClientConfig := initNamespaceFuncFromClient(testClientConfig())
 		buf := bytes.NewBuffer(newSecret)
-		if err := sealMergingInto(&flags, buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, namespaceFromClientConfig); err != nil {
+		if err := sealMergingInto(testConfig(&flags), buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false); err != nil {
 			t.Fatal(err)
 		}
 
@@ -681,13 +687,10 @@ func TestMergeInto(t *testing.T) {
 }
 
 func TestVersion(t *testing.T) {
-	ctx := context.Background()
 	var buf strings.Builder
-	testClient := testClientConfig()
-	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
 	flags := Flags{printVersion: true}
 
-	err := run(&buf, &flags, testClient, ctx, namespaceFromClientConfig)
+	err := run(&buf, testConfig(&flags))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -698,13 +701,10 @@ func TestVersion(t *testing.T) {
 }
 
 func TestMainError(t *testing.T) {
-	ctx := context.Background()
-	testClient := testClientConfig()
-	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
 	const badFileName = "/?this/file/cannot/possibly/exist/can/it?"
 	flags := Flags{certURL: badFileName}
 
-	err := run(ioutil.Discard, &flags, testClient, ctx, namespaceFromClientConfig)
+	err := run(ioutil.Discard, testConfig(&flags))
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
 	}
@@ -846,7 +846,6 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 	defer os.RemoveAll(dataFile)
 
 	fromFile := []string{dataFile}
-	ctx := context.Background()
 	var buf bytes.Buffer
 	flags := Flags{
 		sealingScope: scope,
@@ -855,8 +854,10 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 		raw:          true,
 		fromFile:     fromFile,
 	}
+	cfg := testConfig(&flags)
+	cfg.solveNamespace = namespaceFromClientConfig
 
-	if err := run(&buf, &flags, testClientConfig(), ctx, namespaceFromClientConfig); err != nil {
+	if err := run(&buf, cfg); err != nil {
 		return "", err
 	}
 
@@ -889,17 +890,14 @@ data:
 	out.Close()
 	defer os.RemoveAll(out.Name())
 
-	ctx := context.Background()
 	var buf bytes.Buffer
-	testClient := testClientConfig()
-	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
 	flags := Flags{
 		inputFileName:  in.Name(),
 		outputFileName: out.Name(),
 		certURL:        certFilename,
 	}
 
-	if err := run(&buf, &flags, testClient, ctx, namespaceFromClientConfig); err != nil {
+	if err := run(&buf, testConfig(&flags)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -945,17 +943,14 @@ metadata:
 	out.Close()
 	defer os.RemoveAll(out.Name())
 
-	ctx := context.Background()
 	var buf bytes.Buffer
-	testClient := testClientConfig()
-	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
 	flags := Flags{
 		inputFileName:  in.Name(),
 		outputFileName: out.Name(),
 		certURL:        certFilename,
 	}
 
-	if err := run(&buf, &flags, testClient, ctx, namespaceFromClientConfig); err == nil {
+	if err := run(&buf, testConfig(&flags)); err == nil {
 		t.Errorf("expecting error")
 	}
 
