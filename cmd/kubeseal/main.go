@@ -11,7 +11,6 @@ import (
 	goflag "flag"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -135,6 +134,11 @@ func initNamespaceFuncFromClient(clientConfig clientcmd.ClientConfig) namespaceF
 	return func() (string, bool, error) { return clientConfig.Namespace() }
 }
 
+func logFatal(err error) {
+	fmt.Fprintf(os.Stderr, "error: %v\n", err)
+	os.Exit(1)
+}
+
 func initConfigFromFlags() *Config {
 	var flags Flags
 	flags.Bind(nil)
@@ -155,7 +159,7 @@ func initConfigFromFlags() *Config {
 
 	flag.Parse()
 	if err := goflag.CommandLine.Parse([]string{}); err != nil {
-		log.Fatalf("error: %v\n", err)
+		logFatal(err)
 	}
 
 	clientConfig := initClient(flags.kubeconfig, &overrides, os.Stdin)
@@ -831,7 +835,6 @@ func run(w io.Writer, cfg *Config) (err error) {
 func main() {
 	cfg := initConfigFromFlags()
 	if err := run(os.Stdout, cfg); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
+		logFatal(err)
 	}
 }
