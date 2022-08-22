@@ -9,7 +9,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -704,7 +703,7 @@ func TestMainError(t *testing.T) {
 	const badFileName = "/?this/file/cannot/possibly/exist/can/it?"
 	flags := Flags{certURL: badFileName}
 
-	err := run(ioutil.Discard, testConfig(&flags))
+	err := run(io.Discard, testConfig(&flags))
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
 	}
