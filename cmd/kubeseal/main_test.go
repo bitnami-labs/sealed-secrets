@@ -95,17 +95,18 @@ func tmpfile(t *testing.T, contents []byte) string {
 
 func testConfigOverrides() *clientcmd.ConfigOverrides {
 	flagset := flag.NewFlagSet("test", flag.PanicOnError)
-	testOverrides := initUsualKubectlFlags(flagset)
+	var overrides clientcmd.ConfigOverrides
+	initUsualKubectlFlags(&overrides, flagset)
 	err := flagset.Parse([]string{"-n", "default"})
 	if err != nil {
 		fmt.Printf("flagset parse err: %v\n", err)
 		os.Exit(1)
 	}
-	return testOverrides
+	return &overrides
 }
 
 func testClientConfig() clientcmd.ClientConfig {
-	return initClient("", *testConfigOverrides(), os.Stdin)
+	return initClient("", testConfigOverrides(), os.Stdin)
 }
 
 func TestParseKey(t *testing.T) {
