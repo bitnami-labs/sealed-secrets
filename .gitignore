@@ -23,7 +23,10 @@
 
 /controller.image
 /controller.image.*
+/kubeseal.image
+/kubeseal.image.*
 /pushed.controller.image.*
+/pushed.kubeseal.image.*
 /controller-manifest-*
 /push-controller-image
 /*-static
@@ -34,6 +37,7 @@
 /docker/controller
 *.iml
 .idea
+gentmp/
 
 # GoReleaser output dir
 dist/

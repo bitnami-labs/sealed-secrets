@@ -99,7 +99,9 @@ jobs:
 
     - name: Distroless verify
       run: |
-        cosign verify --key /dev/stdin "$(grep FROM Dockerfile | awk '{print $2}')" <<EOF
+        diff <(grep FROM docker/kubeseal.Dockerfile | awk '{print $2}') \
+             <(grep FROM docker/controller.Dockerfile | awk '{print $2}')
+        cosign verify --key /dev/stdin "$(grep FROM docker/controller.Dockerfile | awk '{print $2}')" <<EOF
         -----BEGIN PUBLIC KEY-----
         MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWZzVzkb8A+DbgDpaJId/bOmV8n7Q
         OqxYbK0Iro6GzSmOzxkn+N2AKawLyXi84WSwJQBK//psATakCgAQKkNTAA==
