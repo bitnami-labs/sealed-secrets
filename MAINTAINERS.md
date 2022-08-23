@@ -7,6 +7,7 @@
 | Alvaro Neira Ayuso | [alvneiayu](https://github.com/alvneiayu)           | [VMware](https://www.github.com/vmware/) |
 | Alejandro Moreno   | [alemorcuq](https://github.com/alemorcuq)           | [VMware](https://www.github.com/vmware/) |
 | Alfredo Garcia     | [agarcia-oss](https://github.com/agarcia-oss)       | [VMware](https://www.github.com/vmware/) |
+| Jose Vazquez       | [josvazg](https://github.com/josvazg)               | [VMware](https://www.github.com/vmware/) |
 
 ## Emeritus Maintainers
 
