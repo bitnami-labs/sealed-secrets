@@ -678,8 +678,8 @@ func readPrivKeys(filenames []string) (map[string]*rsa.PrivateKey, error) {
 	return res, nil
 }
 
-func unsealSealedSecret(flags *Flags, w io.Writer, in io.Reader, codecs runtimeserializer.CodecFactory, privKeyFilenames []string) error {
-	privKeys, err := readPrivKeys(privKeyFilenames)
+func unsealSealedSecret(flags *Flags, w io.Writer, in io.Reader, codecs runtimeserializer.CodecFactory) error {
+	privKeys, err := readPrivKeys(flags.privKeys)
 	if err != nil {
 		return err
 	}
@@ -755,7 +755,7 @@ func run(w io.Writer, cfg *Config) (err error) {
 	}
 
 	if flags.unseal {
-		return unsealSealedSecret(flags, w, input, scheme.Codecs, flags.privKeys)
+		return unsealSealedSecret(flags, w, input, scheme.Codecs)
 	}
 	if len(flags.privKeys) != 0 && isatty.IsTerminal(os.Stderr.Fd()) {
 		fmt.Fprintf(os.Stderr, "warning: ignoring --recovery-private-key because unseal command not chosen with --recovery-unseal\n")

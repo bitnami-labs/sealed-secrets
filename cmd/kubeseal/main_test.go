@@ -486,8 +486,6 @@ func newTestKeyPair(t *testing.T) (*rsa.PublicKey, map[string]*rsa.PrivateKey) {
 }
 
 func TestUnseal(t *testing.T) {
-	var flags Flags
-
 	pubKey, privKeys := newTestKeyPair(t)
 	pkFile, err := os.CreateTemp("", "")
 	if err != nil {
@@ -513,7 +511,8 @@ func TestUnseal(t *testing.T) {
 	ss := mkTestSealedSecret(t, pubKey, secretItemKey, secretItemValue)
 
 	var buf bytes.Buffer
-	if err := unsealSealedSecret(&flags, &buf, bytes.NewBuffer(ss), scheme.Codecs, []string{pkFile.Name()}); err != nil {
+	flags := Flags{privKeys: []string{pkFile.Name()}}
+	if err := unsealSealedSecret(&flags, &buf, bytes.NewBuffer(ss), scheme.Codecs); err != nil {
 		t.Fatal(err)
 	}
 
@@ -528,8 +527,6 @@ func TestUnseal(t *testing.T) {
 }
 
 func TestUnsealList(t *testing.T) {
-	var flags Flags
-
 	pubKey, privKeys := newTestKeyPair(t)
 	pkFile, err := os.CreateTemp("", "")
 	if err != nil {
@@ -572,7 +569,8 @@ func TestUnsealList(t *testing.T) {
 	ss := mkTestSealedSecret(t, pubKey, secretItemKey, secretItemValue)
 
 	var buf bytes.Buffer
-	if err := unsealSealedSecret(&flags, &buf, bytes.NewBuffer(ss), scheme.Codecs, []string{pkFile.Name()}); err != nil {
+	flags := Flags{privKeys: []string{pkFile.Name()}}
+	if err := unsealSealedSecret(&flags, &buf, bytes.NewBuffer(ss), scheme.Codecs); err != nil {
 		t.Fatal(err)
 	}
 
