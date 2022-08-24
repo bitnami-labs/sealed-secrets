@@ -95,17 +95,18 @@ func tmpfile(t *testing.T, contents []byte) string {
 
 func testConfigOverrides() *clientcmd.ConfigOverrides {
 	flagset := flag.NewFlagSet("test", flag.PanicOnError)
-	testOverrides := initUsualKubectlFlags(flagset)
+	var overrides clientcmd.ConfigOverrides
+	initUsualKubectlFlags(&overrides, flagset)
 	err := flagset.Parse([]string{"-n", "default"})
 	if err != nil {
 		fmt.Printf("flagset parse err: %v\n", err)
 		os.Exit(1)
 	}
-	return testOverrides
+	return &overrides
 }
 
 func testClientConfig() clientcmd.ClientConfig {
-	return initClient("", *testConfigOverrides(), os.Stdin)
+	return initClient("", testConfigOverrides(), os.Stdin)
 }
 
 func TestParseKey(t *testing.T) {
@@ -123,8 +124,18 @@ func TestParseKey(t *testing.T) {
 	}
 }
 
+func testConfig(flags *Flags) *Config {
+	clientConfig := testClientConfig()
+	return &Config{
+		flags:          flags,
+		clientConfig:   clientConfig,
+		ctx:            context.Background(),
+		solveNamespace: initNamespaceFuncFromClient(clientConfig),
+	}
+}
+
 func TestOpenCertFile(t *testing.T) {
-	ctx := context.Background()
+	var flags Flags
 	certFile := tmpfile(t, []byte(testCert))
 
 	s := httptest.NewServer(http.FileServer(http.Dir(filepath.Dir(certFile))))
@@ -141,7 +152,7 @@ func TestOpenCertFile(t *testing.T) {
 	}
 
 	for _, certURL := range testCases {
-		f, err := openCert(testClientConfig(), ctx, certURL)
+		f, err := openCert(testConfig(&flags), certURL)
 		if err != nil {
 			t.Fatalf("Error reading test cert file: %v", err)
 		}
@@ -318,6 +329,7 @@ func TestSeal(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
+		var flags Flags
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
 			if !ok {
@@ -331,9 +343,8 @@ func TestSeal(t *testing.T) {
 
 			t.Logf("input is: %s", inbuf.String())
 
-			namespaceFromClientConfig := initNamespaceFuncFromClient(testClientConfig())
 			outbuf := bytes.Buffer{}
-			if err := seal(&inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, "", "", namespaceFromClientConfig); err != nil {
+			if err := seal(testConfig(&flags), &inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, "", ""); err != nil {
 				t.Fatalf("seal() returned error: %v", err)
 			}
 
@@ -439,10 +450,10 @@ func mkTestSecret(t *testing.T, key, value string, opts ...mkTestSecretOpt) []by
 }
 
 func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string, opts ...mkTestSecretOpt) []byte {
+	var flags Flags
 	inbuf := bytes.NewBuffer(mkTestSecret(t, key, value, opts...))
-	namespaceFromClientConfig := initNamespaceFuncFromClient(testClientConfig())
 	var outbuf bytes.Buffer
-	if err := seal(inbuf, &outbuf, scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, "", "", namespaceFromClientConfig); err != nil {
+	if err := seal(testConfig(&flags), inbuf, &outbuf, scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, "", ""); err != nil {
 		t.Fatalf("seal() returned error: %v", err)
 	}
 
@@ -500,7 +511,8 @@ func TestUnseal(t *testing.T) {
 	ss := mkTestSealedSecret(t, pubKey, secretItemKey, secretItemValue)
 
 	var buf bytes.Buffer
-	if err := unsealSealedSecret(&buf, bytes.NewBuffer(ss), scheme.Codecs, []string{pkFile.Name()}); err != nil {
+	flags := Flags{privKeys: []string{pkFile.Name()}}
+	if err := unsealSealedSecret(&flags, &buf, bytes.NewBuffer(ss), scheme.Codecs); err != nil {
 		t.Fatal(err)
 	}
 
@@ -557,7 +569,8 @@ func TestUnsealList(t *testing.T) {
 	ss := mkTestSealedSecret(t, pubKey, secretItemKey, secretItemValue)
 
 	var buf bytes.Buffer
-	if err := unsealSealedSecret(&buf, bytes.NewBuffer(ss), scheme.Codecs, []string{pkFile.Name()}); err != nil {
+	flags := Flags{privKeys: []string{pkFile.Name()}}
+	if err := unsealSealedSecret(&flags, &buf, bytes.NewBuffer(ss), scheme.Codecs); err != nil {
 		t.Fatal(err)
 	}
 
@@ -572,6 +585,7 @@ func TestUnsealList(t *testing.T) {
 }
 
 func TestMergeInto(t *testing.T) {
+	var flags Flags
 	pubKey, privKeys := newTestKeyPair(t)
 
 	merge := func(t *testing.T, newSecret, oldSealedSecret []byte) *ssv1alpha1.SealedSecret {
@@ -584,9 +598,8 @@ func TestMergeInto(t *testing.T) {
 		}
 		f.Close()
 
-		namespaceFromClientConfig := initNamespaceFuncFromClient(testClientConfig())
 		buf := bytes.NewBuffer(newSecret)
-		if err := sealMergingInto(buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, namespaceFromClientConfig); err != nil {
+		if err := sealMergingInto(testConfig(&flags), buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false); err != nil {
 			t.Fatal(err)
 		}
 
@@ -672,11 +685,10 @@ func TestMergeInto(t *testing.T) {
 }
 
 func TestVersion(t *testing.T) {
-	ctx := context.Background()
 	var buf strings.Builder
-	testClient := testClientConfig()
-	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
-	err := run(testClient, ctx, &buf, "", "", "", "", "", "", true, false, false, false, false, false, nil, "", false, nil, namespaceFromClientConfig)
+	flags := Flags{printVersion: true}
+
+	err := run(&buf, testConfig(&flags))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -687,12 +699,10 @@ func TestVersion(t *testing.T) {
 }
 
 func TestMainError(t *testing.T) {
-	ctx := context.Background()
 	badFileName := filepath.Join("this", "file", "cannot", "possibly", "exist", "can", "it?")
-	testClient := testClientConfig()
-	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
-	err := run(testClient, ctx, io.Discard, "", "", "", "", "", badFileName, false, false, false, false, false, false, nil, "", false, nil, namespaceFromClientConfig)
+	flags := Flags{certURL: badFileName}
 
+	err := run(io.Discard, testConfig(&flags))
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
 	}
@@ -827,11 +837,6 @@ func TestRaw(t *testing.T) {
 func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope ssv1alpha1.SealingScope) (string, error) {
 	namespaceFromClientConfig := func() (string, bool, error) { return secretNS, false, nil }
 
-	// sadly, sealingscope is global
-	// TODO(mkm): refactor this mess
-	defer func(s ssv1alpha1.SealingScope) { sealingScope = s }(sealingScope)
-	sealingScope = scope
-
 	dataFile, err := writeTempFile([]byte(secretValue))
 	if err != nil {
 		return "", err
@@ -839,10 +844,18 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 	defer os.RemoveAll(dataFile)
 
 	fromFile := []string{dataFile}
-
-	ctx := context.Background()
 	var buf bytes.Buffer
-	if err := run(testClientConfig(), ctx, &buf, "", "", secretName, "", "", certFilename, false, false, false, false, true, false, fromFile, "", false, nil, namespaceFromClientConfig); err != nil {
+	flags := Flags{
+		sealingScope: scope,
+		secretName:   secretName,
+		certURL:      certFilename,
+		raw:          true,
+		fromFile:     fromFile,
+	}
+	cfg := testConfig(&flags)
+	cfg.solveNamespace = namespaceFromClientConfig
+
+	if err := run(&buf, cfg); err != nil {
 		return "", err
 	}
 
@@ -875,11 +888,14 @@ data:
 	out.Close()
 	defer os.RemoveAll(out.Name())
 
-	ctx := context.Background()
 	var buf bytes.Buffer
-	testClient := testClientConfig()
-	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
-	if err := run(testClient, ctx, &buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil, namespaceFromClientConfig); err != nil {
+	flags := Flags{
+		inputFileName:  in.Name(),
+		outputFileName: out.Name(),
+		certURL:        certFilename,
+	}
+
+	if err := run(&buf, testConfig(&flags)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -925,11 +941,14 @@ metadata:
 	out.Close()
 	defer os.RemoveAll(out.Name())
 
-	ctx := context.Background()
 	var buf bytes.Buffer
-	testClient := testClientConfig()
-	namespaceFromClientConfig := initNamespaceFuncFromClient(testClient)
-	if err := run(testClient, ctx, &buf, in.Name(), out.Name(), "", "", "", certFilename, false, false, false, false, false, false, nil, "", false, nil, namespaceFromClientConfig); err == nil {
+	flags := Flags{
+		inputFileName:  in.Name(),
+		outputFileName: out.Name(),
+		certURL:        certFilename,
+	}
+
+	if err := run(&buf, testConfig(&flags)); err == nil {
 		t.Errorf("expecting error")
 	}
 
@@ -991,6 +1010,8 @@ func TestReadPrivKeyPEM(t *testing.T) {
 }
 
 func TestReadPrivKeySecret(t *testing.T) {
+	var flags Flags
+
 	_, pkw := newTestKeyPairSingle(t)
 
 	b, err := keyutil.MarshalPrivateKeyToPEM(pkw)
@@ -1010,7 +1031,7 @@ func TestReadPrivKeySecret(t *testing.T) {
 	}
 	defer os.RemoveAll(tmp.Name())
 
-	if err := resourceOutput(tmp, scheme.Codecs, v1.SchemeGroupVersion, sec); err != nil {
+	if err := resourceOutput(tmp, &flags, scheme.Codecs, v1.SchemeGroupVersion, sec); err != nil {
 		t.Fatal(err)
 	}
 	tmp.Close()
