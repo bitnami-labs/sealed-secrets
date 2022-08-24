@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -euo pipefail
+
+export K8S_CONTEXT="${K8S_CONTEXT}"
+
+if kubectl config current-context > /dev/null ;then
+	k8s_current_context=$(kubectl config current-context);
+	if [ "${k8s_current_context}" != "${K8S_CONTEXT}" ]; then \
+		echo "Expected k8s context '${K8S_CONTEXT}' but got '${k8s_current_context}'";
+		exit 1;
+	fi
+else
+	echo "Set up your k8s config for '${K8S_CONTEXT}' (using minikube or kind for example)";
+	exit 1;
+fi
+
+echo "'${K8S_CONTEXT}' is configured as kubectl's current context"
+
