@@ -376,7 +376,8 @@ func seal(cfg *Config, in io.Reader, out io.Writer, codecs runtimeserializer.Cod
 	return nil
 }
 
-func validateSealedSecret(cfg *Config, in io.Reader, namespace, name string) error {
+func validateSealedSecret(cfg *Config, in io.Reader) error {
+	flags := cfg.flags
 	conf, err := cfg.clientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -385,7 +386,7 @@ func validateSealedSecret(cfg *Config, in io.Reader, namespace, name string) err
 	if err != nil {
 		return err
 	}
-	portName, err := getServicePortName(cfg.ctx, restClient, namespace, name)
+	portName, err := getServicePortName(cfg.ctx, restClient, flags.controllerNs, flags.controllerName)
 	if err != nil {
 		return err
 	}
@@ -396,10 +397,10 @@ func validateSealedSecret(cfg *Config, in io.Reader, namespace, name string) err
 	}
 
 	req := restClient.RESTClient().Post().
-		Namespace(namespace).
+		Namespace(flags.controllerNs).
 		Resource("services").
 		SubResource("proxy").
-		Name(net.JoinSchemeNamePort("http", name, portName)).
+		Name(net.JoinSchemeNamePort("http", flags.controllerName, portName)).
 		Suffix("/v1/verify")
 
 	req.Body(content)
@@ -414,7 +415,8 @@ func validateSealedSecret(cfg *Config, in io.Reader, namespace, name string) err
 	return nil
 }
 
-func reEncryptSealedSecret(cfg *Config, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, namespace, name string) error {
+func reEncryptSealedSecret(cfg *Config, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory) error {
+	flags := cfg.flags
 	conf, err := cfg.clientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -423,7 +425,7 @@ func reEncryptSealedSecret(cfg *Config, in io.Reader, out io.Writer, codecs runt
 	if err != nil {
 		return err
 	}
-	portName, err := getServicePortName(cfg.ctx, restClient, namespace, name)
+	portName, err := getServicePortName(cfg.ctx, restClient, flags.controllerNs, flags.controllerName)
 	if err != nil {
 		return err
 	}
@@ -434,10 +436,10 @@ func reEncryptSealedSecret(cfg *Config, in io.Reader, out io.Writer, codecs runt
 	}
 
 	req := restClient.RESTClient().Post().
-		Namespace(namespace).
+		Namespace(flags.controllerNs).
 		Resource("services").
 		SubResource("proxy").
-		Name(net.JoinSchemeNamePort("http", name, portName)).
+		Name(net.JoinSchemeNamePort("http", flags.controllerName, portName)).
 		Suffix("/v1/rotate")
 
 	req.Body(content)
@@ -760,11 +762,11 @@ func run(w io.Writer, cfg *Config) (err error) {
 	}
 
 	if flags.validateSecret {
-		return validateSealedSecret(cfg, input, flags.controllerNs, flags.controllerName)
+		return validateSealedSecret(cfg, input)
 	}
 
 	if flags.reEncrypt {
-		return reEncryptSealedSecret(cfg, input, w, scheme.Codecs, flags.controllerNs, flags.controllerName)
+		return reEncryptSealedSecret(cfg, input, w, scheme.Codecs)
 	}
 
 	f, err := openCert(cfg, flags.certURL)
