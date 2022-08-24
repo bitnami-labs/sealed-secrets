@@ -33,7 +33,7 @@ The controller sources are located under `cmd/controller/` and use packages from
 
 ### Setup a kubernetes cluster to run the tests
 
-You need a kubernetes cluster to run the intgeration tests.
+You need a kubernetes cluster to run the integration tests.
 
 For instance:
 
