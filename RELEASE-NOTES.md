@@ -122,9 +122,6 @@ Latest release:
 
 ### Changelog
 
-- Fix honorLabels ([#889]{https://github.com/bitnami-labs/sealed-secrets/pull/889)
-- Include additionalNamespace option in our chart ([#892](https://github.com/bitnami-labs/sealed-secrets/pull/892))
-- Fix rateLimit values ([#893](https://github.com/bitnami-labs/sealed-secrets/pull/893))
 - Replace ioutil with io or os ([#895](https://github.com/bitnami-labs/sealed-secrets/pull/895))
 - Remove CLI global variables and refactor flag handling ([#901](https://github.com/bitnami-labs/sealed-secrets/pull/901) & [#920](https://github.com/bitnami-labs/sealed-secrets/pull/920))
 - Upgrade Go version, dependencies and tooling ([#904](https://github.com/bitnami-labs/sealed-secrets/pull/904) & [#905](https://github.com/bitnami-labs/sealed-secrets/pull/905))
