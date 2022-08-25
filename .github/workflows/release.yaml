@@ -9,6 +9,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        gotestsum: ["1.8.1"]
     env:
       dockerhub_image_name: docker.io/bitnami/sealed-secrets-controller
       ghcr_image_name: ghcr.io/bitnami-labs/sealed-secrets-controller
@@ -25,6 +28,10 @@ jobs:
           mkdir -p ~/bin
           curl -sLf https://github.com/kubecfg/kubecfg/releases/download/v0.26.0/kubecfg_Linux_X64 >~/bin/kubecfg
           chmod +x ~/bin/kubecfg
+
+      - name: Install dependencies
+        run: |
+          go install gotest.tools/gotestsum@v${{ matrix.gotestsum }}
 
       # Run tests
       - name: Tests
