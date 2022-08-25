@@ -4,7 +4,7 @@ LABEL maintainer "Bitnami <containers@bitnami.com>, Marko Mikulicic <mmikulicic@
 USER 1001
 
 ARG TARGETARCH
-COPY dist/controller_linux_$TARGETARCH/controller /usr/local/bin/
+COPY dist/controller_linux_$TARGETARCH*/controller /usr/local/bin/
 
 EXPOSE 8080
 ENTRYPOINT ["controller"]
