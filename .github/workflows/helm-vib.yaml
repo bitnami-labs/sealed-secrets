@@ -26,7 +26,7 @@ jobs:
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
-      - uses: vmware-labs/vmware-image-builder-action@0.2.0
+      - uses: vmware-labs/vmware-image-builder-action@0.4.0
 
   # verify chart in multiple target platforms
   vib-k8s-verify:
@@ -45,7 +45,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
-      - uses: vmware-labs/vmware-image-builder-action@0.2.0
+      - uses: vmware-labs/vmware-image-builder-action@0.4.0
         with:
           pipeline: vib-platform-verify.json
         env:
