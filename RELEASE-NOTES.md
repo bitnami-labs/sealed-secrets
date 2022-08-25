@@ -125,7 +125,6 @@ Latest release:
 - Replace ioutil with io or os ([#895](https://github.com/bitnami-labs/sealed-secrets/pull/895))
 - Remove CLI global variables and refactor flag handling ([#901](https://github.com/bitnami-labs/sealed-secrets/pull/901) & [#920](https://github.com/bitnami-labs/sealed-secrets/pull/920))
 - Upgrade Go version, dependencies and tooling ([#904](https://github.com/bitnami-labs/sealed-secrets/pull/904) & [#905](https://github.com/bitnami-labs/sealed-secrets/pull/905))
-- Allow skipping ClusterRole creation ([#906](https://github.com/bitnami-labs/sealed-secrets/pull/906)
 
 ## v0.18.1
 
