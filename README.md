@@ -434,14 +434,14 @@ See [Scopes](#scopes)
 `strict` scope (default):
 
 ```console
-$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --name mysecret
+$ echo -n foo | kubeseal --raw --namespace bar --name mysecret
 AgBChHUWLMx...
 ```
 
 `namespace-wide` scope:
 
 ```console
-$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --namespace bar --scope namespace-wide
+$ echo -n foo | kubeseal --raw --namespace bar --scope namespace-wide
 AgAbbFNkM54...
 ```
 Include the `sealedsecrets.bitnami.com/namespace-wide` annotation in the `SealedSecret`
@@ -454,7 +454,7 @@ metadata:
 `cluster-wide` scope:
 
 ```console
-$ echo -n foo | kubeseal --raw --from-file=/dev/stdin --scope cluster-wide
+$ echo -n foo | kubeseal --raw --scope cluster-wide
 AgAjLKpIYV+...
 ```
 Include the `sealedsecrets.bitnami.com/cluster-wide` annotation in the `SealedSecret`
