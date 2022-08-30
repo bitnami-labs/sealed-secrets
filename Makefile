@@ -137,6 +137,7 @@ check-k8s:
 
 push-controller: clean check-k8s controller.image.$(OS)-$(ARCH)
 	docker tag $(CONTROLLER_IMAGE)-$(OS)-$(ARCH) $(CONTROLLER_IMAGE)
+	docker push $(CONTROLLER_IMAGE)
 
 apply-controller-manifests: clean check-k8s controller.yaml
 	kubectl apply -f controller.yaml
