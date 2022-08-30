@@ -81,7 +81,7 @@ make test
 #### Push the controller image
 
 ```bash
-make OS=linux ARCH=amd64 push-controller
+make K8S_CONTEXT=kind-mykind OS=linux ARCH=amd64 push-controller
 ```
 
 This builds the controller container image and pushes it.
@@ -89,7 +89,7 @@ This builds the controller container image and pushes it.
 Remember that the `REGISTRY` env var is only needed when using a custom registry:
 
 ```bash
-make REGISTRY=localhost:5000 OS=linux ARCH=amd64 push-controller
+make K8S_CONTEXT=kind-mykind REGISTRY=localhost:5000 OS=linux ARCH=amd64 push-controller
 ```
 
 #### Building & applying the controller manifests
