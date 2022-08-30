@@ -11,7 +11,9 @@ KUBECFG = kubecfg
 DOCKER = docker
 GINKGO = ginkgo -p
 
-CONTROLLER_IMAGE = docker.io/bitnami/sealed-secrets-controller:latest
+REGISTRY ?= docker.io
+CONTROLLER_IMAGE = $(REGISTRY)/bitnami/sealed-secrets-controller:latest
+KUBESEAL_IMAGE = $(REGISTRY)/bitnami/kubeseal:latest
 INSECURE_REGISTRY = false # useful for local registry
 IMAGE_PULL_POLICY = Always
 KUBECONFIG ?= $(HOME)/.kube/config
@@ -130,4 +132,17 @@ clean:
 	$(RM) controller*.yaml
 	$(RM) controller.image*
 
+check-k8s:
+	scripts/check-k8s
+
+push-controller: clean check-k8s controller.image.$(OS)-$(ARCH)
+	docker tag $(CONTROLLER_IMAGE)-$(OS)-$(ARCH) $(CONTROLLER_IMAGE)
+
+apply-controller-manifests: clean check-k8s controller.yaml
+	kubectl apply -f controller.yaml
+
+controller-tests: test push-controller apply-controller-manifests clean integrationtest
+
 .PHONY: all kubeseal controller test clean vet fmt lint-gosec
+
+.PHONY: controllertests check-k8s push-controller apply-controller-manifests
