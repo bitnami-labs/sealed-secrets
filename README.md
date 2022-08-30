@@ -335,7 +335,7 @@ resources:
 Note that:
 - No service accounts are created, instead the one allocated to you will be used.
   - `{allocated-service-account}` is the name of the `service account` you were allocated on the cluster.
-- No RBAC roles are created neither in the namespace or the cluster.
+- No RBAC roles are created neither in the namespace nor the cluster.
 - Resource limits must be especified.
   - The limits are samples that shoudl work, but you might want to review them in your particular setup.
 
