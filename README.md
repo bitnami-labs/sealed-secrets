@@ -304,6 +304,49 @@ Alternatively, you can set `fullnameOverride` when installing the chart to overr
 helm install sealed-secrets -n kube-system --set-string fullnameOverride=sealed-secrets-controller sealed-secrets/sealed-secrets 
 ```
 
+##### Helm Chart on a restricted environment
+
+In some companies you might be given access only to a single namespace, not a full cluster.
+
+One of the most restrictive environments you can encounter is:
+- A `namespace` was allocated to you with some `service account`.
+- You do not have access to the rest of the cluster, not even cluster CRDs.
+- You may not even be able to create further service accounts or roles in your namespace.
+- You are required to include resource limits in all your deployments.
+
+Even with these restrictions you can still install the sealed secrets Helm Chart, there is only one pre-requisite:
+- *The cluster must already have the sealed secrets CRDs installed*.
+
+Once your admins installed the CRDs, if they were not there already, you can install the chart by preparing a YAML config file such as this:
+
+```shell
+serviceAccount:
+  create: false
+  name: {allocated-service-account}
+rbac:
+  create: false
+  clusterRole: false
+resources: 
+  limits: 
+    cpu: 150m
+    memory: 256Mi
+```
+
+Note that:
+- No service accounts are created, instead the one allocated to you will be used.
+  - `{allocated-service-account}` is the name of the `service account` you were allocated on the cluster.
+- No RBAC roles are created neither in the namespace or the cluster.
+- Resource limits must be espeficied.
+  - The limits are samples that shoudl work, but you might want to review them in your parituclar setup.
+
+Once that file is ready, if you named it `config.yaml` you now can install the sealed secrets Helm Chart like this: 
+
+```shell
+helm install sealed-secrets -n {allocated-namespace} sealed-secrets/sealed-secrets --skip-crds -f config.yaml
+```
+
+Where `{allocated-namespace}` is the name of the `namespace` you were allocated in the cluster.
+
 ### Homebrew
 
 The `kubeseal` client is also available on [homebrew](https://formulae.brew.sh/formula/kubeseal):
