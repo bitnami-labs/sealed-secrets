@@ -10,7 +10,7 @@ import (
 	flag "github.com/spf13/pflag"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/klog"
+	"k8s.io/klog/v2"
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	"github.com/bitnami-labs/sealed-secrets/pkg/flagenv"
