@@ -80,10 +80,10 @@ func bindControllerFlags(f *Flags) {
 
 	flag.BoolVar(&f.OldGCBehavior, "old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
-	flag.BoolVar(&f.UpdateStatus, "update-status", true, "beta: if true, the controller will update the status subresource whenever it processes a sealed secret")
-
 	flag.DurationVar(&f.KeyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
 	_ = flag.CommandLine.MarkDeprecated("rotate-period", "please use key-renew-period instead")
+
+	flag.BoolVar(&f.UpdateStatus, "update-status", true, "beta: if true, the controller will update the status subresource whenever it processes a sealed secret")
 }
 
 func bindFlags(f *Flags, printVersion *bool) {
