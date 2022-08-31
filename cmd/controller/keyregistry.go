@@ -47,8 +47,8 @@ func NewKeyRegistry(client kubernetes.Interface, namespace, keyPrefix, keyLabel 
 	}
 }
 
-func (kr *KeyRegistry) generateKey(ctx context.Context) (string, error) {
-	key, cert, err := generatePrivateKeyAndCert(kr.keysize)
+func (kr *KeyRegistry) generateKey(ctx context.Context, validFor time.Duration, cn string) (string, error) {
+	key, cert, err := generatePrivateKeyAndCert(kr.keysize, validFor, cn)
 	if err != nil {
 		return "", err
 	}

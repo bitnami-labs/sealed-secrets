@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"time"
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	v1 "k8s.io/api/core/v1"
@@ -23,8 +24,8 @@ var (
 	ErrPrivateKeyNotRSA = errors.New("Private key is not an RSA key")
 )
 
-func generatePrivateKeyAndCert(keySize int) (*rsa.PrivateKey, *x509.Certificate, error) {
-	return crypto.GeneratePrivateKeyAndCert(keySize, *validFor, *myCN)
+func generatePrivateKeyAndCert(keySize int, validFor time.Duration, cn string) (*rsa.PrivateKey, *x509.Certificate, error) {
+	return crypto.GeneratePrivateKeyAndCert(keySize, validFor, cn)
 }
 
 func readKey(secret v1.Secret) (*rsa.PrivateKey, []*x509.Certificate, error) {

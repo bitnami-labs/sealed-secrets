@@ -38,24 +38,6 @@ const (
 )
 
 var (
-	keyPrefix            = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
-	keySize              = flag.Int("key-size", 4096, "Size of encryption key.")
-	validFor             = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
-	myCN                 = flag.String("my-cn", "", "Common name to be used as issuer/subject DN in generated certificate.")
-	printVersion         = flag.Bool("version", false, "Print version information and exit")
-	keyRenewPeriod       = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation deactivated if 0)")
-	acceptV1Data         = flag.Bool("accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
-	keyCutoffTime        = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
-	namespaceAll         = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
-	additionalNamespaces = flag.String("additional-namespaces", "", "Comma-separated list of additional namespaces to be scanned.")
-	labelSelector        = flag.String("label-selector", "", "Label selector which can be used to filter sealed secrets.")
-	rateLimitPerSecond   = flag.Int("rate-limit", 2, "Number of allowed sustained request per second for verify endpoint")
-	rateLimitBurst       = flag.Int("rate-limit-burst", 2, "Number of requests allowed to exceed the rate limit per second for verify endpoint")
-
-	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
-
-	updateStatus = flag.Bool("update-status", true, "beta: if true, the controller will update the status subresource whenever it processes a sealed secret")
-
 	// VERSION set from Makefile
 	VERSION = buildinfo.DefaultVersion
 
@@ -63,11 +45,52 @@ var (
 	keySelector = fields.OneTermEqualSelector(SealedSecretsKeyLabel, "active")
 )
 
-func init() {
-	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
+// Flags to configure the controller
+type Flags struct {
+	KeyPrefix            string
+	KeySize              int
+	ValidFor             time.Duration
+	MyCN                 string
+	KeyRenewPeriod       time.Duration
+	AcceptV1Data         bool
+	KeyCutoffTime        string
+	NamespaceAll         bool
+	AdditionalNamespaces string
+	LabelSelector        string
+	RateLimitPerSecond   int
+	RateLimitBurst       int
+	OldGCBehavior        bool
+	UpdateStatus         bool
+}
 
-	flag.DurationVar(keyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
+func bindControllerFlags(f *Flags) {
+	flag.StringVar(&f.KeyPrefix, "key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
+	flag.IntVar(&f.KeySize, "key-size", 4096, "Size of encryption key.")
+	flag.DurationVar(&f.ValidFor, "key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
+	flag.StringVar(&f.MyCN, "my-cn", "", "Common name to be used as issuer/subject DN in generated certificate.")
+
+	flag.DurationVar(&f.KeyRenewPeriod, "key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation deactivated if 0)")
+	flag.BoolVar(&f.AcceptV1Data, "accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
+	flag.StringVar(&f.KeyCutoffTime, "key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
+	flag.BoolVar(&f.NamespaceAll, "all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
+	flag.StringVar(&f.AdditionalNamespaces, "additional-namespaces", "", "Comma-separated list of additional namespaces to be scanned.")
+	flag.StringVar(&f.LabelSelector, "label-selector", "", "Label selector which can be used to filter sealed secrets.")
+	flag.IntVar(&f.RateLimitPerSecond, "rate-limit", 2, "Number of allowed sustained request per second for verify endpoint")
+	flag.IntVar(&f.RateLimitBurst, "rate-limit-burst", 2, "Number of requests allowed to exceed the rate limit per second for verify endpoint")
+
+	flag.BoolVar(&f.OldGCBehavior, "old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
+
+	flag.BoolVar(&f.UpdateStatus, "update-status", true, "beta: if true, the controller will update the status subresource whenever it processes a sealed secret")
+
+	flag.DurationVar(&f.KeyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
 	_ = flag.CommandLine.MarkDeprecated("rotate-period", "please use key-renew-period instead")
+}
+
+func bindFlags(f *Flags, printVersion *bool) {
+	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
+	flag.BoolVar(printVersion, "version", false, "Print version information and exit")
+
+	bindControllerFlags(f)
 
 	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
 	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
@@ -137,18 +160,18 @@ func myNamespace() string {
 // Initialises the first key and starts the rotation job. returns an early trigger function.
 // A period of 0 deactivates automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
 // is still honoured.
-func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period time.Duration, cutoffTime time.Time) (func(), error) {
+func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period, validFor time.Duration, cutoffTime time.Time, cn string) (func(), error) {
 	// Create a new key if it's the first key,
 	// or if it's older than cutoff time.
 	if len(registry.keys) == 0 || registry.mostRecentKey.creationTime.Before(cutoffTime) {
-		if _, err := registry.generateKey(ctx); err != nil {
+		if _, err := registry.generateKey(ctx, validFor, cn); err != nil {
 			return nil, err
 		}
 	}
 
 	// wrapper function to log error thrown by generateKey function
 	keyGenFunc := func() {
-		if _, err := registry.generateKey(ctx); err != nil {
+		if _, err := registry.generateKey(ctx, validFor, cn); err != nil {
 			log.Printf("Failed to generate new key : %v\n", err)
 		}
 	}
@@ -166,7 +189,8 @@ func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period time.Dura
 	return ScheduleJobWithTrigger(initialDelay, period, keyGenFunc), nil
 }
 
-func main2() error {
+func run(f *Flags, version string) error {
+	registerMetrics(version)
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return err
@@ -185,26 +209,26 @@ func main2() error {
 	myNs := myNamespace()
 	ctx := context.Background()
 
-	prefix, err := initKeyPrefix(*keyPrefix)
+	prefix, err := initKeyPrefix(f.KeyPrefix)
 	if err != nil {
 		return err
 	}
 
-	keyRegistry, err := initKeyRegistry(ctx, clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, *keySize)
+	keyRegistry, err := initKeyRegistry(ctx, clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, f.KeySize)
 	if err != nil {
 		return err
 	}
 
 	var ct time.Time
-	if *keyCutoffTime != "" {
+	if f.KeyCutoffTime != "" {
 		var err error
-		ct, err = time.Parse(time.RFC1123Z, *keyCutoffTime)
+		ct, err = time.Parse(time.RFC1123Z, f.KeyCutoffTime)
 		if err != nil {
 			return err
 		}
 	}
 
-	trigger, err := initKeyRenewal(ctx, keyRegistry, *keyRenewPeriod, ct)
+	trigger, err := initKeyRenewal(ctx, keyRegistry, f.KeyRenewPeriod, f.ValidFor, ct, f.MyCN)
 	if err != nil {
 		return err
 	}
@@ -212,30 +236,30 @@ func main2() error {
 	initKeyGenSignalListener(trigger)
 
 	namespace := v1.NamespaceAll
-	if !*namespaceAll || *additionalNamespaces != "" {
+	if !f.NamespaceAll || f.AdditionalNamespaces != "" {
 		namespace = myNamespace()
 		log.Printf("Starting informer for namespace: %s\n", namespace)
 	}
 
 	var tweakopts func(*metav1.ListOptions) = nil
-	if *labelSelector != "" {
+	if f.LabelSelector != "" {
 		tweakopts = func(options *metav1.ListOptions) {
-			options.LabelSelector = *labelSelector
+			options.LabelSelector = f.LabelSelector
 		}
 	}
 
 	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, tweakopts)
 	controller := NewController(clientset, ssclientset, ssinformer, keyRegistry)
-	controller.oldGCBehavior = *oldGCBehavior
-	controller.updateStatus = *updateStatus
+	controller.oldGCBehavior = f.OldGCBehavior
+	controller.updateStatus = f.UpdateStatus
 
 	stop := make(chan struct{})
 	defer close(stop)
 
 	go controller.Run(stop)
 
-	if *additionalNamespaces != "" {
-		addNS := removeDuplicates(strings.Split(*additionalNamespaces, ","))
+	if f.AdditionalNamespaces != "" {
+		addNS := removeDuplicates(strings.Split(f.AdditionalNamespaces, ","))
 
 		var inf ssinformers.SharedInformerFactory
 		var ctlr *Controller
@@ -251,8 +275,8 @@ func main2() error {
 			if ns != namespace {
 				inf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
 				ctlr = NewController(clientset, ssclientset, inf, keyRegistry)
-				ctlr.oldGCBehavior = *oldGCBehavior
-				ctlr.updateStatus = *updateStatus
+				ctlr.oldGCBehavior = f.OldGCBehavior
+				ctlr.updateStatus = f.UpdateStatus
 				log.Printf("Starting informer for namespace: %s\n", ns)
 				go ctlr.Run(stop)
 			}
@@ -267,7 +291,7 @@ func main2() error {
 		return []*x509.Certificate{cert}, nil
 	}
 
-	server := httpserver(cp, controller.AttemptUnseal, controller.Rotate, *rateLimitBurst, *rateLimitPerSecond)
+	server := httpserver(cp, controller.AttemptUnseal, controller.Rotate, f.RateLimitBurst, f.RateLimitPerSecond)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
@@ -277,19 +301,21 @@ func main2() error {
 }
 
 func main() {
+	var printVersion bool
+	var flags Flags
+	bindFlags(&flags, &printVersion)
 	flag.Parse()
 	_ = goflag.CommandLine.Parse([]string{})
 
-	ssv1alpha1.AcceptDeprecatedV1Data = *acceptV1Data
+	ssv1alpha1.AcceptDeprecatedV1Data = flags.AcceptV1Data
 
 	fmt.Printf("controller version: %s\n", VERSION)
-	if *printVersion {
+	if printVersion {
 		return
 	}
 
 	log.Printf("Starting sealed-secrets controller version: %s\n", VERSION)
-
-	if err := main2(); err != nil {
+	if err := run(&flags, VERSION); err != nil {
 		panic(err.Error())
 	}
 }

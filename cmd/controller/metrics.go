@@ -27,14 +27,7 @@ var conditionStatusToGaugeValue = map[v1.ConditionStatus]float64{
 
 // Define Prometheus metrics to expose
 var (
-	buildInfo = prometheus.NewGauge(
-		prometheus.GaugeOpts{
-			Namespace:   metricNamespace,
-			Name:        "build_info",
-			Help:        "Build information.",
-			ConstLabels: prometheus.Labels{"revision": VERSION},
-		},
-	)
+	buildInfo prometheus.Gauge
 	// TODO: rename metric, change increment logic, or accept behaviour
 	// when a SealedSecret is deleted the unseal() function is called which is
 	// not technically an 'unseal request'.
@@ -80,7 +73,15 @@ var (
 	)
 )
 
-func init() {
+func registerMetrics(version string) {
+	buildInfo = prometheus.NewGauge(
+		prometheus.GaugeOpts{
+			Namespace:   metricNamespace,
+			Name:        "build_info",
+			Help:        "Build information.",
+			ConstLabels: prometheus.Labels{"revision": version},
+		},
+	)
 	// Register metrics with Prometheus
 	prometheus.MustRegister(buildInfo)
 	prometheus.MustRegister(collectors.NewBuildInfoCollector())
