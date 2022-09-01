@@ -53,6 +53,10 @@ generate: $(GO_FILES)
 	@# for that reason we generate at gentmp and then move it all to ./pkg
 	cp -r gentmp/github.com/bitnami-labs/sealed-secrets/pkg . && rm gentmp/ -rf
 
+manifests:
+	$(call go-get-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@v0.8.0)
+	$(CONTROLLER_GEN) crd paths="./pkg/apis/..."  output:crd:artifacts:config=helm/sealed-secrets/crds/
+
 controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/controller
 
