@@ -42,7 +42,8 @@ type SecretTemplateSpec struct {
 	Type apiv1.SecretType `json:"type,omitempty" protobuf:"bytes,3,opt,name=type,casttype=SecretType"`
 
 	// Keys that should be templated using decrypted data
-	Data map[string]string `json:"data"`
+	// +optional
+	Data map[string]string `json:"data,omitempty"`
 }
 
 // SealedSecretSpec is the specification of a SealedSecret
