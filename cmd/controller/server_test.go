@@ -39,12 +39,14 @@ func shutdownServer(server *http.Server, t *testing.T) {
 }
 
 func TestHttpCert(t *testing.T) {
-	_, certBefore, err := generatePrivateKeyAndCert(2048)
+	validFor := time.Hour
+	cn := "my-cn"
+	_, certBefore, err := generatePrivateKeyAndCert(2048, validFor, cn)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_, certAfter, err := generatePrivateKeyAndCert(2048)
+	_, certAfter, err := generatePrivateKeyAndCert(2048, validFor, cn)
 	if err != nil {
 		t.Fatal(err)
 	}

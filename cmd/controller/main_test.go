@@ -55,7 +55,9 @@ func TestInitKeyRegistry(t *testing.T) {
 	}
 
 	// Add a key to the controller for second test
-	_, err = registry.generateKey(ctx)
+	validFor := time.Hour
+	cn := "my-cn"
+	_, err = registry.generateKey(ctx, validFor, cn)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -87,7 +89,9 @@ func TestInitKeyRotation(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	keyGenTrigger, err := initKeyRenewal(ctx, registry, 0, time.Time{})
+	validFor := time.Hour
+	cn := "my-cn"
+	keyGenTrigger, err := initKeyRenewal(ctx, registry, 0, validFor, time.Time{}, cn)
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -126,7 +130,9 @@ func TestInitKeyRotationTick(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(ctx, registry, 100*time.Millisecond, time.Time{})
+	validFor := time.Hour
+	cn := "my-cn"
+	_, err = initKeyRenewal(ctx, registry, 100*time.Millisecond, validFor, time.Time{}, cn)
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -179,7 +185,9 @@ func TestReuseKey(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(ctx, registry, 0, time.Time{})
+	validFor := time.Hour
+	cn := "my-cn"
+	_, err = initKeyRenewal(ctx, registry, 0, validFor, time.Time{}, cn)
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -223,7 +231,9 @@ func TestRenewStaleKey(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(ctx, registry, period, time.Time{})
+	validFor := time.Hour
+	cn := "my-cn"
+	_, err = initKeyRenewal(ctx, registry, period, validFor, time.Time{}, cn)
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -281,7 +291,9 @@ func TestKeyCutoff(t *testing.T) {
 	client.ClearActions()
 
 	// by setting cutoff to "now" we effectively force the creation of a new key.
-	_, err = initKeyRenewal(ctx, registry, period, time.Now())
+	validFor := time.Hour
+	cn := "my-cn"
+	_, err = initKeyRenewal(ctx, registry, period, validFor, time.Now(), cn)
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -343,7 +355,9 @@ func TestLegacySecret(t *testing.T) {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
 
-	_, err = initKeyRenewal(ctx, registry, 0, time.Time{})
+	validFor := time.Hour
+	cn := "my-cn"
+	_, err = initKeyRenewal(ctx, registry, 0, validFor, time.Time{}, cn)
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}

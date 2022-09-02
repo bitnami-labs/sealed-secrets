@@ -7,19 +7,21 @@ import (
 
 func TestRegisterNewKey(t *testing.T) {
 	const keySize = 2048
+	validFor := time.Hour
+	cn := "my-cn"
 	kr := NewKeyRegistry(nil, "namespace", "prefix", "label", keySize)
 
 	if kr.mostRecentKey != nil {
 		t.Fatal("this test assumes a new key registry has no keys")
 	}
 
-	key1, cert1, err := generatePrivateKeyAndCert(keySize)
+	key1, cert1, err := generatePrivateKeyAndCert(keySize, validFor, cn)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t1 := time.Now()
 
-	key2, cert2, err := generatePrivateKeyAndCert(keySize)
+	key2, cert2, err := generatePrivateKeyAndCert(keySize, validFor, cn)
 	if err != nil {
 		t.Fatal(err)
 	}
