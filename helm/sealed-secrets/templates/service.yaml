@@ -4,8 +4,14 @@ kind: Service
 metadata:
   name: {{ include "sealed-secrets.fullname" . }}
   namespace: {{ include "sealed-secrets.namespace" . }}
-  {{- if .Values.commonAnnotations }}
-  annotations: {{- toYaml .Values.commonAnnotations | nindent 4 }}
+  {{- if or .Values.service.annotations .Values.commonAnnotations }}
+  annotations:
+    {{- if .Values.service.annotations }}
+    {{- include "sealed-secrets.render" (dict "value" .Values.service.annotations "context" $) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.commonAnnotations }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
   {{- end }}
   labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
     {{- if .Values.service.labels }}
