@@ -318,6 +318,10 @@ networkPolicy:
 ## ServiceAccount configuration
 ##
 serviceAccount:
+  ## @param serviceAccount.annotations [object] Annotations for Sealed Secret service account
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  annotations: {}
   ## @param serviceAccount.create Specifies whether a ServiceAccount should be created
   ##
   create: true
