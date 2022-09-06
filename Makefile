@@ -138,7 +138,7 @@ check-k8s:
 push-controller: clean check-k8s controller.image.$(OS)-$(ARCH)
 	docker tag $(CONTROLLER_IMAGE)-$(OS)-$(ARCH) $(CONTROLLER_IMAGE)
 ifeq ($(REGISTRY),docker.io)
-  echo "Skip push: docker.io registy means minikube"
+  echo "Skip push: docker.io registry means minikube"
 else
 	docker push $(CONTROLLER_IMAGE)
 endif
