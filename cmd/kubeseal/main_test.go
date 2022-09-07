@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	goflag "flag"
 	"testing"
 
 	flag "github.com/spf13/pflag"
@@ -10,7 +11,8 @@ import (
 func TestVersion(t *testing.T) {
 	buf := bytes.NewBufferString("")
 	testVersionFlags := flag.NewFlagSet("testVersionFlags", flag.ExitOnError)
-	err := mainE(buf, testVersionFlags, []string{"--version"})
+	nopFlags := goflag.NewFlagSet("nop", goflag.ExitOnError)
+	err := mainE(buf, testVersionFlags, nopFlags, []string{"--version"})
 	if err != nil {
 		t.Fatal(err)
 	}
