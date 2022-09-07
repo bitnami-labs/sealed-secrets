@@ -13,7 +13,6 @@ import (
 	"syscall"
 	"time"
 
-	flag "github.com/spf13/pflag"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +27,6 @@ import (
 )
 
 const (
-	flagEnvPrefix         = "SEALED_SECRETS"
 	defaultKeyRenewPeriod = 30 * 24 * time.Hour
 )
 
@@ -56,29 +54,6 @@ type Flags struct {
 	RateLimitBurst       int
 	OldGCBehavior        bool
 	UpdateStatus         bool
-}
-
-func bindControllerFlags(f *Flags) {
-	flag.StringVar(&f.KeyPrefix, "key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
-	flag.IntVar(&f.KeySize, "key-size", 4096, "Size of encryption key.")
-	flag.DurationVar(&f.ValidFor, "key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
-	flag.StringVar(&f.MyCN, "my-cn", "", "Common name to be used as issuer/subject DN in generated certificate.")
-
-	flag.DurationVar(&f.KeyRenewPeriod, "key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation deactivated if 0)")
-	flag.BoolVar(&f.AcceptV1Data, "accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
-	flag.StringVar(&f.KeyCutoffTime, "key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
-	flag.BoolVar(&f.NamespaceAll, "all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
-	flag.StringVar(&f.AdditionalNamespaces, "additional-namespaces", "", "Comma-separated list of additional namespaces to be scanned.")
-	flag.StringVar(&f.LabelSelector, "label-selector", "", "Label selector which can be used to filter sealed secrets.")
-	flag.IntVar(&f.RateLimitPerSecond, "rate-limit", 2, "Number of allowed sustained request per second for verify endpoint")
-	flag.IntVar(&f.RateLimitBurst, "rate-limit-burst", 2, "Number of requests allowed to exceed the rate limit per second for verify endpoint")
-
-	flag.BoolVar(&f.OldGCBehavior, "old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
-
-	flag.DurationVar(&f.KeyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
-	_ = flag.CommandLine.MarkDeprecated("rotate-period", "please use key-renew-period instead")
-
-	flag.BoolVar(&f.UpdateStatus, "update-status", true, "beta: if true, the controller will update the status subresource whenever it processes a sealed secret")
 }
 
 func initKeyPrefix(keyPrefix string) (string, error) {
