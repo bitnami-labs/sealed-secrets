@@ -137,10 +137,15 @@ check-k8s:
 
 push-controller: clean check-k8s controller.image.$(OS)-$(ARCH)
 	docker tag $(CONTROLLER_IMAGE)-$(OS)-$(ARCH) $(CONTROLLER_IMAGE)
+ifeq ($(REGISTRY),docker.io)
+  echo "Skip push: docker.io registry means minikube"
+else
 	docker push $(CONTROLLER_IMAGE)
+endif
 
 apply-controller-manifests: clean check-k8s controller.yaml
 	kubectl apply -f controller.yaml
+	kubectl rollout status deployment sealed-secrets-controller -n kube-system
 
 controller-tests: test push-controller apply-controller-manifests clean integrationtest
 

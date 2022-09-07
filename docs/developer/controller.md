@@ -37,11 +37,33 @@ You need a kubernetes cluster to run the integration tests.
 
 For instance:
 
-- Start Minikube and configure your local environment to re-use the Docker daemon inside the Minikube instance:
+When using a local minikube, configure your local environment to re-use the local Docker daemon:
 
 ```bash
 minikube start
 eval $(minikube docker-env)
+```
+
+If you use `kind` instead, you can setup a local companion image registry and allow kind to access it.
+
+Sample to run a registry locally:
+```bash
+export LOCAL_REGISTRY_PORT='5000'
+export LOCAL_REGISTRY_NAME='kind-registry'
+docker run --rm -d -p "127.0.0.1:${LOCAL_REGISTRY_PORT}:5000" --name "${LOCAL_REGISTRY_NAME}" registry:2
+```
+
+Then to have launch `kind` with access to that registry:
+```bash
+cat <<EOF | kind create cluster --name "${CLUSTER_NAME}" --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+containerdConfigPatches:
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${LOCAL_REGISTRY_PORT}"]
+    endpoint = ["http://${LOCAL_REGISTRY_NAME}:5000"]
+EOF
+docker network connect "kind" "${LOCAL_REGISTRY_NAME}"
 ```
 
 ### Run all controller tests with a single command
@@ -54,10 +76,15 @@ Note that:
 - `K8S_CONTEXT` must be set to the name of your `kubectl` context pointing to the expected text cluster.
 - `OS` & `ARCH` must match the Operating System and Architecture of your test cluster.
 
-Optionally, you can customize the `REGISTRY` as well:
+Optionally, you can customize the `REGISTRY` as well. In fact you will need that for a kind setup with a local registry:
 
 ```bash
-make K8S_CONTEXT=kind-mykind REGISTRY=localhost:5000 OS=linux ARCH=amd64 controller-tests
+make K8S_CONTEXT=kind REGISTRY=localhost:5000 OS=linux ARCH=amd64 controller-tests
+```
+
+For minikube just skip the `REGISTRY` setting:
+```bash
+make K8S_CONTEXT=minikube OS=linux ARCH=amd64 controller-tests
 ```
 
 ### Run tests step by step
@@ -80,22 +107,32 @@ make test
 
 #### Push the controller image
 
+This would work with a local minikube setup to build the controller:
+
 ```bash
-make K8S_CONTEXT=kind-mykind OS=linux ARCH=amd64 push-controller
+make K8S_CONTEXT=minikube OS=linux ARCH=amd64 push-controller
+```
+
+It will not push, as minikube accesses local docker images directly.
+
+Remember the `REGISTRY` env var is needed when using a custom registry:
+
+```bash
+make K8S_CONTEXT=kind REGISTRY=localhost:5000 OS=linux ARCH=amd64 push-controller
 ```
 
 This builds the controller container image and pushes it.
 
-Remember that the `REGISTRY` env var is only needed when using a custom registry:
-
-```bash
-make K8S_CONTEXT=kind-mykind REGISTRY=localhost:5000 OS=linux ARCH=amd64 push-controller
-```
-
 #### Building & applying the controller manifests
 
 ```bash
-make K8S_CONTEXT=kind-mykind REGISTRY=localhost:5000 apply-controller-manifests
+make K8S_CONTEXT=minikube apply-controller-manifests
+```
+
+Or for `kind`:
+
+```bash
+make K8S_CONTEXT=kind REGISTRY=localhost:5000 apply-controller-manifests
 ```
 
 This builds the controller K8s manifests in the working directory and deploys them.
