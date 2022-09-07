@@ -21,19 +21,11 @@ import (
 	"k8s.io/client-go/rest"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
-	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
 )
 
-const (
-	defaultKeyRenewPeriod = 30 * 24 * time.Hour
-)
-
 var (
-	// VERSION set from Makefile
-	VERSION = buildinfo.DefaultVersion
-
 	// Selector used to find existing public/private key pairs on startup
 	keySelector = fields.OneTermEqualSelector(SealedSecretsKeyLabel, "active")
 )
