@@ -10,6 +10,7 @@ GO_FLAGS =
 KUBECFG = kubecfg
 DOCKER = docker
 GINKGO = ginkgo -p
+CONTROLLER_GEN ?= controller-gen
 
 REGISTRY ?= docker.io
 CONTROLLER_IMAGE = $(REGISTRY)/bitnami/sealed-secrets-controller:latest
