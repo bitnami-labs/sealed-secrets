@@ -1,6 +1,8 @@
 package v1alpha1
 
 import (
+	"encoding/json"
+
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -40,7 +42,8 @@ type SecretTemplateSpec struct {
 	Type apiv1.SecretType `json:"type,omitempty" protobuf:"bytes,3,opt,name=type,casttype=SecretType"`
 
 	// Keys that should be templated using decrypted data
-	Data map[string]string `json:"data"`
+	// +optional
+	Data map[string]string `json:"data,omitempty"`
 }
 
 // SealedSecretSpec is the specification of a SealedSecret
@@ -51,8 +54,20 @@ type SealedSecretSpec struct {
 	Template SecretTemplateSpec `json:"template,omitempty"`
 
 	// Data is deprecated and will be removed eventually. Use per-value EncryptedData instead.
-	Data          []byte            `json:"data,omitempty"`
-	EncryptedData map[string]string `json:"encryptedData"`
+	Data          []byte                    `json:"data,omitempty"`
+	EncryptedData SealedSecretEncryptedData `json:"encryptedData"`
+}
+
+// +kubebuilder:validation:XPreserveUnknownFields
+type SealedSecretEncryptedData map[string]string
+
+func (s *SealedSecretEncryptedData) UnmarshalJSON(data []byte) error {
+	tmp := map[string]string{}
+	// drop error - likelihood of an error occurring is quite high due to the disabled schema validation, these errors
+	// would cause the controller to stop processing any SealedSecret
+	_ = json.Unmarshal(data, &tmp)
+	*s = tmp
+	return nil
 }
 
 // SealedSecretConditionType describes the type of SealedSecret condition
