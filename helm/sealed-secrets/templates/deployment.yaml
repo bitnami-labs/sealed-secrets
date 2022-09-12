@@ -118,9 +118,15 @@ spec:
           securityContext: {{- omit .Values.containerSecurityContext "enabled" | toYaml | nindent 12 }}
           {{- end }}
           volumeMounts:
+            {{- if .Values.additionalVolumeMounts }}
+              {{- toYaml .Values.additionalVolumeMounts | nindent 12 }} 
+            {{- end }}
             - mountPath: /tmp
               name: tmp
-      volumes:
+      volumes: 
+      {{- if .Values.additionalVolumes }}
+        {{- toYaml .Values.additionalVolumes | nindent 8 }} 
+      {{- end }}
         - name: tmp
           emptyDir: {}
 {{- end }}

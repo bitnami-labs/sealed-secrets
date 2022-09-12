@@ -187,6 +187,14 @@ nodeSelector: {}
 ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
 ##
 tolerations: []
+## @param additionalVolumes [object] Extra Volumes for the Sealed Secrets Controller Deployment
+## ref: https://kubernetes.io/docs/concepts/storage/volumes/
+##
+additionalVolumes: []
+## @param additionalVolumeMounts [object] Extra volumeMounts for the Sealed Secrets Controller container
+## ref: https://kubernetes.io/docs/concepts/storage/volumes/
+##
+additionalVolumeMounts: []
 
 ## @section Traffic Exposure Parameters
 
@@ -310,6 +318,10 @@ networkPolicy:
 ## ServiceAccount configuration
 ##
 serviceAccount:
+  ## @param serviceAccount.annotations [object] Annotations for Sealed Secret service account
+  ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/annotations/
+  ##
+  annotations: {}
   ## @param serviceAccount.create Specifies whether a ServiceAccount should be created
   ##
   create: true
