@@ -35,6 +35,7 @@ type SecretTemplateSpec struct {
 	// Standard object's metadata.
 	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
 	// +optional
+	// +nullable
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Used to facilitate programmatic handling of secret data.
@@ -43,6 +44,7 @@ type SecretTemplateSpec struct {
 
 	// Keys that should be templated using decrypted data
 	// +optional
+	// +nullable
 	Data map[string]string `json:"data,omitempty"`
 }
 
