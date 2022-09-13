@@ -12,7 +12,7 @@
 **Problem:** "I can manage all my K8s config in git, except Secrets."
 
 **Solution:** Encrypt your Secret into a SealedSecret, which *is* safe
-to store - even to a public repository.  The SealedSecret can be
+to store - even inside a public repository. The SealedSecret can be
 decrypted only by the controller running in the target cluster and
 nobody else (not even the original author) is able to obtain the
 original Secret from the SealedSecret.
@@ -206,7 +206,7 @@ There are many ways to configure RBAC on k8s, but it's quite common to forbid lo
 from reading Secrets. It's also common to give users one or more namespaces where they have higher privileges,
 which would allow them to create and read secrets (and/or create deployments that can reference those secrets).
 
-Encrypted SealedSecret resources are designed to be safe to be looked at without gaining any knowledge about the secrets it conceals. This implies that we cannot allow users to read a SealedSecret meant for a namespace they wouldn't have access to
+Encrypted `SealedSecret` resources are designed to be safe to be looked at without gaining any knowledge about the secrets it conceals. This implies that we cannot allow users to read a SealedSecret meant for a namespace they wouldn't have access to
 and just push a copy of it in a namespace where they can read secrets from.
 
 Sealed-secrets thus behaves *as if* each namespace had its own independent encryption key and thus once you
@@ -215,9 +215,9 @@ seal a secret for a namespace, it cannot be moved in another namespace and decry
 We don't technically use an independent private key for each namespace, but instead we *include* the namespace name
 during the encryption process, effectively achieving the same result.
 
-Furthermore, namespaces are not the only level at which RBAC configurations can decide who can see which secret. In fact, it's possible that users can access a secret called `foo` in a given namespace but not any other secret in the same namespace. We cannot thus by default let users freely rename SealedSecret resources otherwise a malicious user would be able to decrypt any SealedSecret for that namespace by just renaming it to overwrite the one secret they do have access to. We use the same mechanism used to include the namespace in the encryption key to also include the secret name.
+Furthermore, namespaces are not the only level at which RBAC configurations can decide who can see which secret. In fact, it's possible that users can access a secret called `foo` in a given namespace but not any other secret in the same namespace. We cannot thus by default let users freely rename `SealedSecret` resources otherwise a malicious user would be able to decrypt any SealedSecret for that namespace by just renaming it to overwrite the one secret user does have access to. We use the same mechanism used to include the namespace in the encryption key to also include the secret name.
 
-That said, there are many scenarios where you might not care about this level of protection. For example, the only people who have access to your clusters are either admins or they cannot read any secret resource at all. You might have a use case for moving a sealed secret to other namespaces (e.g. you might not know the namespace name upfront), or you might not know the name of the secret (e.g. it could contain a unique suffix based on the hash of the contents etc).
+That said, there are many scenarios where you might not care about this level of protection. For example, the only people who have access to your clusters are either admins or they cannot read any `Secret` resource at all. You might have a use case for moving a sealed secret to other namespaces (e.g. you might not know the namespace name upfront), or you might not know the name of the secret (e.g. it could contain a unique suffix based on the hash of the contents etc).
 
 These are the possible scopes:
 
@@ -240,7 +240,7 @@ It's also possible to request a scope via annotations in the input secret you pa
 
 The lack of any of such annotations means `strict` mode. If both are set, `cluster-wide` takes precedence.
 
-> NOTE: next release will consolidate this into a single `sealedsecrets.bitnami.com/scope` annotation.
+> NOTE: Next release will consolidate this into a single `sealedsecrets.bitnami.com/scope` annotation.
 
 ## Installation
 
@@ -257,8 +257,7 @@ and install the controller into `kube-system` namespace, create a service
 account and necessary RBAC roles.
 
 After a few moments, the controller will start, generate a key pair,
-and be ready for operation.  If it does not, check the controller
-logs.
+and be ready for operation. If it does not, check the controller logs.
 
 #### Kustomize
 
@@ -270,38 +269,37 @@ In some cases you might need to apply your own customizations, like set a custom
 
 #### Helm Chart
 
-The Sealed Secrets helm chart is now official supported and hosted in this GitHub repo.
+The Sealed Secrets helm chart is now officially supported and hosted in this GitHub repo.
 
 ```bash
 helm repo add sealed-secrets https://bitnami-labs.github.io/sealed-secrets
 ```
 
-NOTE: The versioning scheme of the helm chart differs from the versioning scheme of the sealed secrets project itself.
+> NOTE: The versioning scheme of the helm chart differs from the versioning scheme of the sealed secrets project itself.
 
 Originally the helm chart was maintained by the community and the first version adopted a major version of 1 while the
 sealed secrets project itself is still at major 0.
 This is ok because the version of the helm chart itself is not meant to be necessarily the version of the app itself.
 However this is confusing, so our current versioning rule is:
 
-1. The sealed secret controller version scheme: 0.X.Y
+1. The `SealedSecret` controller version scheme: 0.X.Y
 2. The helm chart version scheme: 1.X.Y-rZ
 
 There can be thus multiple revisions of the helm chart, with fixes that apply only to the helm chart without
 affecting the static YAML manifests or the controller image itself.
 
-NOTE: the helm chart readme still contains a deprecation notice, but it's no longer reflects reality
-and will be removed upon next release.
+> NOTE: The helm chart readme still contains a deprecation notice, but it no longer reflects reality and will be removed upon the next release.
 
-NOTE: the helm chart by default installs the controller with the name `sealed-secrets`, while the `kubeseal` command line interface (CLI) tries to access the controller with the name `sealed-secrets-controller`. You can explicitly pass `--controller-name` to the CLI:
+> NOTE: The helm chart by default installs the controller with the name `sealed-secrets`, while the `kubeseal` command line interface (CLI) tries to access the controller with the name `sealed-secrets-controller`. You can explicitly pass `--controller-name` to the CLI:
 
 ```bash
 kubeseal --controller-name sealed-secrets <args>
 ```
 
-Alternatively, you can set `fullnameOverride` when installing the chart to override the name . Note also that `kubeseal` assumes that the controller is installed within the `kube-system` namespace by default. So if you want to use the `kubeseal` CLI without having to pass the expected controller name and namespace you should install the Helm Chart like this:
+Alternatively, you can set `fullnameOverride` when installing the chart to override the name. Note also that `kubeseal` assumes that the controller is installed within the `kube-system` namespace by default. So if you want to use the `kubeseal` CLI without having to pass the expected controller name and namespace you should install the Helm Chart like this:
 
 ```bash
-helm install sealed-secrets -n kube-system --set-string fullnameOverride=sealed-secrets-controller sealed-secrets/sealed-secrets 
+helm install sealed-secrets -n kube-system --set-string fullnameOverride=sealed-secrets-controller sealed-secrets/sealed-secrets
 ```
 
 ##### Helm Chart on a restricted environment
@@ -417,8 +415,10 @@ echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-fil
 # (note default format is json!)
 kubeseal <mysecret.json >mysealedsecret.json
 
-# mysealedsecret.json is safe to upload to github, post to twitter,
-# etc.  Eventually:
+# At this point mysealedsecret.json is safe to upload to Github,
+# post on Twitter, etc.
+
+# Eventually:
 kubectl create -f mysealedsecret.json
 
 # Profit!
@@ -429,16 +429,16 @@ Note the `SealedSecret` and `Secret` must have **the same namespace and
 name**. This is a feature to prevent other users on the same cluster
 from re-using your sealed secrets. See the [Scopes](#scopes) section for more info.
 
-`kubeseal` reads the namespace from the input secret, accepts an explicit `--namespace` arg, and uses
+`kubeseal` reads the namespace from the input secret, accepts an explicit `--namespace` argument, and uses
 the `kubectl` default namespace (in that order). Any labels,
 annotations, etc on the original `Secret` are preserved, but not
 automatically reflected in the `SealedSecret`.
 
-By design, this scheme *does not authenticate the user*.  In other
+By design, this scheme *does not authenticate the user*. In other
 words, *anyone* can create a `SealedSecret` containing any `Secret`
-they like (provided the namespace/name matches).  It is up to your
+they like (provided the namespace/name matches). It is up to your
 existing config management workflow, cluster RBAC rules, etc to ensure
-that only the intended `SealedSecret` is uploaded to the cluster.  The
+that only the intended `SealedSecret` is uploaded to the cluster. The
 only change from existing Kubernetes is that the *contents* of the
 `Secret` are now hidden while outside the cluster.
 
@@ -510,7 +510,7 @@ metadata:
 ## Secret Rotation
 
 You should always rotate your secrets. But since your secrets are encrypted with another secret,
-you need to understand how these two layers relate in order to take the right decisions.
+you need to understand how these two layers relate to take the right decisions.
 
 TL;DR:
 
@@ -521,27 +521,27 @@ TL;DR:
 
 ### Sealing key renewal
 
-Sealing keys are automatically renewed every 30 days. Which means a new sealing key is created and appended to the set of active sealing keys the controller can use to unseal Sealed Secret resources.
+Sealing keys are automatically renewed every 30 days. Which means a new sealing key is created and appended to the set of active sealing keys the controller can use to unseal `SealedSecret` resources.
 
 The most recently created sealing key is the one used to seal new secrets when you use `kubeseal` and it's the one whose certificate is downloaded when you use `kubeseal --fetch-cert`.
 
-The renewal time of 30d is a reasonable default, but it can be tweaked as needed
-with the `--key-renew-period=<value>` flag for the command in the pod template of the sealed secret controller. The `value` field can be given as golang
+The renewal time of 30 days is a reasonable default, but it can be tweaked as needed
+with the `--key-renew-period=<value>` flag for the command in the pod template of the `SealedSecret` controller. The `value` field can be given as golang
 duration flag (eg: `720h30m`). Assuming that you've installed Sealed Secrets into the `kube-system` namespace, use the following command to edit the Deployment controller, and add the `--key-renew-period` parameter. Once you close your text editor, and the Deployment controller has been modified, a new Pod will be automatically created to replace the old Pod.
 
 ```
 kubectl edit deployment/sealed-secrets-controller --namespace=kube-system
 ```
 
-A value of `0` will deactivate automatic key renewal. Of course, it's possible you have a valid use case for deactivating automatic sealing key renewal; but experience has shown that new users often tend to jump to conclusions that they want control over key renewal, before fully understanding how sealed secrets work. Read more about this in the [common misconceptions](#common-misconceptions-about-key-renewal) section below.
+A value of `0` will deactivate automatic key renewal. Of course, you may have a valid use case for deactivating automatic sealing key renewal but experience has shown that new users often tend to jump to conclusions that they want control over key renewal, before fully understanding how sealed secrets work. Read more about this in the [common misconceptions](#common-misconceptions-about-key-renewal) section below.
 
-> Unfortunately you cannot use e.g. "d" as a unit for days because that's not supported by the Go stdlib. Instead of hitting your face with a palm, take this as an opportunity to meditate on the [falsehoods programmers believe about time](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time).
+> Unfortunately, you cannot use e.g. "d" as a unit for days because that's not supported by the Go stdlib. Instead of hitting your face with a palm, take this as an opportunity to meditate on the [falsehoods programmers believe about time](https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time).
 
 A common misunderstanding is that key renewal is often thought of as a form of key rotation, where the old key is not only obsolete but actually bad and that you thus want to get rid of it.
 It doesn't help that this feature has been historically called "key rotation", which can add to the confusion.
 
 Sealed secrets are not automatically rotated and old keys are not deleted
-when new keys are generated. Old sealed secrets resources can be still decrypted (that's because old sealing keys are not deleted).
+when new keys are generated. Old `SealedSecret` resources can be still decrypted (that's because old sealing keys are not deleted).
 
 ### User secret rotation
 
@@ -549,18 +549,18 @@ The *sealing key* renewal and SealedSecret rotation are **not a substitute** for
 
 A core value proposition of this tool is:
 
-> Encrypt your Secret into a SealedSecret, which *is* safe to store - even to a public repository.
+> Encrypt your Secret into a SealedSecret, which *is* safe to store - even inside a public repository.
 
 If you store anything in a version control storage, and in a public one in particular, you must assume
 you cannot ever delete that information.
 
-*If* a sealing key somehow leaks out of the cluster you must consider all your SealedSecret resources
+*If* a sealing key somehow leaks out of the cluster you must consider all your `SealedSecret` resources
 encrypted with that key as compromised. No amount of sealing key rotation in the cluster or even re-encryption of existing SealedSecrets files can change that.
 
 The best practice is to periodically rotate all your actual secrets (e.g. change the password) **and** craft new
-SealedSecret resource with those new secrets.
+`SealedSecret` resources with those new secrets.
 
-But if the sealed secrets controller were not renewing the *sealing key* that rotation would be moot,
+But if the `SealedSecret` controller was not renewing the *sealing key* that rotation would be moot,
 since the attacker could just decrypt the new secrets as well. Thus, you need to do both: periodically renew the sealing key and rotate your actual secrets!
 
 ### Early key renewal
@@ -568,39 +568,39 @@ since the attacker could just decrypt the new secrets as well. Thus, you need to
 If you know or suspect a *sealing key* has been compromised you should renew the key ASAP before you
 start sealing your new rotated secrets, otherwise you'll be giving attackers access to your new secrets as well.
 
-A key can be generated early by passing the current timestamp to the controller into a flag called `--key-cutoff-time` or an env var called `SEALED_SECRETS_KEY_CUTOFF_TIME`. Expected format is RFC1123, you can generate it with the `date -R` unix command.
+A key can be generated early by passing the current timestamp to the controller into a flag called `--key-cutoff-time` or an env var called `SEALED_SECRETS_KEY_CUTOFF_TIME`. The expected format is RFC1123, you can generate it with the `date -R` unix command.
 
 ### Common misconceptions about key renewal
 
-Sealed secrets sealing keys are not access control keys (e.g. like a password); they are more like the GPG key you might use to read encrypted mail sent to you. Let's continue with the email analogy for a bit:
+Sealed secrets sealing keys are not access control keys (e.g. a password). They are more like the GPG key you might use to read encrypted mail sent to you. Let's continue with the email analogy for a bit:
 
-Imagine you have reasons to believe your private GPG key might have been compromised. You'd have more to lose than to gain if the first thing you do is to just delete your private key. All the previous emails sent with that key are no longer accessible to you (unless you have a decrypted copy of those emails), nor are new emails sent by your friends whom you have not yet managed to tell to use the new key.
+Imagine you have reasons to believe your private GPG key might have been compromised. You'd have more to lose than to gain if the first thing you do is just delete your private key. All the previous emails sent with that key are no longer accessible to you (unless you have a decrypted copy of those emails), nor are new emails sent by your friends whom you have not yet managed to tell to use the new key.
 
-Sure, the content of those encrypted emails is not secure, as an attacker might now be able to decrypt them, but what's done is done. Your sudden loss of ability to read those emails surely doesn't undo the damage; if anything, it's worse because you no longer know for sure what secret the attacker got to know. What you really want to do is to make sure that your friend stops using your old key and that from now on all further communication is encrypted with a new key pair (i.e. your friend must know about that new key).
+Sure, the content of those encrypted emails is not secure, as an attacker might now be able to decrypt them, but what's done is done. Your sudden loss of the ability to read those emails surely doesn't undo the damage. If anything, it's worse because you no longer know for sure what secret the attacker got to know. What you really want to do is to make sure that your friend stops using your old key and that from now on all further communication is encrypted with a new key pair (i.e. your friend must know about that new key).
 
-The same logic applies to SealedSecrets. The ultimate goal is securing your actual "user" secrets. The "sealing" secrets are just a mechanism, an "envelope". If a secret is leaked there is no going back; what's done is done.
+The same logic applies to SealedSecrets. The ultimate goal is to secure your actual "user" secrets. The "sealing" secrets are just a mechanism, an "envelope". If a secret is leaked there is no going back, what's done is done.
 
 You first need to ensure that new secrets don't get encrypted with that old compromised key (in the email analogy above that's: create a new key pair and give all your friends your new public key).
 
-The second logical step is to neutralize the damage, which depends on the nature of the secret. A simple example is a database password: if you accidentally leak your database password, the thing you're supposed to do is simply to change your database password (on the database; and revoke the old one!) *and* update the SealedSecret resource with the new password (i.e. running `kubeseal` again).
+The second logical step is to neutralize the damage, which depends on the nature of the secret. A simple example is a database password: if you accidentally leak your database password, the thing you're supposed to do is simply to change your database password (on the database; and revoke the old one!) *and* update the `SealedSecret` resource with the new password (i.e. running `kubeseal` again).
 
 Both steps are described in the previous sections, albeit in a less verbose way. There is no shame in reading them again, now that you have a more in-depth grasp of the underlying rationale.
 
 ### Manual key management (advanced)
 
-The sealed secrets controller and the associated workflow is designed to keep old sealing keys around and periodically add new ones. You should not delete old keys unless you know what you're doing.
+The `SealedSecret` controller and the associated workflow are designed to keep old sealing keys around and periodically add new ones. You should not delete old keys unless you know what you're doing.
 
-That said, if you want you can manually manage (create, move, delete) *sealing keys*. They are just normal k8s secrets living in the same namespace where the sealed secret controller lives (usually `kube-system`, but it's configurable).
+That said, if you want you can manually manage (create, move, delete) *sealing keys*. They are just normal k8s secrets living in the same namespace where the `SealedSecret` controller lives (usually `kube-system`, but it's configurable).
 
 There are advanced use cases that you can address by creative management of the sealing keys.
 For example, you can share the same sealing key among a few clusters so that you can apply exactly the same sealed secret in multiple clusters.
-Since sealing keys are just normal k8s secrets you can even use sealed secrets itself and use a GitOps workflow to manage your sealing keys (useful when you want to share the same key among different clusters)!
+Since sealing keys are just normal k8s secrets you can even use sealed secrets themselves and use a GitOps workflow to manage your sealing keys (useful when you want to share the same key among different clusters)!
 
-Labelling a *sealing key* secret with anything other than `active` effectively deletes
-the key from the sealed secrets controller, but it is still available in k8s for
+Labeling a *sealing key* secret with anything other than `active` effectively deletes
+the key from the `SealedSecret` controller, but it is still available in k8s for
 manual encryption/decryption if need be.
 
-**NOTE** Sealed secrets currently does not automatically pick up manually created, deleted or relabeled sealing keys, an admin must restart the controller before the effect will apply.
+**NOTE** `SealedSecret` controller currently does not automatically pick up manually created, deleted or relabeled sealing keys. An admin must restart the controller before the effect will apply.
 
 ### Re-encryption (advanced)
 
@@ -617,7 +617,7 @@ in your version control system (`kubeseal --re-encrypt` doesn't update the in-cl
 
 Currently, old keys are not garbage collected automatically.
 
-It's a good idea to periodically re-encrypt your SealedSecrets. But as mentioned above, don't lull yourself in a false sense of security: you must assume the old version of the SealedSecret (the one encrypted with a key you think of as dead) is still potentially around and accessible to attackers. I.e. re-encryption is not a substitute for periodically rotating your actual secrets.
+It's a good idea to periodically re-encrypt your SealedSecrets. But as mentioned above, don't lull yourself in a false sense of security: you must assume the old version of the `SealedSecret` resource (the one encrypted with a key you think of as dead) is still potentially around and accessible to attackers. I.e. re-encryption is not a substitute for periodically rotating your actual secrets.
 
 ## Details (advanced)
 
@@ -626,12 +626,12 @@ interesting part of a `SealedSecret` is a base64-encoded
 asymmetrically encrypted `Secret`.
 
 The controller maintains a set of private/public key pairs as kubernetes
-secrets. Keys are labelled with `sealedsecrets.bitnami.com/sealed-secrets-key`
+secrets. Keys are labeled with `sealedsecrets.bitnami.com/sealed-secrets-key`
 and identified in the label as either `active` or `compromised`. On startup,
 The sealed secrets controller will...
 
 1. Search for these keys and add them to its local store if they are
-labelled as active.
+labeled as active.
 2. Create a new key
 3. Start the key rotation cycle
 
@@ -641,26 +641,26 @@ More details about crypto can be found [here](docs/developer/crypto.md).
 
 ## Developing
 
-More details about crypto can be found [in the Developer Guide](docs/developer/README.md).
+Developing guidelines can be found [in the Developer Guide](docs/developer/README.md).
 
 ## FAQ
 
 ### Will you still be able to decrypt if you no longer have access to your cluster?
 
-No, the private keys are only stored in the Secret managed by the controller (unless you have some other backup of your k8s objects). There are no backdoors - without that private key used  to encrypt a given SealedSecrets, you can't decrypt it. If you can't get to the Secrets with the encryption keys, and you also can't get to the decrypted versions of your Secrets live in the cluster, then you will need to regenerate new passwords for everything, seal them again with a new sealing key, etc.
+No, the private keys are only stored in the Secret managed by the controller (unless you have some other backup of your k8s objects). There are no backdoors - without that private key used to encrypt a given SealedSecrets, you can't decrypt it. If you can't get to the Secrets with the encryption keys, and you also can't get to the decrypted versions of your Secrets live in the cluster, then you will need to regenerate new passwords for everything, seal them again with a new sealing key, etc.
 
 ### How can I do a backup of my SealedSecrets?
 
-If you do want to make a backup of the encryption private keys, it's easy to do from an account with suitable access and:
+If you do want to make a backup of the encryption private keys, it's easy to do from an account with suitable access:
 
 ```bash
 kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >main.key
 kubectl get secret -n kube-system sealed-secrets-key -o yaml >>main.key
 ```
 
-NOTE: you need the second statement only if you ever installed sealed-secrets older than version 0.9.x on your cluster.
+> NOTE: You need the second statement only if you ever installed sealed-secrets older than version 0.9.x on your cluster.
 
-NOTE: This file will contain the controller's public + private keys and should be kept omg-safe!
+> NOTE: This file will contain the controller's public + private keys and should be kept omg-safe!
 
 To restore from a backup after some disaster, just put that secrets back before starting the controller - or if the controller was already started, replace the newly-created secrets and restart the controller:
 
@@ -672,7 +672,7 @@ kubectl delete pod -n kube-system -l name=sealed-secrets-controller
 ### Can I decrypt my secrets offline with a backup key?
 
 While treating sealed-secrets as long term storage system for secrets is not the recommended use case, some people
-do have a legitimate requirement for being able to recover secrets when the k8s cluster is down and restoring a backup into a new sealed-secrets controller deployment is not practical.
+do have a legitimate requirement for being able to recover secrets when the k8s cluster is down and restoring a backup into a new `SealedSecret` controller deployment is not practical.
 
 If you have backed up one or more of your private keys (see previous question), you can use the `kubeseal --recovery-unseal --recovery-private-key file1.key,file2.key,...` command to decrypt a sealed secrets file.
 
@@ -682,7 +682,7 @@ You can check the flags available using `kubeseal --help`.
 
 ### How do I update parts of JSON/YAML/TOML/.. file encrypted with sealed secrets?
 
-A kubernetes secret resource contains multiple items, basically a flat map of key/value pairs.
+A kubernetes `Secret` resource contains multiple items, basically a flat map of key/value pairs.
 SealedSecrets operate at that level, and does not care what you put in the values. In other words
 it cannot make sense of any structured configuration file you might have put in a secret and thus
 cannot help you update individual fields in it.
@@ -697,16 +697,17 @@ Please check [here](docs/bring-your-own-certificates.md) for a workaround.
 ### How to use kubeseal if the controller is not running within the `kube-system` namespace?
 
 If you installed the controller in a different namespace than the default `kube-system`, you need to provide this namespace
-to the `kubeseal` commandline tool. There are two options: You can specify the namespace via the command line option
-`--controller-namespace <namespace>` or via the environment variable `SEALED_SECRETS_CONTROLLER_NAMESPACE`.
+to the `kubeseal` commandline tool. There are two options:
 
-Example:
+1. You can specify the namespace via the command line option `--controller-namespace <namespace>`:
 
-```bash
-# Provide the namespace via the command line option
+  ```bash
 kubeseal --controller-namespace sealed-secrets <mysecret.json >mysealedsecret.json
+```
 
-# Provide the namespace via the environment variable
+2. Via the environment variable `SEALED_SECRETS_CONTROLLER_NAMESPACE`:
+
+  ```bash
 export SEALED_SECRETS_CONTROLLER_NAMESPACE=sealed-secrets
 kubeseal <mysecret.json >mysealedsecret.json
 ```
@@ -740,7 +741,7 @@ Click [here](http://slack.k8s.io) to sign up to the Kubernetes Slack org.
 
 ### Related projects
 
-- Visual Studio Code extension: https://marketplace.visualstudio.com/items?itemName=codecontemplator.kubeseal
-- WebSeal: generates secrets in the browser : https://socialgouv.github.io/webseal
-- HybridEncrypt TypeScript implementation : https://github.com/SocialGouv/aes-gcm-rsa-oaep
-- [DEPRACATED] Sealed Secrets Operator: https://github.com/disposab1e/sealed-secrets-operator-helm
+- Visual Studio Code extension: [https://marketplace.visualstudio.com/items?itemName=codecontemplator.kubeseal](https://marketplace.visualstudio.com/items?itemName=codecontemplator.kubeseal)
+- WebSeal: generates secrets in the browser: [https://socialgouv.github.io/webseal](https://socialgouv.github.io/webseal)
+- HybridEncrypt TypeScript implementation: [https://github.com/SocialGouv/aes-gcm-rsa-oaep](https://github.com/SocialGouv/aes-gcm-rsa-oaep)
+- [DEPRACATED] Sealed Secrets Operator: [https://github.com/disposab1e/sealed-secrets-operator-helm](https://github.com/disposab1e/sealed-secrets-operator-helm)
