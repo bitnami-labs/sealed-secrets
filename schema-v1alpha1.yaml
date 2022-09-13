@@ -36,9 +36,11 @@ openAPIV3Schema:
               additionalProperties:
                 type: string
               description: Keys that should be templated using decrypted data
+              nullable: true
               type: object
             metadata:
               description: 'Standard object''s metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata'
+              nullable: true
               type: object
             type:
               description: Used to facilitate programmatic handling of secret
