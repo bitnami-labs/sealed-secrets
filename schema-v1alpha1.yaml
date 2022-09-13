@@ -96,3 +96,6 @@ openAPIV3Schema:
           format: int64
           type: integer
       type: object
+  required:
+  - spec
+  type: object
