@@ -14,7 +14,7 @@ CONTROLLER_GEN ?= controller-gen
 
 REGISTRY ?= docker.io
 CONTROLLER_IMAGE = $(REGISTRY)/bitnami/sealed-secrets-controller:latest
-KUBESEAL_IMAGE = $(REGISTRY)/bitnami/kubeseal:latest
+KUBESEAL_IMAGE = $(REGISTRY)/bitnami/sealed-secrets-kubeseal:latest
 INSECURE_REGISTRY = false # useful for local registry
 IMAGE_PULL_POLICY = Always
 KUBECONFIG ?= $(HOME)/.kube/config
@@ -52,7 +52,7 @@ generate: $(GO_FILES)
 	@# github.com/bitnami-labs/sealeds-secrets/...
 	@# instead of just updating ./pkg 
 	@# for that reason we generate at gentmp and then move it all to ./pkg
-	cp -r gentmp/github.com/bitnami-labs/sealed-secrets/pkg . && rm gentmp/ -rf
+	cp -r gentmp/github.com/bitnami-labs/sealed-secrets/pkg . && rm -rf gentmp/
 
 manifests:
 	$(CONTROLLER_GEN) crd paths="./pkg/apis/..."  output:crd:artifacts:config=helm/sealed-secrets/crds/
@@ -86,18 +86,23 @@ kubeseal-static: kubeseal-static-$(GOOS)-$(GOARCH)
 	cp $< $@
 
 
-define controllerimage
-controller.image.$(1)-$(2): Dockerfile controller-static-$(1)-$(2)
-	mkdir -p dist/controller_$(1)_$(2)
-	cp controller-static-$(1)-$(2) dist/controller_$(1)_$(2)/controller
-	$(DOCKER) build --build-arg TARGETARCH=$(2) -t $(CONTROLLER_IMAGE)-$(1)-$(2) .
-	@echo $(CONTROLLER_IMAGE)-$(1)-$(2) >$$@.tmp
+define image
+$(1).image.$(3)-$(4): docker/$(1).Dockerfile $(1)-static-$(3)-$(4)
+	mkdir -p dist/$(1)_$(3)_$(4)
+	cp $(1)-static-$(3)-$(4) dist/$(1)_$(3)_$(4)/$(1)
+	$(DOCKER) build --build-arg TARGETARCH=$(4) -t $(2)-$(3)-$(4) -f docker/$(1).Dockerfile .
+	@echo $(2)-$(3)-$(4) >$$@.tmp
 	@mv $$@.tmp $$@
 endef
 
-$(eval $(call controllerimage,linux,amd64))
-$(eval $(call controllerimage,linux,arm64))
-$(eval $(call controllerimage,linux,arm))
+define images
+$(call image,controller,${CONTROLLER_IMAGE},$1,$2)
+$(call image,kubeseal,${KUBESEAL_IMAGE},$1,$2)
+endef
+
+$(eval $(call images,linux,amd64))
+$(eval $(call images,linux,arm64))
+$(eval $(call images,linux,arm))
 
 %.yaml: %.jsonnet
 	$(KUBECFG) show -V CONTROLLER_IMAGE=$(CONTROLLER_IMAGE) -V IMAGE_PULL_POLICY=$(IMAGE_PULL_POLICY) -o yaml $< > $@.tmp

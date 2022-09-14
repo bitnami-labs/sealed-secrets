@@ -11,7 +11,15 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        gotestsum: ["1.8.1"]
+        include:
+          - dockerfile: ./docker/controller.Dockerfile
+            image: docker.io/bitnami/sealed-secrets-controller
+          - dockerfile: ./docker/controller.Dockerfile
+            image: ghcr.io/bitnami-labs/sealed-secrets-controller
+          - dockerfile: ./docker/kubeseal.Dockerfile
+            image: docker.io/bitnami/sealed-secrets-kubeseal
+          - dockerfile: ./docker/kubeseal.Dockerfile
+            image: ghcr.io/bitnami-labs/sealed-secrets-kubeseal
     env:
       dockerhub_image_name: docker.io/bitnami/sealed-secrets-controller
       ghcr_image_name: ghcr.io/bitnami-labs/sealed-secrets-controller
@@ -31,7 +39,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          go install gotest.tools/gotestsum@v${{ matrix.gotestsum }}
+          go install gotest.tools/gotestsum@v1.8.1
 
       # Run tests
       - name: Tests
@@ -87,14 +95,13 @@ jobs:
         id: meta
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
-          images: |
-            ${{ env.dockerhub_image_name }}
-            ${{ env.ghcr_image_name }}
+          images: ${{ matrix.image }}
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v2
         with:
           context: .
+          file: ${{ matrix.dockerfile }}
           platforms: linux/amd64,linux/arm64,linux/arm
           push: true
           tags: ${{ steps.meta.outputs.tags }}
