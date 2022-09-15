@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.19", "1.18.5"]
+        go: ["1.19.1", "1.18.6"]
         os: [ubuntu-latest]
         golangci-lint: ["1.47.3"]
     steps:
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.19", "1.18.5"]
+        go: ["1.19.1", "1.18.6"]
         os: [ubuntu-latest]
         gosec: ["2.12.0"]
     steps:
@@ -65,7 +65,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go: ["1.19", "1.18.5"]
+        go: ["1.19.1", "1.18.6"]
         os: [macos-latest, windows-latest, ubuntu-latest]
         gotestsum: ["1.8.1"]
     steps:
@@ -117,7 +117,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: 1.18.5
+        go-version: 1.18.6
       id: go
 
     - name: Docker build
@@ -157,7 +157,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: 1.18.5
+        go-version: 1.18.6
       id: go
 
     - name: Set up Ginkgo
