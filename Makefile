@@ -16,7 +16,7 @@ REGISTRY ?= docker.io
 CONTROLLER_IMAGE = $(REGISTRY)/bitnami/sealed-secrets-controller:latest
 KUBESEAL_IMAGE = $(REGISTRY)/bitnami/sealed-secrets-kubeseal:latest
 INSECURE_REGISTRY = false # useful for local registry
-IMAGE_PULL_POLICY = Always
+IMAGE_PULL_POLICY =
 KUBECONFIG ?= $(HOME)/.kube/config
 
 GO_PACKAGES = ./...
@@ -50,7 +50,7 @@ generate: $(GO_FILES)
 	@# TODO: remove as soon as a proper way forward is found:
 	@# code-generator insists in generating the file under directory:
 	@# github.com/bitnami-labs/sealeds-secrets/...
-	@# instead of just updating ./pkg 
+	@# instead of just updating ./pkg
 	@# for that reason we generate at gentmp and then move it all to ./pkg
 	cp -r gentmp/github.com/bitnami-labs/sealed-secrets/pkg . && rm -rf gentmp/
 

@@ -1,6 +1,6 @@
 // Minimal required deployment for a functional controller.
 
-local kubecfg = import "kubecfg.libsonnet";
+local kubecfg = import 'kubecfg.libsonnet';
 
 local namespace = 'kube-system';
 
@@ -9,7 +9,9 @@ local namespace = 'kube-system';
   local kube = self.kube + import 'kube-fixes.libsonnet',
 
   controllerImage:: std.extVar('CONTROLLER_IMAGE'),
-  imagePullPolicy:: std.extVar('IMAGE_PULL_POLICY'),
+  imagePullPolicy:: local ext = std.extVar('IMAGE_PULL_POLICY'); if ext == '' then
+    if std.endsWith($.controllerImage, ':latest') then 'Always' else 'IfNotPresent'
+  else ext,
 
   crd: kube.CustomResourceDefinition('bitnami.com', 'v1alpha1', 'SealedSecret') {
     spec+: {
@@ -20,7 +22,7 @@ local namespace = 'kube-system';
           subresources: {
             status: {},
           },
-          schema: kubecfg.parseYaml(importstr "schema-v1alpha1.yaml")[0],
+          schema: kubecfg.parseYaml(importstr 'schema-v1alpha1.yaml')[0],
         },
       },
     },
