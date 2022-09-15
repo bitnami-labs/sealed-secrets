@@ -7,7 +7,9 @@ on:
     branches: [ main ]
 
 env:
-  CONTROLLER_IMAGE: docker.io/bitnami/sealed-secrets-controller:latest
+  controller_registry: docker.io
+  controller_repository: bitnami/sealed-secrets-controller
+  controller_tag: latest
 
 jobs:
   linter:
@@ -90,6 +92,9 @@ jobs:
     name: Build Container
     runs-on: ubuntu-latest
     steps:
+    - name: "Set environmental variables"
+      run: |
+        echo "CONTROLLER_IMAGE=$controller_registry/$controller_repository:$controller_tag" >> $GITHUB_ENV
 
     - name: Check out code
       uses: actions/checkout@v2
@@ -140,8 +145,8 @@ jobs:
         name: controller-image
         path: /tmp/controller-image.tar
 
-  integration:
-    name: Integration
+  integration-yaml:
+    name: Integration (controller.yaml)
     runs-on: ubuntu-latest
     needs: container
     strategy:
@@ -151,8 +156,10 @@ jobs:
       MINIKUBE_WANTUPDATENOTIFICATION: "false"
       MINIKUBE_WANTREPORTERRORPROMPT: "false"
       CHANGE_MINIKUBE_NONE_USER: "true"
-
     steps:
+    - name: "Set environmental variables"
+      run: |
+        echo "CONTROLLER_IMAGE=$controller_registry/$controller_repository:$controller_tag" >> $GITHUB_ENV
 
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
@@ -204,6 +211,76 @@ jobs:
       run: |
         kubectl apply -f controller.yaml
         kubectl rollout status deployment/sealed-secrets-controller -n kube-system -w --timeout=1m || kubectl -n kube-system describe pod -lname=sealed-secrets-controller
+
+    - name: Integration tests
+      run: make integrationtest CONTROLLER_IMAGE=$CONTROLLER_IMAGE GINKGO="ginkgo -v --randomizeSuites --failOnPending --trace --progress --compilers=2 --nodes=4"
+
+  integration-chart:
+    name: Integration (Helm Chart)
+    runs-on: ubuntu-latest
+    needs: container
+    strategy:
+      matrix:
+        k8s: ["1.16.13", "1.17.11", "1.20.4", "1.22.5"]
+    env:
+      MINIKUBE_WANTUPDATENOTIFICATION: "false"
+      MINIKUBE_WANTREPORTERRORPROMPT: "false"
+      CHANGE_MINIKUBE_NONE_USER: "true"
+    steps:
+    - name: "Set environmental variables"
+      run: |
+        echo "CONTROLLER_IMAGE=$controller_registry/$controller_repository:$controller_tag" >> $GITHUB_ENV
+
+    - name: Set up Go 1.x
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.18.6
+      id: go
+
+    - name: Set up Ginkgo
+      run: |
+        go install github.com/onsi/ginkgo/ginkgo@v1.16.4
+
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2
+
+    - uses: opsgang/ga-setup-minikube@v0.1.1
+      env:
+        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+      with:
+        minikube-version: 1.26.1
+        k8s-version: ${{ matrix.k8s }}
+
+    - name: Install Helm
+      uses: azure/setup-helm@v1
+      with:
+        version: v3.4.2
+
+    # need to delete old state of the cluster, see:
+    # https://github.com/kubernetes/minikube/issues/8765
+    - name: K8s setup
+      run: |
+        minikube delete
+        minikube config set kubernetes-version v${{ matrix.k8s }}
+        minikube start --vm-driver=docker
+        minikube update-context
+        kubectl cluster-info
+
+    - name: Download container image artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: controller-image
+
+    - name: Load docker image
+      run: |
+        eval $(minikube docker-env)
+        docker load -i controller-image.tar
+        docker inspect $CONTROLLER_IMAGE
+
+    - name: Testing environment setup
+      run: |
+        helm install sealed-secrets -n kube-system --set fullnameOverride=sealed-secrets-controller --set image.registry=$controller_registry --set image.repository=$controller_repository --set image.tag=$controller_tag --set image.pullPolicy=Never helm/sealed-secrets
+        kubectl rollout status deployment/sealed-secrets-controller -n kube-system -w --timeout=1m || kubectl -n kube-system describe pod -lapp.kubernetes.io/name=sealed-secrets
 
     - name: Integration tests
       run: make integrationtest CONTROLLER_IMAGE=$CONTROLLER_IMAGE GINKGO="ginkgo -v --randomizeSuites --failOnPending --trace --progress --compilers=2 --nodes=4"
