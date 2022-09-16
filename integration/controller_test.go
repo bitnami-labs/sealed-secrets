@@ -269,8 +269,12 @@ var _ = Describe("create", func() {
 		})
 
 		Context("Secret recreation", func() {
-			BeforeEach(func() {
-				c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+			JustBeforeEach(func() {
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+				err:= c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should the Secret exists", func() {
 				expected := map[string][]byte{
