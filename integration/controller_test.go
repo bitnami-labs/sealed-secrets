@@ -276,7 +276,7 @@ var _ = Describe("create", func() {
 				err:= c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
-			It("should the Secret exists", func() {
+			It("should recreate the secret", func() {
 				expected := map[string][]byte{
 					"foo": []byte("bar"),
 				}
