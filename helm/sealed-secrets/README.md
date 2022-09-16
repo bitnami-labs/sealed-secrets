@@ -137,6 +137,8 @@ The command removes all the Kubernetes components associated with the chart and 
 | `affinity`                                        | Affinity for Sealed Secret pods assignment                                           | `{}`                                |
 | `nodeSelector`                                    | Node labels for Sealed Secret pods assignment                                        | `{}`                                |
 | `tolerations`                                     | Tolerations for Sealed Secret pods assignment                                        | `[]`                                |
+| `hostNetwork`                                     | Run Sealed Secret pods in the host network of the node where the pod is deployed     | `false`                             |
+| `dnsPolicy`                                       | Sealed Secret pods' dnsPolicy                                                        | `""`                                |
 
 
 ### Traffic Exposure Parameters
