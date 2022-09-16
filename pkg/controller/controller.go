@@ -56,7 +56,7 @@ const (
 // Controller implements the main sealed-secrets-controller loop.
 type Controller struct {
 	queue       workqueue.RateLimitingInterface
-	ssInformer    cache.SharedIndexInformer
+	ssInformer  cache.SharedIndexInformer
 	sInformer   cache.SharedIndexInformer
 	sclient     v1.SecretsGetter
 	ssclient    ssv1alpha1client.SealedSecretsGetter
