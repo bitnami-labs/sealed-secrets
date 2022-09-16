@@ -209,7 +209,7 @@ func Main(f *Flags, version string) error {
 	if f.AdditionalNamespaces != "" {
 		addNS := removeDuplicates(strings.Split(f.AdditionalNamespaces, ","))
 
-		var inf ssinformers.SharedInformerFactory
+		var ssinf ssinformers.SharedInformerFactory
 		var sinf informers.SharedInformerFactory
 		var ctlr *Controller
 
@@ -222,9 +222,9 @@ func Main(f *Flags, version string) error {
 				return err
 			}
 			if ns != namespace {
-				inf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
+				ssinf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
 				sinf = informers.NewFilteredSharedInformerFactory(clientset, 0, ns, tweakopts)
-				ctlr = NewController(clientset, ssclientset, inf, sinf, keyRegistry)
+				ctlr = NewController(clientset, ssclientset, ssinf, sinf, keyRegistry)
 				ctlr.oldGCBehavior = f.OldGCBehavior
 				ctlr.updateStatus = f.UpdateStatus
 				log.Printf("Starting informer for namespace: %s\n", ns)
