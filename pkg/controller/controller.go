@@ -56,8 +56,8 @@ const (
 // Controller implements the main sealed-secrets-controller loop.
 type Controller struct {
 	queue       workqueue.RateLimitingInterface
-	informer    cache.SharedIndexInformer
-	infsecret   cache.SharedIndexInformer
+	ssInformer    cache.SharedIndexInformer
+	sInformer   cache.SharedIndexInformer
 	sclient     v1.SecretsGetter
 	ssclient    ssv1alpha1client.SealedSecretsGetter
 	recorder    record.EventRecorder
@@ -77,11 +77,11 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 	eventBroadcaster.StartRecordingToSink(&v1.EventSinkImpl{Interface: clientset.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "sealed-secrets"})
 
-	informer := ssinformer.Bitnami().V1alpha1().
+	ssInformer := ssinformer.Bitnami().V1alpha1().
 		SealedSecrets().
 		Informer()
 
-	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	ssInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err == nil {
@@ -105,8 +105,8 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 		},
 	})
 
-	infsecret := informers.NewSharedInformerFactory(clientset, 0).Core().V1().Secrets().Informer()
-	infsecret.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	sInformer := informers.NewSharedInformerFactory(clientset, 0).Core().V1().Secrets().Informer()
+	sInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err == nil {
@@ -125,8 +125,8 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 	})
 
 	return &Controller{
-		informer:    informer,
-		infsecret:   infsecret,
+		ssInformer:  ssInformer,
+		sInformer:   sInformer,
 		queue:       queue,
 		sclient:     clientset.CoreV1(),
 		ssclient:    ssclientset.BitnamiV1alpha1(),
@@ -138,7 +138,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 // HasSynced returns true once this controller has completed an
 // initial resource listing
 func (c *Controller) HasSynced() bool {
-	return c.informer.HasSynced()
+	return c.ssInformer.HasSynced()
 }
 
 // LastSyncResourceVersion is the resource version observed when last
@@ -146,7 +146,7 @@ func (c *Controller) HasSynced() bool {
 // synchronized with access to the underlying store and is not
 // thread-safe.
 func (c *Controller) LastSyncResourceVersion() string {
-	return c.informer.LastSyncResourceVersion()
+	return c.ssInformer.LastSyncResourceVersion()
 }
 
 // Run begins processing items, and will continue until a value is
@@ -157,8 +157,8 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 
 	defer c.queue.ShutDown()
 
-	go c.informer.Run(stopCh)
-	go c.infsecret.Run(stopCh)
+	go c.ssInformer.Run(stopCh)
+	go c.sInformer.Run(stopCh)
 
 	if !cache.WaitForCacheSync(stopCh, c.HasSynced) {
 		utilruntime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))
@@ -204,7 +204,7 @@ func (c *Controller) processNextItem(ctx context.Context) bool {
 
 func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	unsealRequestsTotal.Inc()
-	obj, exists, err := c.informer.GetIndexer().GetByKey(key)
+	obj, exists, err := c.ssInformer.GetIndexer().GetByKey(key)
 	if err != nil {
 		log.Printf("Error fetching object with key %s from store: %v", key, err)
 		unsealErrorsTotal.WithLabelValues("fetch", "").Inc()
