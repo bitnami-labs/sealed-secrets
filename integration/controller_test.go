@@ -268,7 +268,7 @@ var _ = Describe("create", func() {
 			})
 		})
 
-		Context("Secret recreation", func() {
+		Context("With secret being deleted", func() {
 			JustBeforeEach(func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
