@@ -68,7 +68,7 @@ type Controller struct {
 }
 
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, keyRegistry *KeyRegistry) *Controller {
+func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry) *Controller {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
 	utilruntime.Must(ssscheme.AddToScheme(scheme.Scheme))
@@ -105,7 +105,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 		},
 	})
 
-	sInformer := informers.NewSharedInformerFactory(clientset, 0).Core().V1().Secrets().Informer()
+	sInformer := sinformer.Core().V1().Secrets().Informer()
 	sInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
