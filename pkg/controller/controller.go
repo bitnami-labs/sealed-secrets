@@ -109,18 +109,26 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 	sInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
-			if err == nil {
-				ns, name, err := cache.SplitMetaNamespaceKey(key)
-				if err == nil {
-					ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
-					if err == nil {
-						key, err := cache.MetaNamespaceKeyFunc(ssecret)
-						if err == nil {
-							queue.Add(key)
-						}
-					}
-				}
+			if err != nil {
+				return
 			}
+
+			ns, name, err := cache.SplitMetaNamespaceKey(key)
+			if err != nil {
+				return
+			}
+
+			ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
+			if err != nil {
+				return
+			}
+
+			key, err = cache.MetaNamespaceKeyFunc(ssecret)
+			if err != nil {
+				return
+			}
+
+			queue.Add(key)
 		},
 	})
 
