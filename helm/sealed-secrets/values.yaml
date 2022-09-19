@@ -195,6 +195,10 @@ additionalVolumes: []
 ## ref: https://kubernetes.io/docs/concepts/storage/volumes/
 ##
 additionalVolumeMounts: []
+## @param hostNetwork Sealed Secrets pods' hostNetwork
+hostNetwork: false
+## @param dnsPolicy Sealed Secrets pods' dnsPolicy
+dnsPolicy: ""
 
 ## @section Traffic Exposure Parameters
 

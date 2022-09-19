@@ -15,7 +15,9 @@ spec:
     - 'secret'
     - 'downwardAPI'
     - 'persistentVolumeClaim'
+  {{- if not .Values.hostNetwork }}
   hostNetwork: false
+  {{- end }}
   hostIPC: false
   hostPID: false
   runAsUser:
