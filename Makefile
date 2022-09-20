@@ -55,7 +55,7 @@ generate: $(GO_FILES)
 	cp -r gentmp/github.com/bitnami-labs/sealed-secrets/pkg . && rm -rf gentmp/
 
 manifests:
-	$(CONTROLLER_GEN) crd paths="./pkg/apis/..."  output:crd:artifacts:config=helm/sealed-secrets/crds/
+	$(CONTROLLER_GEN) crd paths="./pkg/apis/..." output:stdout | tail -n +2 > helm/sealed-secrets/crds/bitnami.com_sealedsecrets.yaml
 
 controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/controller
