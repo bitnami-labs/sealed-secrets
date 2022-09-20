@@ -112,6 +112,7 @@ type SealedSecretStatus struct {
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
+// +kubebuilder:subresource:status
 // +genclient
 
 // SealedSecret is the K8s representation of a "sealed Secret" - a
