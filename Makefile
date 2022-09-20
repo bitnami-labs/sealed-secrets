@@ -56,6 +56,7 @@ generate: $(GO_FILES)
 
 manifests:
 	$(CONTROLLER_GEN) crd paths="./pkg/apis/..." output:stdout | tail -n +2 > helm/sealed-secrets/crds/bitnami.com_sealedsecrets.yaml
+	yq '.spec.versions[0].schema' < helm/sealed-secrets/crds/bitnami.com_sealedsecrets.yaml > schema-v1alpha1.yaml
 
 controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/controller
