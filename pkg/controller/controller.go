@@ -67,9 +67,9 @@ type Controller struct {
 	updateStatus  bool // feature flag that enables updating the status subresource.
 }
 
-func findOwnerReferenceSS(obj interface{}) (bool) {
+func findOwnerReferenceSS(obj interface{}) bool {
 	for _, sownerref := range obj.(*corev1.Secret).GetOwnerReferences() {
-		if (sownerref.Kind == "SealedSecret") {
+		if sownerref.Kind == "SealedSecret" {
 			return true
 		}
 	}
@@ -124,8 +124,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 				return
 			}
 
-
-			if (!findOwnerReferenceSS(obj) && !isAnnotatedToBeManaged(obj.(*corev1.Secret))) {
+			if !findOwnerReferenceSS(obj) && !isAnnotatedToBeManaged(obj.(*corev1.Secret)) {
 				return
 			}
 
