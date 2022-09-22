@@ -125,10 +125,8 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 			}
 
 
-			if (!findOwnerReferenceSS(obj)) {
-				if (!isAnnotatedToBeManaged(obj.(*corev1.Secret))) {
-					return
-				}
+			if (!findOwnerReferenceSS(obj) && !isAnnotatedToBeManaged(obj.(*corev1.Secret))) {
+				return
 			}
 
 			ns, name, err := cache.SplitMetaNamespaceKey(skey)
