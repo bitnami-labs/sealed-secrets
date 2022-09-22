@@ -9,20 +9,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        include:
-          - dockerfile: ./docker/controller.Dockerfile
-            image: docker.io/bitnami/sealed-secrets-controller
-          - dockerfile: ./docker/controller.Dockerfile
-            image: ghcr.io/bitnami-labs/sealed-secrets-controller
-          - dockerfile: ./docker/kubeseal.Dockerfile
-            image: docker.io/bitnami/sealed-secrets-kubeseal
-          - dockerfile: ./docker/kubeseal.Dockerfile
-            image: ghcr.io/bitnami-labs/sealed-secrets-kubeseal
     env:
-      dockerhub_image_name: docker.io/bitnami/sealed-secrets-controller
-      ghcr_image_name: ghcr.io/bitnami-labs/sealed-secrets-controller
+      controller_dockerhub_image_name: docker.io/bitnami/sealed-secrets-controller
+      controller_ghcr_image_name: ghcr.io/bitnami-labs/sealed-secrets-controller
+      kubeseal_dockerhub_image_name: docker.io/bitnami/sealed-secrets-kubeseal
+      kubeseal_ghcr_image_name: ghcr.io/bitnami-labs/sealed-secrets-kubeseal
     steps:
       # Checkout and set env
       - name: Checkout
@@ -91,24 +82,49 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
+      - name: Extract metadata (tags, labels) for Docker controller image
+        id: meta_controller
         uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
         with:
-          images: ${{ matrix.image }}
-      - name: Build and push
-        id: docker_build
+          images: |
+            ${{ env.controller_dockerhub_image_name }}
+            ${{ env.controller_ghcr_image_name }}
+      - name: Build and push controller image
+        id: docker_build_controller
         uses: docker/build-push-action@v2
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: ./docker/controller.Dockerfile
           platforms: linux/amd64,linux/arm64,linux/arm
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
-      - name: Sign image with a key in GHCR
+          tags: ${{ steps.meta_controller.outputs.tags }}
+      - name: Extract metadata (tags, labels) for Docker kubeseal image
+        id: meta_kubeseal
+        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        with:
+          images: |
+            ${{ env.kubeseal_dockerhub_image_name }}
+            ${{ env.kubeseal_ghcr_image_name }}
+      - name: Build and push kubeseal image
+        id: docker_build_kubeseal
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: ./docker/kubeseal.Dockerfile
+          platforms: linux/amd64,linux/arm64,linux/arm
+          push: true
+          tags: ${{ steps.meta_kubeseal.outputs.tags }}
+      - name: Sign controller image with a key in GHCR
         run: |
           echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key $TAG_CURRENT
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-          TAG_CURRENT: ${{ steps.meta.outputs.tags }}
-          COSIGN_REPOSITORY: ${{ env.ghcr_image_name }}/signs
+          TAG_CURRENT: ${{ steps.meta_controller.outputs.tags }}
+          COSIGN_REPOSITORY: ${{ env.controller_ghcr_image_name }}/signs
+      - name: Sign kubeseal image with a key in GHCR
+        run: |
+          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key $TAG_CURRENT
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          TAG_CURRENT: ${{ steps.meta_kubeseal.outputs.tags }}
+          COSIGN_REPOSITORY: ${{ env.kubeseal_ghcr_image_name }}/signs
