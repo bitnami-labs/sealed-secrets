@@ -4,6 +4,15 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.18.3
+
+### Changelog
+
+- Upgrade Go version, dependencies and fix CVE-2022-27664 ([#960](https://github.com/bitnami-labs/sealed-secrets/pull/960))
+- Move `kubeseal` to its own package ([#939](https://github.com/bitnami-labs/sealed-secrets/pull/939))
+- Several refactors to the `controller` ([#940](https://github.com/bitnami-labs/sealed-secrets/pull/940) & [#947](https://github.com/bitnami-labs/sealed-secrets/pull/947))
+- Generate a proper schema for the CRD ([#941](https://github.com/bitnami-labs/sealed-secrets/pull/941), [#957](https://github.com/bitnami-labs/sealed-secrets/pull/957), [#964](https://github.com/bitnami-labs/sealed-secrets/pull/964), [#966](https://github.com/bitnami-labs/sealed-secrets/pull/966) & [#970](https://github.com/bitnami-labs/sealed-secrets/pull/970))
+
 ## v0.18.2
 
 ### Changelog
