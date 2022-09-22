@@ -67,6 +67,16 @@ type Controller struct {
 	updateStatus  bool // feature flag that enables updating the status subresource.
 }
 
+func findOwnerReferenceSS(obj interface{}) (bool) {
+	for _, sownerref := range obj.(*corev1.Secret).GetOwnerReferences() {
+		if (sownerref.Kind == "SealedSecret") {
+			return true
+		}
+	}
+
+	return false
+}
+
 // NewController returns the main sealed-secrets controller loop.
 func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry) *Controller {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
@@ -108,27 +118,38 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 	sInformer := sinformer.Core().V1().Secrets().Informer()
 	sInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
-			key, err := cache.MetaNamespaceKeyFunc(obj)
+			skey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err != nil {
+				log.Printf("failed to fetch Secret key: %v", err)
 				return
 			}
 
-			ns, name, err := cache.SplitMetaNamespaceKey(key)
+
+			if (!findOwnerReferenceSS(obj)) {
+				if (!isAnnotatedToBeManaged(obj.(*corev1.Secret))) {
+					return
+				}
+			}
+
+			ns, name, err := cache.SplitMetaNamespaceKey(skey)
 			if err != nil {
+				log.Printf("failed to split metadatada namespace: %v", err)
 				return
 			}
 
 			ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
 			if err != nil {
+				log.Printf("failed to find the Sealed Secret associated: %v", err)
 				return
 			}
 
-			key, err = cache.MetaNamespaceKeyFunc(ssecret)
+			sskey, err := cache.MetaNamespaceKeyFunc(ssecret)
 			if err != nil {
+				log.Printf("failed to fetch Sealed Secret key: %v", err)
 				return
 			}
 
-			queue.Add(key)
+			queue.Add(sskey)
 		},
 	})
 
@@ -146,7 +167,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 // HasSynced returns true once this controller has completed an
 // initial resource listing
 func (c *Controller) HasSynced() bool {
-	return c.ssInformer.HasSynced()
+	return c.ssInformer.HasSynced() && c.sInformer.HasSynced()
 }
 
 // LastSyncResourceVersion is the resource version observed when last
