@@ -4,6 +4,12 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.18.5
+
+### Changelog
+
+- Fix `controller.yaml` having no image reference ([#977](https://github.com/bitnami-labs/sealed-secrets/pull/977))
+
 ## v0.18.4
 
 ### Changelog
