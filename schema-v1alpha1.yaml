@@ -32,6 +32,7 @@ openAPIV3Schema:
               type: object
             metadata:
               description: 'Standard object''s metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata'
+              nullable: true
               type: object
               x-kubernetes-preserve-unknown-fields: true
             type:
