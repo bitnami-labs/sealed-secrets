@@ -21,23 +21,6 @@ for ci_file in $(ls .github/workflows/*.y*ml); do
       fi
     fi
   done
-
-  # Check static matrices
-  expected_matrix_regex="go: \[\""${GO_VERSION}"\", \""${GO_NEXT_VERSION}"\"\]"
-  expected_matrix=$(echo "${expected_matrix_regex}" | sed -e 's/\\\[/[/' -e 's/\\\]/]/')
-  matrices=$(grep 'matrix:' ${ci_file} -A3 | grep 'go: ' | sort -u | sed -e 's/^ *//' || true)
-  if [ "${matrices}" != "" ]; then
-    lines=$(echo "${matrices}" | wc -l)
-    if (( $lines > 1 )); then
-      echo "Fix mismatch between workflow matrices, a single matrix definition is expected:"
-      echo "${matrices}"
-    fi
-    matrix="${matrices}"
-    if ! echo "${matrix}" | grep -q "${expected_matrix_regex}"; then
-      ((failures+=1))
-      echo "Fix ${ci_file} workflow matrix to be '${expected_matrix}' instead of '${matrix}'"
-    fi
-  fi
 done
 
 if (( $failures > 0 )); then
