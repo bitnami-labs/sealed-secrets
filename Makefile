@@ -43,7 +43,10 @@ endif
 
 GO_LD_FLAGS = -X main.VERSION=$(VERSION)
 
-all: controller kubeseal
+all: check-versions controller kubeseal
+
+check-versions:
+	./script/check-versions.sh
 
 generate: $(GO_FILES)
 	$(GO) mod vendor && $(GO) generate $(GO_PACKAGES)
@@ -158,6 +161,6 @@ apply-controller-manifests: clean check-k8s controller.yaml
 
 controller-tests: test push-controller apply-controller-manifests clean integrationtest
 
-.PHONY: all kubeseal controller test clean vet fmt lint-gosec
+.PHONY: all kubeseal controller test clean vet fmt lint-gosec check-versions
 
 .PHONY: controllertests check-k8s push-controller apply-controller-manifests

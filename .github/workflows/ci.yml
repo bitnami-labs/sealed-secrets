@@ -7,6 +7,8 @@ on:
     branches: [ main ]
 
 env:
+  GO_VERSION: 1.18.7
+  GO_NEXT_VERSION: 1.19.2
   controller_registry: docker.io
   controller_repository: bitnami/sealed-secrets-controller
   controller_tag: latest
@@ -17,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.19.1", "1.18.6"]
+        go: [$GO_VERSION, $GO_NEXT_VERSION]
         os: [ubuntu-latest]
         golangci-lint: ["1.47.3"]
     steps:
@@ -42,7 +44,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ["1.19.1", "1.18.6"]
+        go: [$GO_VERSION, $GO_NEXT_VERSION]
         os: [ubuntu-latest]
         gosec: ["2.12.0"]
     steps:
@@ -67,7 +69,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go: ["1.19.1", "1.18.6"]
+        go: [$GO_VERSION, $GO_NEXT_VERSION]
         os: [macos-latest, windows-latest, ubuntu-latest]
         gotestsum: ["1.8.1"]
     steps:
@@ -122,7 +124,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: 1.18.6
+        go-version: $GO_VERSION
       id: go
 
     - name: Docker build
@@ -164,7 +166,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: 1.18.6
+        go-version: $GO_VERSION
       id: go
 
     - name: Set up Ginkgo
@@ -234,7 +236,7 @@ jobs:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: 1.18.6
+        go-version: $GO_VERSION
       id: go
 
     - name: Set up Ginkgo
