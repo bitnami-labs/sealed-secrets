@@ -286,6 +286,81 @@ var _ = Describe("create", func() {
 		})
 	})
 
+	Describe("Secret Recreation", func() {
+		Context("With owned secret", func() {
+			JustBeforeEach(func() {
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+				err:= c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("should recreate the secret", func() {
+				expected := map[string][]byte{
+					"foo": []byte("bar"),
+				}
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+			})
+		})
+
+		Context("With unowned secret with managed annotation", func() {
+			BeforeEach(func() {
+				s.Annotations = map[string]string{
+					ssv1alpha1.SealedSecretManagedAnnotation: "true",
+				}
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+			})
+			JustBeforeEach(func() {
+				err:= c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("should recreate the secret", func() {
+				expected := map[string][]byte{
+					"foo": []byte("bar"),
+				}
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+			})
+		})
+
+		Context("With unowned secret without managed annotation", func() {
+			BeforeEach(func() {
+				s.Annotations = map[string]string{
+				}
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+			})
+			JustBeforeEach(func() {
+				err:= c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("should not recreate the secret", func() {
+				Consistently(func() error {
+					_, err := c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+					return err
+				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
+			})
+		})
+	})
+
 	Describe("Same name, wrong key", func() {
 		BeforeEach(func() {
 			// NB: weak keysize - this is just a test case
