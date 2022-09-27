@@ -25,18 +25,18 @@ for ci_file in $(ls .github/workflows/*.y*ml); do
   # Check static matrices
   expected_matrix_regex="go: \[\""${GO_VERSION}"\", \""${GO_NEXT_VERSION}"\"\]"
   expected_matrix=$(echo "${expected_matrix_regex}" | sed -e 's/\\\[/[/' -e 's/\\\]/]/')
-  raw_matrices=$(grep 'matrix:' -A3 "${ci_file}" | grep 'go:' | sed 's/^ *//' || true)
-  if [ "${raw_matrices}" != "" ]; then
-    matrices=()
-    while IFS='\n' read var; do
-      matrices[${#matrices[@]}]=$var
-    done < <(echo "${raw_matrices}")
-    for matrix in "${matrices[@]}"; do
-      if ! echo "${matrix}" | grep -q "${expected_matrix_regex}"; then
-        ((failures+=1))
-        echo "Fix ${ci_file} workflow matrix to be '${expected_matrix}' instead of '${matrix}'"
-      fi
-    done
+  matrices=$(grep 'matrix:' ${ci_file} -A3 | grep 'go: ' | sort -u | sed -e 's/^ *//' || true)
+  if [ "${matrices}" != "" ]; then
+    lines=$(echo "${matrices}" | wc -l)
+    if (( $lines > 1 )); then
+      echo "Fix mismatch between workflow matrices, a single matrix definition is expected:"
+      echo "${matrices}"
+    fi
+    matrix="${matrices}"
+    if ! echo "${matrix}" | grep -q "${expected_matrix_regex}"; then
+      ((failures+=1))
+      echo "Fix ${ci_file} workflow matrix to be '${expected_matrix}' instead of '${matrix}'"
+    fi
   fi
 done
 
