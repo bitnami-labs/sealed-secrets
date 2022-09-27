@@ -18,10 +18,8 @@ jobs:
   dynamic-matrix:
     runs-on: ubuntu-latest
     outputs:
-			# This needs to match your step's id and name parameters
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-			# Important: Do not forget the id!
       - id: set-matrix
         run: echo "::set-output name=matrix::$GO_MATRIX"
   linter:
