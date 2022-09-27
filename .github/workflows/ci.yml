@@ -19,7 +19,7 @@ jobs:
       matrix:
         go: ["1.19.1", "1.18.6"]
         os: [ubuntu-latest]
-        golangci-lint: ["1.47.3"]
+        golangci-lint: ["1.49.0"]
     steps:
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
