@@ -123,7 +123,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 
 			ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
 			if err != nil {
-				if !strings.Contains(err.Error(), "not found") {
+				if !errors.IsNotFound(err) {
 					log.Printf("failed to find the Sealed Secret associated: %v", err)
 				}
 				return
