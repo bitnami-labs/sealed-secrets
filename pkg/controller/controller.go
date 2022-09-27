@@ -117,7 +117,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 
 			ns, name, err := cache.SplitMetaNamespaceKey(skey)
 			if err != nil {
-				log.Printf("failed to split metadatada namespace: %v", err)
+				log.Printf("failed to get namespace and name from key: %v", err)
 				return
 			}
 
