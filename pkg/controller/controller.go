@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
@@ -67,16 +68,6 @@ type Controller struct {
 	updateStatus  bool // feature flag that enables updating the status subresource.
 }
 
-func findOwnerReferenceSS(obj interface{}) bool {
-	for _, sownerref := range obj.(*corev1.Secret).GetOwnerReferences() {
-		if sownerref.Kind == "SealedSecret" {
-			return true
-		}
-	}
-
-	return false
-}
-
 // NewController returns the main sealed-secrets controller loop.
 func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry) *Controller {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
@@ -124,10 +115,6 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 				return
 			}
 
-			if !findOwnerReferenceSS(obj) && !isAnnotatedToBeManaged(obj.(*corev1.Secret)) {
-				return
-			}
-
 			ns, name, err := cache.SplitMetaNamespaceKey(skey)
 			if err != nil {
 				log.Printf("failed to split metadatada namespace: %v", err)
@@ -136,7 +123,13 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 
 			ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
 			if err != nil {
-				log.Printf("failed to find the Sealed Secret associated: %v", err)
+				if !strings.Contains(err.Error(), "not found") {
+					log.Printf("failed to find the Sealed Secret associated: %v", err)
+				}
+				return
+			}
+
+			if !metav1.IsControlledBy(obj.(*corev1.Secret), ssecret) && !isAnnotatedToBeManaged(obj.(*corev1.Secret)) {
 				return
 			}
 
