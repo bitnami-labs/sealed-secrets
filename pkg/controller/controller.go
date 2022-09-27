@@ -135,7 +135,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 
 			sskey, err := cache.MetaNamespaceKeyFunc(ssecret)
 			if err != nil {
-				log.Printf("failed to fetch Sealed Secret key: %v", err)
+				log.Printf("failed to fetch SealedSecret key: %v", err)
 				return
 			}
 
