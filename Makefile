@@ -132,10 +132,10 @@ vet:
 fmt:
 	$(GOFMT) -s -w $(GO_FILES)
 
-lint:
+lint: check-versions
 	 $(GOLANGCILINT) run --enable goimports --timeout=5m
 
-lint-gosec:
+lint-gosec: check-versions
 	 $(GOSEC) -r --severity medium
 
 clean:
