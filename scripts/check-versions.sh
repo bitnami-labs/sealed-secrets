@@ -28,7 +28,7 @@ for ci_file in $(ls .github/workflows/*.y*ml); do
   raw_matrices=$(grep 'matrix:' -A3 "${ci_file}" | grep 'go:' | sed 's/^ *//' || true)
   if [ "${raw_matrices}" != "" ]; then
     matrices=()
-    while IFS='\n' read var value; do
+    while IFS='\n' read var; do
       matrices[${#matrices[@]}]=$var
     done < <(echo "${raw_matrices}")
     for matrix in "${matrices[@]}"; do
