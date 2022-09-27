@@ -9,20 +9,28 @@ on:
 env:
   GO_VERSION: 1.18.6
   GO_NEXT_VERSION: 1.19.1
-  GO_MATRIX: "[ \"1.18.6]\", \"1.19.1\" ]"
+  GO_MATRIX: "[\"1.18.6\", \"1.19.1\"]"
   controller_registry: docker.io
   controller_repository: bitnami/sealed-secrets-controller
   controller_tag: latest
 
 jobs:
+  dynamic-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+			# This needs to match your step's id and name parameters
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+			# Important: Do not forget the id!
+      - id: set-matrix
+        run: echo "::set-output name=matrix::$GO_MATRIX"
   linter:
+    needs: dynamic-matrix
     name: Run linters
     runs-on: ubuntu-latest
-    env:
-      GO_MATRIX: ${{ env.GO_MATRIX }}
     strategy:
       matrix:
-        go: ${{ GO_MATRIX }}
+        go: ${{ fromJSON(needs.job1.outputs.matrix) }}
         os: [ubuntu-latest]
         golangci-lint: ["1.47.3"]
     steps:
@@ -43,11 +51,12 @@ jobs:
       run: make lint
 
   gosec:
+    needs: dynamic-matrix
     name: Run gosec
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ${{ env.GO_MATRIX }}
+        go: ${{ fromJSON(needs.job1.outputs.matrix) }}
         os: [ubuntu-latest]
         gosec: ["2.12.0"]
     steps:
@@ -68,11 +77,12 @@ jobs:
       run: make lint-gosec
 
   test:
+    needs: dynamic-matrix
     name: Build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go: ${{ env.GO_MATRIX }}
+        go: ${{ fromJSON(needs.job1.outputs.matrix) }}
         os: [macos-latest, windows-latest, ubuntu-latest]
         gotestsum: ["1.8.1"]
     steps:
