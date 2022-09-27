@@ -40,7 +40,7 @@ for ci_file in $(ls .github/workflows/*.y*ml); do
 done
 
 if (( $failures > 0 )); then
-  echo "Found ${failures} version mistmatchs between CI settings and main version definition file versions.env"
+  echo "Found ${failures} version mistmatchs between CI settings and main version definition file: versions.env"
   exit 1 
 fi
 echo "OK failures=${failures}"

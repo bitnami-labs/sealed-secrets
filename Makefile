@@ -46,7 +46,7 @@ GO_LD_FLAGS = -X main.VERSION=$(VERSION)
 all: check-versions controller kubeseal
 
 check-versions:
-	./script/check-versions.sh
+	./scripts/check-versions.sh
 
 generate: $(GO_FILES)
 	$(GO) mod vendor && $(GO) generate $(GO_PACKAGES)
@@ -117,7 +117,7 @@ controller-norbac.yaml: controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixe
 
 controller-podmonitor.yaml: controller.jsonnet controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixes.libsonnet
 
-test:
+test: check-versions
 	$(GOTESTSUM) $(GO_FLAGS) $(GO_PACKAGES)
 
 integrationtest: kubeseal controller
