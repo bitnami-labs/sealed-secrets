@@ -7,8 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  GO_VERSION: 1.18.7
-  GO_NEXT_VERSION: 1.19.2
+  GO_VERSION: 1.18.5
   controller_registry: docker.io
   controller_repository: bitnami/sealed-secrets-controller
   controller_tag: latest
@@ -19,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [$GO_VERSION, $GO_NEXT_VERSION]
+        go: ["1.18.5", "1.19.1"]
         os: [ubuntu-latest]
         golangci-lint: ["1.47.3"]
     steps:
@@ -44,7 +43,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: [$GO_VERSION, $GO_NEXT_VERSION]
+        go: ["1.18.6", "1.19.1"]
         os: [ubuntu-latest]
         gosec: ["2.12.0"]
     steps:
@@ -69,7 +68,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go: [$GO_VERSION, $GO_NEXT_VERSION]
+        go: ["1.18.6", "1.19.1"]
         os: [macos-latest, windows-latest, ubuntu-latest]
         gotestsum: ["1.8.1"]
     steps:
