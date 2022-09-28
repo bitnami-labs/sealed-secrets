@@ -137,12 +137,14 @@ jobs:
         curl -sLf https://github.com/kubecfg/kubecfg/releases/download/v0.26.0/kubecfg_Linux_X64 >~/bin/kubecfg
         chmod +x ~/bin/kubecfg
 
+    - name: Trace Go Version
+      run: echo "go_version=${{ needs.load-versions.outputs.go_version }}"
+
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
         go-version: ${{ needs.load-versions.outputs.go_version }}
       id: go
-      run: echo "go_version=${{ needs.load-versions.outputs.go_version }}"
 
     - name: Docker build
       run: |
