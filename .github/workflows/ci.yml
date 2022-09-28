@@ -134,10 +134,13 @@ jobs:
         curl -sLf https://github.com/kubecfg/kubecfg/releases/download/v0.26.0/kubecfg_Linux_X64 >~/bin/kubecfg
         chmod +x ~/bin/kubecfg
 
+    - id: load-versions-as-env-var
+      run: source $GITHUB_WORKSPACE/versions.env >> $GITHUB_ENV
+
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ${{ needs.load-versions.outputs.go_version }}
+        go-version: $GO_VERSION
       id: go
 
     - name: Docker build
