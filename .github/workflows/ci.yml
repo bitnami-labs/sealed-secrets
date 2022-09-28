@@ -21,18 +21,15 @@ jobs:
         run: source $GITHUB_WORKSPACE/versions.env >> $GITHUB_ENV
       - id: export-go-version
         run: echo "::set-output name=go_version::$GO_VERSION"
-      - id: export-go-version-list
-        run: echo "::set-output name=go_version_list::$GO_VERSION_LIST"
     outputs:
       go_version: ${{ steps.export-go-version.outputs.go_version }}
-      go_version_list: ${{ steps.export-go-version-list.outputs.go_version_list }}
   linter:
     needs: load-versions
     name: Run linters
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ${{ fromJSON(needs.load-versions.outputs.go_version_list) }}
+        go: ${{ needs.load-versions.outputs.go_version }}
         os: [ubuntu-latest]
         golangci-lint: ["1.47.3"]
     steps:
@@ -58,7 +55,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ${{ fromJSON(needs.load-versions.outputs.go_version_list) }}
+        go: ${{ needs.load-versions.outputs.go_version }}
         os: [ubuntu-latest]
         gosec: ["2.12.0"]
     steps:
@@ -84,7 +81,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go: ${{ fromJSON(needs.load-versions.outputs.go_version_list) }}
+        go: ${{ needs.load-versions.outputs.go_version}}
         os: [macos-latest, windows-latest, ubuntu-latest]
         gotestsum: ["1.8.1"]
     steps:
@@ -248,6 +245,9 @@ jobs:
     - name: "Set environmental variables"
       run: |
         echo "CONTROLLER_IMAGE=$controller_registry/$controller_repository:$controller_tag" >> $GITHUB_ENV
+
+    - name: "Load go version"
+      run: echo "${{needs.load-versions.outputs.go_version}}"
 
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
