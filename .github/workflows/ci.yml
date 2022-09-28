@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: load-versions
-        run: source versions.env >> $GITHUB_ENV
+        run: source $GITHUB_WORKSPACE/versions.env >> $GITHUB_ENV
       - id: export-versions
         run: |
           echo "::set-output name=go_version::$GO_VERSION"
