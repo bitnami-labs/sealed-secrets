@@ -138,12 +138,12 @@ jobs:
         chmod +x ~/bin/kubecfg
 
     - name: Trace Go Version
-      run: echo "go_version=${{ needs.load-versions.outputs.go_version }}"
+      run: echo "go_version=$go_version"
 
     - name: Set up Go 1.x
       uses: actions/setup-go@v2
       with:
-        go-version: ${{ needs.load-versions.outputs.go_version }}
+        go-version: $go_version
       id: go
 
     - name: Docker build
