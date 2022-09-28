@@ -15,7 +15,7 @@ env:
   controller_tag: latest
 
 jobs:
-  dynamic-matrix:
+  load-versions:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
@@ -23,12 +23,12 @@ jobs:
       - id: set-matrix
         run: echo "::set-output name=matrix::$GO_MATRIX"
   linter:
-    needs: dynamic-matrix
+    needs: load-versions
     name: Run linters
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ${{ fromJSON(needs.job1.outputs.matrix) }}
+        go: ${{ fromJSON(needs.load-versions.outputs.matrix) }}
         os: [ubuntu-latest]
         golangci-lint: ["1.47.3"]
     steps:
@@ -49,12 +49,12 @@ jobs:
       run: make lint
 
   gosec:
-    needs: dynamic-matrix
+    needs: load-versions
     name: Run gosec
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go: ${{ fromJSON(needs.job1.outputs.matrix) }}
+        go: ${{ fromJSON(needs.load-versions.outputs.matrix) }}
         os: [ubuntu-latest]
         gosec: ["2.12.0"]
     steps:
@@ -75,12 +75,12 @@ jobs:
       run: make lint-gosec
 
   test:
-    needs: dynamic-matrix
+    needs: load-versions
     name: Build
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        go: ${{ fromJSON(needs.job1.outputs.matrix) }}
+        go: ${{ fromJSON(needs.load-versions.outputs.matrix) }}
         os: [macos-latest, windows-latest, ubuntu-latest]
         gotestsum: ["1.8.1"]
     steps:
