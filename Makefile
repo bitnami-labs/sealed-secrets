@@ -43,10 +43,7 @@ endif
 
 GO_LD_FLAGS = -X main.VERSION=$(VERSION)
 
-all: check-versions controller kubeseal
-
-check-versions:
-	./scripts/check-versions.sh
+all: controller kubeseal
 
 generate: $(GO_FILES)
 	$(GO) mod vendor && $(GO) generate $(GO_PACKAGES)
@@ -117,7 +114,7 @@ controller-norbac.yaml: controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixe
 
 controller-podmonitor.yaml: controller.jsonnet controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixes.libsonnet
 
-test: check-versions
+test:
 	$(GOTESTSUM) $(GO_FLAGS) $(GO_PACKAGES)
 
 integrationtest: kubeseal controller
@@ -132,10 +129,10 @@ vet:
 fmt:
 	$(GOFMT) -s -w $(GO_FILES)
 
-lint: check-versions
+lint:
 	 $(GOLANGCILINT) run --enable goimports --timeout=5m
 
-lint-gosec: check-versions
+lint-gosec:
 	 $(GOSEC) -r --severity medium
 
 clean:
@@ -161,6 +158,6 @@ apply-controller-manifests: clean check-k8s controller.yaml
 
 controller-tests: test push-controller apply-controller-manifests clean integrationtest
 
-.PHONY: all kubeseal controller test clean vet fmt lint-gosec check-versions
+.PHONY: all kubeseal controller test clean vet fmt lint-gosec
 
 .PHONY: controllertests check-k8s push-controller apply-controller-manifests
