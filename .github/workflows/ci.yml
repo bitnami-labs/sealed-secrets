@@ -142,6 +142,7 @@ jobs:
       with:
         go-version: ${{ needs.load-versions.outputs.go_version }}
       id: go
+      run: echo "go_version=${{ needs.load-versions.outputs.go_version }}"
 
     - name: Docker build
       run: |
