@@ -107,7 +107,7 @@ func parseKey(r io.Reader) (*rsa.PublicKey, error) {
 	}
 
 	if time.Now().After(certs[0].NotAfter) {
-		return nil, fmt.Errorf("failed to encrypt using an expired certificate on %v", certs[0].NotBefore.Format("January 2, 2006"))
+		return nil, fmt.Errorf("failed to encrypt using an expired certificate on %v", certs[0].NotAfter.Format("January 2, 2006"))
 	}
 
 	return cert, nil
