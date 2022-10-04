@@ -15,6 +15,8 @@ When submitting a PR make sure that it:
 
 - Must pass CI jobs for linting and test the changes on top of different k8s platforms.
 - Must follow [Golang best practices](https://go.dev/doc/effective_go).
+- Is signed off with the line `Signed-off-by: <Your-Name> <Your-email>`. See [related GitHub blogpost about signing off](https://github.blog/changelog/2022-06-08-admins-can-require-sign-off-on-web-based-commits/).
+  > Note: Signing off on a commit is different than signing a commit, such as with a GPG key.
 
 ### PR Approval and Release Process
 
