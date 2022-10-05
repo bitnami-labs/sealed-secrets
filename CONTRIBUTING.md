@@ -22,3 +22,5 @@ When submitting a PR make sure that it:
 
 1. Changes are manually reviewed by VMware/Bitnami team members.
 2. When the PR passes all tests, the PR is merged by the reviewer(s) in the GitHub `main` branch.
+
+Another dummy change.
