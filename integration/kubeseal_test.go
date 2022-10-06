@@ -360,7 +360,7 @@ var _ = Describe("kubeseal --recovery-unseal", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 	BeforeEach(func() {
-		key, err := c.Secrets("kube-system").List(ctx, metav1.ListOptions{
+		key, err := c.Secrets(*controllerNs).List(ctx, metav1.ListOptions{
 			LabelSelector: keySelector,
 		})
 		Expect(err).NotTo(HaveOccurred())

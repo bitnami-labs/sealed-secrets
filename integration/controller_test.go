@@ -58,7 +58,7 @@ func getSecretType(s *v1.Secret) v1.SecretType {
 }
 
 func fetchKeys(ctx context.Context, c corev1.SecretsGetter) (map[string]*rsa.PrivateKey, []*x509.Certificate, error) {
-	list, err := c.Secrets("kube-system").List(ctx, metav1.ListOptions{
+	list, err := c.Secrets(*controllerNs).List(ctx, metav1.ListOptions{
 		LabelSelector: keySelector,
 	})
 	if err != nil {
@@ -292,7 +292,7 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
-				err:= c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+				err := c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should recreate the secret", func() {
@@ -321,7 +321,7 @@ var _ = Describe("create", func() {
 				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
 			})
 			JustBeforeEach(func() {
-				err:= c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+				err := c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should recreate the secret", func() {
@@ -344,12 +344,11 @@ var _ = Describe("create", func() {
 
 		Context("With unowned secret without managed annotation", func() {
 			BeforeEach(func() {
-				s.Annotations = map[string]string{
-				}
+				s.Annotations = map[string]string{}
 				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
 			})
 			JustBeforeEach(func() {
-				err:= c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+				err := c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 			It("should not recreate the secret", func() {
