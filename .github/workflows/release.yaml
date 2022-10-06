@@ -17,13 +17,13 @@ jobs:
     steps:
       # Checkout and set env
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3.1.0
       - id: load-version
         run: |
           source $GITHUB_WORKSPACE/versions.env
           echo "GO_VERSION=$GO_VERSION" >> $GITHUB_ENV
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3.3.0
         with:
           go-version: $GO_VERSION
       - name: Setup kubecfg
@@ -48,16 +48,16 @@ jobs:
 
       # Setup env for multi-arch builds
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2.0.0
         with:
           image: tonistiigi/binfmt:latest
           platforms: arm64,arm
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2.0.0
 
       # Setup Cosign
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v2.5.0
+        uses: sigstore/cosign-installer@v2.7.0
       - name: Write Cosign key
         run: echo "$COSIGN_KEY" > /tmp/cosign.key
         env:
@@ -76,26 +76,26 @@ jobs:
 
       # Build & Publish multi-arch image
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2.0.0
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Login to GHRC
-        uses: docker/login-action@f054a8b539a109f9f41c372932f1ae047eff08c9
+        uses: docker/login-action@v2.0.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Extract metadata (tags, labels) for Docker controller image
         id: meta_controller
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        uses: docker/metadata-action@v4.0.1
         with:
           images: |
             ${{ env.controller_dockerhub_image_name }}
             ${{ env.controller_ghcr_image_name }}
       - name: Build and push controller image
         id: docker_build_controller
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3.1.1
         with:
           context: .
           file: ./docker/controller.Dockerfile
@@ -104,7 +104,7 @@ jobs:
           tags: ${{ steps.meta_controller.outputs.tags }}
       - name: Extract metadata (tags, labels) for Docker kubeseal image
         id: meta_kubeseal
-        uses: docker/metadata-action@98669ae865ea3cffbcbaa878cf57c20bbf1c6c38
+        uses: docker/metadata-action@v4.0.1
         with:
           images: |
             ${{ env.kubeseal_dockerhub_image_name }}

@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout repo
-        uses: actions/checkout@v2.3.4
+        uses: actions/checkout@v3.1.0
       - id: load-versions
         run: |
           source $GITHUB_WORKSPACE/versions.env
@@ -41,13 +41,13 @@ jobs:
         golangci-lint: ["1.49.0"]
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3.3.0
       with:
         go-version: ${{ matrix.go }}
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3.1.0
 
     - name: Install dependencies
       run: |
@@ -67,13 +67,13 @@ jobs:
         gosec: ["2.12.0"]
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3.3.0
       with:
         go-version: ${{ matrix.go }}
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3.1.0
 
     - name: Install dependencies
       run: |
@@ -94,13 +94,13 @@ jobs:
     steps:
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3.3.0
       with:
         go-version: ${{ matrix.go }}
       id: go
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3.1.0
 
     - name: Install dependencies
       run: |
@@ -119,10 +119,10 @@ jobs:
         echo "CONTROLLER_IMAGE=$controller_registry/$controller_repository:$controller_tag" >> $GITHUB_ENV
 
     - name: Check out code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3.1.0
 
     - name: Install Cosign
-      uses: sigstore/cosign-installer@v2.5.0
+      uses: sigstore/cosign-installer@v2.7.0
 
     - name: Distroless verify
       run: |
@@ -142,7 +142,7 @@ jobs:
         chmod +x ~/bin/kubecfg
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3.3.0
       with:
         go-version: ${{ needs.load-versions.outputs.go_version }}
       id: go
@@ -156,13 +156,13 @@ jobs:
         docker save $CONTROLLER_IMAGE -o /tmp/controller-image.tar
 
     - name: Upload manifest artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3.1.0
       with:
         name: controller-manifest
         path: controller.yaml
 
     - name: Upload container image artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3.1.0
       with:
         name: controller-image
         path: /tmp/controller-image.tar
@@ -184,7 +184,7 @@ jobs:
         echo "CONTROLLER_IMAGE=$controller_registry/$controller_repository:$controller_tag" >> $GITHUB_ENV
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3.3.0
       with:
         go-version: ${{ needs.load-versions.outputs.go_version }}
       id: go
@@ -194,9 +194,9 @@ jobs:
         go install github.com/onsi/ginkgo/ginkgo@v1.16.4
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3.1.0
 
-    - uses: opsgang/ga-setup-minikube@v0.1.1
+    - uses: opsgang/ga-setup-minikube@v0.1.2
       env:
         ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
       with:
@@ -214,12 +214,12 @@ jobs:
         kubectl cluster-info
 
     - name: Download manifest artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3.0.0
       with:
         name: controller-manifest
 
     - name: Download container image artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3.0.0
       with:
         name: controller-image
 
@@ -254,7 +254,7 @@ jobs:
         echo "CONTROLLER_IMAGE=$controller_registry/$controller_repository:$controller_tag" >> $GITHUB_ENV
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v3.3.0
       with:
         go-version: ${{ needs.load-versions.outputs.go_version }}
       id: go
@@ -264,9 +264,9 @@ jobs:
         go install github.com/onsi/ginkgo/ginkgo@v1.16.4
 
     - name: Check out code into the Go module directory
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3.1.0
 
-    - uses: opsgang/ga-setup-minikube@v0.1.1
+    - uses: opsgang/ga-setup-minikube@v0.1.2
       env:
         ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
       with:
@@ -274,7 +274,7 @@ jobs:
         k8s-version: ${{ matrix.k8s }}
 
     - name: Install Helm
-      uses: azure/setup-helm@v1
+      uses: azure/setup-helm@v3.3
       with:
         version: v3.4.2
 
@@ -289,7 +289,7 @@ jobs:
         kubectl cluster-info
 
     - name: Download container image artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3.0.0
       with:
         name: controller-image
 
