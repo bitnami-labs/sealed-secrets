@@ -31,6 +31,7 @@ import (
 )
 
 var kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+var controllerNs = flag.String("namespace", "kube-system", "namespace where the controller is installed")
 var kubesealBin = flag.String("kubeseal-bin", "kubeseal", "path to kubeseal executable under test")
 var controllerBin = flag.String("controller-bin", "controller", "path to controller executable under test")
 
