@@ -7,7 +7,7 @@ on:
   pull_request:
     types:
       - opened
-
+# TODO: evaluate the upstream actions/labelerv4.0.1 action
 jobs:
   label_issues:
     runs-on: ubuntu-latest
