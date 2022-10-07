@@ -37,7 +37,7 @@ A release train is created by *branching* from `main` to `release/YYYYDDMM`, whe
 
 #### Validation
 
-A `release/...` branch will go thought the release CI. If anything fails the release branch is dropped, the issue fixed in `main` and a new release train is started on a new branch.
+The `release/...` branch will go through the release CI. If anything fails the release branch is dropped, the issue fixed in `main` and a new release train is started on a new branch.
 
 ### Tagging
 
