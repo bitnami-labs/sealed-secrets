@@ -39,7 +39,7 @@ A release train is created by *branching* from `main` to `release/YYYYDDMM`, whe
 
 The `release/...` branch will go through the release CI. If anything fails the release branch is dropped, the issue fixed in `main` and a new release train is started on a new branch.
 
-### Tagging
+#### Tagging
 
 Once the release passes all validations and is published, it is merged into `released`. Then, it is tagged with the final version, following SemVer semantics as `vX.Y.Z`.
 
