@@ -43,7 +43,7 @@ The `release/...` branch will go through the release CI. If anything fails the r
 
 Once the release passes all validations and is published, it is merged into `released`. Then, it is tagged with the final version, following SemVer semantics as `vX.Y.Z`.
 
-### Hot-fixing releases
+#### Hot-fixing releases
 
 If there is a need to urgently fix a show-stopper issue in the latest released version. A fix can be worked on right away in a `hotfix` branch directly off `released`.
 
