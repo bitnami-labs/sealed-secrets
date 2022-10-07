@@ -1,20 +1,14 @@
-name: Label issues/prs
-
+name: "Pull Request Labeler"
 on:
-  issues:
-    types:
-      - opened
-  pull_request:
-    types:
-      - opened
-# TODO: evaluate the upstream actions/labelerv4.0.1 action
+- pull_request_target
+
 jobs:
-  label_issues:
+  triage:
+    permissions:
+      contents: read
+      pull-requests: write
     runs-on: ubuntu-latest
     steps:
-      - name: Label issues/prs
-        uses: andymckay/labeler@1.0.4
-        with:
-          add-labels: "triage"
-          ignore-if-labeled: true
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
+    - uses: actions/labeler@v4.0.2
+      with:
+        repo-token: "${{ secrets.GITHUB_TOKEN }}"
