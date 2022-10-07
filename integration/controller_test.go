@@ -29,7 +29,7 @@ import (
 	ssclient "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
