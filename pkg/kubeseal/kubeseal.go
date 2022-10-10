@@ -30,12 +30,11 @@ import (
 	"k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
 )
-
-type namespaceFn func() (string, bool, error)
 
 type Flags struct {
 	CertURL        string
@@ -58,23 +57,22 @@ type Flags struct {
 	PrivKeys       []string
 }
 
-type Config struct {
-	flags          *Flags
-	clientConfig   clientcmd.ClientConfig
-	ctx            context.Context
-	solveNamespace namespaceFn
+type ClientConfig interface {
+	ClientConfig() (*rest.Config, error)
+	Namespace() (string, bool, error)
 }
 
-func initNamespaceFuncFromClient(clientConfig clientcmd.ClientConfig) namespaceFn {
-	return func() (string, bool, error) { return clientConfig.Namespace() }
+type Config struct {
+	flags        *Flags
+	clientConfig ClientConfig
+	ctx          context.Context
 }
 
 func NewConfig(clientConfig clientcmd.ClientConfig, flags *Flags) *Config {
 	return &Config{
-		flags:          flags,
-		clientConfig:   clientConfig,
-		ctx:            context.Background(),
-		solveNamespace: initNamespaceFuncFromClient(clientConfig),
+		flags:        flags,
+		clientConfig: clientConfig,
+		ctx:          context.Background(),
 	}
 }
 
@@ -261,7 +259,7 @@ func seal(cfg *Config, in io.Reader, out io.Writer, codecs runtimeserializer.Cod
 	}
 
 	if ssv1alpha1.SecretScope(secret) != ssv1alpha1.ClusterWideScope && secret.GetNamespace() == "" {
-		ns, _, err := cfg.solveNamespace()
+		ns, _, err := cfg.clientConfig.Namespace()
 		if clientcmd.IsEmptyConfig(err) {
 			return fmt.Errorf("input secret has no namespace and cannot infer the namespace automatically when no kube config is available")
 		} else if err != nil {
@@ -703,7 +701,7 @@ func Run(w io.Writer, cfg *Config) (err error) {
 			err error
 		)
 		if flags.SealingScope < ssv1alpha1.ClusterWideScope {
-			ns, _, err = cfg.solveNamespace()
+			ns, _, err = cfg.clientConfig.Namespace()
 			if err != nil {
 				return err
 			}

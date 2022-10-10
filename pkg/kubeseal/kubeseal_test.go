@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	certUtil "k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
@@ -132,10 +133,9 @@ func TestParseKey(t *testing.T) {
 func testConfig(flags *Flags) *Config {
 	clientConfig := testClientConfig()
 	return &Config{
-		flags:          flags,
-		clientConfig:   clientConfig,
-		ctx:            context.Background(),
-		solveNamespace: initNamespaceFuncFromClient(clientConfig),
+		flags:        flags,
+		clientConfig: clientConfig,
+		ctx:          context.Background(),
 	}
 }
 
@@ -825,9 +825,20 @@ func TestRaw(t *testing.T) {
 	}
 }
 
-func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope ssv1alpha1.SealingScope) (string, error) {
-	namespaceFromClientConfig := func() (string, bool, error) { return secretNS, false, nil }
+type tweakedClientConfig struct {
+	ccfg      ClientConfig
+	namespace string
+}
 
+func (tcc *tweakedClientConfig) Namespace() (string, bool, error) {
+	return tcc.namespace, false, nil
+}
+
+func (tcc *tweakedClientConfig) ClientConfig() (*rest.Config, error) {
+	return tcc.ccfg.ClientConfig()
+}
+
+func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope ssv1alpha1.SealingScope) (string, error) {
 	dataFile, err := writeTempFile([]byte(secretValue))
 	if err != nil {
 		return "", err
@@ -844,7 +855,7 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 		FromFile:     fromFile,
 	}
 	cfg := testConfig(&flags)
-	cfg.solveNamespace = namespaceFromClientConfig
+	cfg.clientConfig = &tweakedClientConfig{cfg.clientConfig, secretNS}
 
 	if err := Run(&buf, cfg); err != nil {
 		return "", err
