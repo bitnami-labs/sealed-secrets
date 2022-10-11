@@ -33,7 +33,7 @@ Releases happen monthly. A release train "leaves" on the 15th of each month, or 
  
 #### Creation
 
-A release train is created by *branching* from `main` to `release/YYYYDDMM`, where `YYYYDDMM` is a ISO 8601 numbered timestamp of the release day date.
+A release train is created by *branching* from `main` to `release/YYYYMMDD`, where `YYYYMMDD` is a ISO 8601 numbered timestamp of the release day date.
 
 #### Validation
 
