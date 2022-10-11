@@ -63,6 +63,12 @@ jobs:
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
 
+      # Prematurely tag for GoReleaser
+      - name: Tag Release
+        run: |
+          VERSION_TAG="v$(cat VERSION)"
+          git tag "${VERSION_TAG}"
+
       # Build & Release binaries
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
