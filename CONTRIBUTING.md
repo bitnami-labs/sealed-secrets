@@ -33,20 +33,28 @@ Releases happen monthly. A release train "leaves" on the 15th of each month, or 
  
 #### Creation
 
-A release train is created by *branching* from `main` to `release/YYYYMMDD`, where `YYYYMMDD` is a ISO 8601 numbered timestamp of the release day date.
+A release train is launched by *branching* from `main` to `release/vX.Y.Z`.
 
 #### Validation
 
-The `release/...` branch will go through the release CI. If anything fails the release branch is dropped, the issue fixed in `main` and a new release train is started on a new branch.
+The `release/vX.Y.Z` branch will go through the release CI. GoReleaser requires a tag to build a release, so one will be produced automatically from the release branch name `vX.Y.Z`.
 
-#### Tagging
+If anything fails the release branch is dropped, the issue fixed in `main` and a new release train is started on a new branch.
 
-Once the release passes all validations and is published, it is merged into `released`. Then, it is tagged with the final version, following SemVer semantics as `vX.Y.Z`.
+#### Tracking
+
+Once the release passes all validations and is published, it is merged into `released`.
 
 #### Hot-fixing releases
 
-If there is a need to urgently fix a show-stopper issue in the latest released version. A fix can be worked on right away in a `hotfix` branch directly off `released`.
+If there is a need to urgently fix a show-stopper issue in the latest released version. A fix can be worked on right away in a `hotfix/YYYYMMDD` branch directly off `released`. The `YYYYMMDD` suffix is an ISO-8601 timestamp, for tracking purposes.
 
-Once the fix is merged, the resulting `released` branch is manually tagged with the new patch release `vX.Y.Z` and that tag is published.
+Once the fix is ready it to be released, it is merged into `hotfix` itself and then pushed as a `release/vX.Y.Z`.
+
+This will produce a hotfix release unless the release CI pipeline fails for some reason.
+
+In case of failure, the `hotfix` branch needs more changes. The old release branch is removed and a new one is pushed `release/vX.Y.Z+1`.
+
+Once a hotfix release is completed, the `release/vX.Y.Z` if merged as `released`, as per normal procedure. The `hotfix` branch can ebe removed or kept for tracking or historical purposes, hotfix should be rare.
 
 After that, *the hotfix is back-ported to the `main` branch including the tests added to detected regressions* of that issue going forward.
