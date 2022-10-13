@@ -33,7 +33,9 @@ Releases happen monthly. A release train "leaves" on the 15th of each month, or 
  
 #### Creation
 
-A release train is launched by *branching* from `main` to `release/vX.Y.Z`.
+First of all, prepare the release notes as usual, and merge them.
+
+Once the release notes are ready, a release train is launched by *branching* from `main` to `release/vX.Y.Z`.
 
 #### Validation
 
