@@ -33,20 +33,35 @@ Releases happen monthly. A release train "leaves" on the 15th of each month, or 
  
 #### Creation
 
-A release train is created by *branching* from `main` to `release/YYYYMMDD`, where `YYYYMMDD` is a ISO 8601 numbered timestamp of the release day date.
+First of all, prepare the release notes as usual, and merge them.
+
+Once the release notes are ready, a release train is launched by *branching* from `main` to `release/vX.Y.Z`.
 
 #### Validation
 
-The `release/...` branch will go through the release CI. If anything fails the release branch is dropped, the issue fixed in `main` and a new release train is started on a new branch.
+The `release/vX.Y.Z` branch will go through the release CI. GoReleaser requires a tag to build a release, so one will be produced automatically from the release branch name `vX.Y.Z`.
 
-#### Tagging
+If anything fails the release branch is dropped, the issue fixed in `main` and a new release train is started on a new branch.
 
-Once the release passes all validations and is published, it is merged into `released`. Then, it is tagged with the final version, following SemVer semantics as `vX.Y.Z`.
+#### Tracking
+
+Once the release passes all validations and is published, it is merged into `released`.
 
 #### Hot-fixing releases
 
-If there is a need to urgently fix a show-stopper issue in the latest released version. A fix can be worked on right away in a `hotfix` branch directly off `released`.
+If there is a need to urgently fix a show-stopper issue in the latest released version. There is no need to wait for the next release train for a new release to happen.
 
-Once the fix is merged, the resulting `released` branch is manually tagged with the new patch release `vX.Y.Z` and that tag is published.
+Unless there is a strong reason not to, a fix can be merged into `main` directly, followed by a regular release process.
 
-After that, *the hotfix is back-ported to the `main` branch including the tests added to detected regressions* of that issue going forward.
+If doing the fix in main is a "no go" for some reason, for instance, a new change already in `main` makes the bug to be urgently fixed even worse, then the fix must happen from the latest released code to proceed ASAP:
+
+* Create a `hotfix/YYYYMMDD` branch as a copy of `released`. The `YYYYMMDD` suffix is an ISO-8601 timestamp, for tracking purposes.
+* Branch off `hotfix/YYYYMMDD` to work on the fix. As a regular PR, you might name the fix branch with a descriptive name for the bug being fixed.
+* Once the fix is approved and tested as successful, merge into `hotfix/YYYYMMDD`.
+* Push `hostfix/YYYYMMDD` as a `release/vX.Y.Z` to kick off a release train.
+* If the release fails for any reason, fix it in `hostfix/YYYYMMDD`, merge and push another `release/vX.Y.Z'` branch.
+* Once a hotfix release completes successfully, merge the `release/vX.Y.Z` as `released` as per normal procedure.
+* *Backport the hotfix into the `main` including the tests added to detected regressions* of that bug going forward.
+* Finally, `hotfix/YYYYMMDD` can be kept around for tracking or historical purposes.
+
+Note that, in either case, the release notes must clarify this was a hotfix our of the regular release train schedule.
