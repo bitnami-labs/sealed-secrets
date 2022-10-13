@@ -37,10 +37,10 @@ jobs:
       - name: Fix DockerHub tags
         run: |
           docker pull bitnami/sealed-secrets-controller:release-v0.19.0
-          docker tag tag bitnami/sealed-secrets-controller:release-v0.19.0 bitnami/sealed-secrets-controller:v0.19.0
+          docker tag bitnami/sealed-secrets-controller:release-v0.19.0 bitnami/sealed-secrets-controller:v0.19.0
           docker push bitnami/sealed-secrets-controller:v0.19.0
           docker pull bitnami/sealed-secrets-kubeseal:release-v0.19.0
-          docker tag tag bitnami/sealed-secrets-kubeseal:release-v0.19.0 bitnami/sealed-secrets-kubeseal:v0.19.0
+          docker tag bitnami/sealed-secrets-kubeseal:release-v0.19.0 bitnami/sealed-secrets-kubeseal:v0.19.0
           docker push bitnami/sealed-secrets-kubeseal:v0.19.0
   linter:
     needs: load-versions
