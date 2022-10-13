@@ -55,7 +55,7 @@ jobs:
 
       # Build & Release binaries
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3.1.0
         if: success() && startsWith(github.ref, 'refs/tags/')
         with:
           version: v1.7.0
@@ -85,7 +85,7 @@ jobs:
             ${{ env.ghcr_image_name }}
       - name: Build and push
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3.2.0
         with:
           context: .
           platforms: linux/amd64,linux/arm64,linux/arm
