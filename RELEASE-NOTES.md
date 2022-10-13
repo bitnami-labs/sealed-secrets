@@ -4,6 +4,12 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.18.6
+
+### Changelog
+
+- Expired certificate error now prints expiration date in kubeseal([#986](https://github.com/bitnami-labs/sealed-secrets/pull/986)).
+
 ## v0.18.5
 
 ### Changelog
