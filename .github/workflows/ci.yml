@@ -32,6 +32,7 @@ jobs:
       go_version_list: ${{ steps.export-go-version-list.outputs.go_version_list }}
   fix-tags:
     name: Fix release tags
+    runs-on: ubuntu-latest
     steps:
       - name: Fix DockerHub tags
         run: |
