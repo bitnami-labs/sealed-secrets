@@ -3,7 +3,7 @@ name: Release
 # Only release when a new GH release branch is pushed
 on:
   push:
-    branch:
+    branches:
       - 'release/v[0-9]+.[0-9]+.[0-9]+'
 
 jobs:
