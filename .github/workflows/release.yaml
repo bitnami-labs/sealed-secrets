@@ -67,7 +67,7 @@ jobs:
       - name: Tag Release
         run: |
           RELEASE_BRANCH="${{ github.ref }}"
-          VERSION_TAG=$(echo "${RELEASE_BRANCH}" | awk -F'/' '{print $2}')
+          VERSION_TAG=$(echo "${RELEASE_BRANCH}" | awk -F'/' '{print $NF}')
           git tag "${VERSION_TAG}"
 
       # Build & Release binaries
