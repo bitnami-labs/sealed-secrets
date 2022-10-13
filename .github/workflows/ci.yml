@@ -34,14 +34,27 @@ jobs:
     name: Fix release tags
     runs-on: ubuntu-latest
     steps:
+      - name: Login to Docker Hub
+        uses: docker/login-action@v2.0.0
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
       - name: Fix DockerHub tags
         run: |
+          # controller
           docker pull bitnami/sealed-secrets-controller:release-v0.19.0
           docker tag bitnami/sealed-secrets-controller:release-v0.19.0 bitnami/sealed-secrets-controller:v0.19.0
           docker push bitnami/sealed-secrets-controller:v0.19.0
+          # controller latest
+          docker tag bitnami/sealed-secrets-controller:v0.19.0 bitnami/sealed-secrets-controller:latest
+          docker push bitnami/sealed-secrets-controller:latest
+          # kubeseal
           docker pull bitnami/sealed-secrets-kubeseal:release-v0.19.0
           docker tag bitnami/sealed-secrets-kubeseal:release-v0.19.0 bitnami/sealed-secrets-kubeseal:v0.19.0
           docker push bitnami/sealed-secrets-kubeseal:v0.19.0
+          # kubeseal latest
+          docker tag bitnami/sealed-secrets-kubeseal:v0.19.0 bitnami/sealed-secrets-kubeseal:latest
+          docker push bitnami/sealed-secrets-kubeseal:latest
   linter:
     needs: load-versions
     name: Run linters
