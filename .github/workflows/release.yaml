@@ -44,7 +44,9 @@ jobs:
       - name: K8s manifests
         run: |
           export PATH=~/bin:$PATH
-          make CONTROLLER_IMAGE=${{ env.controller_dockerhub_image_name }}:${{ github.ref_name }} controller.yaml controller-norbac.yaml
+          RELEASE_BRANCH="${{ github.ref }}"
+          VERSION_TAG=$(echo "${RELEASE_BRANCH}" | awk -F'/' '{print $NF}')
+          make CONTROLLER_IMAGE=${{ env.controller_dockerhub_image_name }}:${VERSION_TAG} controller.yaml controller-norbac.yaml
 
       # Setup env for multi-arch builds
       - name: Set up QEMU
