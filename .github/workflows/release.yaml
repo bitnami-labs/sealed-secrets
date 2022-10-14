@@ -46,6 +46,7 @@ jobs:
           export PATH=~/bin:$PATH
           RELEASE_BRANCH="${{ github.ref }}"
           VERSION_TAG=$(echo "${RELEASE_BRANCH}" | awk -F'/' '{print $NF}')
+          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
           make CONTROLLER_IMAGE=${{ env.controller_dockerhub_image_name }}:${VERSION_TAG} controller.yaml controller-norbac.yaml
 
       # Setup env for multi-arch builds
@@ -68,8 +69,6 @@ jobs:
       # Tag for GoReleaser from release branch name
       - name: Tag Release
         run: |
-          RELEASE_BRANCH="${{ github.ref }}"
-          VERSION_TAG=$(echo "${RELEASE_BRANCH}" | awk -F'/' '{print $NF}')
           git tag "${VERSION_TAG}"
 
       # Build & Release binaries
@@ -102,6 +101,9 @@ jobs:
           images: |
             ${{ env.controller_dockerhub_image_name }}
             ${{ env.controller_ghcr_image_name }}
+          tags: |
+            type=raw,value=${{ env.VERSION_TAG }}
+            type=raw,value=latest
       - name: Build and push controller image
         id: docker_build_controller
         uses: docker/build-push-action@v3.1.1
@@ -118,6 +120,9 @@ jobs:
           images: |
             ${{ env.kubeseal_dockerhub_image_name }}
             ${{ env.kubeseal_ghcr_image_name }}
+          tags: |
+            type=raw,value=${{ env.VERSION_TAG }}
+            type=raw,value=latest
       - name: Build and push kubeseal image
         id: docker_build_kubeseal
         uses: docker/build-push-action@v2
