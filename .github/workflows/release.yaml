@@ -74,7 +74,7 @@ jobs:
       # Build & Release binaries
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3.1.0
-        if: success() && startsWith(github.ref, 'refs/tags/')
+        if: success() && startsWith(github.ref, 'refs/heads/')
         with:
           version: v1.10.3
           args: release --rm-dist
