@@ -25,11 +25,11 @@ import (
 	certUtil "k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
 
-	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	ssclient "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
@@ -44,6 +44,10 @@ func getData(s *v1.Secret) map[string][]byte {
 	return s.Data
 }
 
+func getStatus(ss *ssv1alpha1.SealedSecret) *ssv1alpha1.SealedSecretStatus {
+	return ss.Status
+}
+
 // get the first owner name assuming there is only one owner which is the sealed-secret object
 func getFirstOwnerName(s *v1.Secret) string {
 	return s.OwnerReferences[0].Name
@@ -54,7 +58,7 @@ func getSecretType(s *v1.Secret) v1.SecretType {
 }
 
 func fetchKeys(ctx context.Context, c corev1.SecretsGetter) (map[string]*rsa.PrivateKey, []*x509.Certificate, error) {
-	list, err := c.Secrets("kube-system").List(ctx, metav1.ListOptions{
+	list, err := c.Secrets(*controllerNs).List(ctx, metav1.ListOptions{
 		LabelSelector: keySelector,
 	})
 	if err != nil {
@@ -153,7 +157,7 @@ var _ = Describe("create", func() {
 	JustBeforeEach(func() {
 		var err error
 		fmt.Fprintf(GinkgoWriter, "Creating SealedSecret: %#v\n", ss)
-		ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Create(ss)
+		ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Create(context.Background(), ss, metav1.CreateOptions{})
 		Expect(err).NotTo(HaveOccurred())
 	})
 
@@ -170,18 +174,27 @@ var _ = Describe("create", func() {
 					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(metav1.Object.GetLabels,
 					HaveKeyWithValue("mylabel", "myvalue")))
-
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
 				Eventually(func() (*v1.EventList, error) {
 					return c.Events(ns).Search(scheme.Scheme, ss)
 				}, Timeout, PollingInterval).Should(
-					containEventWithReason(Equal("Unsealed")),
-				)
+					containEventWithReason(Equal("Unsealed")))
 			})
 		})
 
 		Context("With existing object (update)", func() {
 			JustBeforeEach(func() {
 				var err error
+
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
+
+				ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Get(context.Background(), secretName, metav1.GetOptions{})
+				Expect(err).NotTo(HaveOccurred())
+
 				resVer := ss.ResourceVersion
 
 				// update
@@ -191,7 +204,7 @@ var _ = Describe("create", func() {
 				ss.ResourceVersion = resVer
 
 				fmt.Fprintf(GinkgoWriter, "Updating to SealedSecret: %#v\n", ss)
-				ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Update(ss)
+				ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Update(context.Background(), ss, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
 
@@ -201,7 +214,10 @@ var _ = Describe("create", func() {
 				}
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
-				}, 5*time.Second).Should(WithTransform(getData, Equal(expected)))
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
 			})
 		})
 
@@ -219,6 +235,9 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
 			})
 		})
 
@@ -238,6 +257,9 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
 			})
 		})
 	})
@@ -265,6 +287,83 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
+			})
+		})
+	})
+
+	Describe("Secret Recreation", func() {
+		Context("With owned secret", func() {
+			JustBeforeEach(func() {
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+				err := c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("should recreate the secret", func() {
+				expected := map[string][]byte{
+					"foo": []byte("bar"),
+				}
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+			})
+		})
+
+		Context("With unowned secret with managed annotation", func() {
+			BeforeEach(func() {
+				s.Annotations = map[string]string{
+					ssv1alpha1.SealedSecretManagedAnnotation: "true",
+				}
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+			})
+			JustBeforeEach(func() {
+				err := c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("should recreate the secret", func() {
+				expected := map[string][]byte{
+					"foo": []byte("bar"),
+				}
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+			})
+		})
+
+		Context("With unowned secret without managed annotation", func() {
+			BeforeEach(func() {
+				s.Annotations = map[string]string{}
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+			})
+			JustBeforeEach(func() {
+				err := c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+			It("should not recreate the secret", func() {
+				Consistently(func() error {
+					_, err := c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+					return err
+				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
 			})
 		})
 	})
@@ -320,6 +419,9 @@ var _ = Describe("create", func() {
 			Eventually(func() (*v1.Secret, error) {
 				return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 			}, Timeout, PollingInterval).Should(WithTransform(getSecretType, Equal(expectedType)))
+			Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+				return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+			}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
 			Eventually(func() (*v1.EventList, error) {
 				return c.Events(ns).Search(scheme.Scheme, ss)
 			}, Timeout, PollingInterval).Should(
@@ -403,6 +505,9 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(ctx, secretName2, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName2, metav1.GetOptions{})
+				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
 			})
 		})
 
@@ -433,6 +538,9 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns2).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns2).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
 			})
 		})
 

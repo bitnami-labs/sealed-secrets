@@ -22,11 +22,11 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint chart
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3.1.0
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
-      - uses: vmware-labs/vmware-image-builder-action@0.2.0
+      - uses: vmware-labs/vmware-image-builder-action@0.4.0
 
   # verify chart in multiple target platforms
   vib-k8s-verify:
@@ -41,11 +41,11 @@ jobs:
       fail-fast: false
     name: Verify chart in ${{ matrix.target-platform}}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3.1.0
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
-      - uses: vmware-labs/vmware-image-builder-action@0.2.0
+      - uses: vmware-labs/vmware-image-builder-action@0.4.0
         with:
           pipeline: vib-platform-verify.json
         env:

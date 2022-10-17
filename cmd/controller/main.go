@@ -1,36 +1,21 @@
 package main
 
 import (
-	"context"
-	"crypto/rand"
-	"crypto/x509"
 	goflag "flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
-	"os/signal"
-	"sort"
-	"strings"
-	"syscall"
 	"time"
 
 	flag "github.com/spf13/pflag"
-	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 
+	"github.com/bitnami-labs/sealed-secrets/pkg/controller"
 	"github.com/bitnami-labs/sealed-secrets/pkg/flagenv"
 	"github.com/bitnami-labs/sealed-secrets/pkg/pflagenv"
 
-	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	"github.com/bitnami-labs/sealed-secrets/pkg/buildinfo"
-	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
-	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
 )
 
 const (
@@ -39,258 +24,78 @@ const (
 )
 
 var (
-	keyPrefix            = flag.String("key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
-	keySize              = flag.Int("key-size", 4096, "Size of encryption key.")
-	validFor             = flag.Duration("key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
-	myCN                 = flag.String("my-cn", "", "Common name to be used as issuer/subject DN in generated certificate.")
-	printVersion         = flag.Bool("version", false, "Print version information and exit")
-	keyRenewPeriod       = flag.Duration("key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation disabled if 0)")
-	acceptV1Data         = flag.Bool("accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
-	keyCutoffTime        = flag.String("key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
-	namespaceAll         = flag.Bool("all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
-	additionalNamespaces = flag.String("additional-namespaces", "", "Comma-separated list of additional namespaces to be scanned.")
-	labelSelector        = flag.String("label-selector", "", "Label selector which can be used to filter sealed secrets.")
-	rateLimitPerSecond   = flag.Int("rate-limit", 2, "Number of allowed sustained request per second for verify endpoint")
-	rateLimitBurst       = flag.Int("rate-limit-burst", 2, "Number of requests allowed to exceed the rate limit per second for verify endpoint")
-
-	oldGCBehavior = flag.Bool("old-gc-behaviour", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
-
-	updateStatus = flag.Bool("update-status", true, "beta: if true, the controller will update the status subresource whenever it processes a sealed secret")
-
 	// VERSION set from Makefile
 	VERSION = buildinfo.DefaultVersion
-
-	// Selector used to find existing public/private key pairs on startup
-	keySelector = fields.OneTermEqualSelector(SealedSecretsKeyLabel, "active")
 )
 
-func init() {
-	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
+func bindControllerFlags(f *controller.Flags, fs *flag.FlagSet) {
+	fs.StringVar(&f.KeyPrefix, "key-prefix", "sealed-secrets-key", "Prefix used to name keys.")
+	fs.IntVar(&f.KeySize, "key-size", 4096, "Size of encryption key.")
+	fs.DurationVar(&f.ValidFor, "key-ttl", 10*365*24*time.Hour, "Duration that certificate is valid for.")
+	fs.StringVar(&f.MyCN, "my-cn", "", "Common name to be used as issuer/subject DN in generated certificate.")
 
-	flag.DurationVar(keyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
-	_ = flag.CommandLine.MarkDeprecated("rotate-period", "please use key-renew-period instead")
+	fs.DurationVar(&f.KeyRenewPeriod, "key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation deactivated if 0)")
+	fs.BoolVar(&f.AcceptV1Data, "accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
+	fs.StringVar(&f.KeyCutoffTime, "key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
+	fs.BoolVar(&f.NamespaceAll, "all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
+	fs.StringVar(&f.AdditionalNamespaces, "additional-namespaces", "", "Comma-separated list of additional namespaces to be scanned.")
+	fs.StringVar(&f.LabelSelector, "label-selector", "", "Label selector which can be used to filter sealed secrets.")
+	fs.IntVar(&f.RateLimitPerSecond, "rate-limit", 2, "Number of allowed sustained request per second for verify endpoint")
+	fs.IntVar(&f.RateLimitBurst, "rate-limit-burst", 2, "Number of requests allowed to exceed the rate limit per second for verify endpoint")
 
-	flagenv.SetFlagsFromEnv(flagEnvPrefix, goflag.CommandLine)
-	pflagenv.SetFlagsFromEnv(flagEnvPrefix, flag.CommandLine)
+	fs.BoolVar(&f.OldGCBehavior, "old-gc-behavior", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
+
+	fs.BoolVar(&f.UpdateStatus, "update-status", true, "beta: if true, the controller will update the status sub-resource whenever it processes a sealed secret")
+
+	fs.DurationVar(&f.KeyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
+	_ = fs.MarkDeprecated("rotate-period", "please use key-renew-period instead")
+}
+
+func bindFlags(f *controller.Flags, fs *flag.FlagSet, gofs *goflag.FlagSet) {
+	bindControllerFlags(f, fs)
+
+	flagenv.SetFlagsFromEnv(flagEnvPrefix, gofs)
+	pflagenv.SetFlagsFromEnv(flagEnvPrefix, fs)
 
 	// Standard goflags (glog in particular)
-	flag.CommandLine.AddGoFlagSet(goflag.CommandLine)
-	if f := flag.CommandLine.Lookup("logtostderr"); f != nil {
+	fs.AddGoFlagSet(gofs)
+	if f := fs.Lookup("logtostderr"); f != nil {
 		f.DefValue = "true"
 		_ = f.Value.Set(f.DefValue)
 	}
 }
 
-func initKeyPrefix(keyPrefix string) (string, error) {
-	return validateKeyPrefix(keyPrefix)
-}
+func mainE(w io.Writer, fs *flag.FlagSet, gofs *goflag.FlagSet, args []string) error {
+	var printVersion bool
+	var flags controller.Flags
 
-func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
-	log.Printf("Searching for existing private keys")
-	secretList, err := client.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: keySelector.String(),
-	})
-	if err != nil {
-		return nil, err
+	buildinfo.FallbackVersion(&VERSION, buildinfo.DefaultVersion)
+	fs.BoolVar(&printVersion, "version", false, "Print version information and exit")
+	bindFlags(&flags, fs, gofs)
+	if err := fs.Parse(args); err != nil {
+		return err
 	}
-	items := secretList.Items
-
-	s, err := client.CoreV1().Secrets(namespace).Get(ctx, prefix, metav1.GetOptions{})
-	if !errors.IsNotFound(err) {
-		if err != nil {
-			return nil, err
-		}
-		items = append(items, *s)
-		// TODO(mkm): add the label to the legacy secret to simplify discovery and backups.
-	}
-
-	keyRegistry := NewKeyRegistry(client, namespace, prefix, label, keysize)
-	sort.Sort(ssv1alpha1.ByCreationTimestamp(items))
-	for _, secret := range items {
-		key, certs, err := readKey(secret)
-		if err != nil {
-			log.Printf("Error reading key %s: %v", secret.Name, err)
-		}
-		ct := secret.CreationTimestamp
-		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], ct.Time); err != nil {
-			return nil, err
-		}
-		log.Printf("----- %s", secret.Name)
-	}
-	return keyRegistry, nil
-}
-
-func myNamespace() string {
-	if ns := os.Getenv("POD_NAMESPACE"); ns != "" {
-		return ns
-	}
-
-	// Fall back to the namespace associated with the service account token, if available
-	if data, err := ioutil.ReadFile("/var/run/secrets/kubernetes.io/serviceaccount/namespace"); err == nil {
-		if ns := strings.TrimSpace(string(data)); len(ns) > 0 {
-			return ns
-		}
-	}
-
-	return metav1.NamespaceDefault
-}
-
-// Initialises the first key and starts the rotation job. returns an early trigger function.
-// A period of 0 disables automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
-// is still honoured.
-func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period time.Duration, cutoffTime time.Time) (func(), error) {
-	// Create a new key if it's the first key,
-	// or if it's older than cutoff time.
-	if len(registry.keys) == 0 || registry.mostRecentKey.creationTime.Before(cutoffTime) {
-		if _, err := registry.generateKey(ctx); err != nil {
-			return nil, err
-		}
-	}
-
-	// wrapper function to log error thrown by generateKey function
-	keyGenFunc := func() {
-		if _, err := registry.generateKey(ctx); err != nil {
-			log.Printf("Failed to generate new key : %v\n", err)
-		}
-	}
-	if period == 0 {
-		return keyGenFunc, nil
-	}
-
-	// If key rotation is enabled, we'll rotate the key when the most recent
-	// key becomes stale (older than period).
-	mostRecentKeyAge := time.Since(registry.mostRecentKey.creationTime)
-	initialDelay := period - mostRecentKeyAge
-	if initialDelay < 0 {
-		initialDelay = 0
-	}
-	return ScheduleJobWithTrigger(initialDelay, period, keyGenFunc), nil
-}
-
-func main2() error {
-	config, err := rest.InClusterConfig()
-	if err != nil {
+	if err := gofs.Parse([]string{}); err != nil {
 		return err
 	}
 
-	clientset, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return err
-	}
+	ssv1alpha1.AcceptDeprecatedV1Data = flags.AcceptV1Data
 
-	ssclientset, err := sealedsecrets.NewForConfig(config)
-	if err != nil {
-		return err
-	}
-
-	myNs := myNamespace()
-	ctx := context.Background()
-
-	prefix, err := initKeyPrefix(*keyPrefix)
-	if err != nil {
-		return err
-	}
-
-	keyRegistry, err := initKeyRegistry(ctx, clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, *keySize)
-	if err != nil {
-		return err
-	}
-
-	var ct time.Time
-	if *keyCutoffTime != "" {
-		var err error
-		ct, err = time.Parse(time.RFC1123Z, *keyCutoffTime)
-		if err != nil {
-			return err
-		}
-	}
-
-	trigger, err := initKeyRenewal(ctx, keyRegistry, *keyRenewPeriod, ct)
-	if err != nil {
-		return err
-	}
-
-	initKeyGenSignalListener(trigger)
-
-	namespace := v1.NamespaceAll
-	if !*namespaceAll || *additionalNamespaces != "" {
-		namespace = myNamespace()
-		log.Printf("Starting informer for namespace: %s\n", namespace)
-	}
-
-	var tweakopts func(*metav1.ListOptions) = nil
-	if *labelSelector != "" {
-		tweakopts = func(options *metav1.ListOptions) {
-			options.LabelSelector = *labelSelector
-		}
-	}
-
-	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, tweakopts)
-	controller := NewController(clientset, ssclientset, ssinformer, keyRegistry)
-	controller.oldGCBehavior = *oldGCBehavior
-	controller.updateStatus = *updateStatus
-
-	stop := make(chan struct{})
-	defer close(stop)
-
-	go controller.Run(stop)
-
-	if *additionalNamespaces != "" {
-		addNS := removeDuplicates(strings.Split(*additionalNamespaces, ","))
-
-		var inf ssinformers.SharedInformerFactory
-		var ctlr *Controller
-
-		for _, ns := range addNS {
-			if _, err := clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{}); err != nil {
-				if errors.IsNotFound(err) {
-					log.Printf("Warning: namespace '%s' doesn't exist\n", ns)
-					continue
-				}
-				return err
-			}
-			if ns != namespace {
-				inf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
-				ctlr = NewController(clientset, ssclientset, inf, keyRegistry)
-				ctlr.oldGCBehavior = *oldGCBehavior
-				ctlr.updateStatus = *updateStatus
-				log.Printf("Starting informer for namespace: %s\n", ns)
-				go ctlr.Run(stop)
-			}
-		}
-	}
-
-	cp := func() ([]*x509.Certificate, error) {
-		cert, err := keyRegistry.getCert()
-		if err != nil {
-			return nil, err
-		}
-		return []*x509.Certificate{cert}, nil
-	}
-
-	server := httpserver(cp, controller.AttemptUnseal, controller.Rotate, *rateLimitBurst, *rateLimitPerSecond)
-
-	sigterm := make(chan os.Signal, 1)
-	signal.Notify(sigterm, syscall.SIGTERM)
-	<-sigterm
-
-	return server.Shutdown(context.Background())
-}
-
-func main() {
-	flag.Parse()
-	_ = goflag.CommandLine.Parse([]string{})
-
-	ssv1alpha1.AcceptDeprecatedV1Data = *acceptV1Data
-
-	fmt.Printf("controller version: %s\n", VERSION)
-	if *printVersion {
-		return
+	fmt.Fprintf(w, "controller version: %s\n", VERSION)
+	if printVersion {
+		return nil
 	}
 
 	log.Printf("Starting sealed-secrets controller version: %s\n", VERSION)
+	if err := controller.Main(&flags, VERSION); err != nil {
+		panic(err)
+	}
+	return nil
+}
 
-	if err := main2(); err != nil {
-		panic(err.Error())
+func main() {
+	if err := mainE(os.Stdout, flag.CommandLine, goflag.CommandLine, os.Args); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
 	}
 }

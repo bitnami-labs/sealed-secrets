@@ -1,4 +1,5 @@
 GO = go
+GOTESTSUM = gotestsum
 GOFMT = gofmt
 GOLANGCILINT=golangci-lint
 GOSEC=gosec
@@ -9,10 +10,13 @@ GO_FLAGS =
 KUBECFG = kubecfg
 DOCKER = docker
 GINKGO = ginkgo -p
+CONTROLLER_GEN ?= controller-gen
 
-CONTROLLER_IMAGE = docker.io/bitnami/sealed-secrets-controller:latest
+REGISTRY ?= docker.io
+CONTROLLER_IMAGE = $(REGISTRY)/bitnami/sealed-secrets-controller:latest
+KUBESEAL_IMAGE = $(REGISTRY)/bitnami/sealed-secrets-kubeseal:latest
 INSECURE_REGISTRY = false # useful for local registry
-IMAGE_PULL_POLICY = Always
+IMAGE_PULL_POLICY =
 KUBECONFIG ?= $(HOME)/.kube/config
 
 GO_PACKAGES = ./...
@@ -43,6 +47,16 @@ all: controller kubeseal
 
 generate: $(GO_FILES)
 	$(GO) mod vendor && $(GO) generate $(GO_PACKAGES)
+	@# TODO: remove as soon as a proper way forward is found:
+	@# code-generator insists in generating the file under directory:
+	@# github.com/bitnami-labs/sealeds-secrets/...
+	@# instead of just updating ./pkg
+	@# for that reason we generate at gentmp and then move it all to ./pkg
+	cp -r gentmp/github.com/bitnami-labs/sealed-secrets/pkg . && rm -rf gentmp/
+
+manifests:
+	$(CONTROLLER_GEN) crd paths="./pkg/apis/..." output:stdout | tail -n +2 > helm/sealed-secrets/crds/bitnami.com_sealedsecrets.yaml
+	yq '.spec.versions[0].schema' < helm/sealed-secrets/crds/bitnami.com_sealedsecrets.yaml > schema-v1alpha1.yaml
 
 controller: $(GO_FILES)
 	$(GO) build -o $@ $(GO_FLAGS) -ldflags "$(GO_LD_FLAGS)" ./cmd/controller
@@ -73,18 +87,23 @@ kubeseal-static: kubeseal-static-$(GOOS)-$(GOARCH)
 	cp $< $@
 
 
-define controllerimage
-controller.image.$(1)-$(2): Dockerfile controller-static-$(1)-$(2)
-	mkdir -p dist/controller_$(1)_$(2)
-	cp controller-static-$(1)-$(2) dist/controller_$(1)_$(2)/controller
-	$(DOCKER) build --build-arg TARGETARCH=$(2) -t $(CONTROLLER_IMAGE)-$(1)-$(2) .
-	@echo $(CONTROLLER_IMAGE)-$(1)-$(2) >$$@.tmp
+define image
+$(1).image.$(3)-$(4): docker/$(1).Dockerfile $(1)-static-$(3)-$(4)
+	mkdir -p dist/$(1)_$(3)_$(4)
+	cp $(1)-static-$(3)-$(4) dist/$(1)_$(3)_$(4)/$(1)
+	$(DOCKER) build --build-arg TARGETARCH=$(4) -t $(2)-$(3)-$(4) -f docker/$(1).Dockerfile .
+	@echo $(2)-$(3)-$(4) >$$@.tmp
 	@mv $$@.tmp $$@
 endef
 
-$(eval $(call controllerimage,linux,amd64))
-$(eval $(call controllerimage,linux,arm64))
-$(eval $(call controllerimage,linux,arm))
+define images
+$(call image,controller,${CONTROLLER_IMAGE},$1,$2)
+$(call image,kubeseal,${KUBESEAL_IMAGE},$1,$2)
+endef
+
+$(eval $(call images,linux,amd64))
+$(eval $(call images,linux,arm64))
+$(eval $(call images,linux,arm))
 
 %.yaml: %.jsonnet
 	$(KUBECFG) show -V CONTROLLER_IMAGE=$(CONTROLLER_IMAGE) -V IMAGE_PULL_POLICY=$(IMAGE_PULL_POLICY) -o yaml $< > $@.tmp
@@ -97,7 +116,7 @@ controller-norbac.yaml: controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixe
 controller-podmonitor.yaml: controller.jsonnet controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixes.libsonnet
 
 test:
-	$(GO) test $(GO_FLAGS) $(GO_PACKAGES)
+	$(GOTESTSUM) $(GO_FLAGS) $(GO_PACKAGES)
 
 integrationtest: kubeseal controller
 	# Assumes a k8s cluster exists, with controller already installed
@@ -123,4 +142,23 @@ clean:
 	$(RM) controller*.yaml
 	$(RM) controller.image*
 
+check-k8s:
+	scripts/check-k8s
+
+push-controller: clean check-k8s controller.image.$(OS)-$(ARCH)
+	docker tag $(CONTROLLER_IMAGE)-$(OS)-$(ARCH) $(CONTROLLER_IMAGE)
+ifeq ($(REGISTRY),docker.io)
+  echo "Skip push: docker.io registry means minikube"
+else
+	docker push $(CONTROLLER_IMAGE)
+endif
+
+apply-controller-manifests: clean check-k8s controller.yaml
+	kubectl apply -f controller.yaml
+	kubectl rollout status deployment sealed-secrets-controller -n kube-system
+
+controller-tests: test push-controller apply-controller-manifests clean integrationtest
+
 .PHONY: all kubeseal controller test clean vet fmt lint-gosec
+
+.PHONY: controllertests check-k8s push-controller apply-controller-manifests

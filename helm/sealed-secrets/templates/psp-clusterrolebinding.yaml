@@ -7,7 +7,6 @@ metadata:
     {{- if .Values.rbac.labels }}
     {{- include "sealed-secrets.render" ( dict "value" .Values.rbac.labels "context" $) | nindent 4 }}
     {{- end }}
-rules:
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

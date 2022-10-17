@@ -21,9 +21,9 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
-	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealed-secrets/v1alpha1"
+	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 
-	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
 	// For client auth plugins
@@ -31,6 +31,7 @@ import (
 )
 
 var kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+var controllerNs = flag.String("namespace", "kube-system", "namespace where the controller is installed")
 var kubesealBin = flag.String("kubeseal-bin", "kubeseal", "path to kubeseal executable under test")
 var controllerBin = flag.String("controller-bin", "controller", "path to controller executable under test")
 

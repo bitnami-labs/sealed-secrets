@@ -23,7 +23,7 @@ controller {
       {
         apiGroups: [''],
         resources: ['secrets'],
-        verbs: ['get', 'list', 'create', 'update', 'delete'],
+        verbs: ['get', 'list', 'create', 'update', 'delete', 'watch'],
       },
       {
         apiGroups: [''],

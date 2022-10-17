@@ -11,11 +11,14 @@ The controller exposes an API defined using the Swagger or OpenAPI v3 specificat
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Download the controller source code](#download-the-controller-source-code)
-  - [Building the `controller` binary](#building-the-controller-binary)
-  - [Running unit tests](#running-unit-tests)
-  - [Building the controller image](#building-the-controller-image)
-  - [Building the controller manifests](#building-the-controller-manifests)
-  - [Running integration tests](#running-integration-tests)
+  - [Setup a kubernetes cluster to run the tests](#setup-a-kubernetes-cluster-to-run-the-tests)
+  - [Run all controller tests with a single command](#run-all-controller-tests-with-a-single-command)
+  - [Run tests step by step](#run-tests-step-by-step)
+    - [Building the `controller` binary](#building-the-controller-binary)
+    - [Running unit tests](#running-unit-tests)
+    - [Push the controller image](#push-the-controller-image)
+    - [Building & applying the controller manifests](#building--applying-the-controller-manifests)
+    - [Running integration tests](#running-integration-tests)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -27,7 +30,66 @@ git clone https://github.com/bitnami-labs/sealed-secrets.git $SEALED_SECRETS_DIR
 
 The controller sources are located under `cmd/controller/` and use packages from the `pkg` directory.
 
-### Building the `controller` binary
+
+### Setup a kubernetes cluster to run the tests
+
+You need a kubernetes cluster to run the integration tests.
+
+For instance:
+
+When using a local minikube, configure your local environment to re-use the local Docker daemon:
+
+```bash
+minikube start
+eval $(minikube docker-env)
+```
+
+If you use `kind` instead, you can setup a local companion image registry and allow kind to access it.
+
+Sample to run a registry locally:
+```bash
+export LOCAL_REGISTRY_PORT='5000'
+export LOCAL_REGISTRY_NAME='kind-registry'
+docker run --rm -d -p "127.0.0.1:${LOCAL_REGISTRY_PORT}:5000" --name "${LOCAL_REGISTRY_NAME}" registry:2
+```
+
+Then to have launch `kind` with access to that registry:
+```bash
+cat <<EOF | kind create cluster --name "${CLUSTER_NAME}" --config=-
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+containerdConfigPatches:
+- |-
+  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:${LOCAL_REGISTRY_PORT}"]
+    endpoint = ["http://${LOCAL_REGISTRY_NAME}:5000"]
+EOF
+docker network connect "kind" "${LOCAL_REGISTRY_NAME}"
+```
+
+### Run all controller tests with a single command
+
+```bash
+make K8S_CONTEXT=mytestk8s-context OS=linux ARCH=amd64 controller-tests
+```
+
+Note that:
+- `K8S_CONTEXT` must be set to the name of your `kubectl` context pointing to the expected text cluster.
+- `OS` & `ARCH` must match the Operating System and Architecture of your test cluster.
+
+Optionally, you can customize the `REGISTRY` as well. In fact you will need that for a kind setup with a local registry:
+
+```bash
+make K8S_CONTEXT=kind REGISTRY=localhost:5000 OS=linux ARCH=amd64 controller-tests
+```
+
+For minikube just skip the `REGISTRY` setting:
+```bash
+make K8S_CONTEXT=minikube OS=linux ARCH=amd64 controller-tests
+```
+
+### Run tests step by step
+
+#### Building the `controller` binary
 
 ```bash
 make controller
@@ -35,7 +97,7 @@ make controller
 
 This builds the `controller` binary in the working directory.
 
-### Running unit tests
+#### Running unit tests
 
 To run the unit tests for `controller` binary:
 
@@ -43,47 +105,40 @@ To run the unit tests for `controller` binary:
 make test
 ```
 
-### Building the controller image
+#### Push the controller image
+
+This would work with a local minikube setup to build the controller:
 
 ```bash
-CONTROLLER_IMAGE="bitnami/sealed-secrets-controller:development"
-make CONTROLLER_IMAGE=$CONTROLLER_IMAGE controller.image.linux-amd64
-docker tag $CONTROLLER_IMAGE-linux-amd64 $CONTROLLER_IMAGE
+make K8S_CONTEXT=minikube OS=linux ARCH=amd64 push-controller
 ```
 
-This builds the controller container image.
+It will not push, as minikube accesses local docker images directly.
 
-### Building the controller manifests
+Remember the `REGISTRY` env var is needed when using a custom registry:
 
 ```bash
-make CONTROLLER_IMAGE=$CONTROLLER_IMAGE IMAGE_PULL_POLICY=Never controller.yaml
+make K8S_CONTEXT=kind REGISTRY=localhost:5000 OS=linux ARCH=amd64 push-controller
 ```
 
-This builds the controller K8s manifests in the working directory.
+This builds the controller container image and pushes it.
 
-### Running integration tests
-
-To run the integration tests:
-
-- Start Minikube and configure your local environment to re-use the Docker daemon inside the Minikube instance:
+#### Building & applying the controller manifests
 
 ```bash
-minikube start
-eval $(minikube docker-env)
+make K8S_CONTEXT=minikube apply-controller-manifests
 ```
 
-- [Build the controller container image](#building-the-controller-image).
-- [Build the controller manifests](#building-the-controller-manifests).
-
-- Deploy the Sealed Secrets CRD and controller to your Minikube cluster:
+Or for `kind`:
 
 ```bash
-kubectl apply -f controller.yaml
+make K8S_CONTEXT=kind REGISTRY=localhost:5000 apply-controller-manifests
 ```
 
-- Clean the environment and run the integration tests:
+This builds the controller K8s manifests in the working directory and deploys them.
+
+#### Running integration tests
 
 ```bash
-make clean
 make integrationtest
 ```

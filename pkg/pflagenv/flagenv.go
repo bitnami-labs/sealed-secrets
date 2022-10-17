@@ -8,16 +8,16 @@
 // This example will make it possible to set the default of --my_flag also via the MY_PROG_MY_FLAG
 // env var:
 //
-//    var myflag = pflag.String("my_flag", "", "some flag")
+//	var myflag = pflag.String("my_flag", "", "some flag")
 //
-//    func init() {
-//        pflagenv.SetFlagsFromEnv("MY_PROG", pflag.CommandLine)
-//    }
+//	func init() {
+//	    pflagenv.SetFlagsFromEnv("MY_PROG", pflag.CommandLine)
+//	}
 //
-//    func main() {
-//        pflag.Parse()
-//        ...
-//    }
+//	func main() {
+//	    pflag.Parse()
+//	    ...
+//	}
 package pflagenv
 
 import (

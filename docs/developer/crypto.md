@@ -166,9 +166,15 @@ Shor algorithm can be used to solve in a reasonable time 3 mathematical problems
 
 ### Recommendations
 
-Replace RSA. This recommendation must be the highest priority regarding the post-quantum security of Sealed Secrets.
+Replace RSA whenever feasible. This recommendation must be the highest priority regarding the post-quantum security of Sealed Secrets.
 There are three serious candidates to use instead of RSA: LMS and XMSS, which are Lattice-based, and McEliece with random Goppa codes, which is code-based and relies on SDP (Syndrome Decoding Problem).
 Those three algorithms are serious candidates for RSA replacement and the choice must be done carefully, without forgetting to study other algorithms such as NTRU.
+
+It is important to qualify this recommendation with a couple of prerequisites:
+- A standard or clear recommended Public Key Cryptography Algorithm replacement emerges in the industry.
+- A reliable Go implementation is available in a compatible Open Source license.
+
+Without such prerequisites in place, an RSA replacement cannot be commited upon.
 
 ### Associated documentation
 
