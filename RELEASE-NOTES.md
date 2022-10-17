@@ -4,6 +4,12 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.19.1
+
+### Changelog
+
+- Fix release dockerhub container image name([#1014](https://github.com/bitnami-labs/sealed-secrets/pull/1014)).
+
 ## v0.19.0
 
 ### Changelog
