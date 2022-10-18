@@ -4,7 +4,7 @@ go 1.18
 
 require (
 	github.com/google/go-cmp v0.5.9
-	github.com/google/renameio v0.1.0
+	github.com/google/renameio v1.0.1
 	github.com/mattn/go-isatty v0.0.16
 	github.com/mkmik/multierror v0.3.0
 	github.com/onsi/ginkgo/v2 v2.3.1
