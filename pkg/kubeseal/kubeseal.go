@@ -27,10 +27,16 @@ import (
 	"k8s.io/apimachinery/pkg/util/net"
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
 )
+
+type ClientConfig interface {
+	ClientConfig() (*rest.Config, error)
+	Namespace() (string, bool, error)
+}
 
 func ParseKey(r io.Reader) (*rsa.PublicKey, error) {
 	data, err := io.ReadAll(r)
@@ -161,7 +167,7 @@ func openCertCluster(ctx context.Context, c corev1.CoreV1Interface, namespace, n
 	return cert, nil
 }
 
-func OpenCert(ctx context.Context, clientConfig clientcmd.ClientConfig, controllerNs, controllerName string, certURL string) (io.ReadCloser, error) {
+func OpenCert(ctx context.Context, clientConfig ClientConfig, controllerNs, controllerName string, certURL string) (io.ReadCloser, error) {
 	if certURL != "" {
 		return openCertLocal(certURL)
 	}
@@ -181,7 +187,7 @@ func OpenCert(ctx context.Context, clientConfig clientcmd.ClientConfig, controll
 // Seal reads a k8s Secret resource parsed from an input reader by a given codec, encrypts all its secrets
 // with a given public key, using the name and namespace found in the input secret, unless explicitly overridden
 // by the overrideName and overrideNamespace arguments.
-func Seal(solveNamespace NamespaceFn, outputFormat string, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string) error {
+func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string) error {
 	secret, err := readSecret(codecs.UniversalDecoder(), in)
 	if err != nil {
 		return err
@@ -208,7 +214,7 @@ func Seal(solveNamespace NamespaceFn, outputFormat string, in io.Reader, out io.
 	}
 
 	if ssv1alpha1.SecretScope(secret) != ssv1alpha1.ClusterWideScope && secret.GetNamespace() == "" {
-		ns, _, err := solveNamespace()
+		ns, _, err := clientConfig.Namespace()
 		if clientcmd.IsEmptyConfig(err) {
 			return fmt.Errorf("input secret has no namespace and cannot infer the namespace automatically when no kube config is available")
 		} else if err != nil {
@@ -236,7 +242,7 @@ func Seal(solveNamespace NamespaceFn, outputFormat string, in io.Reader, out io.
 	return nil
 }
 
-func ValidateSealedSecret(ctx context.Context, clientConfig clientcmd.ClientConfig, controllerNs, controllerName string, in io.Reader) error {
+func ValidateSealedSecret(ctx context.Context, clientConfig ClientConfig, controllerNs, controllerName string, in io.Reader) error {
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -274,7 +280,7 @@ func ValidateSealedSecret(ctx context.Context, clientConfig clientcmd.ClientConf
 	return nil
 }
 
-func ReEncryptSealedSecret(ctx context.Context, clientConfig clientcmd.ClientConfig, controllerNs, controllerName, outputFormat string, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory) error {
+func ReEncryptSealedSecret(ctx context.Context, clientConfig ClientConfig, controllerNs, controllerName, outputFormat string, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory) error {
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
 		return err
@@ -360,7 +366,7 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 	return &ss, nil
 }
 
-func SealMergingInto(solveNamespace NamespaceFn, outputFormat string, in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool) error {
+func SealMergingInto(clientConfig ClientConfig, outputFormat string, in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool) error {
 	// #nosec G304 -- should open user provided file
 	f, err := os.OpenFile(filename, os.O_RDWR, 0)
 	if err != nil {
@@ -380,7 +386,7 @@ func SealMergingInto(solveNamespace NamespaceFn, outputFormat string, in io.Read
 	}
 
 	var buf bytes.Buffer
-	if err := Seal(solveNamespace, outputFormat, in, &buf, codecs, pubKey, scope, allowEmptyData, orig.Name, orig.Namespace); err != nil {
+	if err := Seal(clientConfig, outputFormat, in, &buf, codecs, pubKey, scope, allowEmptyData, orig.Name, orig.Namespace); err != nil {
 		return err
 	}
 

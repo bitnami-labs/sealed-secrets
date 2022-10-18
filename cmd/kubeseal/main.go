@@ -58,23 +58,17 @@ type Flags struct {
 }
 
 type Config struct {
-	flags          *Flags
-	clientConfig   clientcmd.ClientConfig
-	ctx            context.Context
-	solveNamespace kubeseal.NamespaceFn
+	flags        *Flags
+	clientConfig kubeseal.ClientConfig
+	ctx          context.Context
 }
 
 func newConfig(clientConfig clientcmd.ClientConfig, flags *Flags) *Config {
 	return &Config{
-		flags:          flags,
-		clientConfig:   clientConfig,
-		ctx:            context.Background(),
-		solveNamespace: initNamespaceFuncFromClient(clientConfig),
+		flags:        flags,
+		clientConfig: clientConfig,
+		ctx:          context.Background(),
 	}
-}
-
-func initNamespaceFuncFromClient(clientConfig clientcmd.ClientConfig) kubeseal.NamespaceFn {
-	return func() (string, bool, error) { return clientConfig.Namespace() }
 }
 
 func initClient(kubeConfigPath string, cfgOverrides *clientcmd.ConfigOverrides, r io.Reader) clientcmd.ClientConfig {
@@ -128,7 +122,7 @@ func initUsualKubectlFlags(overrides *clientcmd.ConfigOverrides, fs *flag.FlagSe
 	clientcmd.BindOverrideFlags(overrides, fs, kflags)
 }
 
-func runKubeseal(w io.Writer, cfg *Config) (err error) {
+func runCLI(w io.Writer, cfg *Config) (err error) {
 	flags := cfg.flags
 	if len(flags.FromFile) != 0 && !flags.Raw {
 		return fmt.Errorf("--from-file requires --raw")
@@ -208,7 +202,7 @@ func runKubeseal(w io.Writer, cfg *Config) (err error) {
 	}
 
 	if flags.MergeInto != "" {
-		return kubeseal.SealMergingInto(cfg.solveNamespace, flags.OutputFormat, input, flags.MergeInto, scheme.Codecs, pubKey, flags.SealingScope, flags.AllowEmptyData)
+		return kubeseal.SealMergingInto(cfg.clientConfig, flags.OutputFormat, input, flags.MergeInto, scheme.Codecs, pubKey, flags.SealingScope, flags.AllowEmptyData)
 	}
 
 	if flags.Raw {
@@ -217,7 +211,7 @@ func runKubeseal(w io.Writer, cfg *Config) (err error) {
 			err error
 		)
 		if flags.SealingScope < ssv1alpha1.ClusterWideScope {
-			ns, _, err = cfg.solveNamespace()
+			ns, _, err = cfg.clientConfig.Namespace()
 			if err != nil {
 				return err
 			}
@@ -253,7 +247,7 @@ func runKubeseal(w io.Writer, cfg *Config) (err error) {
 		return kubeseal.EncryptSecretItem(w, flags.SecretName, ns, data, flags.SealingScope, pubKey)
 	}
 
-	return kubeseal.Seal(cfg.solveNamespace, flags.OutputFormat, input, w, scheme.Codecs, pubKey, flags.SealingScope, flags.AllowEmptyData, flags.SecretName, "")
+	return kubeseal.Seal(cfg.clientConfig, flags.OutputFormat, input, w, scheme.Codecs, pubKey, flags.SealingScope, flags.AllowEmptyData, flags.SecretName, "")
 }
 
 func mainE(w io.Writer, fs *flag.FlagSet, gofs *goflag.FlagSet, args []string) error {
@@ -279,7 +273,7 @@ func mainE(w io.Writer, fs *flag.FlagSet, gofs *goflag.FlagSet, args []string) e
 
 	clientConfig := initClient(flags.Kubeconfig, &overrides, os.Stdout)
 	cfg := newConfig(clientConfig, &flags)
-	return runKubeseal(w, cfg)
+	return runCLI(w, cfg)
 }
 
 func main() {

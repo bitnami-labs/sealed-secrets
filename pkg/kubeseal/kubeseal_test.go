@@ -27,13 +27,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	certUtil "k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	certUtil "k8s.io/client-go/util/cert"
 )
 
 const testCert = `
@@ -94,6 +93,36 @@ func tmpfile(t *testing.T, contents []byte) string {
 	return f.Name()
 }
 
+func TestParseKey(t *testing.T) {
+	key, err := ParseKey(strings.NewReader(testCert))
+	if err != nil {
+		t.Fatalf("Failed to parse test key: %v", err)
+	}
+
+	if key.N.Cmp(testModulus) != 0 {
+		t.Errorf("Unexpected key modulus: %v", key.N)
+	}
+
+	if key.E != testExponent {
+		t.Errorf("Unexpected key exponent: %v", key.E)
+	}
+}
+
+/* repeated from main here... STARTs */
+
+func initClient(kubeConfigPath string, cfgOverrides *clientcmd.ConfigOverrides, r io.Reader) clientcmd.ClientConfig {
+	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
+	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+	loadingRules.ExplicitPath = kubeConfigPath
+	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, cfgOverrides, r)
+}
+
+func testClientConfig() clientcmd.ClientConfig {
+	return initClient("", testConfigOverrides(), os.Stdin)
+}
+
+/* repeated from main here... ENDs */
+
 func initUsualKubectlFlagsForTests(overrides *clientcmd.ConfigOverrides, flagset *flag.FlagSet) {
 	kflags := clientcmd.RecommendedConfigOverrideFlags("")
 	clientcmd.BindOverrideFlags(overrides, flagset, kflags)
@@ -111,36 +140,11 @@ func testConfigOverrides() *clientcmd.ConfigOverrides {
 	return &overrides
 }
 
-func testClientConfig() clientcmd.ClientConfig {
-	return InitClient("", testConfigOverrides(), os.Stdin)
-}
-
-func TestParseKey(t *testing.T) {
-	key, err := parseKey(strings.NewReader(testCert))
-	if err != nil {
-		t.Fatalf("Failed to parse test key: %v", err)
-	}
-
-	if key.N.Cmp(testModulus) != 0 {
-		t.Errorf("Unexpected key modulus: %v", key.N)
-	}
-
-	if key.E != testExponent {
-		t.Errorf("Unexpected key exponent: %v", key.E)
-	}
-}
-
-func testConfig(flags *Flags) *Config {
-	clientConfig := testClientConfig()
-	return &Config{
-		flags:        flags,
-		clientConfig: clientConfig,
-		ctx:          context.Background(),
-	}
-}
-
 func TestOpenCertFile(t *testing.T) {
-	var flags Flags
+	ctx := context.Background()
+	clientConfig := testClientConfig()
+	controllerNs := "default"
+	controllerName := "controller"
 	certFile := tmpfile(t, []byte(testCert))
 
 	s := httptest.NewServer(http.FileServer(http.Dir(filepath.Dir(certFile))))
@@ -157,7 +161,7 @@ func TestOpenCertFile(t *testing.T) {
 	}
 
 	for _, certURL := range testCases {
-		f, err := openCert(testConfig(&flags), certURL)
+		f, err := OpenCert(ctx, clientConfig, controllerNs, controllerName, certURL)
 		if err != nil {
 			t.Fatalf("Error reading test cert file: %v", err)
 		}
@@ -174,7 +178,7 @@ func TestOpenCertFile(t *testing.T) {
 }
 
 func TestSeal(t *testing.T) {
-	key, err := parseKey(strings.NewReader(testCert))
+	key, err := ParseKey(strings.NewReader(testCert))
 	if err != nil {
 		t.Fatalf("Failed to parse test key: %v", err)
 	}
@@ -334,8 +338,9 @@ func TestSeal(t *testing.T) {
 	}
 
 	for i, tc := range testCases {
-		var flags Flags
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
+			clientConfig := testClientConfig()
+			outputFormat := "json"
 			info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
 			if !ok {
 				t.Fatalf("binary can't serialize JSON")
@@ -349,7 +354,7 @@ func TestSeal(t *testing.T) {
 			t.Logf("input is: %s", inbuf.String())
 
 			outbuf := bytes.Buffer{}
-			if err := seal(testConfig(&flags), &inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, "", ""); err != nil {
+			if err := Seal(clientConfig, outputFormat, &inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, "", ""); err != nil {
 				t.Fatalf("seal() returned error: %v", err)
 			}
 
@@ -455,22 +460,15 @@ func mkTestSecret(t *testing.T, key, value string, opts ...mkTestSecretOpt) []by
 }
 
 func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string, opts ...mkTestSecretOpt) []byte {
-	var flags Flags
+	clientConfig := testClientConfig()
+	outputFormat := "json"
 	inbuf := bytes.NewBuffer(mkTestSecret(t, key, value, opts...))
 	var outbuf bytes.Buffer
-	if err := seal(testConfig(&flags), inbuf, &outbuf, scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, "", ""); err != nil {
+	if err := Seal(clientConfig, outputFormat, inbuf, &outbuf, scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, "", ""); err != nil {
 		t.Fatalf("seal() returned error: %v", err)
 	}
 
 	return outbuf.Bytes()
-}
-
-func newTestKeyPairSingle(t *testing.T) (*rsa.PublicKey, *rsa.PrivateKey) {
-	privKey, _, err := crypto.GeneratePrivateKeyAndCert(2048, time.Hour, "testcn")
-	if err != nil {
-		t.Fatal(err)
-	}
-	return &privKey.PublicKey, privKey
 }
 
 // TODO(mkm): rename newTestKeyPair to newTestKeyPairs
@@ -516,8 +514,9 @@ func TestUnseal(t *testing.T) {
 	ss := mkTestSealedSecret(t, pubKey, secretItemKey, secretItemValue)
 
 	var buf bytes.Buffer
-	flags := Flags{PrivKeys: []string{pkFile.Name()}}
-	if err := unsealSealedSecret(&flags, &buf, bytes.NewBuffer(ss), scheme.Codecs); err != nil {
+	privKeysList := []string{pkFile.Name()}
+	outputFormat := "json"
+	if err := UnsealSealedSecret(&buf, bytes.NewBuffer(ss), privKeysList, outputFormat, scheme.Codecs); err != nil {
 		t.Fatal(err)
 	}
 
@@ -574,8 +573,9 @@ func TestUnsealList(t *testing.T) {
 	ss := mkTestSealedSecret(t, pubKey, secretItemKey, secretItemValue)
 
 	var buf bytes.Buffer
-	flags := Flags{PrivKeys: []string{pkFile.Name()}}
-	if err := unsealSealedSecret(&flags, &buf, bytes.NewBuffer(ss), scheme.Codecs); err != nil {
+	privKeysList := []string{pkFile.Name()}
+	outputFormat := "json"
+	if err := UnsealSealedSecret(&buf, bytes.NewBuffer(ss), privKeysList, outputFormat, scheme.Codecs); err != nil {
 		t.Fatal(err)
 	}
 
@@ -590,7 +590,8 @@ func TestUnsealList(t *testing.T) {
 }
 
 func TestMergeInto(t *testing.T) {
-	var flags Flags
+	clientConfig := testClientConfig()
+	outputFormat := "json"
 	pubKey, privKeys := newTestKeyPair(t)
 
 	merge := func(t *testing.T, newSecret, oldSealedSecret []byte) *ssv1alpha1.SealedSecret {
@@ -604,7 +605,7 @@ func TestMergeInto(t *testing.T) {
 		f.Close()
 
 		buf := bytes.NewBuffer(newSecret)
-		if err := sealMergingInto(testConfig(&flags), buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false); err != nil {
+		if err := SealMergingInto(clientConfig, outputFormat, buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false); err != nil {
 			t.Fatal(err)
 		}
 
@@ -689,14 +690,20 @@ func TestMergeInto(t *testing.T) {
 	})
 }
 
-func TestMainError(t *testing.T) {
-	badFileName := filepath.Join("this", "file", "cannot", "possibly", "exist", "can", "it?")
-	flags := Flags{CertURL: badFileName}
-
-	err := Run(io.Discard, testConfig(&flags))
-	if err == nil || !os.IsNotExist(err) {
-		t.Fatalf("expecting not exist error, got: %v", err)
+// writeTempFile creates a temporary file, writes data into it and closes it.
+func writeTempFile(b []byte) (string, error) {
+	tmp, err := os.CreateTemp("", "")
+	if err != nil {
+		return "", err
 	}
+	defer tmp.Close()
+
+	if _, err := tmp.Write(b); err != nil {
+		os.RemoveAll(tmp.Name())
+		return "", err
+	}
+
+	return tmp.Name(), nil
 }
 
 // testingKeypairFiles returns a path to a PEM encoded certificate and a PEM encoded private key
@@ -729,6 +736,29 @@ func testingKeypairFiles(t *testing.T) (string, string, func()) {
 	}
 }
 
+func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope ssv1alpha1.SealingScope) (string, error) {
+	var buf bytes.Buffer
+
+	ctx := context.Background()
+	clientConfig := testClientConfig()
+	controllerNs := "default"
+	controllerName := "controller"
+	f, err := OpenCert(ctx, clientConfig, controllerNs, controllerName, certFilename)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	pubKey, err := ParseKey(f)
+	if err != nil {
+		return "", err
+	}
+
+	if err := EncryptSecretItem(&buf, secretName, secretNS, []byte(secretValue), scope, pubKey); err != nil {
+		return "", err
+	}
+	return buf.String(), nil
+}
+
 func TestRaw(t *testing.T) {
 	certFilename, privKeyFilename, cleanup := testingKeypairFiles(t)
 	defer cleanup()
@@ -744,20 +774,14 @@ func TestRaw(t *testing.T) {
 		ns        string
 		name      string
 		scope     ssv1alpha1.SealingScope
-		sealErr   string
 		unsealErr string
 	}{
 		// strict scope
-		{ns: "", name: "", sealErr: "must provide the --namespace flag with --raw and --scope strict"},
-		{ns: secretNS, name: "", sealErr: "must provide the --name flag with --raw and --scope strict"},
-
 		{ns: secretNS, name: secretName},
 		{ns: "youGiveRest", name: secretName, unsealErr: "no key could decrypt secret"},
 		{ns: secretNS, name: "aBadName", unsealErr: "no key could decrypt secret"},
 
 		// namespace-wide scope
-		{scope: ssv1alpha1.NamespaceWideScope, name: secretName, sealErr: "must provide the --namespace flag with --raw and --scope namespace-wide"},
-
 		{scope: ssv1alpha1.NamespaceWideScope, ns: secretNS, name: secretName},
 		{scope: ssv1alpha1.NamespaceWideScope, ns: "youGiveRest", unsealErr: "no key could decrypt secret"},
 		{scope: ssv1alpha1.NamespaceWideScope, ns: "youGiveRest", name: "aBadName", unsealErr: "no key could decrypt secret"},
@@ -778,12 +802,6 @@ func TestRaw(t *testing.T) {
 		// in a sealed secret with the metadata from the constants above
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			enc, err := sealTestItem(certFilename, tc.ns, tc.name, secretValue, tc.scope)
-			if tc.sealErr != "" {
-				if got, want := fmt.Sprint(err), tc.sealErr; !strings.HasPrefix(got, want) {
-					t.Fatalf("got: %v, want: %v", err, want)
-				}
-				return
-			}
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -825,162 +843,59 @@ func TestRaw(t *testing.T) {
 	}
 }
 
-type tweakedClientConfig struct {
-	ccfg      ClientConfig
-	namespace string
+func newTestKeyPairSingle(t *testing.T) (*rsa.PublicKey, *rsa.PrivateKey) {
+	privKey, _, err := crypto.GeneratePrivateKeyAndCert(2048, time.Hour, "testcn")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &privKey.PublicKey, privKey
 }
 
-func (tcc *tweakedClientConfig) Namespace() (string, bool, error) {
-	return tcc.namespace, false, nil
-}
+func TestReadPrivKeySecret(t *testing.T) {
+	outputFormat := "json"
+	_, pkw := newTestKeyPairSingle(t)
 
-func (tcc *tweakedClientConfig) ClientConfig() (*rest.Config, error) {
-	return tcc.ccfg.ClientConfig()
-}
-
-func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope ssv1alpha1.SealingScope) (string, error) {
-	dataFile, err := writeTempFile([]byte(secretValue))
-	if err != nil {
-		return "", err
-	}
-	defer os.RemoveAll(dataFile)
-
-	fromFile := []string{dataFile}
-	var buf bytes.Buffer
-	flags := Flags{
-		SealingScope: scope,
-		SecretName:   secretName,
-		CertURL:      certFilename,
-		Raw:          true,
-		FromFile:     fromFile,
-	}
-	cfg := testConfig(&flags)
-	cfg.clientConfig = &tweakedClientConfig{cfg.clientConfig, secretNS}
-
-	if err := Run(&buf, cfg); err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
-}
-
-func TestWriteToFile(t *testing.T) {
-	certFilename, _, cleanup := testingKeypairFiles(t)
-	defer cleanup()
-
-	in, err := os.CreateTemp("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(in.Name())
-	fmt.Fprintf(in, `apiVersion: v1
-kind: Secret
-metadata:
-  name: foo
-  namespace: bar
-data:
-  super: c2VjcmV0
-`)
-	in.Close()
-
-	out, err := os.CreateTemp("", "*.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	out.Close()
-	defer os.RemoveAll(out.Name())
-
-	var buf bytes.Buffer
-	flags := Flags{
-		InputFileName:  in.Name(),
-		OutputFileName: out.Name(),
-		CertURL:        certFilename,
-	}
-
-	if err := Run(&buf, testConfig(&flags)); err != nil {
-		t.Fatal(err)
-	}
-
-	if got, want := buf.Len(), 0; got != want {
-		t.Errorf("got: %d, want: %d", got, want)
-	}
-
-	b, err := os.ReadFile(out.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if sub := "kind: SealedSecret"; !bytes.Contains(b, []byte(sub)) {
-		t.Errorf("expecting to find %q in %q", sub, b)
-	}
-}
-
-func TestFailToWriteToFile(t *testing.T) {
-	certFilename, _, cleanup := testingKeypairFiles(t)
-	defer cleanup()
-
-	in, err := os.CreateTemp("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.RemoveAll(in.Name())
-	fmt.Fprintf(in, `apiVersion: v1
-kind: BadInput
-metadata:
-  name: foo
-  namespace: bar
-`)
-	in.Close()
-
-	out, err := os.CreateTemp("", "")
+	b, err := keyutil.MarshalPrivateKeyToPEM(pkw)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// if sealing error happens, the old content of the output file shouldn't be truncated.
-	const testOldContent = "previous content"
-
-	fmt.Fprint(out, testOldContent)
-	out.Close()
-	defer os.RemoveAll(out.Name())
-
-	var buf bytes.Buffer
-	flags := Flags{
-		InputFileName:  in.Name(),
-		OutputFileName: out.Name(),
-		CertURL:        certFilename,
+	sec := &v1.Secret{
+		Data: map[string][]byte{
+			"tls.key": b,
+		},
 	}
 
-	if err := Run(&buf, testConfig(&flags)); err == nil {
-		t.Errorf("expecting error")
-	}
-
-	if got, want := buf.Len(), 0; got != want {
-		t.Errorf("got: %d, want: %d", got, want)
-	}
-
-	b, err := os.ReadFile(out.Name())
+	tmp, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got, want := string(b), testOldContent; got != want {
+	// defer os.RemoveAll(tmp.Name())
+
+	if err := resourceOutput(tmp, outputFormat, scheme.Codecs, v1.SchemeGroupVersion, sec); err != nil {
+		t.Fatal(err)
+	}
+	tmp.Close()
+
+	pkr, err := readPrivKey(tmp.Name())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if got, want := pkr.D.String(), pkw.D.String(); got != want {
 		t.Errorf("got: %q, want: %q", got, want)
 	}
 }
 
-// writeTempFile creates a temporary file, writes data into it and closes it.
-func writeTempFile(b []byte) (string, error) {
-	tmp, err := os.CreateTemp("", "")
-	if err != nil {
-		return "", err
-	}
-	defer tmp.Close()
+func TestYAMLStream(t *testing.T) {
+	s1 := mkTestSecret(t, "foo", "1", withSecretName("s1"), asYAML(true))
+	s2 := mkTestSecret(t, "var", "2", withSecretName("s2"), asYAML(true))
+	bad := fmt.Sprintf("%s\n---\n%s\n", s1, s2)
 
-	if _, err := tmp.Write(b); err != nil {
-		os.RemoveAll(tmp.Name())
-		return "", err
+	_, err := readSecret(scheme.Codecs.UniversalDecoder(), strings.NewReader(bad))
+	if err == nil {
+		t.Fatalf("error expected")
 	}
-
-	return tmp.Name(), nil
 }
 
 func TestReadPrivKeyPEM(t *testing.T) {
@@ -1008,53 +923,5 @@ func TestReadPrivKeyPEM(t *testing.T) {
 
 	if got, want := pkr.D.String(), pkw.D.String(); got != want {
 		t.Errorf("got: %q, want: %q", got, want)
-	}
-}
-
-func TestReadPrivKeySecret(t *testing.T) {
-	var flags Flags
-
-	_, pkw := newTestKeyPairSingle(t)
-
-	b, err := keyutil.MarshalPrivateKeyToPEM(pkw)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	sec := &v1.Secret{
-		Data: map[string][]byte{
-			"tls.key": b,
-		},
-	}
-
-	tmp, err := os.CreateTemp("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
-	// defer os.RemoveAll(tmp.Name())
-
-	if err := resourceOutput(tmp, &flags, scheme.Codecs, v1.SchemeGroupVersion, sec); err != nil {
-		t.Fatal(err)
-	}
-	tmp.Close()
-
-	pkr, err := readPrivKey(tmp.Name())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if got, want := pkr.D.String(), pkw.D.String(); got != want {
-		t.Errorf("got: %q, want: %q", got, want)
-	}
-}
-
-func TestYAMLStream(t *testing.T) {
-	s1 := mkTestSecret(t, "foo", "1", withSecretName("s1"), asYAML(true))
-	s2 := mkTestSecret(t, "var", "2", withSecretName("s2"), asYAML(true))
-	bad := fmt.Sprintf("%s\n---\n%s\n", s1, s2)
-
-	_, err := readSecret(scheme.Codecs.UniversalDecoder(), strings.NewReader(bad))
-	if err == nil {
-		t.Fatalf("error expected")
 	}
 }
