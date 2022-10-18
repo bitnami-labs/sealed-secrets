@@ -47,6 +47,8 @@ If anything fails the release branch is dropped, the issue fixed in `main` and a
 
 Once the release passes all validations and is published, it is merged into `released`.
 
+Note that currently the release process is done in 2 steps, first the container images, then the chart using them. Both events must be merged in the `released` branch.
+
 #### Hot-fixing releases
 
 If there is a need to urgently fix a show-stopper issue in the latest released version. There is no need to wait for the next release train for a new release to happen.
