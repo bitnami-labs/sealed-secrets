@@ -73,7 +73,7 @@ jobs:
 
       # Build & Release binaries
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v2
+        uses: goreleaser/goreleaser-action@v3.1.0
         if: success() && startsWith(github.ref, 'refs/heads/')
         with:
           version: v1.10.3
@@ -106,7 +106,7 @@ jobs:
             type=raw,value=latest
       - name: Build and push controller image
         id: docker_build_controller
-        uses: docker/build-push-action@v3.1.1
+        uses: docker/build-push-action@v3.2.0
         with:
           context: .
           file: ./docker/controller.Dockerfile
@@ -125,7 +125,7 @@ jobs:
             type=raw,value=latest
       - name: Build and push kubeseal image
         id: docker_build_kubeseal
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3.2.0
         with:
           context: .
           file: ./docker/kubeseal.Dockerfile
