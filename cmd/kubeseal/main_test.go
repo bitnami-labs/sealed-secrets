@@ -44,9 +44,9 @@ func testClientConfig() clientcmd.ClientConfig {
 	return initClient("", testConfigOverrides(), os.Stdin)
 }
 
-func testConfig(flags *Flags) *Config {
+func testConfig(flags *cliFlags) *config {
 	clientConfig := testClientConfig()
-	return &Config{
+	return &config{
 		flags:        flags,
 		clientConfig: clientConfig,
 		ctx:          context.Background(),
@@ -72,7 +72,7 @@ func testConfigOverrides() *clientcmd.ConfigOverrides {
 
 func TestMainError(t *testing.T) {
 	badFileName := filepath.Join("this", "file", "cannot", "possibly", "exist", "can", "it?")
-	flags := Flags{CertURL: badFileName}
+	flags := cliFlags{certURL: badFileName}
 
 	err := runCLI(io.Discard, testConfig(&flags))
 	if err == nil || !os.IsNotExist(err) {
@@ -161,10 +161,10 @@ data:
 	defer os.RemoveAll(out.Name())
 
 	var buf bytes.Buffer
-	flags := Flags{
-		InputFileName:  in.Name(),
-		OutputFileName: out.Name(),
-		CertURL:        certFilename,
+	flags := cliFlags{
+		inputFileName:  in.Name(),
+		outputFileName: out.Name(),
+		certURL:        certFilename,
 	}
 
 	if err := runCLI(&buf, testConfig(&flags)); err != nil {
@@ -214,10 +214,10 @@ metadata:
 	defer os.RemoveAll(out.Name())
 
 	var buf bytes.Buffer
-	flags := Flags{
-		InputFileName:  in.Name(),
-		OutputFileName: out.Name(),
-		CertURL:        certFilename,
+	flags := cliFlags{
+		inputFileName:  in.Name(),
+		outputFileName: out.Name(),
+		certURL:        certFilename,
 	}
 
 	if err := runCLI(&buf, testConfig(&flags)); err == nil {
@@ -239,7 +239,7 @@ metadata:
 
 func Test_runCLI(t *testing.T) {
 	type args struct {
-		cfg *Config
+		cfg *config
 	}
 	tests := []struct {
 		name    string
@@ -285,12 +285,12 @@ func trySealTestItem(certFilename, secretNS, secretName, secretValue string, sco
 
 	fromFile := []string{dataFile}
 	var buf bytes.Buffer
-	flags := Flags{
-		SealingScope: scope,
-		SecretName:   secretName,
-		CertURL:      certFilename,
-		Raw:          true,
-		FromFile:     fromFile,
+	flags := cliFlags{
+		sealingScope: scope,
+		secretName:   secretName,
+		certURL:      certFilename,
+		raw:          true,
+		fromFile:     fromFile,
 	}
 	cfg := testConfig(&flags)
 	cfg.clientConfig = &tweakedClientConfig{cfg.clientConfig, secretNS}
