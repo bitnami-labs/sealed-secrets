@@ -264,12 +264,10 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v3.1.0
 
-    - uses: opsgang/ga-setup-minikube@v0.1.2
-      env:
-        ACTIONS_ALLOW_UNSECURE_COMMANDS: 'true'
+    - uses: medyagh/setup-minikube@v0.0.8
       with:
         minikube-version: 1.26.1
-        k8s-version: ${{ matrix.k8s }}
+        kubernetes-version: ${{ matrix.k8s }}
 
     - name: Install Helm
       uses: azure/setup-helm@v3.3
