@@ -107,7 +107,13 @@ jobs:
         go install gotest.tools/gotestsum@v${{ matrix.gotestsum }}
 
     - name: Test
-      run: make test
+      run: make GO_FLAGS="--junitfile report.xml --format testname" test
+
+    - name: Test Summary
+      uses: test-summary/action@v2
+      with:
+        paths: |
+          report.xml
 
   container:
     needs: load-versions
