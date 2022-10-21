@@ -24,9 +24,9 @@ jobs:
           echo "GO_VERSION=$GO_VERSION" >> $GITHUB_ENV
           echo "GO_VERSION_LIST=$GO_VERSION_LIST" >> $GITHUB_ENV
       - id: export-go-version
-        run: echo "go_version=GO_VERSION" >> $GITHUB_OUTPUT
+        run: echo "go_version=${GO_VERSION}" >> $GITHUB_OUTPUT
       - id: export-go-version-list
-        run: echo "go_version_list=$GO_VERSION_LIST" >> $GITHUB_OUTPUT
+        run: echo "go_version_list=${GO_VERSION_LIST}" >> $GITHUB_OUTPUT
   linter:
     needs: load-versions
     name: Run linters
