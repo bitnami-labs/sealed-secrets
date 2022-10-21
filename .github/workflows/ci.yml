@@ -27,6 +27,9 @@ jobs:
         run: echo "go_version=${GO_VERSION}" >> $GITHUB_OUTPUT
       - id: export-go-version-list
         run: echo "go_version_list=${GO_VERSION_LIST}" >> $GITHUB_OUTPUT
+    outputs:
+      go_version: ${{ steps.export-go-version.outputs.go_version }}
+      go_version_list: ${{ steps.export-go-version-list.outputs.go_version_list }}
   linter:
     needs: load-versions
     name: Run linters
