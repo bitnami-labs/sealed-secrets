@@ -424,7 +424,7 @@ func SealMergingInto(clientConfig ClientConfig, outputFormat string, in io.Reade
 	if _, err := io.Copy(f, &out); err != nil {
 		return err
 	}
-	// we explicitly call f.Close() to return a pontential error when closing the file that wouldn't be returned in the deferred f.Close()
+	// we explicitly call f.Close() to return a potential error when closing the file that wouldn't be returned in the deferred f.Close()
 	if err := f.Close(); err != nil {
 		return err
 	}
