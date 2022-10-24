@@ -21,15 +21,15 @@ jobs:
       - id: load-versions
         run: |
           source $GITHUB_WORKSPACE/versions.env
+          # env vars
           echo "GO_VERSION=$GO_VERSION" >> $GITHUB_ENV
           echo "GO_VERSION_LIST=$GO_VERSION_LIST" >> $GITHUB_ENV
-      - id: export-go-version
-        run: echo "::set-output name=go_version::$GO_VERSION"
-      - id: export-go-version-list
-        run: echo "::set-output name=go_version_list::$GO_VERSION_LIST"
+          # outputs
+          echo "go_version=${GO_VERSION}" >> $GITHUB_OUTPUT
+          echo "go_version_list=${GO_VERSION_LIST}" >> $GITHUB_OUTPUT
     outputs:
-      go_version: ${{ steps.export-go-version.outputs.go_version }}
-      go_version_list: ${{ steps.export-go-version-list.outputs.go_version_list }}
+      go_version: ${{ steps.load-versions.outputs.go_version }}
+      go_version_list: ${{ steps.load-versions.outputs.go_version_list }}
   linter:
     needs: load-versions
     name: Run linters
