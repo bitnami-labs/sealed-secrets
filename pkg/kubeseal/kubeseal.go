@@ -51,12 +51,12 @@ func ParseKey(r io.Reader) (*rsa.PublicKey, error) {
 
 	// ParseCertsPem returns error if len(certs) == 0, but best to be sure...
 	if len(certs) == 0 {
-		return nil, errors.New("Failed to read any certificates")
+		return nil, errors.New("failed to read any certificates")
 	}
 
 	cert, ok := certs[0].PublicKey.(*rsa.PublicKey)
 	if !ok {
-		return nil, fmt.Errorf("Expected RSA public key but found %v", certs[0].PublicKey)
+		return nil, fmt.Errorf("expected RSA public key but found %v", certs[0].PublicKey)
 	}
 
 	if time.Now().After(certs[0].NotAfter) {
@@ -194,7 +194,7 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 	}
 
 	if len(secret.Data) == 0 && len(secret.StringData) == 0 && !allowEmptyData {
-		return fmt.Errorf("Secret.data is empty in input Secret, assuming this is an error and aborting. To work with empty data, --allow-empty-data can be used.")
+		return fmt.Errorf("secret.data is empty in input Secret, assuming this is an error and aborting. To work with empty data, --allow-empty-data can be used")
 	}
 
 	if overrideName != "" {
@@ -202,7 +202,7 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 	}
 
 	if secret.GetName() == "" {
-		return fmt.Errorf("Missing metadata.name in input Secret")
+		return fmt.Errorf("missing metadata.name in input Secret")
 	}
 
 	if overrideNamespace != "" {
@@ -424,7 +424,7 @@ func SealMergingInto(clientConfig ClientConfig, outputFormat string, in io.Reade
 	if _, err := io.Copy(f, &out); err != nil {
 		return err
 	}
-	// we explicitly call f.Close() to return a pontential error when closing the file that wouldn't be returned in the deferred f.Close()
+	// we explicitly call f.Close() to return a potential error when closing the file that wouldn't be returned in the deferred f.Close()
 	if err := f.Close(); err != nil {
 		return err
 	}
