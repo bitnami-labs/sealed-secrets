@@ -83,7 +83,7 @@ func fetchKeys(ctx context.Context, c corev1.SecretsGetter) (map[string]*rsa.Pri
 	}
 
 	if len(certs) == 0 {
-		return nil, nil, fmt.Errorf("Failed to read any certificates")
+		return nil, nil, fmt.Errorf("failed to read any certificates")
 	}
 
 	rsaPrivKey := privKey.(*rsa.PrivateKey)

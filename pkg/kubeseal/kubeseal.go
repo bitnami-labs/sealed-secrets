@@ -51,12 +51,12 @@ func ParseKey(r io.Reader) (*rsa.PublicKey, error) {
 
 	// ParseCertsPem returns error if len(certs) == 0, but best to be sure...
 	if len(certs) == 0 {
-		return nil, errors.New("Failed to read any certificates")
+		return nil, errors.New("failed to read any certificates")
 	}
 
 	cert, ok := certs[0].PublicKey.(*rsa.PublicKey)
 	if !ok {
-		return nil, fmt.Errorf("Expected RSA public key but found %v", certs[0].PublicKey)
+		return nil, fmt.Errorf("expected RSA public key but found %v", certs[0].PublicKey)
 	}
 
 	if time.Now().After(certs[0].NotAfter) {
@@ -194,7 +194,7 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 	}
 
 	if len(secret.Data) == 0 && len(secret.StringData) == 0 && !allowEmptyData {
-		return fmt.Errorf("Secret.data is empty in input Secret, assuming this is an error and aborting. To work with empty data, --allow-empty-data can be used.")
+		return fmt.Errorf("secret.data is empty in input Secret, assuming this is an error and aborting. To work with empty data, --allow-empty-data can be used")
 	}
 
 	if overrideName != "" {
@@ -202,7 +202,7 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 	}
 
 	if secret.GetName() == "" {
-		return fmt.Errorf("Missing metadata.name in input Secret")
+		return fmt.Errorf("missing metadata.name in input Secret")
 	}
 
 	if overrideNamespace != "" {
