@@ -13,6 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -248,7 +249,10 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 		return nil
 	}
 
-	ssecret := obj.(*ssv1alpha1.SealedSecret)
+	ssecret, err := convertSealedSecret(obj)
+	if err != nil {
+		return err
+	}
 	log.Printf("Updating %s", key)
 
 	// any exit of this function at this point will cause an update to the status subresource
@@ -309,6 +313,22 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 
 	c.recorder.Event(ssecret, corev1.EventTypeNormal, SuccessUnsealed, "SealedSecret unsealed successfully")
 	return nil
+}
+
+func convertSealedSecret(obj any) (*ssv1alpha1.SealedSecret, error) {
+	sealedSecret, ok := (obj).(*ssv1alpha1.SealedSecret)
+	if !ok {
+		return nil, fmt.Errorf("failed to cast %v into SealedSecret", obj)
+	}
+	if sealedSecret.APIVersion == "" || sealedSecret.Kind == "" {
+		// https://github.com/operator-framework/operator-sdk/issues/727
+		log.Printf("WARNING: Empty API version & kind, filling it...")
+		gv := schema.GroupVersion{Group: ssv1alpha1.GroupName, Version: "v1alpha1"}
+		gvk := gv.WithKind("SealedSecret")
+		sealedSecret.APIVersion = gvk.GroupVersion().String()
+		sealedSecret.Kind = gvk.Kind
+	}
+	return sealedSecret, nil
 }
 
 func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, unsealError error) error {
