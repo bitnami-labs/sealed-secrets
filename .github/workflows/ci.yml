@@ -41,7 +41,7 @@ jobs:
         golangci-lint: ["1.49.0"]
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.0
+      uses: actions/setup-go@v3.3.1
       with:
         go-version: ${{ matrix.go }}
       id: go
@@ -67,7 +67,7 @@ jobs:
         gosec: ["2.12.0"]
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.0
+      uses: actions/setup-go@v3.3.1
       with:
         go-version: ${{ matrix.go }}
       id: go
@@ -94,7 +94,7 @@ jobs:
     steps:
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.0
+      uses: actions/setup-go@v3.3.1
       with:
         go-version: ${{ matrix.go }}
       id: go
@@ -148,7 +148,7 @@ jobs:
         chmod +x ~/bin/kubecfg
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.0
+      uses: actions/setup-go@v3.3.1
       with:
         go-version: ${{ needs.load-versions.outputs.go_version }}
       id: go
@@ -190,7 +190,7 @@ jobs:
         echo "CONTROLLER_IMAGE=$controller_registry/$controller_repository:$controller_tag" >> $GITHUB_ENV
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.0
+      uses: actions/setup-go@v3.3.1
       with:
         go-version: ${{ needs.load-versions.outputs.go_version }}
       id: go
@@ -258,7 +258,7 @@ jobs:
         echo "CONTROLLER_IMAGE=$controller_registry/$controller_repository:$controller_tag" >> $GITHUB_ENV
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.0
+      uses: actions/setup-go@v3.3.1
       with:
         go-version: ${{ needs.load-versions.outputs.go_version }}
       id: go
