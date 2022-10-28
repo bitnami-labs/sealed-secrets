@@ -30,7 +30,7 @@ func PublicKeyFingerprint(rp *rsa.PublicKey) (string, error) {
 }
 
 // HybridEncrypt performs a regular AES-GCM + RSA-OAEP encryption.
-// The output bytestring is:
+// The output byte string is:
 //
 //	RSA ciphertext length || RSA ciphertext || AES ciphertext
 func HybridEncrypt(rnd io.Reader, pubKey *rsa.PublicKey, plaintext, label []byte) ([]byte, error) {

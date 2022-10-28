@@ -370,12 +370,12 @@ var _ = Describe("create", func() {
 
 	Describe("Same name, wrong key", func() {
 		BeforeEach(func() {
-			// NB: weak keysize - this is just a test case
-			wrongkey, err := rsa.GenerateKey(rand.Reader, 1024)
+			// NB: weak key-size - this is just a test case
+			wrongKey, err := rsa.GenerateKey(rand.Reader, 1024)
 			Expect(err).NotTo(HaveOccurred())
 
 			fmt.Fprintf(GinkgoWriter, "Resealing with wrong key\n")
-			ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, &wrongkey.PublicKey, s)
+			ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, &wrongKey.PublicKey, s)
 			Expect(err).NotTo(HaveOccurred())
 		})
 
