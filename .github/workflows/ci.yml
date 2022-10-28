@@ -276,7 +276,7 @@ jobs:
         kubernetes-version: ${{ matrix.k8s }}
 
     - name: Install Helm
-      uses: azure/setup-helm@v3.3
+      uses: azure/setup-helm@v3.4
       with:
         version: v3.4.2
 
