@@ -23,7 +23,7 @@ jobs:
           source $GITHUB_WORKSPACE/versions.env
           echo "GO_VERSION=$GO_VERSION" >> $GITHUB_ENV
       - name: Set up Go
-        uses: actions/setup-go@v3.3.0
+        uses: actions/setup-go@v3.3.1
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Setup kubecfg
