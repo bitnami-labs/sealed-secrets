@@ -54,6 +54,11 @@ const (
 	ErrUnsealFailed = "ErrUnsealFailed"
 )
 
+var (
+	// ErrCast happens when a K8s any type cannot be casted to the expected type
+	ErrCast = fmt.Errorf("cast error")
+)
+
 // Controller implements the main sealed-secrets-controller loop.
 type Controller struct {
 	queue       workqueue.RateLimitingInterface
@@ -318,7 +323,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 func convertSealedSecret(obj any) (*ssv1alpha1.SealedSecret, error) {
 	sealedSecret, ok := (obj).(*ssv1alpha1.SealedSecret)
 	if !ok {
-		return nil, fmt.Errorf("failed to cast %v into SealedSecret", obj)
+		return nil, fmt.Errorf("%w: failed to cast %v into SealedSecret", ErrCast, obj)
 	}
 	if sealedSecret.APIVersion == "" || sealedSecret.Kind == "" {
 		// https://github.com/operator-framework/operator-sdk/issues/727
