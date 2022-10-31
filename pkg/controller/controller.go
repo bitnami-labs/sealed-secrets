@@ -10,7 +10,7 @@ import (
 
 	corev1 "k8s.io/api/core/v1"
 	apiequality "k8s.io/apimachinery/pkg/api/equality"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -128,7 +128,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 
 			ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
 			if err != nil {
-				if !errors.IsNotFound(err) {
+				if !k8serrors.IsNotFound(err) {
 					log.Printf("failed to get SealedSecret: %v", err)
 				}
 				return
@@ -247,7 +247,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 				return err
 			}
 			err = c.sclient.Secrets(ns).Delete(ctx, name, metav1.DeleteOptions{})
-			if err != nil && !errors.IsNotFound(err) {
+			if err != nil && !k8serrors.IsNotFound(err) {
 				return err
 			}
 		}
@@ -282,7 +282,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	}
 
 	secret, err := c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Get(ctx, newSecret.GetObjectMeta().GetName(), metav1.GetOptions{})
-	if errors.IsNotFound(err) {
+	if k8serrors.IsNotFound(err) {
 		secret, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Create(ctx, newSecret, metav1.CreateOptions{})
 	}
 	if err != nil {

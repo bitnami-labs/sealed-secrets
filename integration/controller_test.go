@@ -17,7 +17,7 @@ import (
 
 	"github.com/onsi/gomega/types"
 	v1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -363,7 +363,7 @@ var _ = Describe("create", func() {
 				Consistently(func() error {
 					_, err := c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 					return err
-				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
+				}).Should(WithTransform(k8serrors.IsNotFound, Equal(true)))
 			})
 		})
 	})
@@ -383,7 +383,7 @@ var _ = Describe("create", func() {
 			Consistently(func() error {
 				_, err := c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				return err
-			}).Should(WithTransform(errors.IsNotFound, Equal(true)))
+			}).Should(WithTransform(k8serrors.IsNotFound, Equal(true)))
 		})
 
 		It("should produce an error Event", func() {
@@ -440,7 +440,7 @@ var _ = Describe("create", func() {
 				Consistently(func() error {
 					_, err := c.Secrets(ns).Get(ctx, secretName2, metav1.GetOptions{})
 					return err
-				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
+				}).Should(WithTransform(k8serrors.IsNotFound, Equal(true)))
 			})
 
 			It("should produce an error Event", func() {
@@ -468,7 +468,7 @@ var _ = Describe("create", func() {
 				Consistently(func() error {
 					_, err := c.Secrets(ns2).Get(ctx, secretName, metav1.GetOptions{})
 					return err
-				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
+				}).Should(WithTransform(k8serrors.IsNotFound, Equal(true)))
 			})
 
 			It("should produce an error Event", func() {
@@ -595,7 +595,7 @@ var _ = Describe("create", func() {
 				Consistently(func() error {
 					_, err := c.Secrets(ns2).Get(ctx, secretName, metav1.GetOptions{})
 					return err
-				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
+				}).Should(WithTransform(k8serrors.IsNotFound, Equal(true)))
 			})
 		})
 	})
