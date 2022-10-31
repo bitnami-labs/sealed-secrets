@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rsa"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -56,7 +57,7 @@ const (
 
 var (
 	// ErrCast happens when a K8s any type cannot be casted to the expected type
-	ErrCast = fmt.Errorf("cast error")
+	ErrCast = errors.New("cast error")
 )
 
 // Controller implements the main sealed-secrets-controller loop.
