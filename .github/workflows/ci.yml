@@ -204,7 +204,7 @@ jobs:
 
     - uses: medyagh/setup-minikube@v0.0.8
       with:
-        minikube-version: 1.26.1
+        minikube-version: 1.28.0
         kubernetes-version: ${{ matrix.k8s }}
 
     # need to delete old state of the cluster, see:
