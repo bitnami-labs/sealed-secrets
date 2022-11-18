@@ -179,7 +179,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        k8s: ["1.16.13", "1.17.11", "1.20.4", "1.22.5"]
+        k8s: ["1.22.15","1.23.14","1.24.8","1.25.4"]
     env:
       MINIKUBE_WANTUPDATENOTIFICATION: "false"
       MINIKUBE_WANTREPORTERRORPROMPT: "false"
@@ -204,7 +204,7 @@ jobs:
 
     - uses: medyagh/setup-minikube@v0.0.8
       with:
-        minikube-version: 1.26.1
+        minikube-version: 1.28.0
         kubernetes-version: ${{ matrix.k8s }}
 
     # need to delete old state of the cluster, see:
@@ -247,7 +247,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        k8s: ["1.16.13", "1.17.11", "1.20.4", "1.22.5"]
+        k8s: ["1.22.15","1.23.14","1.24.8","1.25.4"]
     env:
       MINIKUBE_WANTUPDATENOTIFICATION: "false"
       MINIKUBE_WANTREPORTERRORPROMPT: "false"
@@ -272,7 +272,7 @@ jobs:
 
     - uses: medyagh/setup-minikube@v0.0.8
       with:
-        minikube-version: 1.26.1
+        minikube-version: 1.28.0
         kubernetes-version: ${{ matrix.k8s }}
 
     - name: Install Helm

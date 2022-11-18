@@ -4,6 +4,16 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.19.2
+
+### Changelog
+
+- Distinguish std & k8s errors ([#1046](https://github.com/bitnami-labs/sealed-secrets/pull/1046)).
+- Fix empty Group Version Kind ([#1044](https://github.com/bitnami-labs/sealed-secrets/pull/1044)).
+- Regenerate code - detected some dummy changes ([#1033](https://github.com/bitnami-labs/sealed-secrets/pull/1033)).
+- Decouple the kubeseal CLI from the kubeseal library ([#1030](https://github.com/bitnami-labs/sealed-secrets/pull/1030)).
+- Remove namespaceFn ([#1029](https://github.com/bitnami-labs/sealed-secrets/pull/1029)).
+
 ## v0.19.1
 
 ### Changelog
