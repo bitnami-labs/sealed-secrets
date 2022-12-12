@@ -334,7 +334,7 @@ Note that:
 - No service accounts are created, instead the one allocated to you will be used.
   - `{allocated-service-account}` is the name of the `service account` you were allocated on the cluster.
 - No RBAC roles are created neither in the namespace nor the cluster.
-- Resource limits must be sepecified.
+- Resource limits must be specified.
   - The limits are samples that should work, but you might want to review them in your particular setup.
 
 Once that file is ready, if you named it `config.yaml` you now can install the sealed secrets Helm Chart like this: 
