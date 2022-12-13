@@ -197,7 +197,10 @@ func Main(f *Flags, version string) error {
 
 	sinformer := informers.NewFilteredSharedInformerFactory(clientset, 0, namespace, tweakopts)
 	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, tweakopts)
-	controller := NewController(clientset, ssclientset, ssinformer, sinformer, keyRegistry)
+	controller, err := NewController(clientset, ssclientset, ssinformer, sinformer, keyRegistry)
+	if err != nil {
+		return err
+	}
 	controller.oldGCBehavior = f.OldGCBehavior
 	controller.updateStatus = f.UpdateStatus
 
@@ -224,7 +227,10 @@ func Main(f *Flags, version string) error {
 			if ns != namespace {
 				ssinf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
 				sinf = informers.NewFilteredSharedInformerFactory(clientset, 0, ns, tweakopts)
-				ctlr = NewController(clientset, ssclientset, ssinf, sinf, keyRegistry)
+				ctlr, err = NewController(clientset, ssclientset, ssinf, sinf, keyRegistry)
+				if err != nil {
+					return err
+				}
 				ctlr.oldGCBehavior = f.OldGCBehavior
 				ctlr.updateStatus = f.UpdateStatus
 				log.Printf("Starting informer for namespace: %s\n", ns)
