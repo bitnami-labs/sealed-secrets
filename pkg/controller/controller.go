@@ -75,7 +75,7 @@ type Controller struct {
 }
 
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry) *Controller {
+func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry) (*Controller, error) {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
 	utilruntime.Must(ssscheme.AddToScheme(scheme.Scheme))
@@ -88,7 +88,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 		SealedSecrets().
 		Informer()
 
-	ssInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := ssInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err == nil {
@@ -111,9 +111,12 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 			}
 		},
 	})
+	if err != nil {
+		return nil, fmt.Errorf("could not add event handler to sealed secrets informer: %w", err)
+	}
 
 	sInformer := sinformer.Core().V1().Secrets().Informer()
-	sInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err = sInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
 			skey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err != nil {
@@ -148,6 +151,9 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 			queue.Add(sskey)
 		},
 	})
+	if err != nil {
+		return nil, fmt.Errorf("could not add event handler to secrets informer: %w", err)
+	}
 
 	return &Controller{
 		ssInformer:  ssInformer,
@@ -157,7 +163,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 		ssclient:    ssclientset.BitnamiV1alpha1(),
 		recorder:    recorder,
 		keyRegistry: keyRegistry,
-	}
+	}, nil
 }
 
 // HasSynced returns true once this controller has completed an
