@@ -8,14 +8,14 @@ Latest release:
 
 ### Changelog
 
-- Update to Go 1.19.4 (#1073)
-- Bump k8s.io/client-go from 0.25.4 to 0.26.0 (#1071)
-- Bump golang.org/x/crypto from 0.3.0 to 0.4.0 (#1072)
-- Bump github.com/onsi/ginkgo/v2 from 2.5.1 to 2.6.0 (#1069)
-- Bump k8s.io/api from 0.25.4 to 0.26.0 (#1068)
-- Bump golang.org/x/crypto from 0.2.0 to 0.3.0 (#1063)
-- Bump k8s.io/client-go from 0.25.3 to 0.25.4 (#1062)
-- Bump github.com/onsi/ginkgo/v2 from 2.5.0 to 2.5.1 (#1061)
+- Update to Go 1.19.4 ([#1073](https://github.com/bitnami-labs/sealed-secrets/pull/1073)).
+- Bump k8s.io/client-go from 0.25.4 to 0.26.0 ([#1071](https://github.com/bitnami-labs/sealed-secrets/pull/1071)).
+- Bump golang.org/x/crypto from 0.3.0 to 0.4.0 ([#1072](https://github.com/bitnami-labs/sealed-secrets/pull/1072)).
+- Bump github.com/onsi/ginkgo/v2 from 2.5.1 to 2.6.0 ([#1069](https://github.com/bitnami-labs/sealed-secrets/pull/1069)).
+- Bump k8s.io/api from 0.25.4 to 0.26.0 ([#1068](https://github.com/bitnami-labs/sealed-secrets/pull/1068)).
+- Bump golang.org/x/crypto from 0.2.0 to 0.3.0 ([#1063](https://github.com/bitnami-labs/sealed-secrets/pull/1063)).
+- Bump k8s.io/client-go from 0.25.3 to 0.25.4 ([#1062](https://github.com/bitnami-labs/sealed-secrets/pull/1062)).
+- Bump github.com/onsi/ginkgo/v2 from 2.5.0 to 2.5.1 ([#1061](https://github.com/bitnami-labs/sealed-secrets/pull/1061)).
 
 ## v0.19.2
 
