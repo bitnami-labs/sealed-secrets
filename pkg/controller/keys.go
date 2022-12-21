@@ -21,7 +21,7 @@ const SealedSecretsKeyLabel = "sealedsecrets.bitnami.com/sealed-secrets-key"
 
 var (
 	// ErrPrivateKeyNotRSA is returned when the private key is not a valid RSA key.
-	ErrPrivateKeyNotRSA = errors.New("Private key is not an RSA key")
+	ErrPrivateKeyNotRSA = errors.New("private key is not an RSA key")
 )
 
 func generatePrivateKeyAndCert(keySize int, validFor time.Duration, cn string) (*rsa.PrivateKey, *x509.Certificate, error) {

@@ -20,8 +20,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
-	"k8s.io/client-go/informers"
-
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
@@ -195,9 +193,8 @@ func Main(f *Flags, version string) error {
 		}
 	}
 
-	sinformer := informers.NewFilteredSharedInformerFactory(clientset, 0, namespace, tweakopts)
 	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, tweakopts)
-	controller, err := NewController(clientset, ssclientset, ssinformer, sinformer, keyRegistry)
+	controller, err := NewController(clientset, ssclientset, ssinformer, keyRegistry, tweakopts)
 	if err != nil {
 		return err
 	}
@@ -213,7 +210,6 @@ func Main(f *Flags, version string) error {
 		addNS := removeDuplicates(strings.Split(f.AdditionalNamespaces, ","))
 
 		var ssinf ssinformers.SharedInformerFactory
-		var sinf informers.SharedInformerFactory
 		var ctlr *Controller
 
 		for _, ns := range addNS {
@@ -226,8 +222,7 @@ func Main(f *Flags, version string) error {
 			}
 			if ns != namespace {
 				ssinf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
-				sinf = informers.NewFilteredSharedInformerFactory(clientset, 0, ns, tweakopts)
-				ctlr, err = NewController(clientset, ssclientset, ssinf, sinf, keyRegistry)
+				ctlr, err = NewController(clientset, ssclientset, ssinf, keyRegistry, tweakopts)
 				if err != nil {
 					return err
 				}

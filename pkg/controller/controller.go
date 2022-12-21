@@ -25,7 +25,8 @@ import (
 	"k8s.io/client-go/util/workqueue"
 	"k8s.io/klog"
 
-	"k8s.io/client-go/informers"
+	corev1informers "k8s.io/client-go/informers/core/v1"
+	"k8s.io/client-go/informers/internalinterfaces"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	ssclientset "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
@@ -64,7 +65,7 @@ var (
 type Controller struct {
 	queue       workqueue.RateLimitingInterface
 	ssInformer  cache.SharedIndexInformer
-	sInformer   cache.SharedIndexInformer
+	sInformers  map[string]*secretInformer
 	sclient     v1.SecretsGetter
 	ssclient    ssv1alpha1client.SealedSecretsGetter
 	recorder    record.EventRecorder
@@ -74,9 +75,15 @@ type Controller struct {
 	updateStatus  bool // feature flag that enables updating the status subresource.
 }
 
+type secretInformer struct {
+	informer cache.SharedIndexInformer
+	stopCh   chan struct{}
+}
+
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry) (*Controller, error) {
+func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, keyRegistry *KeyRegistry, tweakopts internalinterfaces.TweakListOptionsFunc) (*Controller, error) {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	sInformers := make(map[string]*secretInformer)
 
 	utilruntime.Must(ssscheme.AddToScheme(scheme.Scheme))
 	eventBroadcaster := record.NewBroadcaster()
@@ -93,6 +100,63 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 			key, err := cache.MetaNamespaceKeyFunc(obj)
 			if err == nil {
 				queue.Add(key)
+				ns, _, err := cache.SplitMetaNamespaceKey(key)
+				if err != nil {
+					log.Printf("failed to get namespace and name from key: %v", err)
+					return
+				}
+				if _, ok := sInformers[ns]; !ok {
+					// chache.Indexers intitialization: https://github.com/kubernetes/client-go/blob/e7cd4ba474b5efc2882e377362c9aa8b407428d9/informers/core/v1/secret.go#L81
+					inf := corev1informers.NewFilteredSecretInformer(clientset, ns, 0, cache.Indexers{cache.NamespaceIndex: cache.MetaNamespaceIndexFunc}, tweakopts)
+					stopCh := make(chan struct{})
+
+					_, err = inf.AddEventHandler(cache.ResourceEventHandlerFuncs{
+						DeleteFunc: func(obj interface{}) {
+							skey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
+							if err != nil {
+								log.Printf("failed to fetch Secret key: %v", err)
+								return
+							}
+
+							ns, name, err := cache.SplitMetaNamespaceKey(skey)
+							if err != nil {
+								log.Printf("failed to get namespace and name from key: %v", err)
+								return
+							}
+
+							ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
+							if err != nil {
+								if !k8serrors.IsNotFound(err) {
+									log.Printf("failed to get SealedSecret: %v", err)
+								}
+								return
+							}
+
+							if !metav1.IsControlledBy(obj.(*corev1.Secret), ssecret) && !isAnnotatedToBeManaged(obj.(*corev1.Secret)) {
+								return
+							}
+
+							sskey, err := cache.MetaNamespaceKeyFunc(ssecret)
+							if err != nil {
+								log.Printf("failed to fetch SealedSecret key: %v", err)
+								return
+							}
+
+							queue.Add(sskey)
+						},
+					})
+					if err != nil {
+						log.Printf("could not add event handler to secrets informer: %v", err)
+						return
+					}
+
+					sInformers[ns] = &secretInformer{
+						informer: inf,
+						stopCh:   stopCh,
+					}
+
+					go sInformers[ns].informer.Run(sInformers[ns].stopCh)
+				}
 			}
 		},
 		UpdateFunc: func(oldObj, newObj interface{}) {
@@ -105,6 +169,22 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 			key, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err == nil {
 				queue.Add(key)
+				ns, _, err := cache.SplitMetaNamespaceKey(key)
+				if err != nil {
+					log.Printf("failed to get namespace and name from key: %v", err)
+					return
+				}
+				ssecrets, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).List(context.Background(), metav1.ListOptions{})
+				if err != nil {
+					log.Printf("printing error: %v", err)
+				}
+				if len(ssecrets.Items) > 0 {
+					return
+				}
+				if inf, ok := sInformers[ns]; ok {
+					close(inf.stopCh)
+					delete(sInformers, ns)
+				}
 			}
 			if ssecret, ok := obj.(*ssv1alpha1.SealedSecret); ok {
 				UnregisterCondition(ssecret)
@@ -115,49 +195,9 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 		return nil, fmt.Errorf("could not add event handler to sealed secrets informer: %w", err)
 	}
 
-	sInformer := sinformer.Core().V1().Secrets().Informer()
-	_, err = sInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: func(obj interface{}) {
-			skey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if err != nil {
-				log.Printf("failed to fetch Secret key: %v", err)
-				return
-			}
-
-			ns, name, err := cache.SplitMetaNamespaceKey(skey)
-			if err != nil {
-				log.Printf("failed to get namespace and name from key: %v", err)
-				return
-			}
-
-			ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
-			if err != nil {
-				if !k8serrors.IsNotFound(err) {
-					log.Printf("failed to get SealedSecret: %v", err)
-				}
-				return
-			}
-
-			if !metav1.IsControlledBy(obj.(*corev1.Secret), ssecret) && !isAnnotatedToBeManaged(obj.(*corev1.Secret)) {
-				return
-			}
-
-			sskey, err := cache.MetaNamespaceKeyFunc(ssecret)
-			if err != nil {
-				log.Printf("failed to fetch SealedSecret key: %v", err)
-				return
-			}
-
-			queue.Add(sskey)
-		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("could not add event handler to secrets informer: %w", err)
-	}
-
 	return &Controller{
 		ssInformer:  ssInformer,
-		sInformer:   sInformer,
+		sInformers:  sInformers,
 		queue:       queue,
 		sclient:     clientset.CoreV1(),
 		ssclient:    ssclientset.BitnamiV1alpha1(),
@@ -169,7 +209,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 // HasSynced returns true once this controller has completed an
 // initial resource listing
 func (c *Controller) HasSynced() bool {
-	return c.ssInformer.HasSynced() && c.sInformer.HasSynced()
+	return c.ssInformer.HasSynced()
 }
 
 // LastSyncResourceVersion is the resource version observed when last
@@ -188,11 +228,16 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 
 	defer c.queue.ShutDown()
 
+	defer func() {
+		for _, inf := range c.sInformers {
+			close(inf.stopCh)
+		}
+	}()
+
 	go c.ssInformer.Run(stopCh)
-	go c.sInformer.Run(stopCh)
 
 	if !cache.WaitForCacheSync(stopCh, c.HasSynced) {
-		utilruntime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))
+		utilruntime.HandleError(fmt.Errorf("timed out waiting for caches to sync"))
 		return
 	}
 
@@ -417,7 +462,7 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 		}
 		return true, nil
 	default:
-		return false, fmt.Errorf("Unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
+		return false, fmt.Errorf("unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
 	}
 }
 
@@ -434,20 +479,20 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 	case *ssv1alpha1.SealedSecret:
 		secret, err := c.attemptUnseal(s)
 		if err != nil {
-			return nil, fmt.Errorf("Error decrypting secret. %v", err)
+			return nil, fmt.Errorf("error decrypting secret. %v", err)
 		}
 		latestPrivKey := c.keyRegistry.latestPrivateKey()
 		resealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, &latestPrivKey.PublicKey, secret)
 		if err != nil {
-			return nil, fmt.Errorf("Error creating new sealed secret. %v", err)
+			return nil, fmt.Errorf("error creating new sealed secret. %v", err)
 		}
 		data, err := json.Marshal(resealedSecret)
 		if err != nil {
-			return nil, fmt.Errorf("Error marshalling new secret to json. %v", err)
+			return nil, fmt.Errorf("error marshalling new secret to json. %v", err)
 		}
 		return data, nil
 	default:
-		return nil, fmt.Errorf("Unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
+		return nil, fmt.Errorf("unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
 	}
 }
 
