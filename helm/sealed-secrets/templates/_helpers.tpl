@@ -57,6 +57,7 @@ helm.sh/chart: {{ include "sealed-secrets.chart" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/version: {{ .Chart.AppVersion }}
+app.kubernetes.io/part-of: sealed-secrets
 {{- end -}}
 
 {{/*
