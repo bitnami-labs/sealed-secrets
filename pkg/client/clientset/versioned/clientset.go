@@ -17,8 +17,7 @@ type Interface interface {
 	BitnamiV1alpha1() bitnamiv1alpha1.BitnamiV1alpha1Interface
 }
 
-// Clientset contains the clients for groups. Each group has exactly one
-// version included in a Clientset.
+// Clientset contains the clients for groups.
 type Clientset struct {
 	*discovery.DiscoveryClient
 	bitnamiV1alpha1 *bitnamiv1alpha1.BitnamiV1alpha1Client
