@@ -7,7 +7,7 @@ require (
 	github.com/google/renameio v0.1.0
 	github.com/mattn/go-isatty v0.0.17
 	github.com/mkmik/multierror v0.3.0
-	github.com/onsi/ginkgo/v2 v2.7.0
+	github.com/onsi/ginkgo/v2 v2.8.0
 	github.com/onsi/gomega v1.25.0
 	github.com/prometheus/client_golang v1.14.0
 	github.com/spf13/pflag v1.0.5
@@ -58,7 +58,7 @@ require (
 	golang.org/x/term v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
 	golang.org/x/time v0.0.0-20220210224613-90d013bbcef8 // indirect
-	golang.org/x/tools v0.4.0 // indirect
+	golang.org/x/tools v0.5.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
