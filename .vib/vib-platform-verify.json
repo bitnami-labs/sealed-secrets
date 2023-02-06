@@ -21,7 +21,7 @@
         },
         "runtime_parameters": "IyMgQ3JlYXRlIFNlYWxlZCBTZWNyZXRzIGNvbnRyb2xsZXIgc2hvdWxkIGJlIGNyZWF0ZWQKY3JlYXRlQ29udHJvbGxlcjogdHJ1ZQojIyBTZWNyZXQgY29udGFpbmluZyB0aGUga2V5IHVzZWQgdG8gZW5jcnlwdCBzZWNyZXRzCnNlY3JldE5hbWU6ICJzZWFsZWQtc2VjcmV0cy1rZXkiCiMjIFJlbmV3IGtleXMgZXZlcnkgd2VlawprZXlyZW5ld3BlcmlvZDogIjE2OGgiCnNlcnZpY2U6CiAgdHlwZTogTG9hZEJhbGFuY2VyCiAgcG9ydDogODAK",
         "target_platform": {
-          "target_platform_id": "{TARGET_PLATFORM}"
+          "target_platform_id": "ebac9e0d-3931-4515-ba54-e6adada1f174"
         }
       },
       "actions": [

@@ -13,8 +13,8 @@ GINKGO = ginkgo -p
 CONTROLLER_GEN ?= controller-gen
 
 REGISTRY ?= docker.io
-CONTROLLER_IMAGE = $(REGISTRY)/bitnami/sealed-secrets-controller:latest
-KUBESEAL_IMAGE = $(REGISTRY)/bitnami/sealed-secrets-kubeseal:latest
+CONTROLLER_IMAGE = $(REGISTRY)/alvneiayu/sealed-secrets-controller:latest
+KUBESEAL_IMAGE = $(REGISTRY)/alvneiayu/sealed-secrets-kubeseal:latest
 INSECURE_REGISTRY = false # useful for local registry
 IMAGE_PULL_POLICY =
 KUBECONFIG ?= $(HOME)/.kube/config

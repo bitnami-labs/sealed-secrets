@@ -52,7 +52,7 @@ image:
 createController: true
 ## @param secretName The name of an existing TLS secret containing the key used to encrypt secrets
 ##
-secretName: "sealed-secrets-key"
+secretName:  "sealed-secrets-key"
 ## @param updateStatus Specifies whether the Sealed Secrets controller should update the status subresource
 ##
 updateStatus: true
