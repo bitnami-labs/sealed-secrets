@@ -38,6 +38,10 @@ jobs:
        include:
          - target-platform: gke
            target-platform-id: 91d398a2-25c4-4cda-8732-75a3cfc179a1
+           target-pipeline: vib-platform-verify.json
+         - target-platform: openshift
+           target-platform-id: ebac9e0d-3931-4515-ba54-e6adada1f174
+           target-pipeline: vib-platform-verify-openshift.json
       fail-fast: false
     name: Verify chart in ${{ matrix.target-platform}}
     steps:
@@ -47,6 +51,6 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
       - uses: vmware-labs/vmware-image-builder-action@0.4.7
         with:
-          pipeline: vib-platform-verify.json
+          pipeline: ${{ matrix.target-pipeline }}
         env:
           TARGET_PLATFORM: ${{ matrix.target-platform-id }}

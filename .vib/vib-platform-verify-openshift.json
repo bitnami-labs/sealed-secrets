@@ -1,0 +1,37 @@
+{
+  "phases": {
+    "package": {
+      "context": {
+        "resources": {
+          "url": "{SHA_ARCHIVE}",
+          "path": "/helm/sealed-secrets"
+        }
+      },
+      "actions": [
+        {
+          "action_id": "helm-package"
+        }
+      ]
+    },
+    "verify": {
+      "context": {
+        "resources": {
+          "url": "{SHA_ARCHIVE}",
+          "path": "/.vib/"
+        },
+        "runtime_parameters": "IyMgQ3JlYXRlIFNlYWxlZCBTZWNyZXRzIGNvbnRyb2xsZXIgc2hvdWxkIGJlIGNyZWF0ZWQKY3JlYXRlQ29udHJvbGxlcjogdHJ1ZQojIyBTZWNyZXQgY29udGFpbmluZyB0aGUga2V5IHVzZWQgdG8gZW5jcnlwdCBzZWNyZXRzCnNlY3JldE5hbWU6ICJzZWFsZWQtc2VjcmV0cy1rZXkiCiMjIFJlbmV3IGtleXMgZXZlcnkgd2VlawprZXlyZW5ld3BlcmlvZDogIjE2OGgiCmNvbnRhaW5lclNlY3VyaXR5Q29udGV4dDoKICBlbmFibGVkOiB0cnVlCiAgcmVhZE9ubHlSb290RmlsZXN5c3RlbTogdHJ1ZQogIHJ1bkFzTm9uUm9vdDogdHJ1ZQogIHJ1bkFzVXNlcjogbnVsbApwb2RTZWN1cml0eUNvbnRleHQ6CiAgZW5hYmxlZDogZmFsc2UKc2VydmljZToKICB0eXBlOiBMb2FkQmFsYW5jZXIKICBwb3J0OiA4MAo=",
+        "target_platform": {
+          "target_platform_id": "{TARGET_PLATFORM}"
+        }
+      },
+      "actions": [
+        {
+          "action_id": "health-check",
+          "params": {
+            "endpoint": "lb-sealed-secrets-http"
+          }
+        }
+      ]
+    }
+  }
+}
