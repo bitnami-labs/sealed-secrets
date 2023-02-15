@@ -4,6 +4,21 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.19.5
+
+### Changelog
+
+- Automated controller test on Openshift platforms (using ([VMware Image Builder](https://tanzu.vmware.com/image-builder)) ([#1107](https://github.com/bitnami-labs/sealed-secrets/pull/1107)).
+- We now generate a Carvel package distrinbution of the controller ([#1104](https://github.com/bitnami-labs/sealed-secrets/pull/1104)).
+- Bump golang.org/x/crypto from 0.5.0 to 0.6.0 ([#1108](https://github.com/bitnami-labs/sealed-secrets/pull/1108)).
+- Bump github.com/onsi/gomega from 1.25.0 to 1.26.0 ([#1103](https://github.com/bitnami-labs/sealed-secrets/pull/1103)).
+- Bump k8s.io/code-generator from 0.26.0 to 0.26.1 ([#1102](https://github.com/bitnami-labs/sealed-secrets/pull/1102)).
+- Bump github.com/onsi/ginkgo/v2 from 2.7.0 to 2.8.0 ([#1101](https://github.com/bitnami-labs/sealed-secrets/pull/1101)).
+- Bump k8s.io/api from 0.26.0 to 0.26.1 ([#1097](https://github.com/bitnami-labs/sealed-secrets/pull/1097)).
+- Bump k8s.io/client-go from 0.26.0 to 0.26.1  ([#1096](https://github.com/bitnami-labs/sealed-secrets/pull/1096)).
+- Bump k8s.io/klog/v2 from 2.80.1 to 2.90.0 ([#1094](https://github.com/bitnami-labs/sealed-secrets/pull/1094)).
+- Bump k8s.io/apimachinery from 0.26.0 to 0.26.1 ([#1093](https://github.com/bitnami-labs/sealed-secrets/pull/1093)).
+
 ## v0.19.4
 
 ### Changelog
