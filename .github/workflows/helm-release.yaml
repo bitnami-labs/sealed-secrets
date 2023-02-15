@@ -73,8 +73,9 @@ jobs:
           yq -i '.metadata.name = "sealedsecrets.bitnami.com.${{ env.chart_version }}"' carvel/package.yaml
           yq -i '.spec.template.spec.fetch.0.imgpkgBundle.image = "ghcr.io/${{ github.repository_owner }}/sealed-secrets-carvel:${{ env.chart_version }}"' carvel/package.yaml
 
-      - name: Commit package.yaml
-        run: |
-          git add ./carvel/package.yaml
-          git commit -s -m 'Update package to version ${{ env.chart_version }}'
-          git push
+      # Commenting the git commit action
+      #- name: Commit package.yaml
+        #run: |
+          #git add ./carvel/package.yaml
+          #git commit -s -m 'Update package to version ${{ env.chart_version }}'
+          #git push
