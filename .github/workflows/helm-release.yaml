@@ -1,4 +1,4 @@
-name: Release Helm Chart
+name: Release Helm Chart and Carvel package
 
 on:
   push:
@@ -34,3 +34,47 @@ jobs:
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
           CR_RELEASE_NAME_TEMPLATE: "helm-v{{ .Version }}"
+
+      - name: Install Carvel
+        uses: carvel-dev/setup-action@v1.3.0
+        with:
+          only: kbld, imgpkg
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install yq
+        run: |
+          mkdir -p ~/bin
+          wget https://github.com/mikefarah/yq/releases/download/v4.30.8/yq_linux_amd64 -O ~/bin/yq
+          chmod +x ~/bin/yq
+
+      - name: Get chart version
+        run: |
+          export PATH=~/bin:$PATH
+          echo "chart_version=$(yq .version < ./helm/sealed-secrets/Chart.yaml)" >> $GITHUB_ENV
+
+      - name: Create imglock file
+        working-directory: ./helm
+        run: |
+          mkdir -p .imgpkg
+          kbld -f <(helm template sealed-secrets) --imgpkg-lock-output .imgpkg/images.yml
+
+      - name: Push imgpkg bundle
+        working-directory: ./helm
+        env:
+          IMGPKG_REGISTRY_HOSTNAME: ghcr.io
+          IMGPKG_REGISTRY_USERNAME: ${{ github.actor }}
+          IMGPKG_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          imgpkg push -b ghcr.io/${{ github.repository_owner }}/sealed-secrets-carvel:${{ env.chart_version }} -f .
+
+      - name: Update package.yaml
+        run: |
+          yq -i '.spec.version = "${{ env.chart_version }}"' carvel/package.yaml
+          yq -i '.metadata.name = "sealedsecrets.bitnami.com.${{ env.chart_version }}"' carvel/package.yaml
+          yq -i '.spec.template.spec.fetch.0.imgpkgBundle.image = "ghcr.io/${{ github.repository_owner }}/sealed-secrets-carvel:${{ env.chart_version }}"' carvel/package.yaml
+
+      - name: Commit package.yaml
+        run: |
+          git add ./carvel/package.yaml
+          git commit -s -m 'Update package to version ${{ env.chart_version }}'
+          git push
