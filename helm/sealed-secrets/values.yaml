@@ -151,12 +151,16 @@ podSecurityContext:
 ## @param containerSecurityContext.readOnlyRootFilesystem Whether the Sealed Secret container has a read-only root filesystem
 ## @param containerSecurityContext.runAsNonRoot Indicates that the Sealed Secret container must run as a non-root user
 ## @param containerSecurityContext.runAsUser Set Sealed Secret containers' Security Context runAsUser
+## @param containerSecurityContext.capabilities Adds and removes POSIX capabilities from running containers
 ##
 containerSecurityContext:
   enabled: true
   readOnlyRootFilesystem: true
   runAsNonRoot: true
   runAsUser: 1001
+  capabilities:
+    drop:
+      - all
 
 ## @param automountServiceAccountToken whether to automatically mount the service account API-token to a particular pod
 automountServiceAccountToken: ""
