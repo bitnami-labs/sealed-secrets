@@ -49,7 +49,7 @@ func TestInitKeyRegistry(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
+	registry, err := InitKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -69,7 +69,7 @@ func TestInitKeyRegistry(t *testing.T) {
 
 	// Due to limitations of the fake client, we cannot test whether initKeyRegistry is able
 	// to pick up existing keys
-	_, err = initKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
+	_, err = InitKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -84,7 +84,7 @@ func TestInitKeyRotation(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
+	registry, err := InitKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestInitKeyRotationTick(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
+	registry, err := InitKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -180,7 +180,7 @@ func TestReuseKey(t *testing.T) {
 
 	client.ClearActions()
 
-	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
+	registry, err := InitKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -226,7 +226,7 @@ func TestRenewStaleKey(t *testing.T) {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
 
-	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
+	registry, err := InitKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -283,7 +283,7 @@ func TestKeyCutoff(t *testing.T) {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
 
-	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
+	registry, err := InitKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}
@@ -350,7 +350,7 @@ func TestLegacySecret(t *testing.T) {
 
 	client.ClearActions()
 
-	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
+	registry, err := InitKeyRegistry(ctx, client, rand, "namespace", "prefix", SealedSecretsKeyLabel, 1024)
 	if err != nil {
 		t.Fatalf("initKeyRegistry() returned err: %v", err)
 	}

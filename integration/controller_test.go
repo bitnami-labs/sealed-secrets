@@ -17,16 +17,23 @@ import (
 
 	"github.com/onsi/gomega/types"
 	v1 "k8s.io/api/core/v1"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
+
 	certUtil "k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
 
+	"k8s.io/client-go/informers"
+
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	ssclient "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
+	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
+	"github.com/bitnami-labs/sealed-secrets/pkg/controller"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 
 	. "github.com/onsi/ginkgo/v2"
@@ -618,5 +625,78 @@ var _ = Describe("controller --version", func() {
 
 	It("should produce the version", func() {
 		Expect(output.String()).Should(MatchRegexp("^controller version: (v[0-9]+\\.[0-9]+\\.[0-9]+|[0-9a-f]{40})(\\+dirty)?"))
+	})
+})
+
+var _ = Describe("new controller", func() {
+	var ssctl *controller.Controller
+	var clientset *kubernetes.Clientset
+	var c *corev1.CoreV1Client
+	var ssc ssclient.Interface
+	var ns string
+	var ssinformer ssinformers.SharedInformerFactory
+	var sinformer informers.SharedInformerFactory
+	var keyRegistry *controller.KeyRegistry
+	var (
+		ctx       context.Context
+		cancelLog context.CancelFunc
+	)
+
+	Context("with default setup", func() {
+		BeforeEach(func() {
+			ctx, cancelLog = context.WithCancel(context.Background())
+
+			conf := clusterConfigOrDie()
+			clientset = clientSetOrDie(conf)
+			c = corev1.NewForConfigOrDie(conf)
+			ssc = ssclient.NewForConfigOrDie(conf)
+			ns = createNsOrDie(ctx, c, "create")
+			var tweakopts func(*metav1.ListOptions)
+			sinformer = controller.InitSecretInformerFactory(clientset, ns, tweakopts, true)
+			ssinformer = ssinformers.NewFilteredSharedInformerFactory(ssc, 0, ns, tweakopts)
+			keyRegistry = keyRegisterOrDie(ctx, clientset, ns)
+		})
+
+		AfterEach(func() {
+			deleteNsOrDie(ctx, c, ns)
+			cancelLog()
+		})
+
+		It("works as expected", func() {
+			var err error
+			Expect(sinformer).NotTo(BeNil())
+			ssctl, err = controller.NewController(clientset, ssc, ssinformer, sinformer, keyRegistry)
+			Expect(ssctl).ToNot(BeNil())
+			Expect(err).ToNot(HaveOccurred())
+		})
+	})
+
+	Context("without secret listener", func() {
+		BeforeEach(func() {
+			ctx, cancelLog = context.WithCancel(context.Background())
+
+			conf := clusterConfigOrDie()
+			clientset = clientSetOrDie(conf)
+			c = corev1.NewForConfigOrDie(conf)
+			ssc = ssclient.NewForConfigOrDie(conf)
+			ns = createNsOrDie(ctx, c, "create")
+			var tweakopts func(*metav1.ListOptions)
+			sinformer = controller.InitSecretInformerFactory(clientset, ns, tweakopts, false)
+			ssinformer = ssinformers.NewFilteredSharedInformerFactory(ssc, 0, ns, tweakopts)
+			keyRegistry = keyRegisterOrDie(ctx, clientset, ns)
+		})
+
+		AfterEach(func() {
+			deleteNsOrDie(ctx, c, ns)
+			cancelLog()
+		})
+
+		It("still works", func() {
+			var err error
+			Expect(sinformer).To(BeNil())
+			ssctl, err = controller.NewController(clientset, ssc, ssinformer, sinformer, keyRegistry)
+			Expect(ssctl).ToNot(BeNil())
+			Expect(err).ToNot(HaveOccurred())
+		})
 	})
 })

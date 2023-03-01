@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"crypto/rand"
 	"flag"
 	"fmt"
 	"io"
@@ -16,12 +17,14 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
+	"github.com/bitnami-labs/sealed-secrets/pkg/controller"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -40,8 +43,10 @@ func clusterConfigOrDie() *rest.Config {
 	var err error
 
 	if *kubeconfig != "" {
+		fmt.Fprintf(GinkgoWriter, "config from kubectl\n")
 		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	} else {
+		fmt.Fprintf(GinkgoWriter, "in cluster config\n")
 		config, err = rest.InClusterConfig()
 	}
 	if err != nil {
@@ -182,6 +187,26 @@ func runKubesealWith(flags []string, input runtime.Object, opts ...runAppOpt) (r
 	}
 
 	return outputObj, nil
+}
+
+func clientSetOrDie(config *rest.Config) *kubernetes.Clientset {
+	cs, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic("failed to create Kubernetes clientset" + err.Error())
+	}
+	return cs
+}
+
+func keyRegisterOrDie(ctx context.Context, clientset *kubernetes.Clientset, ns string) *controller.KeyRegistry {
+	keyLabel := controller.SealedSecretsKeyLabel
+	prefix := "test-keys"
+	testKeySize := 4096
+	fmt.Fprintf(GinkgoWriter, "initiating key registry\n")
+	keyRegistry, err := controller.InitKeyRegistry(ctx, clientset, rand.Reader, ns, prefix, keyLabel, testKeySize)
+	if err != nil {
+		panic("failed to provision key registry" + err.Error())
+	}
+	return keyRegistry
 }
 
 func TestE2e(t *testing.T) {

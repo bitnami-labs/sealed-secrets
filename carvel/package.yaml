@@ -67,6 +67,10 @@ spec:
           type: boolean
           description: Specifies whether the Sealed Secrets controller should update the status subresource
           default: true
+        recreate:
+          type: boolean
+          description: Specifies whether the Sealed Secrets controller should recreate removed secrets
+          default: false
         keyrenewperiod:
           type: string
           description: Specifies key renewal period. Default 30 days

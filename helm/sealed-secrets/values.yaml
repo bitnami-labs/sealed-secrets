@@ -56,6 +56,12 @@ secretName: "sealed-secrets-key"
 ## @param updateStatus Specifies whether the Sealed Secrets controller should update the status subresource
 ##
 updateStatus: true
+## @param recreate Specifies whether the Sealed Secrets controller should recreate removed secrets
+## Setting it to false allows to optionally restore backward compatibility in low previlege
+## environments when old versions of the controller did not require watch permissions on secrets
+## for secret re-creation.
+##
+recreate: true
 ## @param keyrenewperiod Specifies key renewal period. Default 30 days
 ## e.g
 ## keyrenewperiod: "720h30m"

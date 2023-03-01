@@ -48,13 +48,14 @@ type Flags struct {
 	RateLimitBurst       int
 	OldGCBehavior        bool
 	UpdateStatus         bool
+	Recreate             bool
 }
 
 func initKeyPrefix(keyPrefix string) (string, error) {
 	return validateKeyPrefix(keyPrefix)
 }
 
-func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
+func InitKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
 	log.Printf("Searching for existing private keys")
 	secretList, err := client.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: keySelector.String(),
@@ -161,7 +162,7 @@ func Main(f *Flags, version string) error {
 		return err
 	}
 
-	keyRegistry, err := initKeyRegistry(ctx, clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, f.KeySize)
+	keyRegistry, err := InitKeyRegistry(ctx, clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, f.KeySize)
 	if err != nil {
 		return err
 	}
@@ -226,7 +227,7 @@ func Main(f *Flags, version string) error {
 			}
 			if ns != namespace {
 				ssinf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
-				sinf = informers.NewFilteredSharedInformerFactory(clientset, 0, ns, tweakopts)
+				sinf = InitSecretInformerFactory(clientset, ns, tweakopts, f.Recreate)
 				ctlr, err = NewController(clientset, ssclientset, ssinf, sinf, keyRegistry)
 				if err != nil {
 					return err
@@ -254,4 +255,11 @@ func Main(f *Flags, version string) error {
 	<-sigterm
 
 	return server.Shutdown(context.Background())
+}
+
+func InitSecretInformerFactory(clientset *kubernetes.Clientset, ns string, tweakopts func(*metav1.ListOptions), recreate bool) informers.SharedInformerFactory {
+	if recreate {
+		return informers.NewFilteredSharedInformerFactory(clientset, 0, ns, tweakopts)
+	}
+	return nil
 }

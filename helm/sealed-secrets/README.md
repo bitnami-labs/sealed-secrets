@@ -92,6 +92,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `createController`                                | Specifies whether the Sealed Secrets controller should be created                    | `true`                              |
 | `secretName`                                      | The name of an existing TLS secret containing the key used to encrypt secrets        | `sealed-secrets-key`                |
 | `updateStatus`                                    | Specifies whether the Sealed Secrets controller should update the status subresource | `true`                              |
+| `recreate  `                                    | Specifies whether the Sealed Secrets controller should recreate removed secrets | `false`                              |
 | `keyrenewperiod`                                  | Specifies key renewal period. Default 30 days                                        | `""`                                |
 | `rateLimit`                                       | Number of allowed sustained request per second for verify endpoint                   | `""`                                |
 | `rateLimitBurst`                                  | Number of requests allowed to exceed the rate limit per second for verify endpoint   | `""`                                |

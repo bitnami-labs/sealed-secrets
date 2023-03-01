@@ -84,10 +84,34 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 	eventBroadcaster.StartRecordingToSink(&v1.EventSinkImpl{Interface: clientset.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "sealed-secrets"})
 
+	ssInformer, err := watchSealedSecrets(ssinformer, queue)
+	if err != nil {
+		return nil, err
+	}
+
+	var sInformer cache.SharedIndexInformer
+	if sinformer != nil {
+		sInformer, err = watchSecrets(sinformer, ssclientset, queue)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &Controller{
+		ssInformer:  ssInformer,
+		sInformer:   sInformer,
+		queue:       queue,
+		sclient:     clientset.CoreV1(),
+		ssclient:    ssclientset.BitnamiV1alpha1(),
+		recorder:    recorder,
+		keyRegistry: keyRegistry,
+	}, nil
+}
+
+func watchSealedSecrets(ssinformer ssinformer.SharedInformerFactory, queue workqueue.RateLimitingInterface) (cache.SharedIndexInformer, error) {
 	ssInformer := ssinformer.Bitnami().V1alpha1().
 		SealedSecrets().
 		Informer()
-
 	_, err := ssInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
@@ -114,9 +138,12 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 	if err != nil {
 		return nil, fmt.Errorf("could not add event handler to sealed secrets informer: %w", err)
 	}
+	return ssInformer, nil
+}
 
+func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclientset.Interface, queue workqueue.RateLimitingInterface) (cache.SharedIndexInformer, error) {
 	sInformer := sinformer.Core().V1().Secrets().Informer()
-	_, err = sInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	_, err := sInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
 			skey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err != nil {
@@ -154,16 +181,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 	if err != nil {
 		return nil, fmt.Errorf("could not add event handler to secrets informer: %w", err)
 	}
-
-	return &Controller{
-		ssInformer:  ssInformer,
-		sInformer:   sInformer,
-		queue:       queue,
-		sclient:     clientset.CoreV1(),
-		ssclient:    ssclientset.BitnamiV1alpha1(),
-		recorder:    recorder,
-		keyRegistry: keyRegistry,
-	}, nil
+	return sInformer, nil
 }
 
 // HasSynced returns true once this controller has completed an
@@ -192,7 +210,7 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 	go c.sInformer.Run(stopCh)
 
 	if !cache.WaitForCacheSync(stopCh, c.HasSynced) {
-		utilruntime.HandleError(fmt.Errorf("Timed out waiting for caches to sync"))
+		utilruntime.HandleError(fmt.Errorf("timed out waiting for caches to sync"))
 		return
 	}
 
@@ -417,7 +435,7 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 		}
 		return true, nil
 	default:
-		return false, fmt.Errorf("Unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
+		return false, fmt.Errorf("unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
 	}
 }
 
@@ -434,20 +452,20 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 	case *ssv1alpha1.SealedSecret:
 		secret, err := c.attemptUnseal(s)
 		if err != nil {
-			return nil, fmt.Errorf("Error decrypting secret. %v", err)
+			return nil, fmt.Errorf("error decrypting secret. %v", err)
 		}
 		latestPrivKey := c.keyRegistry.latestPrivateKey()
 		resealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, &latestPrivKey.PublicKey, secret)
 		if err != nil {
-			return nil, fmt.Errorf("Error creating new sealed secret. %v", err)
+			return nil, fmt.Errorf("error creating new sealed secret. %v", err)
 		}
 		data, err := json.Marshal(resealedSecret)
 		if err != nil {
-			return nil, fmt.Errorf("Error marshalling new secret to json. %v", err)
+			return nil, fmt.Errorf("error marshalling new secret to json. %v", err)
 		}
 		return data, nil
 	default:
-		return nil, fmt.Errorf("Unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
+		return nil, fmt.Errorf("unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
 	}
 }
 
