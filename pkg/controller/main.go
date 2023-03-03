@@ -48,6 +48,7 @@ type Flags struct {
 	RateLimitBurst       int
 	OldGCBehavior        bool
 	UpdateStatus         bool
+	SkipRecreate         bool
 }
 
 func initKeyPrefix(keyPrefix string) (string, error) {
@@ -226,7 +227,7 @@ func Main(f *Flags, version string) error {
 			}
 			if ns != namespace {
 				ssinf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
-				sinf = informers.NewFilteredSharedInformerFactory(clientset, 0, ns, tweakopts)
+				sinf = initSecretInformerFactory(clientset, ns, tweakopts, f.SkipRecreate)
 				ctlr, err = NewController(clientset, ssclientset, ssinf, sinf, keyRegistry)
 				if err != nil {
 					return err
@@ -254,4 +255,11 @@ func Main(f *Flags, version string) error {
 	<-sigterm
 
 	return server.Shutdown(context.Background())
+}
+
+func initSecretInformerFactory(clientset kubernetes.Interface, ns string, tweakopts func(*metav1.ListOptions), skipRecreate bool) informers.SharedInformerFactory {
+	if skipRecreate {
+		return nil
+	}
+	return informers.NewFilteredSharedInformerFactory(clientset, 0, ns, tweakopts)
 }
