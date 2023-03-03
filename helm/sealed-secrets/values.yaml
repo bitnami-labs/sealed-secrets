@@ -160,7 +160,7 @@ containerSecurityContext:
   runAsUser: 1001
   capabilities:
     drop:
-      - all
+      - ALL
 
 ## @param automountServiceAccountToken whether to automatically mount the service account API-token to a particular pod
 automountServiceAccountToken: ""
