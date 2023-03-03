@@ -11,8 +11,9 @@ import (
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/kubernetes/fake"
+
+	ssfake "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/fake"
 )
 
 func TestConvert2SealedSecretBadType(t *testing.T) {
@@ -56,44 +57,46 @@ func TestConvert2SealedSecretPassThrough(t *testing.T) {
 func TestDefaultConfigDoesNotSkipRecreate(t *testing.T) {
 	ns := "some-namespace"
 	var tweakopts func(*metav1.ListOptions)
-	conf := clusterConfig(t)
-	clientset := clientSetOrDie(conf)
-	ssc := ssclient.NewForConfigOrDie(conf)
-	sinformer := InitSecretInformerFactory(clientset, ns, tweakopts, false /* skip-recreate */)
+	clientset := fake.NewSimpleClientset()
+	ssc := ssfake.NewSimpleClientset()
+	sinformer := initSecretInformerFactory(clientset, ns, tweakopts, false /* skip-recreate */)
+	if sinformer == nil {
+		t.Fatalf("sinformer %v want non nil", sinformer)
+	}
 	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssc, 0, ns, tweakopts)
-	keyRegistry := keyRegister(t, context.Background(), clientset, ns)
+	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
 
 	_, got := NewController(clientset, ssc, ssinformer, sinformer, keyRegistry)
 	if got != nil {
 		t.Fatalf("got %v want %v", got, nil)
 	}
-
 }
 
-func clusterConfig(t *testing.T) *rest.Config {
-	t.Helper()
-
-	var config *rest.Config
-	var err error
-
-	if *kubeconfig != "" {
-		config, err = clientcmd.BuildConfigFromFlags("", *kubeconfig)
+func TestSkipReleaseConfigDoesSkipIt(t *testing.T) {
+	ns := "some-namespace"
+	var tweakopts func(*metav1.ListOptions)
+	clientset := fake.NewSimpleClientset()
+	ssc := ssfake.NewSimpleClientset()
+	sinformer := initSecretInformerFactory(clientset, ns, tweakopts, true /* skip-recreate */)
+	if sinformer != nil {
+		t.Fatalf("sinformer %v want nil", sinformer)
 	}
-	if err != nil {
-		t.Fatalf("failed to setup kubeconfig", err)
-	}
+	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssc, 0, ns, tweakopts)
+	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
 
-	return config
+	_, got := NewController(clientset, ssc, ssinformer, sinformer, keyRegistry)
+	if got != nil {
+		t.Fatalf("got %v want %v", got, nil)
+	}
 }
 
-func keyRegister(t *testing.T, ctx context.Context, clientset *kubernetes.Clientset, ns string) *controller.KeyRegistry {
+func testKeyRegister(t *testing.T, ctx context.Context, clientset kubernetes.Interface, ns string) *KeyRegistry {
 	t.Helper()
 
-	keyLabel := controller.SealedSecretsKeyLabel
+	keyLabel := SealedSecretsKeyLabel
 	prefix := "test-keys"
 	testKeySize := 4096
-	fmt.Fprintf(GinkgoWriter, "initiating key registry\n")
-	keyRegistry, err := controller.InitKeyRegistry(ctx, clientset, rand.Reader, ns, prefix, keyLabel, testKeySize)
+	keyRegistry, err := initKeyRegistry(ctx, clientset, rand.Reader, ns, prefix, keyLabel, testKeySize)
 	if err != nil {
 		t.Fatalf("failed to provision key registry: %v", err)
 	}
