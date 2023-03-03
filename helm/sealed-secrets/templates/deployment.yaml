@@ -71,7 +71,7 @@ spec:
             - --update-status
             {{- end }}
             {{- if .Values.recreate }}
-            - --recreate
+            - --skip-recreate
             {{- end }}
             {{- if .Values.keyrenewperiod }}
             - --key-renew-period
