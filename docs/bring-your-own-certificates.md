@@ -18,9 +18,9 @@ export SECRETNAME="mycustomkeys"
 ```
 
 ## Generate a new RSA key pair (certificates)
-
+* Note to change `-days` option to set certificate expiry date; default is 1 year
 ```bash
-openssl req -x509 -nodes -newkey rsa:4096 -keyout "$PRIVATEKEY" -out "$PUBLICKEY" -subj "/CN=sealed-secret/O=sealed-secret"
+openssl req -x509 -days 365 -nodes -newkey rsa:4096 -keyout "$PRIVATEKEY" -out "$PUBLICKEY" -subj "/CN=sealed-secret/O=sealed-secret"
 ```
 
 ## Create a tls k8s secret, using your recently created RSA key pair
