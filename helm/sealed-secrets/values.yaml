@@ -163,7 +163,7 @@ containerSecurityContext:
       - ALL
 
 ## @param automountServiceAccountToken whether to automatically mount the service account API-token to a particular pod
-automountServiceAccountToken: ""
+automountServiceAccountToken: true
 
 ## @param podLabels [object] Extra labels for Sealed Secret pods
 ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
@@ -341,7 +341,7 @@ serviceAccount:
   ##
   name: ""
   ## @param serviceAccount.automountServiceAccountToken Specifies, whether to mount the service account API-token
-  automountServiceAccountToken: ""
+  automountServiceAccountToken: true
 ## RBAC configuration
 ##
 rbac:
