@@ -1,11 +1,10 @@
 name: Verify Helm Chart
 on:
+  workflow_dispatch:
   pull_request_target:
     branches:
       - main
       - bitnami-labs:main
-    types:
-      - submitted
     paths:
        - 'helm/**'
 
@@ -20,6 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Lint chart
     steps:
+      - run: echo "PR status is ${{ github.event.review.state }}"
       - uses: actions/checkout@v3.1.0
         with:
           ref: ${{github.event.pull_request.head.ref}}
@@ -28,6 +28,7 @@ jobs:
 
   # verify chart in multiple target platforms
   vib-k8s-verify:
+    if: github.event.review.state == 'approved'
     runs-on: ubuntu-latest
     environment: vmware-image-builder
     needs: [ vib-validate ]
@@ -43,6 +44,7 @@ jobs:
       fail-fast: false
     name: Verify chart in ${{ matrix.target-platform}}
     steps:
+      - run: echo "PR approved, running extra validations"
       - uses: actions/checkout@v3.1.0
         with:
           ref: ${{ github.event.pull_request.head.ref }}
