@@ -1,0 +1,13 @@
+name: MyTest
+on:
+  workflow_dispatch:
+  pull_request_target:
+    branches:
+      - main
+      
+jobs:
+  test-always-runs:
+    runs-on: ubuntu-latest
+    name: Test Always runs
+    steps:
+      - run: echo "This should always run"
