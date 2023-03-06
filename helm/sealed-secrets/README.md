@@ -271,3 +271,5 @@ A major refactoring of the chart has been performed to adopt several common prac
 Consult the [Parameters](#parameters) section to obtain more info about the available parameters.
 
 [On November 13, 2020, Helm v2 support was formally finished](https://github.com/helm/charts#status-of-the-project), this new major version is no longer compatible with Helm v2.
+
+dummy change
