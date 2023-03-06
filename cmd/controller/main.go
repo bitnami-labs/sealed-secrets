@@ -47,6 +47,8 @@ func bindControllerFlags(f *controller.Flags, fs *flag.FlagSet) {
 
 	fs.BoolVar(&f.UpdateStatus, "update-status", true, "beta: if true, the controller will update the status sub-resource whenever it processes a sealed secret")
 
+	fs.BoolVar(&f.SkipRecreate, "skip-recreate", false, "if true the controller will skip listening for managed secret changes to recreate them. This helps on limited permission environments.")
+
 	fs.DurationVar(&f.KeyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
 	_ = fs.MarkDeprecated("rotate-period", "please use key-renew-period instead")
 }

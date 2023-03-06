@@ -23,6 +23,7 @@ import (
 	"k8s.io/client-go/informers"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
+	"github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
 )
@@ -48,6 +49,7 @@ type Flags struct {
 	RateLimitBurst       int
 	OldGCBehavior        bool
 	UpdateStatus         bool
+	SkipRecreate         bool
 }
 
 func initKeyPrefix(keyPrefix string) (string, error) {
@@ -195,9 +197,7 @@ func Main(f *Flags, version string) error {
 		}
 	}
 
-	sinformer := informers.NewFilteredSharedInformerFactory(clientset, 0, namespace, tweakopts)
-	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, tweakopts)
-	controller, err := NewController(clientset, ssclientset, ssinformer, sinformer, keyRegistry)
+	controller, err := prepareController(clientset, namespace, tweakopts, f, ssclientset, keyRegistry)
 	if err != nil {
 		return err
 	}
@@ -212,10 +212,6 @@ func Main(f *Flags, version string) error {
 	if f.AdditionalNamespaces != "" {
 		addNS := removeDuplicates(strings.Split(f.AdditionalNamespaces, ","))
 
-		var ssinf ssinformers.SharedInformerFactory
-		var sinf informers.SharedInformerFactory
-		var ctlr *Controller
-
 		for _, ns := range addNS {
 			if _, err := clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{}); err != nil {
 				if errors.IsNotFound(err) {
@@ -225,9 +221,7 @@ func Main(f *Flags, version string) error {
 				return err
 			}
 			if ns != namespace {
-				ssinf = ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, ns, tweakopts)
-				sinf = informers.NewFilteredSharedInformerFactory(clientset, 0, ns, tweakopts)
-				ctlr, err = NewController(clientset, ssclientset, ssinf, sinf, keyRegistry)
+				ctlr, err := prepareController(clientset, ns, tweakopts, f, ssclientset, keyRegistry)
 				if err != nil {
 					return err
 				}
@@ -254,4 +248,18 @@ func Main(f *Flags, version string) error {
 	<-sigterm
 
 	return server.Shutdown(context.Background())
+}
+
+func prepareController(clientset kubernetes.Interface, namespace string, tweakopts func(*metav1.ListOptions), f *Flags, ssclientset versioned.Interface, keyRegistry *KeyRegistry) (*Controller, error) {
+	sinformer := initSecretInformerFactory(clientset, namespace, tweakopts, f.SkipRecreate)
+	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, tweakopts)
+	controller, err := NewController(clientset, ssclientset, ssinformer, sinformer, keyRegistry)
+	return controller, err
+}
+
+func initSecretInformerFactory(clientset kubernetes.Interface, ns string, tweakopts func(*metav1.ListOptions), skipRecreate bool) informers.SharedInformerFactory {
+	if skipRecreate {
+		return nil
+	}
+	return informers.NewFilteredSharedInformerFactory(clientset, 0, ns, tweakopts)
 }
