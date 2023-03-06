@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
-	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
@@ -59,16 +58,17 @@ func TestDefaultConfigDoesNotSkipRecreate(t *testing.T) {
 	var tweakopts func(*metav1.ListOptions)
 	clientset := fake.NewSimpleClientset()
 	ssc := ssfake.NewSimpleClientset()
-	sinformer := initSecretInformerFactory(clientset, ns, tweakopts, false)
-	if sinformer == nil {
-		t.Fatalf("sinformer %v want non nil", sinformer)
-	}
-	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssc, 0, ns, tweakopts)
 	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
 
-	_, got := NewController(clientset, ssc, ssinformer, sinformer, keyRegistry)
+	ctrl, got := prepareController(clientset, ns, tweakopts, &Flags{SkipRecreate: false}, ssc, keyRegistry)
 	if got != nil {
 		t.Fatalf("got %v want %v", got, nil)
+	}
+	if ctrl == nil {
+		t.Fatalf("ctrl %v want non nil", ctrl)
+	}
+	if ctrl.sInformer == nil {
+		t.Fatalf("sInformer %v want non nil", ctrl.sInformer)
 	}
 }
 
@@ -77,16 +77,17 @@ func TestSkipReleaseConfigDoesSkipIt(t *testing.T) {
 	var tweakopts func(*metav1.ListOptions)
 	clientset := fake.NewSimpleClientset()
 	ssc := ssfake.NewSimpleClientset()
-	sinformer := initSecretInformerFactory(clientset, ns, tweakopts, true)
-	if sinformer != nil {
-		t.Fatalf("sinformer %v want nil", sinformer)
-	}
-	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssc, 0, ns, tweakopts)
 	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
 
-	_, got := NewController(clientset, ssc, ssinformer, sinformer, keyRegistry)
+	ctrl, got := prepareController(clientset, ns, tweakopts, &Flags{SkipRecreate: true}, ssc, keyRegistry)
 	if got != nil {
 		t.Fatalf("got %v want %v", got, nil)
+	}
+	if ctrl == nil {
+		t.Fatalf("ctrl %v want non nil", ctrl)
+	}
+	if ctrl.sInformer != nil {
+		t.Fatalf("sInformer %v want nil", ctrl.sInformer)
 	}
 }
 
