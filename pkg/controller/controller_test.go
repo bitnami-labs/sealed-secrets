@@ -60,34 +60,34 @@ func TestDefaultConfigDoesNotSkipRecreate(t *testing.T) {
 	ssc := ssfake.NewSimpleClientset()
 	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
 
-	ctrl, got := prepareController(clientset, ns, tweakopts, &Flags{SkipRecreate: false}, ssc, keyRegistry)
-	if got != nil {
-		t.Fatalf("got %v want %v", got, nil)
+	got, err := prepareController(clientset, ns, tweakopts, &Flags{SkipRecreate: false}, ssc, keyRegistry)
+	if err != nil {
+		t.Fatalf("err %v want %v", got, nil)
 	}
-	if ctrl == nil {
-		t.Fatalf("ctrl %v want non nil", ctrl)
+	if got == nil {
+		t.Fatalf("ctrl %v want non nil", got)
 	}
-	if ctrl.sInformer == nil {
-		t.Fatalf("sInformer %v want non nil", ctrl.sInformer)
+	if got.sInformer == nil {
+		t.Fatalf("sInformer %v want non nil", got.sInformer)
 	}
 }
 
-func TestSkipReleaseConfigDoesSkipIt(t *testing.T) {
+func TestSkipRecreateConfigDoesSkipIt(t *testing.T) {
 	ns := "some-namespace"
 	var tweakopts func(*metav1.ListOptions)
 	clientset := fake.NewSimpleClientset()
 	ssc := ssfake.NewSimpleClientset()
 	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
 
-	ctrl, got := prepareController(clientset, ns, tweakopts, &Flags{SkipRecreate: true}, ssc, keyRegistry)
-	if got != nil {
-		t.Fatalf("got %v want %v", got, nil)
+	got, err := prepareController(clientset, ns, tweakopts, &Flags{SkipRecreate: true}, ssc, keyRegistry)
+	if err != nil {
+		t.Fatalf("err %v want %v", got, nil)
 	}
-	if ctrl == nil {
-		t.Fatalf("ctrl %v want non nil", ctrl)
+	if got == nil {
+		t.Fatalf("ctrl %v want non nil", got)
 	}
-	if ctrl.sInformer != nil {
-		t.Fatalf("sInformer %v want nil", ctrl.sInformer)
+	if got.sInformer != nil {
+		t.Fatalf("sInformer %v want nil", got.sInformer)
 	}
 }
 
