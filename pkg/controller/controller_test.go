@@ -59,7 +59,7 @@ func TestDefaultConfigDoesNotSkipRecreate(t *testing.T) {
 	var tweakopts func(*metav1.ListOptions)
 	clientset := fake.NewSimpleClientset()
 	ssc := ssfake.NewSimpleClientset()
-	sinformer := initSecretInformerFactory(clientset, ns, tweakopts, false /* skip-recreate */)
+	sinformer := initSecretInformerFactory(clientset, ns, tweakopts, false)
 	if sinformer == nil {
 		t.Fatalf("sinformer %v want non nil", sinformer)
 	}
@@ -77,7 +77,7 @@ func TestSkipReleaseConfigDoesSkipIt(t *testing.T) {
 	var tweakopts func(*metav1.ListOptions)
 	clientset := fake.NewSimpleClientset()
 	ssc := ssfake.NewSimpleClientset()
-	sinformer := initSecretInformerFactory(clientset, ns, tweakopts, true /* skip-recreate */)
+	sinformer := initSecretInformerFactory(clientset, ns, tweakopts, true)
 	if sinformer != nil {
 		t.Fatalf("sinformer %v want nil", sinformer)
 	}

@@ -67,7 +67,7 @@ spec:
           type: boolean
           description: Specifies whether the Sealed Secrets controller should update the status subresource
           default: true
-        skip-recreate:
+        skipRecreate:
           type: boolean
           description: Specifies whether the Sealed Secrets controller should skip recreating removed secrets
           default: false

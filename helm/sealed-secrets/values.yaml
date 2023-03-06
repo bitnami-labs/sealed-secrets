@@ -61,7 +61,7 @@ updateStatus: true
 ## environments when old versions of the controller did not require watch permissions on secrets
 ## for secret re-creation.
 ##
-skip-recreate: false
+skipRecreate: false
 ## @param keyrenewperiod Specifies key renewal period. Default 30 days
 ## e.g
 ## keyrenewperiod: "720h30m"

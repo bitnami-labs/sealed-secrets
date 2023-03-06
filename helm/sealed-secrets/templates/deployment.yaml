@@ -70,7 +70,7 @@ spec:
             {{- if .Values.updateStatus }}
             - --update-status
             {{- end }}
-            {{- if .Values.recreate }}
+            {{- if .Values.skipRecreate }}
             - --skip-recreate
             {{- end }}
             {{- if .Values.keyrenewperiod }}
