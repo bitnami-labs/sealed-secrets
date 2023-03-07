@@ -1,0 +1,23 @@
+name: Lint Helm Chart
+on:
+  workflow_dispatch:
+  push:
+    paths:
+       - 'helm/**'
+
+env:
+  CSP_API_URL: https://console.cloud.vmware.com
+  CSP_API_TOKEN: ${{ secrets.CSP_API_TOKEN }}
+  VIB_PUBLIC_URL: https://cp.bromelia.vmware.com
+
+jobs:
+  # make sure chart is linted/safe
+  vib-validate:
+    runs-on: ubuntu-latest
+    name: Lint chart
+    steps:
+      - uses: actions/checkout@v3.1.0
+        with:
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
+      - uses: vmware-labs/vmware-image-builder-action@0.4.7

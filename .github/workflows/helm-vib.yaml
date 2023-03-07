@@ -14,17 +14,6 @@ env:
   VIB_PUBLIC_URL: https://cp.bromelia.vmware.com
 
 jobs:
-  # make sure chart is linted/safe
-  vib-validate:
-    runs-on: ubuntu-latest
-    name: Lint chart
-    steps:
-      - uses: actions/checkout@v3.1.0
-        with:
-          ref: ${{github.event.pull_request.head.ref}}
-          repository: ${{github.event.pull_request.head.repo.full_name}}
-      - uses: vmware-labs/vmware-image-builder-action@0.4.7
-
   # verify chart in multiple target platforms
   vib-k8s-verify:
     runs-on: ubuntu-latest
