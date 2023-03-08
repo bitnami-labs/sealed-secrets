@@ -6,7 +6,7 @@ on:
       - main
       - bitnami-labs:main
     paths:
-       - 'helm/**'
+      - 'helm/**'
 
 env:
   CSP_API_URL: https://console.cloud.vmware.com
