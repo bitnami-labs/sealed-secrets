@@ -358,6 +358,9 @@ rbac:
   ## @param rbac.clusterRole Specifies whether the Cluster Role resource should be created
   ##
   clusterRole: true
+  ## @param rbac.clusterRoleName Specifies the name for the Cluster Role resource
+  ##
+  clusterRoleName: "secrets-unsealer"
   ## @param rbac.labels Extra labels to be added to RBAC resources
   ##
   labels: {}

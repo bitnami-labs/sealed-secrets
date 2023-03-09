@@ -2,7 +2,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: secrets-unsealer
+  name: {{ .Values.rbac.clusterRoleName }}
   labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
     {{- if .Values.rbac.labels }}
     {{- include "sealed-secrets.render" ( dict "value" .Values.rbac.labels "context" $) | nindent 4 }}
