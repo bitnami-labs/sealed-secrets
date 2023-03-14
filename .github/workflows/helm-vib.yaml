@@ -17,7 +17,6 @@ jobs:
   vib-k8s-verify:
     runs-on: ubuntu-latest
     environment: vmware-image-builder
-    needs: [ vib-validate ]
     strategy:
       matrix:
        include:
