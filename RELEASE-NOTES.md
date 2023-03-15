@@ -4,7 +4,7 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
-## v0.20.0
+## v0.20.1
 
 ### Changelog
 
@@ -24,6 +24,10 @@ Latest release:
 - Run VIB Helm chart validations on push to main ([#1140](https://github.com/bitnami-labs/sealed-secrets/pull/1140))
 - Update parameters table ([#1139](https://github.com/bitnami-labs/sealed-secrets/pull/1139))
 - Update docs ([#1127](https://github.com/bitnami-labs/sealed-secrets/pull/1127))
+
+## v0.20.0
+
+Incomplete release
 
 ## v0.19.5
 
