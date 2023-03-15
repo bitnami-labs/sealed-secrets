@@ -4,6 +4,27 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.20.0
+
+### Changelog
+
+- Parametrize cluster role name ([#1141](https://github.com/bitnami-labs/sealed-secrets/pull/1141))
+- Allow automountServiceAccountToken to be set to false ([#1128](https://github.com/bitnami-labs/sealed-secrets/pull/1128))
+- Allow to disable secret auto-recreation ([#1118](https://github.com/bitnami-labs/sealed-secrets/pull/1118))
+- Bump github.com/onsi/gomega from 1.27.2 to 1.27.4 ([#1143](https://github.com/bitnami-labs/sealed-secrets/pull/1143))
+- Bump k8s.io/client-go from 0.26.1 to 0.26.2 ([#1136](https://github.com/bitnami-labs/sealed-secrets/pull/1136))
+- Bump k8s.io/code-generator from 0.26.1 to 0.26.2 ([#1137](https://github.com/bitnami-labs/sealed-secrets/pull/1137))
+- Bump k8s.io/api from 0.26.1 to 0.26.2 ([#1135](https://github.com/bitnami-labs/sealed-secrets/pull/1135))
+- Bump github.com/onsi/gomega from 1.27.1 to 1.27.2 ([#1134](https://github.com/bitnami-labs/sealed-secrets/pull/1134))
+- Bump k8s.io/apimachinery from 0.26.1 to 0.26.2 ([#1133](https://github.com/bitnami-labs/sealed-secrets/pull/1133))
+- Bump k8s.io/klog/v2 from 2.90.0 to 2.90.1 ([#1132](https://github.com/bitnami-labs/sealed-secrets/pull/1132))
+- Bump github.com/onsi/ginkgo/v2 from 2.8.3 to 2.9.0 ([#1131](https://github.com/bitnami-labs/sealed-secrets/pull/1131))
+- Bump golang.org/x/crypto from 0.6.0 to 0.7.0 ([#1130](https://github.com/bitnami-labs/sealed-secrets/pull/1130))
+- Ensure vib runs only when PR is approved ([#1121](https://github.com/bitnami-labs/sealed-secrets/pull/1121))
+- Run VIB Helm chart validations on push to main ([#1140](https://github.com/bitnami-labs/sealed-secrets/pull/1140))
+- Update parameters table ([#1139](https://github.com/bitnami-labs/sealed-secrets/pull/1139))
+- Update docs ([#1127](https://github.com/bitnami-labs/sealed-secrets/pull/1127))
+
 ## v0.19.5
 
 ### Changelog
