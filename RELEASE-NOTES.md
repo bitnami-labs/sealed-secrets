@@ -4,6 +4,12 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.20.2
+
+### Changelog
+
+- Fix panic when skip recreate is enabled ([#1152](https://github.com/bitnami-labs/sealed-secrets/pull/1152))
+
 ## v0.20.1
 
 ### Changelog
