@@ -187,7 +187,13 @@ func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclien
 // HasSynced returns true once this controller has completed an
 // initial resource listing
 func (c *Controller) HasSynced() bool {
-	return c.ssInformer.HasSynced() && c.sInformer.HasSynced()
+	var synced bool
+	if c.sInformer == nil {
+		synced = c.ssInformer.HasSynced()
+	} else {
+		synced = c.ssInformer.HasSynced() && c.sInformer.HasSynced()
+	}
+	return synced
 }
 
 // LastSyncResourceVersion is the resource version observed when last
@@ -207,7 +213,9 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 	defer c.queue.ShutDown()
 
 	go c.ssInformer.Run(stopCh)
-	go c.sInformer.Run(stopCh)
+	if c.sInformer != nil {
+		go c.sInformer.Run(stopCh)
+	}
 
 	if !cache.WaitForCacheSync(stopCh, c.HasSynced) {
 		utilruntime.HandleError(fmt.Errorf("timed out waiting for caches to sync"))
