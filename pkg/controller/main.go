@@ -82,8 +82,7 @@ func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Read
 		if err != nil {
 			log.Printf("Error reading key %s: %v", secret.Name, err)
 		}
-		ct := secret.CreationTimestamp
-		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], ct.Time); err != nil {
+		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], certs[0].NotBefore); err != nil {
 			return nil, err
 		}
 		log.Printf("----- %s", secret.Name)

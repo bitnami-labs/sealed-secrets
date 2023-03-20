@@ -204,11 +204,6 @@ func TestRenewStaleKey(t *testing.T) {
 		t.Fatalf("Failed to generate test key: %v", err)
 	}
 
-	cert, err := signKey(rand, key)
-	if err != nil {
-		t.Fatalf("signKey failed: %v", err)
-	}
-
 	// we'll simulate the existence of a secret that is about to expire
 	// by making it old enough so that it's just "staleness" short of using
 	// the full rotation "period".
@@ -217,11 +212,17 @@ func TestRenewStaleKey(t *testing.T) {
 		staleness = 100 * time.Millisecond
 		oldAge    = period - staleness
 	)
+	notBefore := time.Now().Add(-oldAge)
+
+	cert, err := signKeyWithNotBefore(rand, key, notBefore)
+	if err != nil {
+		t.Fatalf("signKey failed: %v", err)
+	}
+
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix",
-		writeKeyWithCreationTime(metav1.NewTime(time.Now().Add(-oldAge))))
+	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix")
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
