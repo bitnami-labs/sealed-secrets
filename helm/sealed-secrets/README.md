@@ -128,7 +128,6 @@ The command removes all the Kubernetes components associated with the chart and 
 | `containerSecurityContext.runAsNonRoot`           | Indicates that the Sealed Secret container must run as a non-root user                 | `true`                              |
 | `containerSecurityContext.runAsUser`              | Set Sealed Secret containers' Security Context runAsUser                               | `1001`                              |
 | `containerSecurityContext.capabilities`           | Adds and removes POSIX capabilities from running containers (see `values.yaml`)        |                                     |
-| `automountServiceAccountToken`                    | whether to automatically mount the service account API-token to a particular pod       | `true`                              |
 | `podLabels`                                       | Extra labels for Sealed Secret pods                                                    | `{}`                                |
 | `podAnnotations`                                  | Annotations for Sealed Secret pods                                                     | `{}`                                |
 | `priorityClassName`                               | Sealed Secret pods' priorityClassName                                                  | `""`                                |
@@ -166,18 +165,17 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Other Parameters
 
-| Name                                          | Description                                                   | Value              |
-| --------------------------------------------- | ------------------------------------------------------------- | ------------------ |
-| `serviceAccount.annotations`                  | Annotations for Sealed Secret service account                 | `{}`               |
-| `serviceAccount.create`                       | Specifies whether a ServiceAccount should be created          | `true`             |
-| `serviceAccount.labels`                       | Extra labels to be added to the ServiceAccount                | `{}`               |
-| `serviceAccount.name`                         | The name of the ServiceAccount to use.                        | `""`               |
-| `serviceAccount.automountServiceAccountToken` | Specifies, whether to mount the service account API-token     | `true`             |
-| `rbac.create`                                 | Specifies whether RBAC resources should be created            | `true`             |
-| `rbac.clusterRole`                            | Specifies whether the Cluster Role resource should be created | `true`             |
-| `rbac.clusterRoleName`                        | Specifies the name for the Cluster Role resource              | `secrets-unsealer` |
-| `rbac.labels`                                 | Extra labels to be added to RBAC resources                    | `{}`               |
-| `rbac.pspEnabled`                             | PodSecurityPolicy                                             | `false`            |
+| Name                         | Description                                                   | Value              |
+| ---------------------------- | ------------------------------------------------------------- | ------------------ |
+| `serviceAccount.annotations` | Annotations for Sealed Secret service account                 | `{}`               |
+| `serviceAccount.create`      | Specifies whether a ServiceAccount should be created          | `true`             |
+| `serviceAccount.labels`      | Extra labels to be added to the ServiceAccount                | `{}`               |
+| `serviceAccount.name`        | The name of the ServiceAccount to use.                        | `""`               |
+| `rbac.create`                | Specifies whether RBAC resources should be created            | `true`             |
+| `rbac.clusterRole`           | Specifies whether the Cluster Role resource should be created | `true`             |
+| `rbac.clusterRoleName`       | Specifies the name for the Cluster Role resource              | `secrets-unsealer` |
+| `rbac.labels`                | Extra labels to be added to RBAC resources                    | `{}`               |
+| `rbac.pspEnabled`            | PodSecurityPolicy                                             | `false`            |
 
 ### Metrics parameters
 
