@@ -20,14 +20,20 @@ jobs:
     strategy:
       matrix:
        include:
-         - target-platform: gke
+         - name: GKE
+           target-platform: gke
            target-platform-id: 91d398a2-25c4-4cda-8732-75a3cfc179a1
            target-pipeline: vib-platform-verify.json
-         - target-platform: openshift
+         - name: GKE Skip Recreate
+           target-platform: gke
+           target-platform-id: 91d398a2-25c4-4cda-8732-75a3cfc179a1
+           target-pipeline: vib-platform-verify-skip-recreate.json
+         - name: Openshift
+           target-platform: openshift
            target-platform-id: ebac9e0d-3931-4515-ba54-e6adada1f174
            target-pipeline: vib-platform-verify-openshift.json
       fail-fast: false
-    name: Verify chart in ${{ matrix.target-platform}}
+    name: Verify chart (${{ matrix.name }})
     steps:
       - uses: actions/checkout@v3.1.0
         with:
