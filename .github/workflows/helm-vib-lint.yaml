@@ -23,4 +23,4 @@ jobs:
         with:
           ref: ${{github.event.pull_request.head.ref}}
           repository: ${{github.event.pull_request.head.repo.full_name}}
-      - uses: vmware-labs/vmware-image-builder-action@0.4.7
+      - uses: vmware-labs/vmware-image-builder-action@0.5.0

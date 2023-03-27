@@ -22,7 +22,7 @@ Sealed Secrets are "one-way" encrypted K8s Secrets that can be created by anyone
 - [Upgrading](#upgrading)
   - [To 2.0.0](#to-200)
 
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+<!-- END doctoc generated TOC please keep comment here to allow auto-update -->
 
 ## TL;DR
 
@@ -37,7 +37,7 @@ Bitnami charts for Helm are carefully engineered, actively maintained and are th
 
 This chart bootstraps a [Sealed Secret Controller](https://github.com/bitnami-labs/sealed-secrets) Deployment in [Kubernetes](http://kubernetes.io) using the [Helm](https://helm.sh) package manager.
 
-Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for deployment and management of Helm Charts in clusters.
+Bitnami charts can be used with [Kubeapps](https://kubeapps.com/) for the deployment and management of Helm Charts in clusters.
 
 ## Prerequisites
 
