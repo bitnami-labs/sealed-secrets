@@ -39,7 +39,7 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
-      - uses: vmware-labs/vmware-image-builder-action@0.5.0
+      - uses: vmware-labs/vmware-image-builder-action@v0.6.0
         with:
           pipeline: ${{ matrix.target-pipeline }}
         env:
