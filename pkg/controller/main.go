@@ -82,8 +82,7 @@ func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Read
 		if err != nil {
 			log.Printf("Error reading key %s: %v", secret.Name, err)
 		}
-		ct := secret.CreationTimestamp
-		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], ct.Time); err != nil {
+		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], certs[0].NotBefore); err != nil {
 			return nil, err
 		}
 		log.Printf("----- %s", secret.Name)
@@ -112,7 +111,7 @@ func myNamespace() string {
 func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period, validFor time.Duration, cutoffTime time.Time, cn string) (func(), error) {
 	// Create a new key if it's the first key,
 	// or if it's older than cutoff time.
-	if len(registry.keys) == 0 || registry.mostRecentKey.creationTime.Before(cutoffTime) {
+	if len(registry.keys) == 0 || registry.mostRecentKey.orderingTime.Before(cutoffTime) {
 		if _, err := registry.generateKey(ctx, validFor, cn); err != nil {
 			return nil, err
 		}
@@ -130,7 +129,7 @@ func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period, validFor
 
 	// If key rotation is enabled, we'll rotate the key when the most recent
 	// key becomes stale (older than period).
-	mostRecentKeyAge := time.Since(registry.mostRecentKey.creationTime)
+	mostRecentKeyAge := time.Since(registry.mostRecentKey.orderingTime)
 	initialDelay := period - mostRecentKeyAge
 	if initialDelay < 0 {
 		initialDelay = 0

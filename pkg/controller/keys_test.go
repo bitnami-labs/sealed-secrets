@@ -28,6 +28,10 @@ func signKey(r io.Reader, key *rsa.PrivateKey) (*x509.Certificate, error) {
 	return crypto.SignKey(r, key, time.Hour, "testcn")
 }
 
+func signKeyWithNotBefore(r io.Reader, key *rsa.PrivateKey, notBefore time.Time) (*x509.Certificate, error) {
+	return crypto.SignKeyWithNotBefore(r, key, notBefore, time.Hour, "testcn")
+}
+
 func TestReadKey(t *testing.T) {
 	rand := testRand()
 
