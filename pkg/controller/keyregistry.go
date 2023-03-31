@@ -20,7 +20,7 @@ type Key struct {
 	private      *rsa.PrivateKey
 	cert         *x509.Certificate
 	fingerprint  string
-	creationTime time.Time
+	orderingTime time.Time
 }
 
 // A KeyRegistry manages the key pairs used to (un)seal secrets.
@@ -66,7 +66,7 @@ func (kr *KeyRegistry) generateKey(ctx context.Context, validFor time.Duration, 
 	return generatedName, nil
 }
 
-func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate, creationTime time.Time) error {
+func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, cert *x509.Certificate, orderingTime time.Time) error {
 	fingerprint, err := crypto.PublicKeyFingerprint(&privKey.PublicKey)
 	if err != nil {
 		return err
@@ -76,11 +76,11 @@ func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, c
 		private:      privKey,
 		cert:         cert,
 		fingerprint:  fingerprint,
-		creationTime: creationTime,
+		orderingTime: orderingTime,
 	}
 	kr.keys[k.fingerprint] = k
 
-	if kr.mostRecentKey == nil || kr.mostRecentKey.creationTime.Before(creationTime) {
+	if kr.mostRecentKey == nil || kr.mostRecentKey.orderingTime.Before(orderingTime) {
 		kr.mostRecentKey = k
 	}
 
