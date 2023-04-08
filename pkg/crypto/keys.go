@@ -29,7 +29,13 @@ func SignKey(r io.Reader, key *rsa.PrivateKey, validFor time.Duration, cn string
 	// TODO: use certificates API to get this signed by the cluster root CA
 	// See https://kubernetes.io/docs/tasks/tls/managing-tls-in-a-cluster/
 
-	notBefore := time.Now()
+	return SignKeyWithNotBefore(r, key, time.Now(), validFor, cn)
+}
+
+// SignKeyWithNotBefore returns a signed certificate with custom notBefore.
+func SignKeyWithNotBefore(r io.Reader, key *rsa.PrivateKey, notBefore time.Time, validFor time.Duration, cn string) (*x509.Certificate, error) {
+	// TODO: use certificates API to get this signed by the cluster root CA
+	// See https://kubernetes.io/docs/tasks/tls/managing-tls-in-a-cluster/
 
 	serialNo, err := rand.Int(r, new(big.Int).Lsh(big.NewInt(1), 128))
 	if err != nil {
