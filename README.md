@@ -5,7 +5,7 @@
 [![](https://img.shields.io/homebrew/v/kubeseal)](https://formulae.brew.sh/formula/kubeseal)
 [![Build Status](https://github.com/bitnami-labs/sealed-secrets/actions/workflows/ci.yml/badge.svg)](https://github.com/bitnami-labs/sealed-secrets/actions/workflows/ci.yml)
 [![](https://img.shields.io/github/v/release/bitnami-labs/sealed-secrets?include_prereleases&label=helm&sort=semver)](https://github.com/bitnami-labs/sealed-secrets/releases)
-[![Verification Status](https://github.com/bitnami-labs/sealed-secrets/actions/workflows/helm-vib.yaml/badge.svg)](https://github.com/bitnami-labs/sealed-secrets/actions/workflows/helm-vib.yaml)
+[![Download Status](https://img.shields.io/docker/pulls/bitnami/sealed-secrets-controller.svg)](https://hub.docker.com/r/bitnami/sealed-secrets-controller)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bitnami-labs/sealed-secrets)](https://goreportcard.com/report/github.com/bitnami-labs/sealed-secrets)
 ![Downloads](https://img.shields.io/github/downloads/bitnami-labs/sealed-secrets/total.svg)
 
