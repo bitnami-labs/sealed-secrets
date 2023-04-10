@@ -189,6 +189,7 @@ func runCLI(w io.Writer, cfg *config) (err error) {
 	if err != nil {
 		return err
 	}
+	// #nosec: G307 -- this deferred close is fine because it is not on a writable file
 	defer f.Close()
 
 	if flags.dumpCert {
