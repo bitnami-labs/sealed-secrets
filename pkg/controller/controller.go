@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"reflect"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -109,9 +110,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 }
 
 func watchSealedSecrets(ssinformer ssinformer.SharedInformerFactory, queue workqueue.RateLimitingInterface) (cache.SharedIndexInformer, error) {
-	ssInformer := ssinformer.Bitnami().V1alpha1().
-		SealedSecrets().
-		Informer()
+	ssInformer := ssinformer.Bitnami().V1alpha1().SealedSecrets().Informer()
 	_, err := ssInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(obj)
@@ -122,7 +121,11 @@ func watchSealedSecrets(ssinformer ssinformer.SharedInformerFactory, queue workq
 		UpdateFunc: func(oldObj, newObj interface{}) {
 			key, err := cache.MetaNamespaceKeyFunc(newObj)
 			if err == nil {
-				queue.Add(key)
+				if sealedSecretChanged(oldObj, newObj) {
+					queue.Add(key)
+				} else {
+					log.Printf("update suppressed, no changes in sealed secret spec of %v", key)
+				}
 			}
 		},
 		DeleteFunc: func(obj interface{}) {
@@ -139,6 +142,18 @@ func watchSealedSecrets(ssinformer ssinformer.SharedInformerFactory, queue workq
 		return nil, fmt.Errorf("could not add event handler to sealed secrets informer: %w", err)
 	}
 	return ssInformer, nil
+}
+
+func sealedSecretChanged(oldObj, newObj interface{}) bool {
+	oldSealedSecret, err := convertSealedSecret(oldObj)
+	if err != nil {
+		return true // any conversion error means we assume it might have changed
+	}
+	newSealedSecret, err := convertSealedSecret(newObj)
+	if err != nil {
+		return true
+	}
+	return !reflect.DeepEqual(oldSealedSecret.Spec, newSealedSecret.Spec)
 }
 
 func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclientset.Interface, queue workqueue.RateLimitingInterface) (cache.SharedIndexInformer, error) {
