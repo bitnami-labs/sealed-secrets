@@ -128,18 +128,13 @@ jobs:
       uses: actions/checkout@v3.1.0
 
     - name: Install Cosign
-      uses: sigstore/cosign-installer@v2.7.0
+      uses: sigstore/cosign-installer@v3.0.2
 
     - name: Distroless verify
       run: |
         diff <(grep FROM docker/kubeseal.Dockerfile | awk '{print $2}') \
              <(grep FROM docker/controller.Dockerfile | awk '{print $2}')
-        cosign verify --key /dev/stdin "$(grep FROM docker/controller.Dockerfile | awk '{print $2}')" <<EOF
-        -----BEGIN PUBLIC KEY-----
-        MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEWZzVzkb8A+DbgDpaJId/bOmV8n7Q
-        OqxYbK0Iro6GzSmOzxkn+N2AKawLyXi84WSwJQBK//psATakCgAQKkNTAA==
-        -----END PUBLIC KEY-----
-        EOF
+        cosign verify "$(grep FROM docker/controller.Dockerfile | awk '{print $2}')" --certificate-oidc-issuer https://accounts.google.com  --certificate-identity keyless@distroless.iam.gserviceaccount.com
 
     - name: Setup kubecfg
       run: |

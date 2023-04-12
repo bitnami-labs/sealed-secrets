@@ -60,7 +60,7 @@ jobs:
 
       # Setup Cosign
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v2.7.0
+        uses: sigstore/cosign-installer@v3.0.2
       - name: Write Cosign key
         run: echo "$COSIGN_KEY" > /tmp/cosign.key
         env:
@@ -134,7 +134,7 @@ jobs:
           tags: ${{ steps.meta_kubeseal.outputs.tags }}
       - name: Sign controller image with a key in GHCR
         run: |
-          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key $TAG_CURRENT
+          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key --yes $TAG_CURRENT
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           TAG_CURRENT: ${{ steps.meta_controller.outputs.tags }}

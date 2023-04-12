@@ -716,6 +716,8 @@ kubeseal <mysecret.json >mysealedsecret.json
 
 Our images are being signed using [cosign](https://github.com/sigstore/cosign). The signatures have been saved in our [GitHub Container Registry](https://ghcr.io/bitnami-labs/sealed-secrets-controller/signs).
 
+> Images up to and including v0.20.2 were signed using Cosign v1. Newer images are signed with Cosign v2.
+
 It is pretty simple to verify the images:
 
 ```bash
