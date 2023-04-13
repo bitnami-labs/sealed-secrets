@@ -55,7 +55,7 @@ generate: $(GO_FILES)
 	cp -r gentmp/github.com/bitnami-labs/sealed-secrets/pkg . && rm -rf gentmp/
 
 manifests:
-	$(CONTROLLER_GEN) crd paths="./pkg/apis/..." output:stdout | tail -n +2 > helm/sealed-secrets/crds/bitnami.com_sealedsecrets.yaml
+	$(CONTROLLER_GEN) crd:generateEmbeddedObjectMeta=true paths="./pkg/apis/..." output:stdout | tail -n +2 > helm/sealed-secrets/crds/bitnami.com_sealedsecrets.yaml
 	yq '.spec.versions[0].schema' < helm/sealed-secrets/crds/bitnami.com_sealedsecrets.yaml > schema-v1alpha1.yaml
 
 controller: $(GO_FILES)

@@ -36,7 +36,7 @@ type SecretTemplateSpec struct {
 	// More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
 	// +optional
 	// +nullable
-	// +kubebuilder:validation:XPreserveUnknownFields
+	// +kubebuilder:pruning:PreserveUnknownFields
 	metav1.ObjectMeta `json:"metadata,omitempty" protobuf:"bytes,1,opt,name=metadata"`
 
 	// Used to facilitate programmatic handling of secret data.
@@ -61,7 +61,7 @@ type SealedSecretSpec struct {
 	EncryptedData SealedSecretEncryptedData `json:"encryptedData"`
 }
 
-// +kubebuilder:validation:XPreserveUnknownFields
+// +kubebuilder:pruning:PreserveUnknownFields
 type SealedSecretEncryptedData map[string]string
 
 func (s *SealedSecretEncryptedData) UnmarshalJSON(data []byte) error {
