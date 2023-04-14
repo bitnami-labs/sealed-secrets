@@ -4,12 +4,12 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"io"
-	"log"
 	"net/http"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
+	"github.com/bitnami-labs/sealed-secrets/pkg/log"
 	flag "github.com/spf13/pflag"
 	"github.com/throttled/throttled"
 	"github.com/throttled/throttled/store/memstore"
@@ -49,14 +49,14 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 	mux.Handle("/v1/verify", Instrument("/v1/verify", httpRateLimiter.RateLimit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		content, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Printf("Error handling /v1/verify request: %v", err)
+			log.Errorf("Error handling /v1/verify request: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		valid, err := sc(content)
 		if err != nil {
-			log.Printf("Error validating secret: %v", err)
+			log.Errorf("Error validating secret: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -72,14 +72,14 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 	mux.Handle("/v1/rotate", Instrument("/v1/rotate", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		content, err := io.ReadAll(r.Body)
 		if err != nil {
-			log.Printf("Error handling /v1/rotate request: %v", err)
+			log.Errorf("Error handling /v1/rotate request: %v", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		newSecret, err := sr(content)
 		if err != nil {
-			log.Printf("Error rotating secret: %v", err)
+			log.Errorf("Error rotating secret: %v", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -92,7 +92,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 	mux.Handle("/v1/cert.pem", Instrument("/v1/cert.pem", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		certs, err := cp()
 		if err != nil {
-			log.Printf("cannot get certificates: %v", err)
+			log.Errorf("cannot get certificates: %v", err)
 			http.Error(w, "cannot get certificate", http.StatusInternalServerError)
 			return
 		}
@@ -111,10 +111,10 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 		WriteTimeout:      *writeTimeout,
 	}
 
-	log.Printf("HTTP server serving on %s", server.Addr)
+	log.Infof("HTTP server serving on %s", server.Addr)
 	go func() {
 		err := server.ListenAndServe()
-		log.Printf("HTTP server exiting: %v", err)
+		log.Errorf("HTTP server exiting: %v", err)
 	}()
 	return &server
 }
