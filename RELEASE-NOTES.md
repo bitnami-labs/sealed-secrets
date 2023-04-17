@@ -6,6 +6,8 @@ Latest release:
 
 ## v0.20.3
 
+### Changelog
+
 - Generate embedded ObjectMeta in CRD ([#1177](https://github.com/bitnami-labs/sealed-secrets/pull/1177))
 - Sign images using Cosign v2 ([#1176](https://github.com/bitnami-labs/sealed-secrets/pull/1176))
 - ReProcess only on spec changes ([#1174](https://github.com/bitnami-labs/sealed-secrets/pull/1174))
@@ -24,10 +26,6 @@ Latest release:
 - Feature/updatevib ([#1165](https://github.com/bitnami-labs/sealed-secrets/pull/1165))
 - Update VIB release tag format ([#1164](https://github.com/bitnami-labs/sealed-secrets/pull/1164))
 - Include dockerhub pull statistics in the project README ([#1172](https://github.com/bitnami-labs/sealed-secrets/pull/1172))
-
-
-
-### Changelog
 
 ## v0.20.2
 
