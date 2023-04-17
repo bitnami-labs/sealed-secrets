@@ -6,6 +6,25 @@ Latest release:
 
 ## v0.21.0
 
+- Generate embedded ObjectMeta in CRD ([#1177](https://github.com/bitnami-labs/sealed-secrets/pull/1177))
+- Sign images using Cosign v2 ([#1176](https://github.com/bitnami-labs/sealed-secrets/pull/1176))
+- Bump golang.org/x/crypto from 0.7.0 to 0.8.0 ([#1175](https://github.com/bitnami-labs/sealed-secrets/pull/1175))
+- ReProcess only on spec changes ([#1174](https://github.com/bitnami-labs/sealed-secrets/pull/1174))
+- Upgrade sealed secrets to Go 1.20 ([#1173](https://github.com/bitnami-labs/sealed-secrets/pull/1173))
+- Feature/updatereadme ([#1172](https://github.com/bitnami-labs/sealed-secrets/pull/1172))
+- Bump github.com/onsi/gomega from 1.27.5 to 1.27.6 ([#1169](https://github.com/bitnami-labs/sealed-secrets/pull/1169))
+- Bump github.com/onsi/gomega from 1.27.4 to 1.27.5 ([#1168](https://github.com/bitnami-labs/sealed-secrets/pull/1168))
+- Bump github.com/mattn/go-isatty from 0.0.17 to 0.0.18 ([#1167](https://github.com/bitnami-labs/sealed-secrets/pull/1167))
+- Bump github.com/onsi/ginkgo/v2 from 2.9.1 to 2.9.2 ([#1166](https://github.com/bitnami-labs/sealed-secrets/pull/1166))
+- Feature/updatevib ([#1165](https://github.com/bitnami-labs/sealed-secrets/pull/1165))
+- Update vib action ([#1164](https://github.com/bitnami-labs/sealed-secrets/pull/1164))
+- Verify chart with secret recreation disabled ([#1163](https://github.com/bitnami-labs/sealed-secrets/pull/1163))
+- Remove automountServiceAccountToken parameter ([#1162](https://github.com/bitnami-labs/sealed-secrets/pull/1162))
+- Bump k8s.io/apimachinery from 0.26.2 to 0.26.3 ([#1160](https://github.com/bitnami-labs/sealed-secrets/pull/1160))
+- Bump k8s.io/code-generator from 0.26.2 to 0.26.3 ([#1159](https://github.com/bitnami-labs/sealed-secrets/pull/1159))
+- Bump k8s.io/api from 0.26.2 to 0.26.3 ([#1158](https://github.com/bitnami-labs/sealed-secrets/pull/1158))
+- Bump k8s.io/client-go from 0.26.2 to 0.26.3 ([#1157](https://github.com/bitnami-labs/sealed-secrets/pull/1157))
+
 ### Changelog
 
 ## v0.20.2
