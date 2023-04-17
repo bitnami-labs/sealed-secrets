@@ -49,6 +49,7 @@ signs:
       - 'sign-blob'
       - '--key=/tmp/cosign.key'
       - '--output-signature=${signature}'
+      - '--yes'
       - '${artifact}'
 release:
   name_template: "{{ .ProjectName }}-v{{ .Version }}"
