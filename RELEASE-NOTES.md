@@ -12,6 +12,7 @@ Latest release:
 - Sign images using Cosign v2 ([#1176](https://github.com/bitnami-labs/sealed-secrets/pull/1176))
 - ReProcess only on spec changes ([#1174](https://github.com/bitnami-labs/sealed-secrets/pull/1174))
 - Upgrade sealed secrets to Go 1.20 ([#1173](https://github.com/bitnami-labs/sealed-secrets/pull/1173))
+- Fix cosign command for goreleaser ([#1180](https://github.com/bitnami-labs/sealed-secrets/pull/1180))
 - Remove automountServiceAccountToken parameter ([#1162](https://github.com/bitnami-labs/sealed-secrets/pull/1162))
 - Verify chart with secret recreation disabled ([#1163](https://github.com/bitnami-labs/sealed-secrets/pull/1163))
 - Bump golang.org/x/crypto from 0.7.0 to 0.8.0 ([#1175](https://github.com/bitnami-labs/sealed-secrets/pull/1175))
