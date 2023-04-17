@@ -4,7 +4,7 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
-## v0.20.3
+## v0.20.4
 
 ### Changelog
 
@@ -26,6 +26,10 @@ Latest release:
 - Update VIB release tag format ([#1165](https://github.com/bitnami-labs/sealed-secrets/pull/1165))
 - Update VIB action ([#1164](https://github.com/bitnami-labs/sealed-secrets/pull/1164))
 - Include dockerhub pull statistics in the project README ([#1172](https://github.com/bitnami-labs/sealed-secrets/pull/1172))
+
+## v0.20.3
+
+Incomplete release
 
 ## v0.20.2
 
