@@ -141,7 +141,7 @@ jobs:
           COSIGN_REPOSITORY: ${{ env.controller_ghcr_image_name }}/signs
       - name: Sign kubeseal image with a key in GHCR
         run: |
-          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key $TAG_CURRENT
+          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key --yes $TAG_CURRENT
         env:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           TAG_CURRENT: ${{ steps.meta_kubeseal.outputs.tags }}
