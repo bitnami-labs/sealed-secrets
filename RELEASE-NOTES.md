@@ -4,7 +4,7 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
-## v0.20.4
+## v0.20.5
 
 ### Changelog
 
@@ -13,6 +13,7 @@ Latest release:
 - ReProcess only on spec changes ([#1174](https://github.com/bitnami-labs/sealed-secrets/pull/1174))
 - Upgrade sealed secrets to Go 1.20 ([#1173](https://github.com/bitnami-labs/sealed-secrets/pull/1173))
 - Fix cosign command for goreleaser ([#1180](https://github.com/bitnami-labs/sealed-secrets/pull/1180))
+- Fix kubeseal image sign for cosign v2 ([#1182](https://github.com/bitnami-labs/sealed-secrets/pull/1182))
 - Remove automountServiceAccountToken parameter ([#1162](https://github.com/bitnami-labs/sealed-secrets/pull/1162))
 - Verify chart with secret recreation disabled ([#1163](https://github.com/bitnami-labs/sealed-secrets/pull/1163))
 - Bump golang.org/x/crypto from 0.7.0 to 0.8.0 ([#1175](https://github.com/bitnami-labs/sealed-secrets/pull/1175))
@@ -27,6 +28,10 @@ Latest release:
 - Update VIB release tag format ([#1165](https://github.com/bitnami-labs/sealed-secrets/pull/1165))
 - Update VIB action ([#1164](https://github.com/bitnami-labs/sealed-secrets/pull/1164))
 - Include dockerhub pull statistics in the project README ([#1172](https://github.com/bitnami-labs/sealed-secrets/pull/1172))
+
+## v0.20.4
+
+Incomplete release
 
 ## v0.20.3
 
