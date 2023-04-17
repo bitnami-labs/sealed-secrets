@@ -23,8 +23,8 @@ Latest release:
 - Bump k8s.io/code-generator from 0.26.2 to 0.26.3 ([#1159](https://github.com/bitnami-labs/sealed-secrets/pull/1159))
 - Bump k8s.io/api from 0.26.2 to 0.26.3 ([#1158](https://github.com/bitnami-labs/sealed-secrets/pull/1158))
 - Bump k8s.io/client-go from 0.26.2 to 0.26.3 ([#1157](https://github.com/bitnami-labs/sealed-secrets/pull/1157))
-- Feature/updatevib ([#1165](https://github.com/bitnami-labs/sealed-secrets/pull/1165))
-- Update VIB release tag format ([#1164](https://github.com/bitnami-labs/sealed-secrets/pull/1164))
+- Update VIB release tag format ([#1165](https://github.com/bitnami-labs/sealed-secrets/pull/1165))
+- Update VIB action ([#1164](https://github.com/bitnami-labs/sealed-secrets/pull/1164))
 - Include dockerhub pull statistics in the project README ([#1172](https://github.com/bitnami-labs/sealed-secrets/pull/1172))
 
 ## v0.20.2
