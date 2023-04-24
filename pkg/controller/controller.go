@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"reflect"
 	"time"
 
@@ -33,6 +32,7 @@ import (
 	ssscheme "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/scheme"
 	ssv1alpha1client "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/typed/sealedsecrets/v1alpha1"
 	ssinformer "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
+	"github.com/bitnami-labs/sealed-secrets/pkg/log"
 	"github.com/bitnami-labs/sealed-secrets/pkg/multidocyaml"
 )
 
@@ -81,7 +81,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 
 	utilruntime.Must(ssscheme.AddToScheme(scheme.Scheme))
 	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.Printf)
+	eventBroadcaster.StartLogging(log.Infof)
 	eventBroadcaster.StartRecordingToSink(&v1.EventSinkImpl{Interface: clientset.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "sealed-secrets"})
 
@@ -124,7 +124,7 @@ func watchSealedSecrets(ssinformer ssinformer.SharedInformerFactory, queue workq
 				if sealedSecretChanged(oldObj, newObj) {
 					queue.Add(key)
 				} else {
-					log.Printf("update suppressed, no changes in sealed secret spec of %v", key)
+					log.Infof("update suppressed, no changes in sealed secret spec of %v", key)
 				}
 			}
 		},
@@ -162,20 +162,20 @@ func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclien
 		DeleteFunc: func(obj interface{}) {
 			skey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err != nil {
-				log.Printf("failed to fetch Secret key: %v", err)
+				log.Errorf("failed to fetch Secret key: %v", err)
 				return
 			}
 
 			ns, name, err := cache.SplitMetaNamespaceKey(skey)
 			if err != nil {
-				log.Printf("failed to get namespace and name from key: %v", err)
+				log.Errorf("failed to get namespace and name from key: %v", err)
 				return
 			}
 
 			ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
 			if err != nil {
 				if !k8serrors.IsNotFound(err) {
-					log.Printf("failed to get SealedSecret: %v", err)
+					log.Errorf("failed to get SealedSecret: %v", err)
 				}
 				return
 			}
@@ -186,7 +186,7 @@ func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclien
 
 			sskey, err := cache.MetaNamespaceKeyFunc(ssecret)
 			if err != nil {
-				log.Printf("failed to fetch SealedSecret key: %v", err)
+				log.Errorf("failed to fetch SealedSecret key: %v", err)
 				return
 			}
 
@@ -241,7 +241,7 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 		c.runWorker(context.Background())
 	}, time.Second, stopCh)
 
-	log.Printf("Shutting down controller")
+	log.Errorf("Shutting down controller")
 }
 
 func (c *Controller) runWorker(ctx context.Context) {
@@ -262,11 +262,11 @@ func (c *Controller) processNextItem(ctx context.Context) bool {
 		// No error, reset the ratelimit counters
 		c.queue.Forget(key)
 	} else if c.queue.NumRequeues(key) < maxRetries {
-		log.Printf("Error updating %s, will retry: %v", key, err)
+		log.Errorf("Error updating %s, will retry: %v", key, err)
 		c.queue.AddRateLimited(key)
 	} else {
 		// err != nil and too many retries
-		log.Printf("Error updating %s, giving up: %v", key, err)
+		log.Errorf("Error updating %s, giving up: %v", key, err)
 		c.queue.Forget(key)
 		utilruntime.HandleError(err)
 	}
@@ -278,7 +278,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	unsealRequestsTotal.Inc()
 	obj, exists, err := c.ssInformer.GetIndexer().GetByKey(key)
 	if err != nil {
-		log.Printf("Error fetching object with key %s from store: %v", key, err)
+		log.Errorf("Error fetching object with key %s from store: %v", key, err)
 		unsealErrorsTotal.WithLabelValues("fetch", "").Inc()
 		return err
 	}
@@ -289,7 +289,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 
 		// TODO: remove this feature flag in a subsequent release.
 		if c.oldGCBehavior {
-			log.Printf("SealedSecret %s has gone, deleting Secret", key)
+			log.Infof("SealedSecret %s has gone, deleting Secret", key)
 			ns, name, err := cache.SplitMetaNamespaceKey(key)
 			if err != nil {
 				return err
@@ -306,7 +306,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	if err != nil {
 		return err
 	}
-	log.Printf("Updating %s", key)
+	log.Infof("Updating %s", key)
 
 	// any exit of this function at this point will cause an update to the status subresource
 	// of the SealedSecret custom resource. The return value of the unseal function is available
@@ -315,7 +315,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	defer func() {
 		if err := c.updateSealedSecretStatus(ssecret, unsealErr); err != nil {
 			// Non-fatal.  Log and continue.
-			log.Printf("Error updating SealedSecret %s status: %v", key, err)
+			log.Errorf("Error updating SealedSecret %s status: %v", key, err)
 			unsealErrorsTotal.WithLabelValues("status", ssecret.GetNamespace()).Inc()
 		} else {
 			ObserveCondition(ssecret)
@@ -375,7 +375,7 @@ func convertSealedSecret(obj any) (*ssv1alpha1.SealedSecret, error) {
 	}
 	if sealedSecret.APIVersion == "" || sealedSecret.Kind == "" {
 		// https://github.com/operator-framework/operator-sdk/issues/727
-		log.Printf("WARNING: Empty API version & kind, filling it...")
+		log.Errorf("WARNING: Empty API version & kind, filling it...")
 		gv := schema.GroupVersion{Group: ssv1alpha1.GroupName, Version: "v1alpha1"}
 		gvk := gv.WithKind("SealedSecret")
 		sealedSecret.APIVersion = gvk.GroupVersion().String()

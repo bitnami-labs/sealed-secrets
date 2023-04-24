@@ -6,11 +6,11 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"fmt"
-	"log"
 	"sync"
 	"time"
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
+	"github.com/bitnami-labs/sealed-secrets/pkg/log"
 	"k8s.io/client-go/kubernetes"
 	certUtil "k8s.io/client-go/util/cert"
 )
@@ -61,8 +61,8 @@ func (kr *KeyRegistry) generateKey(ctx context.Context, validFor time.Duration, 
 	if err := kr.registerNewKey(generatedName, key, cert, time.Now()); err != nil {
 		return "", err
 	}
-	log.Printf("New key written to %s/%s\n", kr.namespace, generatedName)
-	log.Printf("Certificate is \n%s\n", pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
+	log.Infof("New key written to %s/%s\n", kr.namespace, generatedName)
+	log.Infof("Certificate is \n%s\n", pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw}))
 	return generatedName, nil
 }
 

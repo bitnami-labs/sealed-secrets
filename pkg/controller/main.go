@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"crypto/x509"
 	"io"
-	"log"
 	"os"
 	"os/signal"
 	"sort"
@@ -26,6 +25,7 @@ import (
 	"github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
+	"github.com/bitnami-labs/sealed-secrets/pkg/log"
 )
 
 var (
@@ -50,6 +50,7 @@ type Flags struct {
 	OldGCBehavior        bool
 	UpdateStatus         bool
 	SkipRecreate         bool
+	LogInfoToStdout      bool
 }
 
 func initKeyPrefix(keyPrefix string) (string, error) {
@@ -57,7 +58,7 @@ func initKeyPrefix(keyPrefix string) (string, error) {
 }
 
 func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
-	log.Printf("Searching for existing private keys")
+	log.Infof("Searching for existing private keys")
 	secretList, err := client.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: keySelector.String(),
 	})
@@ -80,12 +81,12 @@ func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Read
 	for _, secret := range items {
 		key, certs, err := readKey(secret)
 		if err != nil {
-			log.Printf("Error reading key %s: %v", secret.Name, err)
+			log.Errorf("Error reading key %s: %v", secret.Name, err)
 		}
 		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], certs[0].NotBefore); err != nil {
 			return nil, err
 		}
-		log.Printf("----- %s", secret.Name)
+		log.Infof("----- %s", secret.Name)
 	}
 	return keyRegistry, nil
 }
@@ -120,7 +121,7 @@ func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period, validFor
 	// wrapper function to log error thrown by generateKey function
 	keyGenFunc := func() {
 		if _, err := registry.generateKey(ctx, validFor, cn); err != nil {
-			log.Printf("Failed to generate new key : %v\n", err)
+			log.Errorf("Failed to generate new key : %v\n", err)
 		}
 	}
 	if period == 0 {
@@ -139,6 +140,10 @@ func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period, validFor
 
 func Main(f *Flags, version string) error {
 	registerMetrics(version)
+	if f.LogInfoToStdout {
+		log.SetInfoToStdout()
+	}
+
 	config, err := rest.InClusterConfig()
 	if err != nil {
 		return err
@@ -186,7 +191,7 @@ func Main(f *Flags, version string) error {
 	namespace := v1.NamespaceAll
 	if !f.NamespaceAll || f.AdditionalNamespaces != "" {
 		namespace = myNamespace()
-		log.Printf("Starting informer for namespace: %s\n", namespace)
+		log.Infof("Starting informer for namespace: %s\n", namespace)
 	}
 
 	var tweakopts func(*metav1.ListOptions) = nil
@@ -214,7 +219,7 @@ func Main(f *Flags, version string) error {
 		for _, ns := range addNS {
 			if _, err := clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{}); err != nil {
 				if errors.IsNotFound(err) {
-					log.Printf("Warning: namespace '%s' doesn't exist\n", ns)
+					log.Errorf("Warning: namespace '%s' doesn't exist\n", ns)
 					continue
 				}
 				return err
@@ -226,7 +231,7 @@ func Main(f *Flags, version string) error {
 				}
 				ctlr.oldGCBehavior = f.OldGCBehavior
 				ctlr.updateStatus = f.UpdateStatus
-				log.Printf("Starting informer for namespace: %s\n", ns)
+				log.Infof("Starting informer for namespace: %s\n", ns)
 				go ctlr.Run(stop)
 			}
 		}
