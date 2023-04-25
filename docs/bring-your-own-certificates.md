@@ -30,7 +30,7 @@ kubectl -n "$NAMESPACE" create secret tls "$SECRETNAME" --cert="$PUBLICKEY" --ke
 kubectl -n "$NAMESPACE" label secret "$SECRETNAME" sealedsecrets.bitnami.com/sealed-secrets-key=active
 ```
 
-## Deleting the controller Pod is needed to pick they new keys
+## Deleting the controller Pod is needed to pick the new keys
 
 ```bash
 kubectl -n  "$NAMESPACE" delete pod -l name=sealed-secrets-controller
