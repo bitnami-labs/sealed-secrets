@@ -28,10 +28,11 @@ original Secret from the SealedSecret.
   - [Controller](#controller)
     - [Kustomize](#kustomize)
     - [Helm Chart](#helm-chart)
-  - [Homebrew](#homebrew)
-  - [MacPorts](#macports)
-  - [Linux](#linux)
-  - [Installation from source](#installation-from-source)
+  - [Kubeseal](#kubeseal)
+    - [Homebrew](#homebrew)
+    - [MacPorts](#macports)
+    - [Linux](#linux)
+    - [Installation from source](#installation-from-source)
 - [Upgrade](#upgrade)
 - [Usage](#usage)
   - [Managing existing secrets](#managing-existing-secrets)
@@ -345,7 +346,9 @@ helm install sealed-secrets -n {allocated-namespace} sealed-secrets/sealed-secre
 
 Where `{allocated-namespace}` is the name of the `namespace` you were allocated in the cluster.
 
-### Homebrew
+### Kubeseal
+
+#### Homebrew
 
 The `kubeseal` client is also available on [homebrew](https://formulae.brew.sh/formula/kubeseal):
 
@@ -353,7 +356,7 @@ The `kubeseal` client is also available on [homebrew](https://formulae.brew.sh/f
 brew install kubeseal
 ```
 
-### MacPorts
+#### MacPorts
 
 The `kubeseal` client is also available on [MacPorts](https://ports.macports.org/port/kubeseal/summary):
 
@@ -361,7 +364,7 @@ The `kubeseal` client is also available on [MacPorts](https://ports.macports.org
 port install kubeseal
 ```
 
-### Nixpkgs
+#### Nixpkgs
 
 The `kubeseal` client is also available on [Nixpkgs](https://search.nixos.org/packages?channel=unstable&show=kubeseal&from=0&size=50&sort=relevance&type=packages&query=kubeseal): (**DISCLAIMER**: Not maintained by bitnami-labs)
 
@@ -369,7 +372,7 @@ The `kubeseal` client is also available on [Nixpkgs](https://search.nixos.org/pa
 nix-env -iA nixpkgs.kubeseal
 ```
 
-### Linux
+#### Linux
 
 The `kubeseal` client can be installed on Linux, using the below commands:
 
@@ -381,7 +384,7 @@ sudo install -m 755 kubeseal /usr/local/bin/kubeseal
 
 where `release-tag` is the [version tag](https://github.com/bitnami-labs/sealed-secrets/tags) of the kubeseal release you want to use. For example: `v0.18.0`.
 
-### Installation from source
+#### Installation from source
 
 If you just want the latest client tool, it can be installed into
 `$GOPATH/bin` with:
