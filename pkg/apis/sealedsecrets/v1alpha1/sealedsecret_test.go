@@ -397,6 +397,62 @@ func TestTemplateWithoutEncryptedData(t *testing.T) {
 	}
 }
 
+func TestSkipSetOwnerReference(t *testing.T) {
+
+	testCases := []struct {
+		sealedSecret SealedSecret
+		secret       v1.Secret
+	}{
+		{sealedSecret: SealedSecret{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{
+					SealedSecretSkipSetOwnerReferencesAnnotation: "true",
+				},
+			},
+			Spec: SealedSecretSpec{
+				Template: SecretTemplateSpec{
+					Data: map[string]string{"foo": "bar"},
+				},
+			},
+		},
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{},
+			},
+		},
+		{sealedSecret: SealedSecret{
+			ObjectMeta: metav1.ObjectMeta{
+				Annotations: map[string]string{},
+			},
+			Spec: SealedSecretSpec{
+				Template: SecretTemplateSpec{
+					Data: map[string]string{"foo": "bar"},
+				},
+			},
+		},
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					OwnerReferences: []metav1.OwnerReference{},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		unsealed, err := tc.sealedSecret.Unseal(serializer.CodecFactory{}, nil)
+		if err != nil {
+			t.Fatalf("Unseal returned error: %v", err)
+		}
+		if tc.sealedSecret.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation] == "true" &&
+			len(unsealed.ObjectMeta.OwnerReferences) > 0 {
+			t.Errorf("got: owner, want: no owner")
+
+		} else if (tc.sealedSecret.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation] != "true") &&
+			len(unsealed.ObjectMeta.OwnerReferences) == 0 {
+			t.Errorf("got: no owner, want:  owner")
+		}
+	}
+}
+
 func TestSealMetadataPreservation(t *testing.T) {
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)

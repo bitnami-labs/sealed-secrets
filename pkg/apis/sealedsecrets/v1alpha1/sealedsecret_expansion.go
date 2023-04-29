@@ -324,17 +324,19 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 
 	gvk := s.GetObjectKind().GroupVersionKind()
 
-	// Refer back to owning SealedSecret
-	ownerRefs := []metav1.OwnerReference{
-		{
-			APIVersion: gvk.GroupVersion().String(),
-			Kind:       gvk.Kind,
-			Name:       smeta.GetName(),
-			UID:        smeta.GetUID(),
-			Controller: &boolTrue,
-		},
+	if anno := s.GetAnnotations(); anno[SealedSecretSkipSetOwnerReferencesAnnotation] != "true" {
+		// Refer back to owning SealedSecret
+		ownerRefs := []metav1.OwnerReference{
+			{
+				APIVersion: gvk.GroupVersion().String(),
+				Kind:       gvk.Kind,
+				Name:       smeta.GetName(),
+				UID:        smeta.GetUID(),
+				Controller: &boolTrue,
+			},
+		}
+		secret.SetOwnerReferences(ownerRefs)
 	}
-	secret.SetOwnerReferences(ownerRefs)
 
 	return &secret, nil
 }
