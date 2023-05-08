@@ -38,6 +38,7 @@ original Secret from the SealedSecret.
   - [Managing existing secrets](#managing-existing-secrets)
   - [Update existing secrets](#update-existing-secrets)
   - [Raw mode (experimental)](#raw-mode-experimental)
+  - [Validate a Sealed Secret](#validate-a-sealed-secret)
 - [Secret Rotation](#secret-rotation)
   - [Sealing key renewal](#sealing-key-renewal)
   - [User secret rotation](#user-secret-rotation)
@@ -508,6 +509,36 @@ Include the `sealedsecrets.bitnami.com/cluster-wide` annotation in the `SealedSe
 metadata:
   annotations:
     sealedsecrets.bitnami.com/cluster-wide: "true"
+```
+
+### Validate a Sealed Secret
+
+If you want to validate an existing sealed secret, `kubeseal` has the flag `--validate` to help you.
+
+Having a sealed secret generated with `kubeseal` into a file called `sealed-secrets.yaml`, content example:
+
+```yaml
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  name: mysecret
+  namespace: mynamespace
+spec:
+  encryptedData:
+    foo: AgBy3i4OJSWK+PiTySYZZA9rO43cGDEq.....
+```
+
+You can validate if the sealed secret was properly created or not:
+
+```console
+$ cat sealed-secrets.yaml | kubeseal --validate
+```
+
+In case of an invalid sealed secret, `kubeseal` will show:
+
+```console
+$ cat sealed-secrets.yaml | kubeseal --validate
+error: unable to decrypt sealed secret
 ```
 
 ## Secret Rotation
