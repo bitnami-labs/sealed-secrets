@@ -515,7 +515,7 @@ metadata:
 
 If you want to validate an existing sealed secret, `kubeseal` has the flag `--validate` to help you.
 
-Having a sealed secret generated with `kubeseal` into a file called `sealed-secrets.yaml`, content example:
+Giving a file named `sealed-secrets.yaml` containing the following sealed secret:
 
 ```yaml
 apiVersion: bitnami.com/v1alpha1
