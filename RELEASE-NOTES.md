@@ -4,6 +4,18 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.21.0
+
+### Changelog
+
+- Enable logging info to stdout([#1195](https://github.com/bitnami-labs/sealed-secrets/pull/1195))
+- Bump github.com/prometheus/client_golang from 1.15.0 to 1.15.1 ([#1204](https://github.com/bitnami-labs/sealed-secrets/pull/1204))
+- Bump github.com/onsi/ginkgo/v2 from 2.9.2 to 2.9.4 ([#1203](https://github.com/bitnami-labs/sealed-secrets/pull/1203))
+- Bump k8s.io/klog/v2 from 2.90.1 to 2.100.1 ([#1201](https://github.com/bitnami-labs/sealed-secrets/pull/1201))
+- Bump k8s.io/code-generator from 0.26.3 to 0.27.1 ([#1188](https://github.com/bitnami-labs/sealed-secrets/pull/1188)) 
+- Bump k8s.io/client-go from 0.26.3 to 0.27.1 ([#1187](https://github.com/bitnami-labs/sealed-secrets/pull/1187)) 
+- Bump github.com/prometheus/client_golang from 1.14.0 to 1.15.0 ([#1189](https://github.com/bitnami-labs/sealed-secrets/pull/1189)) 
+
 ## v0.20.5
 
 ### Changelog
