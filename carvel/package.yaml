@@ -45,7 +45,7 @@ spec:
             tag:
               type: string
               description: Sealed Secrets image tag (immutable tags are recommended)
-              default: v0.20.5
+              default: v0.21.0
             pullPolicy:
               type: string
               description: Sealed Secrets image pull policy
