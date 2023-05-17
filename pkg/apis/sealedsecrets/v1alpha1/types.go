@@ -115,6 +115,7 @@ type SealedSecretStatus struct {
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.conditions[0].message"
+// +kubebuilder:printcolumn:name="Synced",type="string",JSONPath=".status.conditions[0].status"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp"
 // +genclient
 
