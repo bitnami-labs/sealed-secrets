@@ -9,6 +9,7 @@ metadata:
   annotations: {{- toYaml .Values.commonAnnotations | nindent 4 }}
   {{- end }}
 spec:
+  replicas: 1
   selector:
     matchLabels: {{- include "sealed-secrets.matchLabels" . | nindent 6 }}
   template:
