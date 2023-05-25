@@ -37,7 +37,6 @@
 /docker/controller
 *.iml
 .idea
-gentmp/
 
 # GoReleaser output dir
 dist/

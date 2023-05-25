@@ -46,13 +46,7 @@ GO_LD_FLAGS = -X main.VERSION=$(VERSION)
 all: controller kubeseal
 
 generate: $(GO_FILES)
-	$(GO) mod vendor && $(GO) generate $(GO_PACKAGES)
-	@# TODO: remove as soon as a proper way forward is found:
-	@# code-generator insists in generating the file under directory:
-	@# github.com/bitnami-labs/sealeds-secrets/...
-	@# instead of just updating ./pkg
-	@# for that reason we generate at gentmp and then move it all to ./pkg
-	cp -r gentmp/github.com/bitnami-labs/sealed-secrets/pkg . && rm -rf gentmp/
+	$(GO) generate $(GO_PACKAGES)
 
 manifests:
 	$(CONTROLLER_GEN) crd:generateEmbeddedObjectMeta=true paths="./pkg/apis/..." output:stdout | tail -n +2 > helm/sealed-secrets/crds/bitnami.com_sealedsecrets.yaml
