@@ -85,7 +85,7 @@ Incomplete release
 ### Changelog
 
 - Automated controller test on Openshift platforms (using ([VMware Image Builder](https://tanzu.vmware.com/image-builder)) ([#1107](https://github.com/bitnami-labs/sealed-secrets/pull/1107)).
-- We now generate a Carvel package distrinbution of the controller ([#1104](https://github.com/bitnami-labs/sealed-secrets/pull/1104)).
+- We now generate a Carvel package distribution of the controller ([#1104](https://github.com/bitnami-labs/sealed-secrets/pull/1104)).
 - Bump golang.org/x/crypto from 0.5.0 to 0.6.0 ([#1108](https://github.com/bitnami-labs/sealed-secrets/pull/1108)).
 - Bump github.com/onsi/gomega from 1.25.0 to 1.26.0 ([#1103](https://github.com/bitnami-labs/sealed-secrets/pull/1103)).
 - Bump k8s.io/code-generator from 0.26.0 to 0.26.1 ([#1102](https://github.com/bitnami-labs/sealed-secrets/pull/1102)).
@@ -207,7 +207,7 @@ Incomplete release
 
 - Unseal templates even when encryptedData is empty ([#653](https://github.com/bitnami-labs/sealed-secrets/pull/653))
 - Add new RBAC rules to make Sealed Secret compatible with K8s environments with RBAC enabled ([#715](https://github.com/bitnami-labs/sealed-secrets/pull/715))
-- Allow rencrypt/validate functionalities to work with named ports defined in the Sealed Secret service ([#726](https://github.com/bitnami-labs/sealed-secrets/pull/726))
+- Allow re-encrypt/validate functionalities to work with named ports defined in the Sealed Secret service ([#726](https://github.com/bitnami-labs/sealed-secrets/pull/726))
 - Fix verbose logging ([#727](https://github.com/bitnami-labs/sealed-secrets/pull/727))
 
 ## v0.17.2
@@ -623,7 +623,7 @@ This potential problem has been introduced v0.8.0 when kubeseal learned how to p
 
 Please check your existing sealed secret sources for any annotation `kubectl.kubernetes.io/last-applied-configuration`, because that annotation would contain your original secrets in clear.
 
-This release strips this annotation (and a similar annotation created by the `kubcfg` tool)
+This release strips this annotation (and a similar annotation created by the `kubecfg` tool)
 
 ### Changelog
 
@@ -699,7 +699,7 @@ Big change for this release is the switch to **per-key encrypted values**.
 
 - Add CRD definition and TPR->CRD migration documentation
 - Add `kubeseal --fetch-cert` to dump server cert to stdout, for later offline use with `kubeseal --cert`
-- Better sanitisation of input object to `kubeseal`
+- Better sanitization of input object to `kubeseal`
 
 (v0.5.1 fixes a travis/github release issue with v0.5.0)
 
