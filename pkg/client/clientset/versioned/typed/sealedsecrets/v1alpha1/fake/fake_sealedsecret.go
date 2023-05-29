@@ -8,7 +8,6 @@ import (
 	v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -20,9 +19,9 @@ type FakeSealedSecrets struct {
 	ns   string
 }
 
-var sealedsecretsResource = schema.GroupVersionResource{Group: "bitnami.com", Version: "v1alpha1", Resource: "sealedsecrets"}
+var sealedsecretsResource = v1alpha1.SchemeGroupVersion.WithResource("sealedsecrets")
 
-var sealedsecretsKind = schema.GroupVersionKind{Group: "bitnami.com", Version: "v1alpha1", Kind: "SealedSecret"}
+var sealedsecretsKind = v1alpha1.SchemeGroupVersion.WithKind("SealedSecret")
 
 // Get takes name of the sealedSecret, and returns the corresponding sealedSecret object, and an error if there is any.
 func (c *FakeSealedSecrets) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.SealedSecret, err error) {
