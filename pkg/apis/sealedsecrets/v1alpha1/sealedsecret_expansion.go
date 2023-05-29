@@ -13,8 +13,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
-	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	"github.com/mkmik/multierror"
+
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 )
 
 const (
@@ -213,6 +214,14 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		},
 	}
 	secret.ObjectMeta.DeepCopyInto(&s.Spec.Template.ObjectMeta)
+	if checkHasAnnotationToSkipSetOwner(secret) {
+		anno := s.GetAnnotations()
+		if anno == nil {
+			anno = make(map[string]string)
+		}
+		anno[SealedSecretSkipSetOwnerReferencesAnnotation] = "true"
+		s.SetAnnotations(anno)
+	}
 
 	// the input secret could come from a real secret object applied with `kubectl apply` or similar tools
 	// which put a copy of the object version at application time in an annotation in order to support
@@ -323,8 +332,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 	secret.SetName(smeta.GetName())
 
 	gvk := s.GetObjectKind().GroupVersionKind()
-
-	if anno := s.GetAnnotations(); anno[SealedSecretSkipSetOwnerReferencesAnnotation] != "true" {
+	if anno, ok := s.Spec.Template.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation]; !ok || anno != "true" {
 		// Refer back to owning SealedSecret
 		ownerRefs := []metav1.OwnerReference{
 			{
@@ -336,7 +344,17 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 			},
 		}
 		secret.SetOwnerReferences(ownerRefs)
+	} else {
+		secret.Annotations[SealedSecretManagedAnnotation] = "true"
 	}
 
 	return &secret, nil
+}
+
+func checkHasAnnotationToSkipSetOwner(secret *v1.Secret) bool {
+	anno := secret.Annotations
+	if skipSerOwner, ok := anno[SealedSecretSkipSetOwnerReferencesAnnotation]; ok && skipSerOwner == "true" {
+		return true
+	}
+	return false
 }
