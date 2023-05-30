@@ -452,7 +452,7 @@ If you want `SealedSecret` controller to take management of an existing `Secret`
 
 ### Seal secret which can skip set owner references
 
-If you want `SealedSecret` and the `Secret` to be independent (which mean when you delete the `SealedSecret` the `Secret` won't disappear with). then you have to annotate that Secret with the annotation `skip-set-owner-references/skip-set-owner-references: "true"` ahead applying the Usage steps. This still add `sealedsecrets.bitnami.com/managed: "true"` to your `Secret` so that your secret will be updated when `SealedSecret` is updated. 
+If you want `SealedSecret` and the `Secret` to be independent, which mean when you delete the `SealedSecret` the `Secret` won't disappear with it, then you have to annotate that Secret with the annotation `sealedsecrets.bitnami.com/skip-set-owner-references: "true"` ahead of applying the Usage steps. You still may also add `sealedsecrets.bitnami.com/managed: "true"` to your `Secret` so that your secret will be updated when `SealedSecret` is updated. 
 
 ### Update existing secrets
 
