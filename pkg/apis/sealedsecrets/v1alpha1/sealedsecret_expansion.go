@@ -344,8 +344,6 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 			},
 		}
 		secret.SetOwnerReferences(ownerRefs)
-	} else {
-		secret.Annotations[SealedSecretManagedAnnotation] = "true"
 	}
 
 	return &secret, nil
