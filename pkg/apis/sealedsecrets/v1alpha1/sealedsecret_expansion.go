@@ -214,14 +214,6 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		},
 	}
 	secret.ObjectMeta.DeepCopyInto(&s.Spec.Template.ObjectMeta)
-	if checkHasAnnotationToSkipSetOwner(secret) {
-		anno := s.GetAnnotations()
-		if anno == nil {
-			anno = make(map[string]string)
-		}
-		anno[SealedSecretSkipSetOwnerReferencesAnnotation] = "true"
-		s.SetAnnotations(anno)
-	}
 
 	// the input secret could come from a real secret object applied with `kubectl apply` or similar tools
 	// which put a copy of the object version at application time in an annotation in order to support

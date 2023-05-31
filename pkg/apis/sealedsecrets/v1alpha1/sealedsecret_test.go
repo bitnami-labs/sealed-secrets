@@ -10,13 +10,14 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
+
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 
 	// Install standard API types
 	_ "k8s.io/client-go/kubernetes"
@@ -400,35 +401,32 @@ func TestTemplateWithoutEncryptedData(t *testing.T) {
 func TestSkipSetOwnerReference(t *testing.T) {
 
 	testCases := []struct {
-		sealedSecret SealedSecret
-		secret       v1.Secret
+		sealedSecret          SealedSecret
+		skipSetOwnerReference bool
+		secret                v1.Secret
 	}{
-		{sealedSecret: SealedSecret{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{
-					SealedSecretSkipSetOwnerReferencesAnnotation: "true",
+		{
+			sealedSecret: SealedSecret{
+				Spec: SealedSecretSpec{
+					Template: SecretTemplateSpec{
+						Data: map[string]string{"foo": "bar"},
+					},
 				},
 			},
-			Spec: SealedSecretSpec{
-				Template: SecretTemplateSpec{
-					Data: map[string]string{"foo": "bar"},
-				},
-			},
-		},
+			skipSetOwnerReference: true,
 			secret: v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{},
 			},
 		},
-		{sealedSecret: SealedSecret{
-			ObjectMeta: metav1.ObjectMeta{
-				Annotations: map[string]string{},
-			},
-			Spec: SealedSecretSpec{
-				Template: SecretTemplateSpec{
-					Data: map[string]string{"foo": "bar"},
+		{
+			sealedSecret: SealedSecret{
+				Spec: SealedSecretSpec{
+					Template: SecretTemplateSpec{
+						Data: map[string]string{"foo": "bar"},
+					},
 				},
 			},
-		},
+			skipSetOwnerReference: false,
 			secret: v1.Secret{
 				ObjectMeta: metav1.ObjectMeta{
 					OwnerReferences: []metav1.OwnerReference{},
@@ -438,15 +436,21 @@ func TestSkipSetOwnerReference(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
+		if tc.skipSetOwnerReference {
+			if tc.sealedSecret.Spec.Template.Annotations == nil {
+				tc.sealedSecret.Spec.Template.Annotations = make(map[string]string)
+			}
+			tc.sealedSecret.Spec.Template.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation] = "true"
+		}
 		unsealed, err := tc.sealedSecret.Unseal(serializer.CodecFactory{}, nil)
 		if err != nil {
 			t.Fatalf("Unseal returned error: %v", err)
 		}
-		if tc.sealedSecret.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation] == "true" &&
+		if tc.sealedSecret.Spec.Template.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation] == "true" &&
 			len(unsealed.ObjectMeta.OwnerReferences) > 0 {
 			t.Errorf("got: owner, want: no owner")
 
-		} else if (tc.sealedSecret.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation] != "true") &&
+		} else if (tc.sealedSecret.Spec.Template.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation] != "true") &&
 			len(unsealed.ObjectMeta.OwnerReferences) == 0 {
 			t.Errorf("got: no owner, want:  owner")
 		}
