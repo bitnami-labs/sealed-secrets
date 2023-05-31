@@ -340,11 +340,3 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 
 	return &secret, nil
 }
-
-func checkHasAnnotationToSkipSetOwner(secret *v1.Secret) bool {
-	anno := secret.Annotations
-	if skipSerOwner, ok := anno[SealedSecretSkipSetOwnerReferencesAnnotation]; ok && skipSerOwner == "true" {
-		return true
-	}
-	return false
-}
