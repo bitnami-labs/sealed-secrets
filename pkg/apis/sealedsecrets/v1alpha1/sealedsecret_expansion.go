@@ -13,8 +13,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
-	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 	"github.com/mkmik/multierror"
+
+	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 )
 
 const (
@@ -323,18 +324,19 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 	secret.SetName(smeta.GetName())
 
 	gvk := s.GetObjectKind().GroupVersionKind()
-
-	// Refer back to owning SealedSecret
-	ownerRefs := []metav1.OwnerReference{
-		{
-			APIVersion: gvk.GroupVersion().String(),
-			Kind:       gvk.Kind,
-			Name:       smeta.GetName(),
-			UID:        smeta.GetUID(),
-			Controller: &boolTrue,
-		},
+	if anno, ok := s.Spec.Template.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation]; !ok || anno != "true" {
+		// Refer back to owning SealedSecret
+		ownerRefs := []metav1.OwnerReference{
+			{
+				APIVersion: gvk.GroupVersion().String(),
+				Kind:       gvk.Kind,
+				Name:       smeta.GetName(),
+				UID:        smeta.GetUID(),
+				Controller: &boolTrue,
+			},
+		}
+		secret.SetOwnerReferences(ownerRefs)
 	}
-	secret.SetOwnerReferences(ownerRefs)
 
 	return &secret, nil
 }

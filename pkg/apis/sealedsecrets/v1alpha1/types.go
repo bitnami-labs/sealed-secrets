@@ -27,6 +27,10 @@ const (
 	// SealedSecretManagedAnnotation is the name for the annotation for
 	// flaging the existing secrets be managed by SealedSecret controller.
 	SealedSecretManagedAnnotation = annoNs + "managed"
+
+	// SealedSecretSkipSetOwnerReferencesAnnotation is the name for the annotation for
+	// flagging the controller not to set owner reference to secret.
+	SealedSecretSkipSetOwnerReferencesAnnotation = annoNs + "skip-set-owner-references"
 )
 
 // SecretTemplateSpec describes the structure a Secret should have
