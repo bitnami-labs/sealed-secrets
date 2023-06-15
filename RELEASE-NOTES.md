@@ -10,7 +10,7 @@ Latest release:
 
 - Feature allow to skip set owner references ([#1200](https://github.com/bitnami-labs/sealed-secrets/pull/1200))
 - Add additionalPrinterColumns for status and age ([#1217](https://github.com/bitnami-labs/sealed-secrets/pull/1217))
-- feat: add replicas default value to the deployment manifest ([#1219](https://github.com/bitnami-labs/sealed-secrets/pull/1219))
+- Add replicas default value to the deployment manifest ([#1219](https://github.com/bitnami-labs/sealed-secrets/pull/1219))
 - Create SECURITY.md ([#1226](https://github.com/bitnami-labs/sealed-secrets/pull/1226))
 - Fix doc generated code directory ([#1227](https://github.com/bitnami-labs/sealed-secrets/pull/1227))
 - Update generated code ([#1228](https://github.com/bitnami-labs/sealed-secrets/pull/1228))
