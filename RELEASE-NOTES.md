@@ -4,6 +4,28 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.22.0
+
+### Changelog
+
+- Feature allow to skip set owner references ([#1200](https://github.com/bitnami-labs/sealed-secrets/pull/1200))
+- Add additionalPrinterColumns for status and age ([#1217](https://github.com/bitnami-labs/sealed-secrets/pull/1217))
+- Add replicas default value to the deployment manifest ([#1219](https://github.com/bitnami-labs/sealed-secrets/pull/1219))
+- Create SECURITY.md ([#1226](https://github.com/bitnami-labs/sealed-secrets/pull/1226))
+- Fix doc generated code directory ([#1227](https://github.com/bitnami-labs/sealed-secrets/pull/1227))
+- Update generated code ([#1228](https://github.com/bitnami-labs/sealed-secrets/pull/1228))
+- Update maintainers list ([#1237](https://github.com/bitnami-labs/sealed-secrets/pull/1237))
+- Bump github.com/onsi/ginkgo/v2 from 2.9.4 to 2.9.5 ([#1215](https://github.com/bitnami-labs/sealed-secrets/pull/1215))
+- Bump golang.org/x/crypto from 0.8.0 to 0.9.0 ([#1216](https://github.com/bitnami-labs/sealed-secrets/pull/1216))
+- Bump k8s.io/apimachinery from 0.27.1 to 0.27.2 ([#1221](https://github.com/bitnami-labs/sealed-secrets/pull/1221))
+- Bump k8s.io/client-go from 0.27.1 to 0.27.2 ([#1222](https://github.com/bitnami-labs/sealed-secrets/pull/1222))
+- Bump github.com/mattn/go-isatty from 0.0.18 to 0.0.19 ([#1223](https://github.com/bitnami-labs/sealed-secrets/pull/1223))
+- Bump k8s.io/code-generator from 0.27.1 to 0.27.2 ([#1225](https://github.com/bitnami-labs/sealed-secrets/pull/1225))
+- Bump github.com/onsi/gomega from 1.27.6 to 1.27.7 ([#1229](https://github.com/bitnami-labs/sealed-secrets/pull/1229))
+- Bump github.com/onsi/ginkgo/v2 from 2.9.5 to 2.9.7 ([#1231](https://github.com/bitnami-labs/sealed-secrets/pull/1231))
+- Bump github.com/onsi/gomega from 1.27.7 to 1.27.8 ([#1234](https://github.com/bitnami-labs/sealed-secrets/pull/1234))
+- Bump github.com/onsi/ginkgo/v2 from 2.9.7 to 2.10.0 ([#1235](https://github.com/bitnami-labs/sealed-secrets/pull/1235))
+
 ## v0.21.0
 
 ### Changelog
