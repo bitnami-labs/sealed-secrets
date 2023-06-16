@@ -174,6 +174,8 @@ The command removes all the Kubernetes components associated with the chart and 
 | `rbac.create`                | Specifies whether RBAC resources should be created            | `true`             |
 | `rbac.clusterRole`           | Specifies whether the Cluster Role resource should be created | `true`             |
 | `rbac.clusterRoleName`       | Specifies the name for the Cluster Role resource              | `secrets-unsealer` |
+| `rbac.namespacedRoles`       | Specifies whether the namespaced Roles should be created (in each of the specified additionalNamespaces) | `false`            |
+| `rbac.namespacedRolesName`   | Specifies the name for the namesapced Role resource           | `secrets-unsealer` |
 | `rbac.labels`                | Extra labels to be added to RBAC resources                    | `{}`               |
 | `rbac.pspEnabled`            | PodSecurityPolicy                                             | `false`            |
 
@@ -237,6 +239,10 @@ Alternatively, you can override `fullnameOverride` on the helm chart install.
 ## Configuration and installation details
 
 - In the case that **serviceAccount.create** is `false` and **rbac.create** is `true` it is expected for a ServiceAccount with the name **serviceAccount.name** to exist _in the same namespace as this chart_ before the installation.
+- If **rbac.create** is `true, by default *clusterRoles* are created. To switch to namespaced *Roles*:
+  1. set the required namespaces in **additionalNamespaces**
+  2. set **rbac.clusterRole** to `false`
+  3. set **rbac.namespacedRoles** to `true`
 - If **serviceAccount.create** is `true` there cannot be an existing service account with the name **serviceAccount.name**.
 - If a secret with name **secretName** does not exist _in the same namespace as this chart_, then on install one will be created. If a secret already exists with this name the keys inside will be used.
 - OpenShift: unset the runAsUser and fsGroup like this when installing in a custom namespace:
