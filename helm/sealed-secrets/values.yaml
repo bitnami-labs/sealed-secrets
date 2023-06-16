@@ -76,6 +76,9 @@ rateLimitBurst: ""
 ## @param additionalNamespaces List of namespaces used to manage the Sealed Secrets
 ##
 additionalNamespaces: []
+## @param logInfoStdout Specifies whether the Sealed Secrets controller will log info to stdout
+##
+logInfoStdout: false
 ## @param command Override default container command
 ##
 command: []
