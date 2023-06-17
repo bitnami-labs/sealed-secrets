@@ -10,5 +10,22 @@ spec:
     matchLabels: {{- include "sealed-secrets.matchLabels" . | nindent 6 }}
   ingress:
     - ports:
-      - port: 8080
+      - port: {{ .Values.service.port }}
+  {{- if .Values.networkPolicy.egress.enabled }}
+  egress:
+    - to:
+      {{- if not .Values.networkPolicy.egress.kubeapiCidr }}
+      {{- $kubernetesEndpoint := lookup "v1" "Endpoints" "default" "kubernetes" -}}
+      {{- range $kubernetesAddress := (first $kubernetesEndpoint.subsets).addresses}}
+      - ipBlock:
+          cidr: {{ $kubernetesAddress.ip }}/32
+      {{- end}}
+      {{- else }}
+      - ipBlock:
+          cidr: {{ .Values.networkPolicy.egress.kubeapiCidr }}
+      {{- end}}
+      ports:
+        - protocol: TCP
+          port: 443
+  {{- end }}
 {{- end }}
