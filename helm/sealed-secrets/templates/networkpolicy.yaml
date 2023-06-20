@@ -15,22 +15,24 @@ spec:
   egress:
     - to:
       {{- if not .Values.networkPolicy.egress.kubeapiCidr }}
-      {{- $kubernetesEndpoint := lookup "v1" "Endpoints" "default" "kubernetes" -}}
+      {{- $kubernetesEndpoint := lookup "v1" "Endpoints" "default" "kubernetes" }}
       {{- if $kubernetesEndpoint }}
-      {{- range $kubernetesAddress := (first $kubernetesEndpoint.subsets).addresses }}
+        {{- range $kubernetesAddress := (first $kubernetesEndpoint.subsets).addresses }}
       - ipBlock:
           cidr: {{ $kubernetesAddress.ip }}/32
-      {{- end }}
+        {{- end}}      
+      ports:
+        {{- range $kubernetesPort := (first $kubernetesEndpoint.subsets).ports }}
+        - protocol: {{ $kubernetesPort.protocol }}
+          port: {{ $kubernetesPort.port }}
+        {{- end }}
+      {{- end}}
       {{- else }}
       - ipBlock:
           cidr: {{ .Values.networkPolicy.egress.kubeapiCidr }}
-      {{- end }}
-      {{- else }}
-      - ipBlock:
-          cidr: {{ .Values.networkPolicy.egress.kubeapiCidr }}
-      {{- end }}
       ports:
         - protocol: TCP
-          port: 443
+          port: {{ .Values.networkPolicy.egress.kubeapiPort }}
+      {{- end }}
   {{- end }}
 {{- end }}
