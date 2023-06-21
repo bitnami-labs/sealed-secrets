@@ -163,6 +163,9 @@ The command removes all the Kubernetes components associated with the chart and 
 | `ingress.extraTls`         | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
 | `ingress.secrets`          | Custom TLS certificates as secrets                                                                                               | `[]`                     |
 | `networkPolicy.enabled`    | Specifies whether a NetworkPolicy should be created                                                                              | `false`                  |
+| `networkPolicy.egress.enabled`    | Specifies wheter a egress is set in the NetworkPolicy                                                                              | `false`                  |
+| `networkPolicy.egress.kubeapiCidr`    | Specifies the kubeapiCidr, which is the only egress allowed. If not set, kubeapiCidr will be found using Helm lookup                                                                              | `""`                  |
+| `networkPolicy.egress.kubeapiPort`    | Specifies the kubeapiPort, which is the only egress allowed. If not set, kubeapiPort will be found using Helm lookup                                                                              | `""`                  |
 
 ### Other Parameters
 
