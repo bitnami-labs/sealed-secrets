@@ -89,6 +89,9 @@ spec:
             - --additional-namespaces
             - {{ join "," .Values.additionalNamespaces | quote }}
             {{- end }}
+            {{- if .Values.logInfoStdout }}
+            - --log-info-stdout
+            {{- end }}
           {{- end }}
           image: {{ printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}

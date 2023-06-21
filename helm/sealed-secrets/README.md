@@ -96,6 +96,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `rateLimit`                                       | Number of allowed sustained request per second for verify endpoint                     | `""`                                |
 | `rateLimitBurst`                                  | Number of requests allowed to exceed the rate limit per second for verify endpoint     | `""`                                |
 | `additionalNamespaces`                            | List of namespaces used to manage the Sealed Secrets                                   | `[]`                                |
+| `logInfoStdout`                                   | Specifies whether the Sealed Secrets controller will log info to stdout                | `false`                             |
 | `command`                                         | Override default container command                                                     | `[]`                                |
 | `args`                                            | Override default container args                                                        | `[]`                                |
 | `livenessProbe.enabled`                           | Enable livenessProbe on Sealed Secret containers                                       | `true`                              |
