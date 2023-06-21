@@ -335,7 +335,7 @@ networkPolicy:
     kubeapiCidr: ""
     ## @param networkPolicy.egress.kubeapiPort Specifies the kubeapiPort, which is the only egress allowed. If not set, kubeapiPort will be found using Helm lookup
     ##
-    kubeapiPort: 
+    kubeapiPort: ""
 
 ## @section Other Parameters
 
