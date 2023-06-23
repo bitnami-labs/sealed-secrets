@@ -242,7 +242,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        k8s: ["1.22.15","1.23.14","1.24.8","1.25.4"]
+        k8s: ["1.24.15","1.25.11","1.26.6","1.27.3"]
     env:
       MINIKUBE_WANTUPDATENOTIFICATION: "false"
       MINIKUBE_WANTREPORTERRORPROMPT: "false"
