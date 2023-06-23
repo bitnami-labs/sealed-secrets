@@ -271,9 +271,9 @@ jobs:
         kubernetes-version: ${{ matrix.k8s }}
 
     - name: Install Helm
-      uses: azure/setup-helm@v3.4
+      uses: azure/setup-helm@v3.5
       with:
-        version: v3.4.2
+        version: v3.12.0
 
     # need to delete old state of the cluster, see:
     # https://github.com/kubernetes/minikube/issues/8765
