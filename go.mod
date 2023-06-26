@@ -7,7 +7,7 @@ require (
 	github.com/google/renameio v0.1.0
 	github.com/mattn/go-isatty v0.0.19
 	github.com/mkmik/multierror v0.3.0
-	github.com/onsi/ginkgo/v2 v2.10.0
+	github.com/onsi/ginkgo/v2 v2.11.0
 	github.com/onsi/gomega v1.27.8
 	github.com/prometheus/client_golang v1.16.0
 	github.com/spf13/pflag v1.0.5
