@@ -28,7 +28,7 @@ Sealed Secrets is composed of two parts:
 
 ### Installing the sealed-secrets-controller
 
-The controller can be deployed using three different methods: direct yaml manifiest installation, helm chart or carvel package.
+The controller can be deployed using three different methods: direct yaml manifest installation, helm chart or carvel package.
 
 #### Sealed Secrets manifest
 
