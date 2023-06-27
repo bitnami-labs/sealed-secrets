@@ -89,6 +89,28 @@ spec:
             - --additional-namespaces
             - {{ join "," .Values.additionalNamespaces | quote }}
             {{- end }}
+            {{- if $.Values.privateKeyAnnotations }}
+            {{- $privatekeyAnnotations := ""}}
+            {{- range $k, $v := $.Values.privateKeyAnnotations }}
+              {{- if not (and $v (kindIs "string" $v)) }}
+                {{ fail "Annotation values have to be strings"}}
+              {{- end }}
+              {{- $privatekeyAnnotations = printf "%s=%s,%s" $k $v $privatekeyAnnotations}}
+            {{- end }}
+            - --privatekey-annotations
+            - {{ trimSuffix "," $privatekeyAnnotations | quote }}
+            {{- end }}            
+            {{- if $.Values.privateKeyLabels }}
+            {{- $privateKeyLabels := ""}}
+            {{- range $k, $v := $.Values.privateKeyLabels }}
+              {{- if not (and $v (kindIs "string" $v)) }}
+                {{ fail "Label values have to be strings"}}
+              {{- end }}
+              {{- $privateKeyLabels = printf "%s=%s,%s" $k $v $privateKeyLabels}}
+            {{- end }}
+            - --privatekey-labels
+            - {{ trimSuffix "," $privateKeyLabels | quote }}
+            {{- end }}
             {{- if .Values.logInfoStdout }}
             - --log-info-stdout
             {{- end }}

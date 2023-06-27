@@ -42,6 +42,8 @@ func bindControllerFlags(f *controller.Flags, fs *flag.FlagSet) {
 	fs.StringVar(&f.LabelSelector, "label-selector", "", "Label selector which can be used to filter sealed secrets.")
 	fs.IntVar(&f.RateLimitPerSecond, "rate-limit", 2, "Number of allowed sustained request per second for verify endpoint")
 	fs.IntVar(&f.RateLimitBurst, "rate-limit-burst", 2, "Number of requests allowed to exceed the rate limit per second for verify endpoint")
+	fs.StringVar(&f.PrivateKeyAnnotations, "privatekey-annotations", "", "Comma-separated list of additional annotations to be put on renewed sealing keys.")
+	fs.StringVar(&f.PrivateKeyLabels, "privatekey-labels", "", "Comma-separated list of additional labels to be put on renewed sealing keys.")
 
 	fs.BoolVar(&f.OldGCBehavior, "old-gc-behavior", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 

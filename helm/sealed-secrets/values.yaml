@@ -76,6 +76,12 @@ rateLimitBurst: ""
 ## @param additionalNamespaces List of namespaces used to manage the Sealed Secrets
 ##
 additionalNamespaces: []
+## @param privateKeyAnnotations Map of annotations to be set on the sealing keypairs
+## 
+privateKeyAnnotations: {}
+## @param privateKeyLabels Map of labels to be set on the sealing keypairs
+## 
+privateKeyLabels: {}
 ## @param logInfoStdout Specifies whether the Sealed Secrets controller will log info to stdout
 ##
 logInfoStdout: false

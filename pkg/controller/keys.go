@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
@@ -52,7 +53,7 @@ func writeKeyWithCreationTime(t metav1.Time) writeKeyOpt {
 	return func(opts *writeKeyOpts) { opts.creationTime = t }
 }
 
-func writeKey(ctx context.Context, client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, label, prefix string, optSetters ...writeKeyOpt) (string, error) {
+func writeKey(ctx context.Context, client kubernetes.Interface, key *rsa.PrivateKey, certs []*x509.Certificate, namespace, krLabel, prefix string, additionalAnnotations string, additionalLabels string, optSetters ...writeKeyOpt) (string, error) {
 	var opts writeKeyOpts
 	for _, o := range optSetters {
 		o(&opts)
@@ -62,13 +63,37 @@ func writeKey(ctx context.Context, client kubernetes.Interface, key *rsa.Private
 	for _, cert := range certs {
 		certbytes = append(certbytes, pem.EncodeToMemory(&pem.Block{Type: certUtil.CertificateBlockType, Bytes: cert.Raw})...)
 	}
+
+	labels := map[string]string{
+		krLabel: "active",
+	}
+
+	annotations := map[string]string{}
+
+	if additionalLabels != "" {
+		for _, label := range removeDuplicates(strings.Split(additionalLabels, ",")) {
+			key := strings.Split(label, "=")[0]
+			value := strings.Split(label, "=")[1]
+			if key != krLabel {
+				labels[key] = value
+			}
+		}
+	}
+
+	if additionalAnnotations != "" {
+		for _, label := range removeDuplicates(strings.Split(additionalAnnotations, ",")) {
+			key := strings.Split(label, "=")[0]
+			value := strings.Split(label, "=")[1]
+			annotations[key] = value
+		}
+	}
+
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Namespace:    namespace,
-			GenerateName: prefix,
-			Labels: map[string]string{
-				label: "active",
-			},
+			Namespace:         namespace,
+			GenerateName:      prefix,
+			Labels:            labels,
+			Annotations:       annotations,
 			CreationTimestamp: opts.creationTime,
 		},
 		Data: map[string][]byte{

@@ -57,7 +57,7 @@ func TestInitKeyRegistry(t *testing.T) {
 	// Add a key to the controller for second test
 	validFor := time.Hour
 	cn := "my-cn"
-	_, err = registry.generateKey(ctx, validFor, cn)
+	_, err = registry.generateKey(ctx, validFor, cn, "", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -91,7 +91,7 @@ func TestInitKeyRotation(t *testing.T) {
 
 	validFor := time.Hour
 	cn := "my-cn"
-	keyGenTrigger, err := initKeyRenewal(ctx, registry, 0, validFor, time.Time{}, cn)
+	keyGenTrigger, err := initKeyRenewal(ctx, registry, 0, validFor, time.Time{}, cn, "", "")
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -132,7 +132,7 @@ func TestInitKeyRotationTick(t *testing.T) {
 
 	validFor := time.Hour
 	cn := "my-cn"
-	_, err = initKeyRenewal(ctx, registry, 100*time.Millisecond, validFor, time.Time{}, cn)
+	_, err = initKeyRenewal(ctx, registry, 100*time.Millisecond, validFor, time.Time{}, cn, "", "")
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -173,7 +173,7 @@ func TestReuseKey(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix")
+	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix", "", "")
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
@@ -187,7 +187,7 @@ func TestReuseKey(t *testing.T) {
 
 	validFor := time.Hour
 	cn := "my-cn"
-	_, err = initKeyRenewal(ctx, registry, 0, validFor, time.Time{}, cn)
+	_, err = initKeyRenewal(ctx, registry, 0, validFor, time.Time{}, cn, "", "")
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -222,7 +222,7 @@ func TestRenewStaleKey(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix")
+	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix", "", "")
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
 	}
@@ -234,7 +234,7 @@ func TestRenewStaleKey(t *testing.T) {
 
 	validFor := time.Hour
 	cn := "my-cn"
-	_, err = initKeyRenewal(ctx, registry, period, validFor, time.Time{}, cn)
+	_, err = initKeyRenewal(ctx, registry, period, validFor, time.Time{}, cn, "", "")
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -278,7 +278,7 @@ func TestKeyCutoff(t *testing.T) {
 	client := fake.NewSimpleClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
-	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix",
+	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix", "", "",
 		writeKeyWithCreationTime(metav1.NewTime(time.Now().Add(-oldAge))))
 	if err != nil {
 		t.Errorf("writeKey() failed with: %v", err)
@@ -294,7 +294,7 @@ func TestKeyCutoff(t *testing.T) {
 	// by setting cutoff to "now" we effectively force the creation of a new key.
 	validFor := time.Hour
 	cn := "my-cn"
-	_, err = initKeyRenewal(ctx, registry, period, validFor, time.Now(), cn)
+	_, err = initKeyRenewal(ctx, registry, period, validFor, time.Now(), cn, "", "")
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}
@@ -358,7 +358,7 @@ func TestLegacySecret(t *testing.T) {
 
 	validFor := time.Hour
 	cn := "my-cn"
-	_, err = initKeyRenewal(ctx, registry, 0, validFor, time.Time{}, cn)
+	_, err = initKeyRenewal(ctx, registry, 0, validFor, time.Time{}, cn, "", "")
 	if err != nil {
 		t.Fatalf("initKeyRenewal() returned err: %v", err)
 	}

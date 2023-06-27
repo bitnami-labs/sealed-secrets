@@ -35,22 +35,24 @@ var (
 
 // Flags to configure the controller
 type Flags struct {
-	KeyPrefix            string
-	KeySize              int
-	ValidFor             time.Duration
-	MyCN                 string
-	KeyRenewPeriod       time.Duration
-	AcceptV1Data         bool
-	KeyCutoffTime        string
-	NamespaceAll         bool
-	AdditionalNamespaces string
-	LabelSelector        string
-	RateLimitPerSecond   int
-	RateLimitBurst       int
-	OldGCBehavior        bool
-	UpdateStatus         bool
-	SkipRecreate         bool
-	LogInfoToStdout      bool
+	KeyPrefix             string
+	KeySize               int
+	ValidFor              time.Duration
+	MyCN                  string
+	KeyRenewPeriod        time.Duration
+	AcceptV1Data          bool
+	KeyCutoffTime         string
+	NamespaceAll          bool
+	AdditionalNamespaces  string
+	LabelSelector         string
+	RateLimitPerSecond    int
+	RateLimitBurst        int
+	OldGCBehavior         bool
+	UpdateStatus          bool
+	SkipRecreate          bool
+	LogInfoToStdout       bool
+	PrivateKeyAnnotations string
+	PrivateKeyLabels      string
 }
 
 func initKeyPrefix(keyPrefix string) (string, error) {
@@ -109,18 +111,18 @@ func myNamespace() string {
 // Initialises the first key and starts the rotation job. returns an early trigger function.
 // A period of 0 deactivates automatic rotation, but manual rotation (e.g. triggered by SIGUSR1)
 // is still honoured.
-func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period, validFor time.Duration, cutoffTime time.Time, cn string) (func(), error) {
+func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period, validFor time.Duration, cutoffTime time.Time, cn string, privateKeyAnnotations string, privateKeyLabels string) (func(), error) {
 	// Create a new key if it's the first key,
 	// or if it's older than cutoff time.
 	if len(registry.keys) == 0 || registry.mostRecentKey.orderingTime.Before(cutoffTime) {
-		if _, err := registry.generateKey(ctx, validFor, cn); err != nil {
+		if _, err := registry.generateKey(ctx, validFor, cn, privateKeyAnnotations, privateKeyLabels); err != nil {
 			return nil, err
 		}
 	}
 
 	// wrapper function to log error thrown by generateKey function
 	keyGenFunc := func() {
-		if _, err := registry.generateKey(ctx, validFor, cn); err != nil {
+		if _, err := registry.generateKey(ctx, validFor, cn, privateKeyAnnotations, privateKeyLabels); err != nil {
 			log.Errorf("Failed to generate new key : %v\n", err)
 		}
 	}
@@ -181,7 +183,7 @@ func Main(f *Flags, version string) error {
 		}
 	}
 
-	trigger, err := initKeyRenewal(ctx, keyRegistry, f.KeyRenewPeriod, f.ValidFor, ct, f.MyCN)
+	trigger, err := initKeyRenewal(ctx, keyRegistry, f.KeyRenewPeriod, f.ValidFor, ct, f.MyCN, f.PrivateKeyAnnotations, f.PrivateKeyLabels)
 	if err != nil {
 		return err
 	}
