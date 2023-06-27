@@ -115,7 +115,7 @@ func isFilename(name string) (bool, error) {
 func getServicePortName(ctx context.Context, client corev1.CoreV1Interface, namespace, serviceName string) (string, error) {
 	service, err := client.Services(namespace).Get(ctx, serviceName, metav1.GetOptions{})
 	if err != nil {
-		return "", fmt.Errorf("cannot get sealed secret service: %v", err)
+		return "", fmt.Errorf("cannot get sealed secret service: %v.\nPlease, use the flag --controller-name and --controller-namespace to set up the name and namespace of the sealed secrets controller", err)
 	}
 	return service.Spec.Ports[0].Name, nil
 }
