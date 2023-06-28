@@ -1,7 +1,7 @@
 GO = go
 GOTESTSUM = gotestsum
 GOFMT = gofmt
-GOLANGCILINT=golangci-lint
+GOLANGCILINT=golangci-lint -vv
 GOSEC=gosec
 
 export GO111MODULE = on
