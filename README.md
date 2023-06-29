@@ -36,6 +36,7 @@ original Secret from the SealedSecret.
 - [Upgrade](#upgrade)
 - [Usage](#usage)
   - [Managing existing secrets](#managing-existing-secrets)
+  - [Patching existing secrets](#patching-existing-secrets)
   - [Update existing secrets](#update-existing-secrets)
   - [Raw mode (experimental)](#raw-mode-experimental)
   - [Validate a Sealed Secret](#validate-a-sealed-secret)
@@ -448,8 +449,11 @@ only change from existing Kubernetes is that the *contents* of the
 
 ### Managing existing secrets
 
-If you want `SealedSecret` controller to take management of an existing `Secret` (i.e. overwrite it when unsealing a `SealedSecret` with the same name and namespace), then you have to annotate that `Secret` with the annotation `sealedsecrets.bitnami.com/managed: "true"` ahead applying the [Usage](#usage) steps.
+If you want `SealedSecret` controller to take management of an existing `Secret` (i.e. overwrite it when unsealing a `SealedSecret` with the same name and namespace), then you have to annotate that `Secret` with the annotation `sealedsecrets.bitnami.com/managed: "true"` ahead of following the [Usage](#usage) steps.
 
+#### Patching existing secrets
+
+The default behaviour of Sealed Secrets is to takeover the existing `Secret`, replacing all its data with the encrypted data in the `SealedSecret`. However, there are some use cases in which you don't want to replace the whole `Secret` but just add or modify some keys from the existing `Secret`. For this, you can annotate your `Secret` with the annotation `sealedsecrets.bitnami.com/patch: "true"` (alongisde the `managed` annotation from the section above). With this annotation, keys in the `Secret` that are not present in the `SealedSecret` won't be deleted.
 
 ### Seal secret which can skip set owner references
 
