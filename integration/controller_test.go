@@ -289,7 +289,7 @@ var _ = Describe("create", func() {
 				s.Labels["anotherlabel"] = "anothervalue"
 				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
 			})
-			It("should take ownership of existing Secret removing removing existing secret keys, labels and annotations", func() {
+			It("should take ownership of the existing Secret overwriting the whole Secret", func() {
 				expectedData := map[string][]byte{
 					"foo": []byte("bar"),
 				}
@@ -334,7 +334,7 @@ var _ = Describe("create", func() {
 				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
 			})
 
-			It("should take ownership of existing Secret maintaining existing secret keys, labels and annotations", func() {
+			It("should take ownership of the existing Secret patching instead of overwriting the whole Secret", func() {
 				expectedData := map[string][]byte{
 					"foo":  []byte("bar"),
 					"foo2": []byte("bar2"),
@@ -347,7 +347,6 @@ var _ = Describe("create", func() {
 					"mylabel":      "myvalue",
 					"anotherlabel": "anothervalue",
 				}
-				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
 				Eventually(func() (*v1.EventList, error) {
 					return c.Events(ns).Search(scheme.Scheme, ss)
 				}, Timeout, PollingInterval).Should(
@@ -384,7 +383,7 @@ var _ = Describe("create", func() {
 				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
 			})
 
-			It("should not take ownership of existing Secret but add and replace secret keys, labels and annotations", func() {
+			It("should not take ownership of existing Secret while patching the Secret", func() {
 				expectedData := map[string][]byte{
 					"foo":  []byte("bar"),
 					"foo2": []byte("bar2"),
@@ -396,7 +395,6 @@ var _ = Describe("create", func() {
 					"mylabel":      "myvalue",
 					"anotherlabel": "anothervalue",
 				}
-				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
 				Eventually(func() (*v1.EventList, error) {
 					return c.Events(ns).Search(scheme.Scheme, ss)
 				}, Timeout, PollingInterval).Should(
