@@ -61,6 +61,10 @@ func getFirstOwnerName(s *v1.Secret) string {
 	return s.OwnerReferences[0].Name
 }
 
+func getNumberOfOwners(s *v1.Secret) int {
+	return len(s.OwnerReferences)
+}
+
 func getSecretType(s *v1.Secret) v1.SecretType {
 	return s.Type
 }
@@ -276,7 +280,7 @@ var _ = Describe("create", func() {
 		Context("With managed annotation", func() {
 			BeforeEach(func() {
 				s.Data = map[string][]byte{
-					"foo": []byte("bar1"),
+					"foo":  []byte("bar1"),
 					"foo2": []byte("bar2"),
 				}
 				s.Annotations = map[string]string{
@@ -285,7 +289,7 @@ var _ = Describe("create", func() {
 				s.Labels["anotherlabel"] = "anothervalue"
 				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
 			})
-			It("should manage existing Secret removing removing existing secret keys, labels and annotations", func() {
+			It("should take ownership of existing Secret removing removing existing secret keys, labels and annotations", func() {
 				expectedData := map[string][]byte{
 					"foo": []byte("bar"),
 				}
@@ -315,10 +319,11 @@ var _ = Describe("create", func() {
 				}, Timeout, PollingInterval).Should(WithTransform(getLabels, Equal(expectedLabels)))
 			})
 		})
+
 		Context("With managed and patch annotation", func() {
 			BeforeEach(func() {
 				s.Data = map[string][]byte{
-					"foo": []byte("bar1"),
+					"foo":  []byte("bar1"),
 					"foo2": []byte("bar2"),
 				}
 				s.Annotations = map[string]string{
@@ -328,7 +333,8 @@ var _ = Describe("create", func() {
 				s.Labels["anotherlabel"] = "anothervalue"
 				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
 			})
-			It("should manage existing Secret maintaining existing secret keys, labels and annotations", func() {
+
+			It("should take ownership of existing Secret maintaining existing secret keys, labels and annotations", func() {
 				expectedData := map[string][]byte{
 					"foo":  []byte("bar"),
 					"foo2": []byte("bar2"),
@@ -353,6 +359,55 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expectedData)))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getAnnotations, Equal(expectedAnnotations)))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getLabels, Equal(expectedLabels)))
+			})
+		})
+
+		Context("With patch annotation", func() {
+			BeforeEach(func() {
+				s.Data = map[string][]byte{
+					"foo":  []byte("bar1"),
+					"foo2": []byte("bar2"),
+				}
+				s.Annotations = map[string]string{
+					ssv1alpha1.SealedSecretPatchAnnotation: "true",
+				}
+				s.Labels["anotherlabel"] = "anothervalue"
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+			})
+
+			It("should not take ownership of existing Secret but add and replace secret keys, labels and annotations", func() {
+				expectedData := map[string][]byte{
+					"foo":  []byte("bar"),
+					"foo2": []byte("bar2"),
+				}
+				expectedAnnotations := map[string]string{
+					ssv1alpha1.SealedSecretPatchAnnotation: "true",
+				}
+				expectedLabels := map[string]string{
+					"mylabel":      "myvalue",
+					"anotherlabel": "anothervalue",
+				}
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getNumberOfOwners, Equal(0)))
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expectedData)))
@@ -432,6 +487,31 @@ var _ = Describe("create", func() {
 				err := c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
 				Expect(err).NotTo(HaveOccurred())
 			})
+			It("should not recreate the secret", func() {
+				Consistently(func() error {
+					_, err := c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+					return err
+				}).Should(WithTransform(errors.IsNotFound, Equal(true)))
+			})
+		})
+
+		Context("With unowned secret with patch annotation", func() {
+			BeforeEach(func() {
+				s.Data = map[string][]byte{
+					"foo":  []byte("bar1"),
+					"foo2": []byte("bar2"),
+				}
+				s.Annotations = map[string]string{
+					ssv1alpha1.SealedSecretPatchAnnotation: "true",
+				}
+				s.Labels["anotherlabel"] = "anothervalue"
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+			})
+			JustBeforeEach(func() {
+				err := c.Secrets(ns).Delete(ctx, secretName, metav1.DeleteOptions{})
+				Expect(err).NotTo(HaveOccurred())
+			})
+
 			It("should not recreate the secret", func() {
 				Consistently(func() error {
 					_, err := c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})

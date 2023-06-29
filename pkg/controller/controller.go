@@ -339,7 +339,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 		return err
 	}
 
-	if !metav1.IsControlledBy(secret, ssecret) && !isAnnotatedToBeManaged(secret) {
+	if !metav1.IsControlledBy(secret, ssecret) && !isAnnotatedToBeManaged(secret) && !isAnnotatedToBePatched(secret) {
 		msg := fmt.Sprintf("Resource %q already exists and is not managed by SealedSecret", secret.Name)
 		c.recorder.Event(ssecret, corev1.EventTypeWarning, ErrUpdateFailed, msg)
 		unsealErrorsTotal.WithLabelValues("unmanaged", ssecret.GetNamespace()).Inc()
@@ -361,14 +361,18 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 		for k, v := range newSecret.ObjectMeta.Labels {
 			secret.ObjectMeta.Labels[k] = v
 		}
+
+		if isAnnotatedToBeManaged(secret) {
+			secret.ObjectMeta.OwnerReferences = newSecret.ObjectMeta.OwnerReferences
+		}
 	} else {
 		secret.Data = newSecret.Data
 		secret.ObjectMeta.Annotations = newSecret.ObjectMeta.Annotations
 		secret.ObjectMeta.Labels = newSecret.ObjectMeta.Labels
+		secret.ObjectMeta.OwnerReferences = newSecret.ObjectMeta.OwnerReferences
 	}
 
 	secret.Type = newSecret.Type
-	secret.ObjectMeta.OwnerReferences = newSecret.ObjectMeta.OwnerReferences
 
 	if !apiequality.Semantic.DeepEqual(origSecret, secret) {
 		_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(ctx, secret, metav1.UpdateOptions{})
