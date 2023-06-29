@@ -349,11 +349,26 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	origSecret := secret
 	secret = secret.DeepCopy()
 
-	secret.Data = newSecret.Data
+	if isAnnotatedToBePatched(secret) {
+		for k, v := range newSecret.Data {
+			secret.Data[k] = v
+		}
+
+		for k, v := range newSecret.ObjectMeta.Annotations {
+			secret.ObjectMeta.Annotations[k] = v
+		}
+
+		for k, v := range newSecret.ObjectMeta.Labels {
+			secret.ObjectMeta.Labels[k] = v
+		}
+	} else {
+		secret.Data = newSecret.Data
+		secret.ObjectMeta.Annotations = newSecret.ObjectMeta.Annotations
+		secret.ObjectMeta.Labels = newSecret.ObjectMeta.Labels
+	}
+
 	secret.Type = newSecret.Type
-	secret.ObjectMeta.Annotations = newSecret.ObjectMeta.Annotations
 	secret.ObjectMeta.OwnerReferences = newSecret.ObjectMeta.OwnerReferences
-	secret.ObjectMeta.Labels = newSecret.ObjectMeta.Labels
 
 	if !apiequality.Semantic.DeepEqual(origSecret, secret) {
 		_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(ctx, secret, metav1.UpdateOptions{})
@@ -435,9 +450,12 @@ func updateSealedSecretsStatusConditions(st *ssv1alpha1.SealedSecretStatus, unse
 	}
 }
 
-// checks if the annotation equals to "true", and it's case-sensitive
 func isAnnotatedToBeManaged(secret *corev1.Secret) bool {
 	return secret.Annotations[ssv1alpha1.SealedSecretManagedAnnotation] == "true"
+}
+
+func isAnnotatedToBePatched(secret *corev1.Secret) bool {
+	return secret.Annotations[ssv1alpha1.SealedSecretPatchAnnotation] == "true"
 }
 
 // AttemptUnseal tries to unseal a secret.

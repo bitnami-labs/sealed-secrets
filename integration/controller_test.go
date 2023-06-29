@@ -44,6 +44,14 @@ func getData(s *v1.Secret) map[string][]byte {
 	return s.Data
 }
 
+func getAnnotations(s *v1.Secret) map[string]string {
+	return s.ObjectMeta.Annotations
+}
+
+func getLabels(s *v1.Secret) map[string]string {
+	return s.ObjectMeta.Labels
+}
+
 func getStatus(ss *ssv1alpha1.SealedSecret) *ssv1alpha1.SealedSecretStatus {
 	return ss.Status
 }
@@ -267,29 +275,87 @@ var _ = Describe("create", func() {
 	Describe("Secret already exists", func() {
 		Context("With managed annotation", func() {
 			BeforeEach(func() {
+				s.Data["foo2"] = []byte("bar2")
 				s.Annotations = map[string]string{
 					ssv1alpha1.SealedSecretManagedAnnotation: "true",
 				}
+				s.Labels["anotherlabel"] = "anothervalue"
 				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
 			})
-			It("should manage existing Secret", func() {
-				expected := map[string][]byte{
+			It("should manage existing Secret removing removing existing secret keys, labels and annotations", func() {
+				expectedData := map[string][]byte{
 					"foo": []byte("bar"),
 				}
-				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
-				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
+				var expectedAnnotations map[string]string
+				expectedLabels := map[string]string{
+					"mylabel": "myvalue",
+				}
 				Eventually(func() (*v1.EventList, error) {
 					return c.Events(ns).Search(scheme.Scheme, ss)
 				}, Timeout, PollingInterval).Should(
 					containEventWithReason(Equal("Unsealed")),
 				)
-				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
-				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
 				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
 					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expectedData)))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getAnnotations, Equal(expectedAnnotations)))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getLabels, Equal(expectedLabels)))
+			})
+		})
+		Context("With managed and patch annotation", func() {
+			BeforeEach(func() {
+				s.Data["foo2"] = []byte("bar2")
+				s.Annotations = map[string]string{
+					ssv1alpha1.SealedSecretManagedAnnotation: "true",
+					ssv1alpha1.SealedSecretPatchAnnotation:   "true",
+				}
+				s.Labels["anotherlabel"] = "anothervalue"
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+			})
+			It("should manage existing Secret maintaining existing secret keys, labels and annotations", func() {
+				expectedData := map[string][]byte{
+					"foo":  []byte("bar"),
+					"foo2": []byte("bar2"),
+				}
+				expectedAnnotations := map[string]string{
+					ssv1alpha1.SealedSecretManagedAnnotation: "true",
+					ssv1alpha1.SealedSecretPatchAnnotation:   "true",
+				}
+				expectedLabels := map[string]string{
+					"mylabel":      "myvalue",
+					"anotherlabel": "anothervalue",
+				}
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expectedData)))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getAnnotations, Equal(expectedAnnotations)))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getLabels, Equal(expectedLabels)))
 			})
 		})
 	})
@@ -323,6 +389,7 @@ var _ = Describe("create", func() {
 
 		Context("With unowned secret with managed annotation", func() {
 			BeforeEach(func() {
+				s.Data["foo2"] = []byte("bar2")
 				s.Annotations = map[string]string{
 					ssv1alpha1.SealedSecretManagedAnnotation: "true",
 				}
@@ -336,9 +403,6 @@ var _ = Describe("create", func() {
 				expected := map[string][]byte{
 					"foo": []byte("bar"),
 				}
-				Eventually(func() (*v1.Secret, error) {
-					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
-				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 				Eventually(func() (*v1.EventList, error) {
 					return c.Events(ns).Search(scheme.Scheme, ss)
 				}, Timeout, PollingInterval).Should(
@@ -347,6 +411,9 @@ var _ = Describe("create", func() {
 				Eventually(func() (*v1.Secret, error) {
 					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expected)))
 			})
 		})
 
