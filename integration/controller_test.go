@@ -275,7 +275,10 @@ var _ = Describe("create", func() {
 	Describe("Secret already exists", func() {
 		Context("With managed annotation", func() {
 			BeforeEach(func() {
-				s.Data["foo2"] = []byte("bar2")
+				s.Data = map[string][]byte{
+					"foo": []byte("bar1"),
+					"foo2": []byte("bar2"),
+				}
 				s.Annotations = map[string]string{
 					ssv1alpha1.SealedSecretManagedAnnotation: "true",
 				}
@@ -314,7 +317,10 @@ var _ = Describe("create", func() {
 		})
 		Context("With managed and patch annotation", func() {
 			BeforeEach(func() {
-				s.Data["foo2"] = []byte("bar2")
+				s.Data = map[string][]byte{
+					"foo": []byte("bar1"),
+					"foo2": []byte("bar2"),
+				}
 				s.Annotations = map[string]string{
 					ssv1alpha1.SealedSecretManagedAnnotation: "true",
 					ssv1alpha1.SealedSecretPatchAnnotation:   "true",
