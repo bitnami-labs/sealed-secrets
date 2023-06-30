@@ -453,6 +453,8 @@ If you want the Sealed Secrets controller to manage an existing `Secret`, you ca
 
 ### Patching existing secrets
 
+> New in v0.23.0
+
 There are some use cases in which you don't want to replace the whole `Secret` but just add or modify some keys from the existing `Secret`. For this, you can annotate your `Secret` with `sealedsecrets.bitnami.com/patch: "true"`. Using this annotation will make sure that secret keys, labels and annotatations in the `Secret` that are not present in the `SealedSecret` won't be deleted, and those present in the `SealedSecret` will be added to the `Secret` (secret keys, labels and annotations that exist both in the `Secret` and the `SealedSecret` will be modified by the `SealedSecret`).
 
 This annotation does not make the `SealedSecret` take ownership of the `Secret`. You can add both the `patch` and `managed` annotations to obtain the patching behaviour while also taking ownership of the `Secret`.
