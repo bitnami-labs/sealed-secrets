@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	// VERSION set from Makefile
+	// VERSION set from Makefile.
 	VERSION = buildinfo.DefaultVersion
 )
 

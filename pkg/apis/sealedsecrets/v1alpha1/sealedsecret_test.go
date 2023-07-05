@@ -19,7 +19,7 @@ import (
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
 
-	// Install standard API types
+	// Install standard API types.
 	_ "k8s.io/client-go/kubernetes"
 )
 
@@ -399,7 +399,6 @@ func TestTemplateWithoutEncryptedData(t *testing.T) {
 }
 
 func TestSkipSetOwnerReference(t *testing.T) {
-
 	testCases := []struct {
 		sealedSecret          SealedSecret
 		skipSetOwnerReference bool
@@ -449,7 +448,6 @@ func TestSkipSetOwnerReference(t *testing.T) {
 		if tc.sealedSecret.Spec.Template.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation] == "true" &&
 			len(unsealed.ObjectMeta.OwnerReferences) > 0 {
 			t.Errorf("got: owner, want: no owner")
-
 		} else if (tc.sealedSecret.Spec.Template.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation] != "true") &&
 			len(unsealed.ObjectMeta.OwnerReferences) == 0 {
 			t.Errorf("got: no owner, want:  owner")

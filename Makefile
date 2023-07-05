@@ -110,7 +110,7 @@ controller-norbac.yaml: controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixe
 controller-podmonitor.yaml: controller.jsonnet controller-norbac.jsonnet schema-v1alpha1.yaml kube-fixes.libsonnet
 
 test:
-	$(GOTESTSUM) $(GO_FLAGS) $(GO_PACKAGES)
+	$(GOTESTSUM) $(GO_FLAGS) --junitfile report.xml --format testname -- "-coverprofile=coverage.out" $(GO_PACKAGES)
 
 integrationtest: kubeseal controller
 	# Assumes a k8s cluster exists, with controller already installed

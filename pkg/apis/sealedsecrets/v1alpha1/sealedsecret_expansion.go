@@ -31,7 +31,7 @@ const (
 )
 
 var (
-	// TODO(mkm): remove after a release
+	// TODO(mkm): remove after a release.
 	AcceptDeprecatedV1Data = false
 )
 
@@ -41,7 +41,7 @@ type SealedSecretExpansion interface {
 }
 
 // SealingScope is an enum that declares the mobility of a sealed secret by defining
-// in which scopes
+// in which scopes.
 type SealingScope int
 
 func (s *SealingScope) String() string {
@@ -73,7 +73,7 @@ func (s *SealingScope) Set(v string) error {
 	return nil
 }
 
-// Type implements the pflag.Value interface
+// Type implements the pflag.Value interface.
 func (s *SealingScope) Type() string { return "string" }
 
 // EncryptionLabel returns the label meant to be used for encrypting a sealed secret according to scope.

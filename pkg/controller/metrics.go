@@ -10,7 +10,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-// Define Prometheus Exporter namespace (prefix) for all metric names
+// Define Prometheus Exporter namespace (prefix) for all metric names.
 const metricNamespace string = "sealed_secrets_controller"
 
 const (
@@ -25,7 +25,7 @@ var conditionStatusToGaugeValue = map[v1.ConditionStatus]float64{
 	v1.ConditionTrue:    1,
 }
 
-// Define Prometheus metrics to expose
+// Define Prometheus metrics to expose.
 var (
 	buildInfo prometheus.Gauge
 	// TODO: rename metric, change increment logic, or accept behaviour
@@ -116,7 +116,7 @@ func UnregisterCondition(ssecret *v1alpha1.SealedSecret) {
 	}
 }
 
-// Instrument HTTP handler
+// Instrument HTTP handler.
 func Instrument(path string, h http.Handler) http.Handler {
 	return promhttp.InstrumentHandlerDuration(httpRequestDurationSeconds.MustCurryWith(prometheus.Labels{"path": path}),
 		promhttp.InstrumentHandlerCounter(httpRequestsTotal.MustCurryWith(prometheus.Labels{"path": path}), h))
