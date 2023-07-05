@@ -40,6 +40,11 @@ local namespace = 'kube-system';
         spec+: {
           securityContext+: {
             fsGroup: 65534,
+            runAsNonRoot: true,
+            runAsUser: 1001,
+            seccompProfile+: {
+              type: 'RuntimeDefault',
+            }
           },
           containers_+: {
             controller: kube.Container('sealed-secrets-controller') {
@@ -54,9 +59,11 @@ local namespace = 'kube-system';
                 http: { containerPort: 8080 },
               },
               securityContext+: {
+                allowPrivilegeEscalation: false,
+                capabilities+: {
+                  drop: [ 'ALL' ],
+                },
                 readOnlyRootFilesystem: true,
-                runAsNonRoot: true,
-                runAsUser: 1001,
               },
               volumeMounts_+: {
                 tmp: {
