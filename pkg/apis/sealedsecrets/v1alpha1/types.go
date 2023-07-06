@@ -25,8 +25,12 @@ const (
 	SealedSecretNamespaceWideAnnotation = annoNs + "namespace-wide"
 
 	// SealedSecretManagedAnnotation is the name for the annotation for
-	// flaging the existing secrets be managed by SealedSecret controller.
+	// flagging existing secrets to be managed by the Sealed Secrets controller.
 	SealedSecretManagedAnnotation = annoNs + "managed"
+
+	// SealedSecretPatchAnnotation is the name for the annotation for
+	// flagging existing secrets to be patched instead of overwritten by the Sealed Secrets controller.
+	SealedSecretPatchAnnotation = annoNs + "patch"
 
 	// SealedSecretSkipSetOwnerReferencesAnnotation is the name for the annotation for
 	// flagging the controller not to set owner reference to secret.

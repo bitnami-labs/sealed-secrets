@@ -8,12 +8,77 @@ import (
 	"testing"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
 
 	ssfake "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/fake"
 )
+
+func TestIsAnnotatedToBePatched(t *testing.T) {
+	tests := []struct {
+		annotations map[string]string
+		want        bool
+	}{
+		{annotations: map[string]string{ssv1alpha1.SealedSecretPatchAnnotation: "true"}, want: true},
+		{annotations: map[string]string{ssv1alpha1.SealedSecretPatchAnnotation: "TRUE"}, want: false},
+		{annotations: map[string]string{ssv1alpha1.SealedSecretPatchAnnotation: "false"}, want: false},
+		{annotations: map[string]string{ssv1alpha1.SealedSecretPatchAnnotation: ""}, want: false},
+		{annotations: map[string]string{"something": "else"}, want: false},
+		{annotations: map[string]string{}, want: false},
+	}
+
+	for i, tc := range tests {
+		s := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:   "test-ns",
+				Name:        "test-secret",
+				Annotations: tc.annotations,
+			},
+			Data: map[string][]byte{
+				"foo": []byte("bar"),
+			},
+		}
+
+		got := isAnnotatedToBePatched(s)
+		if got != tc.want {
+			t.Fatalf("test %d: expected: %v, got: %v", i+1, tc.want, got)
+		}
+	}
+}
+
+func TestIsAnnotatedToBeManaged(t *testing.T) {
+	tests := []struct {
+		annotations map[string]string
+		want        bool
+	}{
+		{annotations: map[string]string{ssv1alpha1.SealedSecretManagedAnnotation: "true"}, want: true},
+		{annotations: map[string]string{ssv1alpha1.SealedSecretManagedAnnotation: "TRUE"}, want: false},
+		{annotations: map[string]string{ssv1alpha1.SealedSecretManagedAnnotation: "false"}, want: false},
+		{annotations: map[string]string{ssv1alpha1.SealedSecretManagedAnnotation: ""}, want: false},
+		{annotations: map[string]string{"something": "else"}, want: false},
+		{annotations: map[string]string{}, want: false},
+	}
+
+	for i, tc := range tests {
+		s := &corev1.Secret{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:   "test-ns",
+				Name:        "test-secret",
+				Annotations: tc.annotations,
+			},
+			Data: map[string][]byte{
+				"foo": []byte("bar"),
+			},
+		}
+
+		got := isAnnotatedToBeManaged(s)
+		if got != tc.want {
+			t.Fatalf("test %d: expected: %v, got: %v", i+1, tc.want, got)
+		}
+	}
+}
 
 func TestConvert2SealedSecretBadType(t *testing.T) {
 	obj := struct{}{}
