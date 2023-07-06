@@ -209,7 +209,7 @@ linters:
     - bidichk # checks for dangerous unicode character sequences
     - bodyclose # checks whether HTTP response body is closed successfully
     #- cyclop # checks function and package cyclomatic complexity
-    - dupl # tool for code clone detection
+    #- dupl # tool for code clone detection
     - durationcheck # checks for two durations multiplied together
     - errname # checks that sentinel errors are prefixed with the Err and error types are suffixed with the Error
     #- errorlint # finds code that will cause problems with the error wrapping scheme introduced in Go 1.13
