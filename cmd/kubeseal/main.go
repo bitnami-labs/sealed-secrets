@@ -23,7 +23,7 @@ import (
 	"github.com/bitnami-labs/sealed-secrets/pkg/kubeseal"
 	"github.com/bitnami-labs/sealed-secrets/pkg/pflagenv"
 
-	// Register Auth providers
+	// Register Auth providers.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 )
 
@@ -32,7 +32,7 @@ const (
 )
 
 var (
-	// VERSION set from Makefile
+	// VERSION set from Makefile.
 	VERSION = buildinfo.DefaultVersion
 )
 

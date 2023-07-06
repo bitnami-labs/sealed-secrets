@@ -471,7 +471,7 @@ func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string, 
 	return outbuf.Bytes()
 }
 
-// TODO(mkm): rename newTestKeyPair to newTestKeyPairs
+// TODO(mkm): rename newTestKeyPair to newTestKeyPairs.
 func newTestKeyPair(t *testing.T) (*rsa.PublicKey, map[string]*rsa.PrivateKey) {
 	privKey, _, err := crypto.GeneratePrivateKeyAndCert(2048, time.Hour, "testcn")
 	if err != nil {

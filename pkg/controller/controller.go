@@ -57,7 +57,7 @@ const (
 )
 
 var (
-	// ErrCast happens when a K8s any type cannot be casted to the expected type
+	// ErrCast happens when a K8s any type cannot be casted to the expected type.
 	ErrCast = errors.New("cast error")
 )
 
@@ -200,7 +200,7 @@ func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclien
 }
 
 // HasSynced returns true once this controller has completed an
-// initial resource listing
+// initial resource listing.
 func (c *Controller) HasSynced() bool {
 	var synced bool
 	if c.sInformer == nil {

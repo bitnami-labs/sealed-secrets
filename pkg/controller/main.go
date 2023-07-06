@@ -29,11 +29,11 @@ import (
 )
 
 var (
-	// Selector used to find existing public/private key pairs on startup
+	// Selector used to find existing public/private key pairs on startup.
 	keySelector = fields.OneTermEqualSelector(SealedSecretsKeyLabel, "active")
 )
 
-// Flags to configure the controller
+// Flags to configure the controller.
 type Flags struct {
 	KeyPrefix             string
 	KeySize               int

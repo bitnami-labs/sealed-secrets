@@ -111,7 +111,7 @@ func isFilename(name string) (bool, error) {
 	return u.Scheme == "", nil
 }
 
-// getServicePortName obtains the SealedSecrets service port name
+// getServicePortName obtains the SealedSecrets service port name.
 func getServicePortName(ctx context.Context, client corev1.CoreV1Interface, namespace, serviceName string) (string, error) {
 	service, err := client.Services(namespace).Get(ctx, serviceName, metav1.GetOptions{})
 	if err != nil {

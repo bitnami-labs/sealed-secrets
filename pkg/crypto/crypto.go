@@ -17,7 +17,7 @@ const (
 	sessionKeyBytes = 32
 )
 
-// ErrTooShort indicates the provided data is too short to be valid
+// ErrTooShort indicates the provided data is too short to be valid.
 var ErrTooShort = errors.New("SealedSecret data is too short")
 
 // PublicKeyFingerprint returns a fingerprint for a public key.
@@ -83,7 +83,7 @@ func HybridDecrypt(rnd io.Reader, privKeys map[string]*rsa.PrivateKey, ciphertex
 	return nil, fmt.Errorf("no key could decrypt secret")
 }
 
-// singleDecrypt performs a regular AES-GCM + RSA-OAEP decryption
+// singleDecrypt performs a regular AES-GCM + RSA-OAEP decryption.
 func singleDecrypt(rnd io.Reader, privKey *rsa.PrivateKey, ciphertext, label []byte) ([]byte, error) {
 	if len(ciphertext) < 2 {
 		return nil, ErrTooShort
