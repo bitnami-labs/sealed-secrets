@@ -1,25 +1,28 @@
+---
 toc:
-  - title: Overview
+  - title: About Sealed Secrets
     subfolderitems:
-      - page: Overview
-        url: /
-  - title: Architecture
+      - page: What is Sealed Secrets
+        url: /project/readme
+      - page: Sealed Secrets helm chart
+        url: /project/chart-readme
+
+  - title: Tutorials
     subfolderitems:
-      - page: Architecture 1
-        url: /architecture
-  - title: Demo
+      - url: /tutorials/getting-started
+        page: Get Started with Sealed Secrets
+
+  - title: How-to guides
     subfolderitems:
-      - page: Demo 1
-        url: /demo
-  - title: Scope
+      - url: /howto/validate-sealed-secrets
+        page: Validate an existing Sealed Secret
+
+  - title: Background
     subfolderitems:
-      - page: Scope 1
-        url: /scope
-      - page: Scope 2
-        url: /scope
-      - page: Scope 3
-        url: /scope
-  - title: Update Images
+      - url: /background/cryptography
+        page: Cryptography details
+
+  - title: Reference
     subfolderitems:
-      - page: Update Images
-        url: /contributing
+      - url: /reference/faq
+        page: FAQ

@@ -1,0 +1,1 @@
+../../../../../helm/sealed-secrets/README.md
