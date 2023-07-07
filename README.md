@@ -327,8 +327,8 @@ serviceAccount:
 rbac:
   create: false
   clusterRole: false
-resources: 
-  limits: 
+resources:
+  limits:
     cpu: 150m
     memory: 256Mi
 ```
@@ -340,7 +340,7 @@ Note that:
 - Resource limits must be specified.
   - The limits are samples that should work, but you might want to review them in your particular setup.
 
-Once that file is ready, if you named it `config.yaml` you now can install the sealed secrets Helm Chart like this: 
+Once that file is ready, if you named it `config.yaml` you now can install the sealed secrets Helm Chart like this:
 
 ```shell
 helm install sealed-secrets -n {allocated-namespace} sealed-secrets/sealed-secrets --skip-crds -f config.yaml
@@ -409,6 +409,12 @@ Don't forget to check the [release notes](RELEASE-NOTES.md) for guidance about
 possible breaking changes when you upgrade the client tool
 and/or the controller.
 
+### Supported Versions
+Currently, only the latest version of Sealed Secrets is supported for production environments.
+
+### Compatibility with Kubernetes versions
+The Sealed Secrets controller ensures compatibility with different versions of Kubernetes by relying on a stable Kubernetes API. Typically, Kubernetes versions above 1.16 are considered compatible. However, we officially support the [currently recommended Kubernetes versions](https://kubernetes.io/releases/). Additionally, versions above 1.24 undergo thorough verification through our CI process with every release.
+
 ## Usage
 
 ```bash
@@ -461,7 +467,7 @@ This annotation does not make the `SealedSecret` take ownership of the `Secret`.
 
 ### Seal secret which can skip set owner references
 
-If you want `SealedSecret` and the `Secret` to be independent, which mean when you delete the `SealedSecret` the `Secret` won't disappear with it, then you have to annotate that Secret with the annotation `sealedsecrets.bitnami.com/skip-set-owner-references: "true"` ahead of applying the Usage steps. You still may also add `sealedsecrets.bitnami.com/managed: "true"` to your `Secret` so that your secret will be updated when `SealedSecret` is updated. 
+If you want `SealedSecret` and the `Secret` to be independent, which mean when you delete the `SealedSecret` the `Secret` won't disappear with it, then you have to annotate that Secret with the annotation `sealedsecrets.bitnami.com/skip-set-owner-references: "true"` ahead of applying the Usage steps. You still may also add `sealedsecrets.bitnami.com/managed: "true"` to your `Secret` so that your secret will be updated when `SealedSecret` is updated.
 
 ### Update existing secrets
 
