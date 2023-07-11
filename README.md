@@ -708,6 +708,8 @@ If you do want to make a backup of the encryption private keys, it's easy to do 
 
 ```bash
 kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >main.key
+
+echo "---" >> main.key
 kubectl get secret -n kube-system sealed-secrets-key -o yaml >>main.key
 ```
 
