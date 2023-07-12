@@ -36,7 +36,7 @@ $ kubectl get secret -n kube-system sealed-secrets-key -o yaml >>main.key
 
 To restore from a backup after some disaster, just put that secrets back before starting the controller - or if the controller was already started, replace the newly-created secrets and restart the controller:
 
-```bash
+```shell
 kubectl apply -f main.key
 kubectl delete pod -n kube-system -l name=sealed-secrets-controller
 ```
@@ -73,13 +73,13 @@ to the `kubeseal` commandline tool. There are two options:
 
 1. You can specify the namespace via the command line option `--controller-namespace <namespace>`:
 
-  ```bash
+  ```shell
 kubeseal --controller-namespace sealed-secrets <mysecret.json >mysealedsecret.json
 ```
 
 2. Via the environment variable `SEALED_SECRETS_CONTROLLER_NAMESPACE`:
 
-  ```bash
+  ```shell
 export SEALED_SECRETS_CONTROLLER_NAMESPACE=sealed-secrets
 kubeseal <mysecret.json >mysealedsecret.json
 ```
