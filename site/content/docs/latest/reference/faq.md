@@ -94,13 +94,27 @@ It is pretty simple to verify the images:
 
 ```console
 # export the COSIGN_VARIABLE setting up the GitHub container registry signs path
-export COSIGN_REPOSITORY=ghcr.io/bitnami-labs/sealed-secrets-controller/signs
+$ export COSIGN_REPOSITORY=ghcr.io/bitnami-labs/sealed-secrets-controller/signs
 
 # verify the image uploaded in GHCR
-cosign verify --key .github/workflows/cosign.pub ghcr.io/bitnami-labs/sealed-secrets-controller:latest
+$ cosign verify --key .github/workflows/cosign.pub ghcr.io/bitnami-labs/sealed-secrets-controller:latest
+
+Verification for ghcr.io/bitnami-labs/sealed-secrets-controller:latest --
+The following checks were performed on each of these signatures:
+  - The cosign claims were validated
+  - Existence of the claims in the transparency log was verified offline
+  - The signatures were verified against the specified public key
+...
 
 # verify the image uploaded in Dockerhub
-cosign verify --key .github/workflows/cosign.pub docker.io/bitnami/sealed-secrets-controller:latest
+$ cosign verify --key .github/workflows/cosign.pub docker.io/bitnami/sealed-secrets-controller:latest
+
+Verification for index.docker.io/bitnami/sealed-secrets-controller:latest --
+The following checks were performed on each of these signatures:
+  - The cosign claims were validated
+  - Existence of the claims in the transparency log was verified offline
+  - The signatures were verified against the specified public key
+...
 ```
 
 ## How to use one controller for a subset of namespaces
