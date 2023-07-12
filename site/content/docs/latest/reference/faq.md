@@ -23,11 +23,11 @@ No, the private keys are only stored in the Secret managed by the controller (un
 
 If you do want to make a backup of the encryption private keys, it's easy to do from an account with suitable access:
 
-```console
-$ kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >main.key
+```shell
+kubectl get secret -n kube-system -l sealedsecrets.bitnami.com/sealed-secrets-key -o yaml >main.key
 
-$ echo "---" >> main.key
-$ kubectl get secret -n kube-system sealed-secrets-key -o yaml >>main.key
+echo "---" >> main.key
+kubectl get secret -n kube-system sealed-secrets-key -o yaml >>main.key
 ```
 
 > NOTE: You need the second statement only if you ever installed sealed-secrets older than version 0.9.x on your cluster.
