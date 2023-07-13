@@ -69,7 +69,7 @@ Please check [here](docs/bring-your-own-certificates.md) for a workaround.
 ## How to use kubeseal if the controller is not running within the `kube-system` namespace?
 
 If you installed the controller in a different namespace than the default `kube-system`, you need to provide this namespace
-to the `kubeseal` commandline tool. There are two options:
+to the `kubeseal` command line tool. There are two options:
 
 1. You can specify the namespace via the command line option `--controller-namespace <namespace>`:
 
