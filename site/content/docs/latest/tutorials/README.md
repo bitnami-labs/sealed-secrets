@@ -7,6 +7,7 @@ We hope our tutorials make as few assumptions as possible and are broadly access
 | Tutorial                                | Description                                                                                                                  |
 |-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
 | [Getting started](./getting-started.md) | This guide walks you through the process of deploying Sealed Secrets for your cluster and installing an example Sealed Secrets. |
+| [Sealed Secrets controller installation](./install-sealed-secrets.md) | Here we cover the different alternatives to install the Sealed Secrets controller, with special notes for environments with restricted permissions. |
 
 Alternatively, if you have a specific goal, but are already familiar with Sealed Secrets, take a look at our [How-to guides](../howto/README.md). These have more in-depth detail and can be applied to a broader set of features.
 

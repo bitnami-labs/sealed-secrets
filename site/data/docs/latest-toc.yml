@@ -11,7 +11,8 @@ toc:
     subfolderitems:
       - url: /tutorials/getting-started
         page: Get Started with Sealed Secrets
-
+      - url: /tutorials/install-sealed-secrets
+        page: Sealed Secrets controller installation
   - title: How-to guides
     subfolderitems:
       - url: /howto/validate-sealed-secrets
