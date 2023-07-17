@@ -85,7 +85,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | ------------------------------------------------- | -------------------------------------------------------------------------------------- | ----------------------------------- |
 | `image.registry`                                  | Sealed Secrets image registry                                                          | `docker.io`                         |
 | `image.repository`                                | Sealed Secrets image repository                                                        | `bitnami/sealed-secrets-controller` |
-| `image.tag`                                       | Sealed Secrets image tag (immutable tags are recommended)                              | `v0.22.0`                           |
+| `image.tag`                                       | Sealed Secrets image tag (immutable tags are recommended)                              | `v0.23.0`                           |
 | `image.pullPolicy`                                | Sealed Secrets image pull policy                                                       | `IfNotPresent`                      |
 | `image.pullSecrets`                               | Sealed Secrets image pull secrets                                                      | `[]`                                |
 | `createController`                                | Specifies whether the Sealed Secrets controller should be created                      | `true`                              |
@@ -95,9 +95,9 @@ The command removes all the Kubernetes components associated with the chart and 
 | `keyrenewperiod`                                  | Specifies key renewal period. Default 30 days                                          | `""`                                |
 | `rateLimit`                                       | Number of allowed sustained request per second for verify endpoint                     | `""`                                |
 | `rateLimitBurst`                                  | Number of requests allowed to exceed the rate limit per second for verify endpoint     | `""`                                |
-| `additionalNamespaces`                            | List of namespaces used to manage the Sealed Secrets                                   | `[]`      
+| `additionalNamespaces`                            | List of namespaces used to manage the Sealed Secrets                                   | `[]`                                |
 | `privateKeyAnnotations`                           | Map of annotations to be set on the sealing keypairs                                   | `{}`                                |
-| `privateKeyLabels`                                | Map of labels to be set on the sealing keypairs                                   | `{}`                                |
+| `privateKeyLabels`                                | Map of labels to be set on the sealing keypairs                                        | `{}`                                |
 | `logInfoStdout`                                   | Specifies whether the Sealed Secrets controller will log info to stdout                | `false`                             |
 | `command`                                         | Override default container command                                                     | `[]`                                |
 | `args`                                            | Override default container args                                                        | `[]`                                |
@@ -145,45 +145,45 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Traffic Exposure Parameters
 
-| Name                       | Description                                                                                                                      | Value                    |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| `service.type`             | Sealed Secret service type                                                                                                       | `ClusterIP`              |
-| `service.port`             | Sealed Secret service HTTP port                                                                                                  | `8080`                   |
-| `service.nodePort`         | Node port for HTTP                                                                                                               | `""`                     |
-| `service.annotations`      | Additional custom annotations for Sealed Secret service                                                                          | `{}`                     |
-| `ingress.enabled`          | Enable ingress record generation for Sealed Secret                                                                               | `false`                  |
-| `ingress.pathType`         | Ingress path type                                                                                                                | `ImplementationSpecific` |
-| `ingress.apiVersion`       | Force Ingress API version (automatically detected if not set)                                                                    | `""`                     |
-| `ingress.ingressClassName` | IngressClass that will be be used to implement the Ingress                                                                       | `""`                     |
-| `ingress.hostname`         | Default host for the ingress record                                                                                              | `sealed-secrets.local`   |
-| `ingress.path`             | Default path for the ingress record                                                                                              | `/v1/cert.pem`           |
-| `ingress.annotations`      | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
-| `ingress.tls`              | Enable TLS configuration for the host defined at `ingress.hostname` parameter                                                    | `false`                  |
-| `ingress.selfSigned`       | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
-| `ingress.extraHosts`       | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
-| `ingress.extraPaths`       | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
-| `ingress.extraTls`         | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
-| `ingress.secrets`          | Custom TLS certificates as secrets                                                                                               | `[]`                     |
-| `networkPolicy.enabled`    | Specifies whether a NetworkPolicy should be created                                                                              | `false`                  |
-| `networkPolicy.egress.enabled`    | Specifies wheter a egress is set in the NetworkPolicy                                                                              | `false`                  |
-| `networkPolicy.egress.kubeapiCidr`    | Specifies the kubeapiCidr, which is the only egress allowed. If not set, kubeapiCidr will be found using Helm lookup                                                                              | `""`                  |
-| `networkPolicy.egress.kubeapiPort`    | Specifies the kubeapiPort, which is the only egress allowed. If not set, kubeapiPort will be found using Helm lookup                                                                              | `""`                  |
+| Name                               | Description                                                                                                                      | Value                    |
+| ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| `service.type`                     | Sealed Secret service type                                                                                                       | `ClusterIP`              |
+| `service.port`                     | Sealed Secret service HTTP port                                                                                                  | `8080`                   |
+| `service.nodePort`                 | Node port for HTTP                                                                                                               | `""`                     |
+| `service.annotations`              | Additional custom annotations for Sealed Secret service                                                                          | `{}`                     |
+| `ingress.enabled`                  | Enable ingress record generation for Sealed Secret                                                                               | `false`                  |
+| `ingress.pathType`                 | Ingress path type                                                                                                                | `ImplementationSpecific` |
+| `ingress.apiVersion`               | Force Ingress API version (automatically detected if not set)                                                                    | `""`                     |
+| `ingress.ingressClassName`         | IngressClass that will be be used to implement the Ingress                                                                       | `""`                     |
+| `ingress.hostname`                 | Default host for the ingress record                                                                                              | `sealed-secrets.local`   |
+| `ingress.path`                     | Default path for the ingress record                                                                                              | `/v1/cert.pem`           |
+| `ingress.annotations`              | Additional annotations for the Ingress resource. To enable certificate autogeneration, place here your cert-manager annotations. | `{}`                     |
+| `ingress.tls`                      | Enable TLS configuration for the host defined at `ingress.hostname` parameter                                                    | `false`                  |
+| `ingress.selfSigned`               | Create a TLS secret for this ingress record using self-signed certificates generated by Helm                                     | `false`                  |
+| `ingress.extraHosts`               | An array with additional hostname(s) to be covered with the ingress record                                                       | `[]`                     |
+| `ingress.extraPaths`               | An array with additional arbitrary paths that may need to be added to the ingress under the main host                            | `[]`                     |
+| `ingress.extraTls`                 | TLS configuration for additional hostname(s) to be covered with this ingress record                                              | `[]`                     |
+| `ingress.secrets`                  | Custom TLS certificates as secrets                                                                                               | `[]`                     |
+| `networkPolicy.enabled`            | Specifies whether a NetworkPolicy should be created                                                                              | `false`                  |
+| `networkPolicy.egress.enabled`     | Specifies wheter a egress is set in the NetworkPolicy                                                                            | `false`                  |
+| `networkPolicy.egress.kubeapiCidr` | Specifies the kubeapiCidr, which is the only egress allowed. If not set, kubeapiCidr will be found using Helm lookup             | `""`                     |
+| `networkPolicy.egress.kubeapiPort` | Specifies the kubeapiPort, which is the only egress allowed. If not set, kubeapiPort will be found using Helm lookup             | `""`                     |
 
 ### Other Parameters
 
-| Name                         | Description                                                   | Value              |
-| ---------------------------- | ------------------------------------------------------------- | ------------------ |
-| `serviceAccount.annotations` | Annotations for Sealed Secret service account                 | `{}`               |
-| `serviceAccount.create`      | Specifies whether a ServiceAccount should be created          | `true`             |
-| `serviceAccount.labels`      | Extra labels to be added to the ServiceAccount                | `{}`               |
-| `serviceAccount.name`        | The name of the ServiceAccount to use.                        | `""`               |
-| `rbac.create`                | Specifies whether RBAC resources should be created            | `true`             |
-| `rbac.clusterRole`           | Specifies whether the Cluster Role resource should be created | `true`             |
-| `rbac.clusterRoleName`       | Specifies the name for the Cluster Role resource              | `secrets-unsealer` |
+| Name                         | Description                                                                                              | Value              |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- | ------------------ |
+| `serviceAccount.annotations` | Annotations for Sealed Secret service account                                                            | `{}`               |
+| `serviceAccount.create`      | Specifies whether a ServiceAccount should be created                                                     | `true`             |
+| `serviceAccount.labels`      | Extra labels to be added to the ServiceAccount                                                           | `{}`               |
+| `serviceAccount.name`        | The name of the ServiceAccount to use.                                                                   | `""`               |
+| `rbac.create`                | Specifies whether RBAC resources should be created                                                       | `true`             |
+| `rbac.clusterRole`           | Specifies whether the Cluster Role resource should be created                                            | `true`             |
+| `rbac.clusterRoleName`       | Specifies the name for the Cluster Role resource                                                         | `secrets-unsealer` |
 | `rbac.namespacedRoles`       | Specifies whether the namespaced Roles should be created (in each of the specified additionalNamespaces) | `false`            |
-| `rbac.namespacedRolesName`   | Specifies the name for the namesapced Role resource           | `secrets-unsealer` |
-| `rbac.labels`                | Extra labels to be added to RBAC resources                    | `{}`               |
-| `rbac.pspEnabled`            | PodSecurityPolicy                                             | `false`            |
+| `rbac.namespacedRolesName`   | Specifies the name for the namesapced Role resource                                                      | `secrets-unsealer` |
+| `rbac.labels`                | Extra labels to be added to RBAC resources                                                               | `{}`               |
+| `rbac.pspEnabled`            | PodSecurityPolicy                                                                                        | `false`            |
 
 ### Metrics parameters
 
