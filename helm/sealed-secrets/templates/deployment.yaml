@@ -10,6 +10,9 @@ metadata:
   {{- end }}
 spec:
   replicas: 1
+  {{- if .Values.revisionHistoryLimit }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  {{- end }}
   selector:
     matchLabels: {{- include "sealed-secrets.matchLabels" . | nindent 6 }}
   template:
