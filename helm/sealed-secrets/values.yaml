@@ -12,6 +12,7 @@ fullnameOverride: ""
 ## @param namespace Namespace where to deploy the Sealed Secrets controller
 ##
 namespace: ""
+
 ## @param extraDeploy [array] Array of extra objects to deploy with the release
 ##
 extraDeploy: []
@@ -47,6 +48,9 @@ image:
   ##   - myRegistryKeySecretName
   ##
   pullSecrets: []
+## @param revisionHistoryLimit Number of old history to retain to allow rollback (If not set, default Kubernetes value is set to 10)
+## e.g:
+revisionHistoryLimit: ""
 ## @param createController Specifies whether the Sealed Secrets controller should be created
 ##
 createController: true
