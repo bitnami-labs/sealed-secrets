@@ -4,7 +4,7 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
-## v0.24.0
+## v0.23.1
 
 ### Changelog
 
