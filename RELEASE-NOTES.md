@@ -4,6 +4,20 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.24.0
+
+### Changelog
+
+- securityContext adjusted ([#1261](https://github.com/bitnami-labs/sealed-secrets/pull/1261))
+- allow changing the default revisionHistoryLimit ([#1286](https://github.com/bitnami-labs/sealed-secrets/pull/1286))
+- Create an Install Sealed Secrets tutorial for Sealed Secrets public documentation ([#1270](https://github.com/bitnami-labs/sealed-secrets/pull/1270))
+- Introduce KUBESEAL_VERSION for Linux installation ([#1275](https://github.com/bitnami-labs/sealed-secrets/pull/1275))
+- Bump k8s.io/client-go from 0.27.3 to 0.27.4 ([#1277](https://github.com/bitnami-labs/sealed-secrets/pull/1277))
+- Bump k8s.io/code-generator from 0.27.3 to 0.27.4 ([#1278](https://github.com/bitnami-labs/sealed-secrets/pull/1278))
+- Bump github.com/onsi/gomega from 1.27.8 to 1.27.10 ([#1279](https://github.com/bitnami-labs/sealed-secrets/pull/1279))
+- Bump k8s.io/api from 0.27.3 to 0.27.4 ([#1281](https://github.com/bitnami-labs/sealed-secrets/pull/1281))
+- Bump golang.org/x/crypto from 0.11.0 to 0.12.0 ([#1287](https://github.com/bitnami-labs/sealed-secrets/pull/1287)
+
 ## v0.23.0
 
 ### Changelog
