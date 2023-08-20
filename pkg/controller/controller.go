@@ -413,12 +413,6 @@ func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, 
 		ssecret.Status = &ssv1alpha1.SealedSecretStatus{}
 	}
 
-	// No need to update the status if we already have observed it from the
-	// current generation of the resource.
-	if ssecret.Status.ObservedGeneration == ssecret.ObjectMeta.Generation {
-		return nil
-	}
-
 	ssecret.Status.ObservedGeneration = ssecret.ObjectMeta.Generation
 	updateSealedSecretsStatusConditions(ssecret.Status, unsealError)
 
