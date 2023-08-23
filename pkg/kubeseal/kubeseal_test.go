@@ -9,6 +9,8 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
+	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/utils/strings/slices"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -173,6 +175,58 @@ func TestOpenCertFile(t *testing.T) {
 
 		if string(data) != testCert {
 			t.Errorf("Read incorrect data from cert file?!")
+		}
+	}
+}
+
+func TestSealWithMultiDocSecrets(t *testing.T) {
+	key, err := ParseKey(strings.NewReader(testCert))
+	if err != nil {
+		t.Fatalf("Failed to parse gotSecrets key: %v", err)
+	}
+
+	s1 := mkTestSecret(t, "foo", "1", withSecretName("s1"), asYAML(false))
+	s2 := mkTestSecret(t, "bar", "2", withSecretName("s2"), asYAML(false))
+	multiDocYaml := fmt.Sprintf("%s\n%s", s1, s2)
+
+	clientConfig := testClientConfig()
+	outputFormat := "json"
+	inbuf := bytes.Buffer{}
+	_, err = bytes.NewBuffer([]byte(multiDocYaml)).WriteTo(&inbuf)
+	if err != nil {
+		t.Fatalf("Error writing to buffer: %v", err)
+	}
+
+	t.Logf("input is: %s", inbuf.String())
+
+	outbuf := bytes.Buffer{}
+	if err := Seal(clientConfig, outputFormat, &inbuf, &outbuf, scheme.Codecs, key, ssv1alpha1.NamespaceWideScope, false, "", ""); err != nil {
+		t.Fatalf("seal() returned error: %v", err)
+	}
+
+	outBytes := outbuf.Bytes()
+	t.Logf("output is %s", outBytes)
+
+	decoder := yaml2.NewYAMLOrJSONDecoder(bytes.NewReader(outBytes), 4096)
+	var gotSecrets []*ssv1alpha1.SealedSecret
+	for {
+		s := ssv1alpha1.SealedSecret{}
+		err := decoder.Decode(&s)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			t.Fatalf("Failed to parse result: %v", err)
+		}
+		gotSecrets = append(gotSecrets, &s)
+	}
+
+	for _, gotSecret := range gotSecrets {
+		if got, want := gotSecret.GetNamespace(), "testns"; got != want {
+			t.Errorf("got: %q, want: %q", got, want)
+		}
+		if got, want := gotSecret.GetName(), []string{"s1", "s2"}; !slices.Contains(want, got) {
+			t.Errorf("got: %q, want: %q", got, want)
 		}
 	}
 }
@@ -520,13 +574,15 @@ func TestUnseal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	secret, err := readSecret(scheme.Codecs.UniversalDecoder(), &buf)
+	secret, err := readMultiSecrets(&buf)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
-		t.Fatalf("got: %q, want: %q", got, want)
+	for _, secret := range secret {
+		if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
+			t.Fatalf("got: %q, want: %q", got, want)
+		}
 	}
 }
 
@@ -579,13 +635,15 @@ func TestUnsealList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	secret, err := readSecret(scheme.Codecs.UniversalDecoder(), &buf)
+	secret, err := readMultiSecrets(&buf)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
-		t.Fatalf("got: %q, want: %q", got, want)
+	for _, secret := range secret {
+		if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
+			t.Fatalf("got: %q, want: %q", got, want)
+		}
 	}
 }
 
@@ -884,17 +942,6 @@ func TestReadPrivKeySecret(t *testing.T) {
 
 	if got, want := pkr.D.String(), pkw.D.String(); got != want {
 		t.Errorf("got: %q, want: %q", got, want)
-	}
-}
-
-func TestYAMLStream(t *testing.T) {
-	s1 := mkTestSecret(t, "foo", "1", withSecretName("s1"), asYAML(true))
-	s2 := mkTestSecret(t, "var", "2", withSecretName("s2"), asYAML(true))
-	bad := fmt.Sprintf("%s\n---\n%s\n", s1, s2)
-
-	_, err := readSecret(scheme.Codecs.UniversalDecoder(), strings.NewReader(bad))
-	if err == nil {
-		t.Fatalf("error expected")
 	}
 }
 

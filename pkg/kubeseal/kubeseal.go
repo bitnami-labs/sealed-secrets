@@ -10,15 +10,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"time"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
-	"github.com/bitnami-labs/sealed-secrets/pkg/multidocyaml"
 	v1 "k8s.io/api/core/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -64,24 +65,6 @@ func ParseKey(r io.Reader) (*rsa.PublicKey, error) {
 	}
 
 	return cert, nil
-}
-
-func readSecret(codec runtime.Decoder, r io.Reader) (*v1.Secret, error) {
-	data, err := io.ReadAll(r)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := multidocyaml.EnsureNotMultiDoc(data); err != nil {
-		return nil, err
-	}
-
-	var ret v1.Secret
-	if err = runtime.DecodeInto(codec, data, &ret); err != nil {
-		return nil, err
-	}
-
-	return &ret, nil
 }
 
 func prettyEncoder(codecs runtimeserializer.CodecFactory, mediaType string, gv runtime.GroupVersioner) (runtime.Encoder, error) {
@@ -184,60 +167,119 @@ func OpenCert(ctx context.Context, clientConfig ClientConfig, controllerNs, cont
 	return openCertCluster(ctx, restClient, controllerNs, controllerName)
 }
 
+func readMultiSecrets(r io.Reader) ([]*v1.Secret, error) {
+	decoder := yaml.NewYAMLOrJSONDecoder(r, 4096)
+
+	var secrets []*v1.Secret
+
+	for {
+		dummy := v1.Secret{}
+		sec := v1.Secret{}
+		err := decoder.Decode(&sec)
+		if sec.Kind != "Secret" && sec.Kind != "" {
+			continue
+		}
+		if reflect.DeepEqual(sec, dummy) {
+			if err == io.EOF {
+				break
+			} else {
+				continue
+			}
+		}
+		if err != nil && err != io.EOF {
+			return nil, err
+		}
+		secrets = append(secrets, &sec)
+	}
+
+	return secrets, nil
+}
+
+func readSealedSecrets(r io.Reader) ([]*ssv1alpha1.SealedSecret, error) {
+	decoder := yaml.NewYAMLOrJSONDecoder(r, 4096)
+
+	var secrets []*ssv1alpha1.SealedSecret
+
+	for {
+		dummy := ssv1alpha1.SealedSecret{}
+		sec := ssv1alpha1.SealedSecret{}
+		err := decoder.Decode(&sec)
+		if sec.Kind != "SealedSecret" && sec.Kind != "" {
+			continue
+		}
+		if reflect.DeepEqual(sec, dummy) {
+			if err == io.EOF {
+				break
+			} else {
+				continue
+			}
+		}
+		secrets = append(secrets, &sec)
+		if err != nil && err != io.EOF {
+			return nil, err
+		}
+	}
+
+	return secrets, nil
+}
+
 // Seal reads a k8s Secret resource parsed from an input reader by a given codec, encrypts all its secrets
 // with a given public key, using the name and namespace found in the input secret, unless explicitly overridden
 // by the overrideName and overrideNamespace arguments.
 func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string) error {
-	secret, err := readSecret(codecs.UniversalDecoder(), in)
+	secrets, err := readMultiSecrets(in)
 	if err != nil {
 		return err
 	}
 
-	if len(secret.Data) == 0 && len(secret.StringData) == 0 && !allowEmptyData {
-		return fmt.Errorf("secret.data is empty in input Secret, assuming this is an error and aborting. To work with empty data, --allow-empty-data can be used")
-	}
+	for _, secret := range secrets {
+		if len(secret.Data) == 0 && len(secret.StringData) == 0 && !allowEmptyData {
+			return fmt.Errorf("secret.data is empty in input Secret, assuming this is an error and aborting. To work with empty data, --allow-empty-data can be used")
+		}
 
-	if overrideName != "" {
-		secret.Name = overrideName
-	}
+		if overrideName != "" {
+			secret.Name = overrideName
+		}
 
-	if secret.GetName() == "" {
-		return fmt.Errorf("missing metadata.name in input Secret")
-	}
+		if secret.GetName() == "" {
+			return fmt.Errorf("missing metadata.name in input Secret")
+		}
 
-	if overrideNamespace != "" {
-		secret.Namespace = overrideNamespace
-	}
+		if overrideNamespace != "" {
+			secret.Namespace = overrideNamespace
+		}
 
-	if scope != ssv1alpha1.DefaultScope {
-		secret.Annotations = ssv1alpha1.UpdateScopeAnnotations(secret.Annotations, scope)
-	}
+		if scope != ssv1alpha1.DefaultScope {
+			secret.Annotations = ssv1alpha1.UpdateScopeAnnotations(secret.Annotations, scope)
+		}
 
-	if ssv1alpha1.SecretScope(secret) != ssv1alpha1.ClusterWideScope && secret.GetNamespace() == "" {
-		ns, _, err := clientConfig.Namespace()
-		if clientcmd.IsEmptyConfig(err) {
-			return fmt.Errorf("input secret has no namespace and cannot infer the namespace automatically when no kube config is available")
-		} else if err != nil {
+		if ssv1alpha1.SecretScope(secret) != ssv1alpha1.ClusterWideScope && secret.GetNamespace() == "" {
+			ns, _, err := clientConfig.Namespace()
+			if clientcmd.IsEmptyConfig(err) {
+				return fmt.Errorf("input secret has no namespace and cannot infer the namespace automatically when no kube config is available")
+			} else if err != nil {
+				return err
+			}
+			secret.SetNamespace(ns)
+		}
+
+		// Strip read-only server-side ObjectMeta (if present)
+		secret.SetSelfLink("")
+		secret.SetUID("")
+		secret.SetResourceVersion("")
+		secret.Generation = 0
+		secret.SetCreationTimestamp(metav1.Time{})
+		secret.SetDeletionTimestamp(nil)
+		secret.DeletionGracePeriodSeconds = nil
+
+		ssecret, err := ssv1alpha1.NewSealedSecret(codecs, pubKey, secret)
+		if err != nil {
 			return err
 		}
-		secret.SetNamespace(ns)
-	}
-
-	// Strip read-only server-side ObjectMeta (if present)
-	secret.SetSelfLink("")
-	secret.SetUID("")
-	secret.SetResourceVersion("")
-	secret.Generation = 0
-	secret.SetCreationTimestamp(metav1.Time{})
-	secret.SetDeletionTimestamp(nil)
-	secret.DeletionGracePeriodSeconds = nil
-
-	ssecret, err := ssv1alpha1.NewSealedSecret(codecs, pubKey, secret)
-	if err != nil {
-		return err
-	}
-	if err = sealedSecretOutput(out, outputFormat, codecs, ssecret); err != nil {
-		return err
+		if err = sealedSecretOutput(out, outputFormat, codecs, ssecret); err != nil {
+			return err
+		}
+		//return nil
 	}
 	return nil
 }
@@ -256,11 +298,6 @@ func ValidateSealedSecret(ctx context.Context, clientConfig ClientConfig, contro
 		return err
 	}
 
-	content, err := io.ReadAll(in)
-	if err != nil {
-		return err
-	}
-
 	req := restClient.RESTClient().Post().
 		Namespace(controllerNs).
 		Resource("services").
@@ -268,15 +305,22 @@ func ValidateSealedSecret(ctx context.Context, clientConfig ClientConfig, contro
 		Name(net.JoinSchemeNamePort("http", controllerName, portName)).
 		Suffix("/v1/verify")
 
-	req.Body(content)
-	res := req.Do(ctx)
-	if err := res.Error(); err != nil {
-		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
-			return fmt.Errorf("unable to decrypt sealed secret")
-		}
-		return fmt.Errorf("cannot validate sealed secret: %v", err)
+	secrets, err := readSealedSecrets(in)
+	if err != nil {
+		return fmt.Errorf("unable to decrypt sealed secret")
 	}
 
+	for _, secret := range secrets {
+		content, _ := json.Marshal(secret)
+		req.Body(content)
+		res := req.Do(ctx)
+		if err := res.Error(); err != nil {
+			if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
+				return fmt.Errorf("unable to decrypt sealed secret: %v", secret.GetName())
+			}
+			return fmt.Errorf("cannot validate sealed secret: %v", err)
+		}
+	}
 	return nil
 }
 
@@ -294,7 +338,6 @@ func ReEncryptSealedSecret(ctx context.Context, clientConfig ClientConfig, contr
 		return err
 	}
 
-	content, err := io.ReadAll(in)
 	if err != nil {
 		return err
 	}
@@ -306,27 +349,38 @@ func ReEncryptSealedSecret(ctx context.Context, clientConfig ClientConfig, contr
 		Name(net.JoinSchemeNamePort("http", controllerName, portName)).
 		Suffix("/v1/rotate")
 
-	req.Body(content)
-	res := req.Do(ctx)
-	if err := res.Error(); err != nil {
-		if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
-			return fmt.Errorf("unable to rotate secret")
-		}
-		return fmt.Errorf("cannot re-encrypt secret: %v", err)
-	}
-	body, err := res.Raw()
+	secrets, err := readSealedSecrets(in)
 	if err != nil {
 		return err
 	}
-	ssecret := &ssv1alpha1.SealedSecret{}
-	if err = json.Unmarshal(body, ssecret); err != nil {
-		return err
-	}
-	ssecret.SetCreationTimestamp(metav1.Time{})
-	ssecret.SetDeletionTimestamp(nil)
-	ssecret.Generation = 0
-	if err = sealedSecretOutput(out, outputFormat, codecs, ssecret); err != nil {
-		return err
+
+	for _, secret := range secrets {
+		content, err := json.Marshal(secret)
+		if err != nil {
+			return err
+		}
+		req.Body(content)
+		res := req.Do(ctx)
+		if err := res.Error(); err != nil {
+			if status, ok := err.(*k8serrors.StatusError); ok && status.Status().Code == http.StatusConflict {
+				return fmt.Errorf("unable to rotate secret")
+			}
+			return fmt.Errorf("cannot re-encrypt secret: %v", err)
+		}
+		body, err := res.Raw()
+		if err != nil {
+			return err
+		}
+		ssecret := &ssv1alpha1.SealedSecret{}
+		if err = json.Unmarshal(body, ssecret); err != nil {
+			return err
+		}
+		ssecret.SetCreationTimestamp(metav1.Time{})
+		ssecret.SetDeletionTimestamp(nil)
+		ssecret.Generation = 0
+		if err = sealedSecretOutput(out, outputFormat, codecs, ssecret); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -350,7 +404,13 @@ func resourceOutput(out io.Writer, outputFormat string, codecs runtimeserializer
 		return err
 	}
 	_, _ = out.Write(buf)
-	fmt.Fprint(out, "\n")
+
+	switch contentType {
+	case runtime.ContentTypeJSON:
+		fmt.Fprint(out, "\n")
+	case runtime.ContentTypeYAML:
+		fmt.Fprint(out, "---\n")
+	}
 	return nil
 }
 
@@ -471,19 +531,19 @@ func readPrivKeysFromFile(filename string) ([]*rsa.PrivateKey, error) {
 	var lst v1.List
 	if err = runtime.DecodeInto(scheme.Codecs.UniversalDecoder(), b, &lst); err == nil {
 		for _, r := range lst.Items {
-			s, err := readSecret(scheme.Codecs.UniversalDecoder(), bytes.NewBuffer(r.Raw))
+			s, err := readMultiSecrets(bytes.NewBuffer(r.Raw))
 			if err != nil {
 				return nil, err
 			}
-			secrets = append(secrets, s)
+			secrets = append(secrets, s...)
 		}
 	} else {
 		// try to parse it as json/yaml encoded secret
-		s, err := readSecret(scheme.Codecs.UniversalDecoder(), bytes.NewBuffer(b))
+		s, err := readMultiSecrets(bytes.NewBuffer(b))
 		if err != nil {
 			return nil, err
 		}
-		secrets = append(secrets, s)
+		secrets = append(secrets, s...)
 	}
 
 	var keys []*rsa.PrivateKey
