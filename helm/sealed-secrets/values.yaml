@@ -441,6 +441,9 @@ metrics:
     ## @param metrics.dashboards.labels Extra labels to be added to the Grafana dashboard ConfigMap
     ##
     labels: {}
+    ## @param metrics.dashboards.annotations Annotations to be added to the Grafana dashboard ConfigMap
+    ##
+    annotations: {}
     ## @param metrics.dashboards.namespace Namespace where Grafana dashboard ConfigMap is deployed
     ##
     namespace: ""
