@@ -11,6 +11,10 @@ metadata:
     {{- if $.Values.metrics.dashboards.labels }}
     {{- include "sealed-secrets.render" ( dict "value" $.Values.metrics.dashboards.labels "context" $) | nindent 4 }}
     {{- end }}
+  annotations:
+    {{- if $.Values.metrics.dashboards.annotations }}
+    {{- include "sealed-secrets.render" ( dict "value" $.Values.metrics.dashboards.annotations "context" $) | nindent 4 }}
+    {{- end }}
 data:
   {{ base $path }}: |-
 {{ $.Files.Get $path | indent 4 }}
