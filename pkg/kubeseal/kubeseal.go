@@ -192,6 +192,9 @@ func readMultiSecrets(r io.Reader) ([]*v1.Secret, error) {
 		secrets = append(secrets, &sec)
 	}
 
+	if len(secrets) == 0 {
+		return nil, fmt.Errorf("no secrets found")
+	}
 	return secrets, nil
 }
 
