@@ -394,7 +394,6 @@ func convertSealedSecret(obj any) (*ssv1alpha1.SealedSecret, error) {
 	}
 	if sealedSecret.APIVersion == "" || sealedSecret.Kind == "" {
 		// https://github.com/operator-framework/operator-sdk/issues/727
-		log.Errorf("WARNING: Empty API version & kind, filling it...")
 		gv := schema.GroupVersion{Group: ssv1alpha1.GroupName, Version: "v1alpha1"}
 		gvk := gv.WithKind("SealedSecret")
 		sealedSecret.APIVersion = gvk.GroupVersion().String()
