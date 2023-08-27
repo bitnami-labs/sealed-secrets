@@ -167,33 +167,26 @@ func OpenCert(ctx context.Context, clientConfig ClientConfig, controllerNs, cont
 	return openCertCluster(ctx, restClient, controllerNs, controllerName)
 }
 
-func readMultiSecrets(r io.Reader) ([]*v1.Secret, error) {
+func readSecrets(r io.Reader) ([]*v1.Secret, error) {
 	decoder := yaml.NewYAMLOrJSONDecoder(r, 4096)
 
 	var secrets []*v1.Secret
+	empty := v1.Secret{}
 
 	for {
-		dummy := v1.Secret{}
 		sec := v1.Secret{}
 		err := decoder.Decode(&sec)
-		if sec.Kind != "Secret" && sec.Kind != "" {
-			continue
-		}
-		if reflect.DeepEqual(sec, dummy) {
-			if err == io.EOF {
+		if reflect.DeepEqual(sec, empty) {
+			if errors.Is(err, io.EOF) {
 				break
 			} else {
 				continue
 			}
 		}
+		secrets = append(secrets, &sec)
 		if err != nil && err != io.EOF {
 			return nil, err
 		}
-		secrets = append(secrets, &sec)
-	}
-
-	if len(secrets) == 0 {
-		return nil, fmt.Errorf("no secrets found")
 	}
 	return secrets, nil
 }
@@ -202,16 +195,13 @@ func readSealedSecrets(r io.Reader) ([]*ssv1alpha1.SealedSecret, error) {
 	decoder := yaml.NewYAMLOrJSONDecoder(r, 4096)
 
 	var secrets []*ssv1alpha1.SealedSecret
+	empty := ssv1alpha1.SealedSecret{}
 
 	for {
-		dummy := ssv1alpha1.SealedSecret{}
 		sec := ssv1alpha1.SealedSecret{}
 		err := decoder.Decode(&sec)
-		if sec.Kind != "SealedSecret" && sec.Kind != "" {
-			continue
-		}
-		if reflect.DeepEqual(sec, dummy) {
-			if err == io.EOF {
+		if reflect.DeepEqual(sec, empty) {
+			if errors.Is(err, io.EOF) {
 				break
 			} else {
 				continue
@@ -230,7 +220,7 @@ func readSealedSecrets(r io.Reader) ([]*ssv1alpha1.SealedSecret, error) {
 // with a given public key, using the name and namespace found in the input secret, unless explicitly overridden
 // by the overrideName and overrideNamespace arguments.
 func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string) error {
-	secrets, err := readMultiSecrets(in)
+	secrets, err := readSecrets(in)
 	if err != nil {
 		return err
 	}
@@ -534,7 +524,7 @@ func readPrivKeysFromFile(filename string) ([]*rsa.PrivateKey, error) {
 	var lst v1.List
 	if err = runtime.DecodeInto(scheme.Codecs.UniversalDecoder(), b, &lst); err == nil {
 		for _, r := range lst.Items {
-			s, err := readMultiSecrets(bytes.NewBuffer(r.Raw))
+			s, err := readSecrets(bytes.NewBuffer(r.Raw))
 			if err != nil {
 				return nil, err
 			}
@@ -542,7 +532,7 @@ func readPrivKeysFromFile(filename string) ([]*rsa.PrivateKey, error) {
 		}
 	} else {
 		// try to parse it as json/yaml encoded secret
-		s, err := readMultiSecrets(bytes.NewBuffer(b))
+		s, err := readSecrets(bytes.NewBuffer(b))
 		if err != nil {
 			return nil, err
 		}

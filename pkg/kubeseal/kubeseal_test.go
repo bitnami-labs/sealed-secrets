@@ -603,7 +603,7 @@ func TestUnseal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	secret, err := readMultiSecrets(&buf)
+	secret, err := readSecrets(&buf)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -664,7 +664,7 @@ func TestUnsealList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	secret, err := readMultiSecrets(&buf)
+	secret, err := readSecrets(&buf)
 	if err != nil {
 		t.Fatal(err)
 	}
