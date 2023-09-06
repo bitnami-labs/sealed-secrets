@@ -50,7 +50,9 @@ spec:
       securityContext: {{- omit .Values.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "sealed-secrets.serviceAccountName" . }}
+      {{ if .Values.serviceAccount.create }}
       automountServiceAccountToken: false
+      {{- end }}
       {{- if .Values.hostNetwork }}
       hostNetwork: true
       {{- end }}
