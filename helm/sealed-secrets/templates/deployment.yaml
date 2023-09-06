@@ -50,6 +50,7 @@ spec:
       securityContext: {{- omit .Values.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "sealed-secrets.serviceAccountName" . }}
+      automountServiceAccountToken: false
       {{- if .Values.hostNetwork }}
       hostNetwork: true
       {{- end }}
@@ -158,10 +159,15 @@ spec:
             {{- end }}
             - mountPath: /tmp
               name: tmp
+            - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+              name: service-account-token
       volumes: 
       {{- if .Values.additionalVolumes }}
         {{- toYaml .Values.additionalVolumes | nindent 8 }} 
       {{- end }}
         - name: tmp
           emptyDir: {}
+        - name: service-account-token
+          secret:
+            secretName: {{ include "sealed-secrets.serviceAccountTokenName" . }}
 {{- end }}

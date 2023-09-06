@@ -81,10 +81,10 @@ rateLimitBurst: ""
 ##
 additionalNamespaces: []
 ## @param privateKeyAnnotations Map of annotations to be set on the sealing keypairs
-## 
+##
 privateKeyAnnotations: {}
 ## @param privateKeyLabels Map of labels to be set on the sealing keypairs
-## 
+##
 privateKeyLabels: {}
 ## @param logInfoStdout Specifies whether the Sealed Secrets controller will log info to stdout
 ##
@@ -369,6 +369,8 @@ serviceAccount:
   ## If not set and create is true, a name is generated using the sealed-secrets.fullname template
   ##
   name: ""
+  tokenName: ""
+
 ## RBAC configuration
 ##
 rbac:

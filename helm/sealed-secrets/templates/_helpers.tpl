@@ -48,6 +48,15 @@ Create the name of the service account to use
 {{- end -}}
 {{- end -}}
 
+
+{{/*
+Create the name of the service account token to use
+*/}}
+{{- define "sealed-secrets.serviceAccountTokenName" -}}
+    {{- $serviceAccountName := include "sealed-secrets.serviceAccountName" . -}}
+    {{- printf "%s-token" $serviceAccountName | default .Values.serviceAccount.tokenName -}}
+{{- end -}}
+
 {{/*
 Kubernetes standard labels
 */}}
