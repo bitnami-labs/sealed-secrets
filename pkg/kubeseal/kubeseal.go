@@ -10,13 +10,14 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"k8s.io/apimachinery/pkg/util/yaml"
 	"net/http"
 	"net/url"
 	"os"
 	"reflect"
 	"strings"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/yaml"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"

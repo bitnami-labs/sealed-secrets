@@ -9,8 +9,6 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io"
-	yaml2 "k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/utils/strings/slices"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -20,6 +18,9 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/utils/strings/slices"
 
 	flag "github.com/spf13/pflag"
 
@@ -207,7 +208,6 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-
 			s1 := mkTestSecret(t, "foo", "1", withSecretName("s1"), asYAML(tc.asYaml))
 			s2 := mkTestSecret(t, "bar", "2", withSecretName("s2"), asYAML(tc.asYaml))
 			multiDocYaml := fmt.Sprintf("%s%s%s", s1, tc.inputSeparator, s2)
@@ -230,7 +230,7 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 			outBytes := outbuf.Bytes()
 			t.Logf("output is %s", outBytes)
 
-			decoder := yaml2.NewYAMLOrJSONDecoder(bytes.NewReader(outBytes), 4096)
+			decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(outBytes), 4096)
 			var gotSecrets []*ssv1alpha1.SealedSecret
 			for {
 				s := ssv1alpha1.SealedSecret{}
