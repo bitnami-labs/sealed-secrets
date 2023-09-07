@@ -304,7 +304,10 @@ func ValidateSealedSecret(ctx context.Context, clientConfig ClientConfig, contro
 	}
 
 	for _, secret := range secrets {
-		content, _ := json.Marshal(secret)
+		content, err := json.Marshal(secret)
+		if err != nil {
+			return fmt.Errorf("error while marshalling sealed secret: %w", err)
+		}
 		req.Body(content)
 		res := req.Do(ctx)
 		if err := res.Error(); err != nil {
