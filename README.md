@@ -716,6 +716,10 @@ Developing guidelines can be found [in the Developer Guide](docs/developer/READM
 
 ## FAQ
 
+### Can I encrypt multiple secrets at once, in one YAML / JSON file?
+
+Yes, you can! Drop as many secrets as you like in one file. Make sure to separate them via `---` for YAML and as extra, single objects in JSON.
+
 ### Will you still be able to decrypt if you no longer have access to your cluster?
 
 No, the private keys are only stored in the Secret managed by the controller (unless you have some other backup of your k8s objects). There are no backdoors - without that private key used to encrypt a given SealedSecrets, you can't decrypt it. If you can't get to the Secrets with the encryption keys, and you also can't get to the decrypted versions of your Secrets live in the cluster, then you will need to regenerate new passwords for everything, seal them again with a new sealing key, etc.
