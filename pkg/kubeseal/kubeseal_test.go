@@ -19,6 +19,9 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/apimachinery/pkg/util/yaml"
+	"k8s.io/utils/strings/slices"
+
 	flag "github.com/spf13/pflag"
 
 	"github.com/google/go-cmp/cmp"
@@ -174,6 +177,86 @@ func TestOpenCertFile(t *testing.T) {
 		if string(data) != testCert {
 			t.Errorf("Read incorrect data from cert file?!")
 		}
+	}
+}
+
+func TestSealWithMultiDocSecrets(t *testing.T) {
+	key, err := ParseKey(strings.NewReader(testCert))
+	if err != nil {
+		t.Fatalf("Failed to parse gotSecrets key: %v", err)
+	}
+
+	testCases := []struct {
+		name           string
+		asYaml         bool
+		inputSeparator string
+		outputFormat   string
+	}{
+		{
+			name:           "multi-doc json",
+			asYaml:         false,
+			inputSeparator: "\n",
+			outputFormat:   "json",
+		},
+		{
+			name:           "multi-doc yaml",
+			asYaml:         true,
+			inputSeparator: "---\n",
+			outputFormat:   "yaml",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			s1 := mkTestSecret(t, "foo", "1", withSecretName("s1"), asYAML(tc.asYaml))
+			s2 := mkTestSecret(t, "bar", "2", withSecretName("s2"), asYAML(tc.asYaml))
+			multiDocYaml := fmt.Sprintf("%s%s%s", s1, tc.inputSeparator, s2)
+
+			clientConfig := testClientConfig()
+			outputFormat := tc.outputFormat
+			inbuf := bytes.Buffer{}
+			_, err = bytes.NewBuffer([]byte(multiDocYaml)).WriteTo(&inbuf)
+			if err != nil {
+				t.Fatalf("Error writing to buffer: %v", err)
+			}
+
+			t.Logf("input is: %s", inbuf.String())
+
+			outbuf := bytes.Buffer{}
+			if err := Seal(clientConfig, outputFormat, &inbuf, &outbuf, scheme.Codecs, key, ssv1alpha1.NamespaceWideScope, false, "", ""); err != nil {
+				t.Fatalf("seal() returned error: %v", err)
+			}
+
+			outBytes := outbuf.Bytes()
+			t.Logf("output is %s", outBytes)
+
+			decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(outBytes), 4096)
+			var gotSecrets []*ssv1alpha1.SealedSecret
+			for {
+				s := ssv1alpha1.SealedSecret{}
+				err := decoder.Decode(&s)
+				if err != nil {
+					if err == io.EOF {
+						break
+					}
+					t.Fatalf("Failed to parse result: %v", err)
+				}
+				gotSecrets = append(gotSecrets, &s)
+			}
+
+			if got, want := len(gotSecrets), 2; got != want {
+				t.Errorf("Wrong element output length: got: %d, want: %d", got, want)
+			}
+
+			for _, gotSecret := range gotSecrets {
+				if got, want := gotSecret.GetNamespace(), "testns"; got != want {
+					t.Errorf("got: %q, want: %q", got, want)
+				}
+				if got, want := gotSecret.GetName(), []string{"s1", "s2"}; !slices.Contains(want, got) {
+					t.Errorf("got: %q, want: %q", got, want)
+				}
+			}
+		})
 	}
 }
 
@@ -520,13 +603,15 @@ func TestUnseal(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	secret, err := readSecret(scheme.Codecs.UniversalDecoder(), &buf)
+	secret, err := readSecrets(&buf)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
-		t.Fatalf("got: %q, want: %q", got, want)
+	for _, secret := range secret {
+		if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
+			t.Fatalf("got: %q, want: %q", got, want)
+		}
 	}
 }
 
@@ -579,13 +664,15 @@ func TestUnsealList(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	secret, err := readSecret(scheme.Codecs.UniversalDecoder(), &buf)
+	secret, err := readSecrets(&buf)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
-		t.Fatalf("got: %q, want: %q", got, want)
+	for _, secret := range secret {
+		if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
+			t.Fatalf("got: %q, want: %q", got, want)
+		}
 	}
 }
 
@@ -884,17 +971,6 @@ func TestReadPrivKeySecret(t *testing.T) {
 
 	if got, want := pkr.D.String(), pkw.D.String(); got != want {
 		t.Errorf("got: %q, want: %q", got, want)
-	}
-}
-
-func TestYAMLStream(t *testing.T) {
-	s1 := mkTestSecret(t, "foo", "1", withSecretName("s1"), asYAML(true))
-	s2 := mkTestSecret(t, "var", "2", withSecretName("s2"), asYAML(true))
-	bad := fmt.Sprintf("%s\n---\n%s\n", s1, s2)
-
-	_, err := readSecret(scheme.Codecs.UniversalDecoder(), strings.NewReader(bad))
-	if err == nil {
-		t.Fatalf("error expected")
 	}
 }
 
