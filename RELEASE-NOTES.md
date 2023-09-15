@@ -4,6 +4,22 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.24.0
+
+### Changelog
+
+- feat: multidoc support for yaml and json ([#1304](https://github.com/bitnami-labs/sealed-secrets/pull/1304))
+- Delete repeating warning message ([#1303](https://github.com/bitnami-labs/sealed-secrets/pull/1303))
+- Add dashboard configmap annotations ([#1302](https://github.com/bitnami-labs/sealed-secrets/pull/1302))
+- Update the golang version to the latest available one ([#1318](https://github.com/bitnami-labs/sealed-secrets/pull/1318))
+- Update Linux installation process on README to have a way to dynamically get kubeseal version number ([#1294](https://github.com/bitnami-labs/sealed-secrets/pull/1294))
+- Bump golang.org/x/crypto from 0.12.0 to 0.13.0 ([#1319](https://github.com/bitnami-labs/sealed-secrets/pull/1319))
+- Bump github.com/onsi/ginkgo/v2 from 2.11.0 to 2.12.0 ([#1310](https://github.com/bitnami-labs/sealed-secrets/pull/1310))
+- Bump k8s.io/client-go from 0.28.0 to 0.28.1 ([#1308](https://github.com/bitnami-labs/sealed-secrets/pull/1308))
+- Bump k8s.io/code-generator from 0.28.0 to 0.28.1 ([#1307](https://github.com/bitnami-labs/sealed-secrets/pull/1307))
+- Bump k8s.io/code-generator from 0.27.4 to 0.28.0 ([#1300](https://github.com/bitnami-labs/sealed-secrets/pull/1300))
+- Bump k8s.io/client-go from 0.27.4 to 0.28.0 ([#1297](https://github.com/bitnami-labs/sealed-secrets/pull/1297))
+
 ## v0.23.1
 
 ### Changelog
