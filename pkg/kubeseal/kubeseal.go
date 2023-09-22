@@ -226,7 +226,7 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 		return err
 	}
 
-	for _, secret := range secrets {
+	for pos, secret := range secrets {
 		if len(secret.Data) == 0 && len(secret.StringData) == 0 && !allowEmptyData {
 			return fmt.Errorf("secret.data is empty in input Secret, assuming this is an error and aborting. To work with empty data, --allow-empty-data can be used")
 		}
@@ -270,12 +270,16 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 		if err != nil {
 			return err
 		}
-		if err = sealedSecretOutput(out, outputFormat, codecs, ssecret); err != nil {
+		if err = sealedSecretOutput(out, outputFormat, codecs, ssecret, needsSeparator(pos, len(secrets))); err != nil {
 			return err
 		}
 		//return nil
 	}
 	return nil
+}
+
+func needsSeparator(position, length int) bool {
+	return position > 0 && position < length
 }
 
 func ValidateSealedSecret(ctx context.Context, clientConfig ClientConfig, controllerNs, controllerName string, in io.Reader) error {
@@ -351,7 +355,7 @@ func ReEncryptSealedSecret(ctx context.Context, clientConfig ClientConfig, contr
 		return err
 	}
 
-	for _, secret := range secrets {
+	for pos, secret := range secrets {
 		content, err := json.Marshal(secret)
 		if err != nil {
 			return err
@@ -375,20 +379,26 @@ func ReEncryptSealedSecret(ctx context.Context, clientConfig ClientConfig, contr
 		ssecret.SetCreationTimestamp(metav1.Time{})
 		ssecret.SetDeletionTimestamp(nil)
 		ssecret.Generation = 0
-		if err = sealedSecretOutput(out, outputFormat, codecs, ssecret); err != nil {
+		if err = sealedSecretOutput(out, outputFormat, codecs, ssecret, needsSeparator(pos, len(secrets))); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func resourceOutput(out io.Writer, outputFormat string, codecs runtimeserializer.CodecFactory, gv runtime.GroupVersioner, obj runtime.Object) error {
+func resourceOutput(out io.Writer, outputFormat string, codecs runtimeserializer.CodecFactory, gv runtime.GroupVersioner, obj runtime.Object, needsSeparator bool) error {
 	var contentType string
 	switch strings.ToLower(outputFormat) {
 	case "json", "":
 		contentType = runtime.ContentTypeJSON
+		if needsSeparator {
+			fmt.Fprint(out, "\n")
+		}
 	case "yaml":
 		contentType = runtime.ContentTypeYAML
+		if needsSeparator {
+			fmt.Fprint(out, "---\n")
+		}
 	default:
 		return fmt.Errorf("unsupported output format: %s", outputFormat)
 	}
@@ -402,17 +412,11 @@ func resourceOutput(out io.Writer, outputFormat string, codecs runtimeserializer
 	}
 	_, _ = out.Write(buf)
 
-	switch contentType {
-	case runtime.ContentTypeJSON:
-		fmt.Fprint(out, "\n")
-	case runtime.ContentTypeYAML:
-		fmt.Fprint(out, "---\n")
-	}
 	return nil
 }
 
-func sealedSecretOutput(out io.Writer, outputFormat string, codecs runtimeserializer.CodecFactory, ssecret *ssv1alpha1.SealedSecret) error {
-	return resourceOutput(out, outputFormat, codecs, ssv1alpha1.SchemeGroupVersion, ssecret)
+func sealedSecretOutput(out io.Writer, outputFormat string, codecs runtimeserializer.CodecFactory, ssecret *ssv1alpha1.SealedSecret, needsSeparator bool) error {
+	return resourceOutput(out, outputFormat, codecs, ssv1alpha1.SchemeGroupVersion, ssecret, needsSeparator)
 }
 
 func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1alpha1.SealedSecret, error) {
@@ -468,7 +472,7 @@ func SealMergingInto(clientConfig ClientConfig, outputFormat string, in io.Reade
 
 	// updated sealed secret file in-place avoiding clobbering the file upon rendering errors.
 	var out bytes.Buffer
-	if err := sealedSecretOutput(&out, outputFormat, codecs, orig); err != nil {
+	if err := sealedSecretOutput(&out, outputFormat, codecs, orig, false); err != nil {
 		return err
 	}
 
@@ -619,5 +623,5 @@ func UnsealSealedSecret(w io.Writer, in io.Reader, privKeysFilenames []string, o
 		return err
 	}
 
-	return resourceOutput(w, outputFormat, codecs, v1.SchemeGroupVersion, sec)
+	return resourceOutput(w, outputFormat, codecs, v1.SchemeGroupVersion, sec, false)
 }

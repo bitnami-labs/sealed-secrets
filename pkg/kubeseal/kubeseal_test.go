@@ -14,6 +14,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"regexp"
 	goruntime "runtime"
 	"strings"
 	"testing"
@@ -187,22 +188,35 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name           string
-		asYaml         bool
-		inputSeparator string
-		outputFormat   string
+		name               string
+		asYaml             bool
+		inputSeparator     string
+		outputFormat       string
+		checkTrailingChars func(t *testing.T, outBytes []byte)
 	}{
 		{
 			name:           "multi-doc json",
 			asYaml:         false,
 			inputSeparator: "\n",
 			outputFormat:   "json",
+			checkTrailingChars: func(t *testing.T, outBytes []byte) {
+				endWithTrailingNewLine, _ := regexp.Compile("(\n)\n?$")
+				if endWithTrailingNewLine.Match(outBytes) {
+					t.Errorf("output should not end with trailing new line")
+				}
+			},
 		},
 		{
 			name:           "multi-doc yaml",
 			asYaml:         true,
 			inputSeparator: "---\n",
 			outputFormat:   "yaml",
+			checkTrailingChars: func(t *testing.T, outBytes []byte) {
+				endWithDashes, _ := regexp.Compile("---(\n)?$")
+				if endWithDashes.Match(outBytes) {
+					t.Errorf("output should not end with dashes")
+				}
+			},
 		},
 	}
 
@@ -210,7 +224,8 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			s1 := mkTestSecret(t, "foo", "1", withSecretName("s1"), asYAML(tc.asYaml))
 			s2 := mkTestSecret(t, "bar", "2", withSecretName("s2"), asYAML(tc.asYaml))
-			multiDocYaml := fmt.Sprintf("%s%s%s", s1, tc.inputSeparator, s2)
+			s3 := mkTestSecret(t, "foobar", "3", withSecretName("s3"), asYAML(tc.asYaml))
+			multiDocYaml := fmt.Sprintf("%s%s%s%s%s", s1, tc.inputSeparator, s2, tc.inputSeparator, s3)
 
 			clientConfig := testClientConfig()
 			outputFormat := tc.outputFormat
@@ -220,7 +235,7 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 				t.Fatalf("Error writing to buffer: %v", err)
 			}
 
-			t.Logf("input is: %s", inbuf.String())
+			t.Logf("input is:\n%s", inbuf.String())
 
 			outbuf := bytes.Buffer{}
 			if err := Seal(clientConfig, outputFormat, &inbuf, &outbuf, scheme.Codecs, key, ssv1alpha1.NamespaceWideScope, false, "", ""); err != nil {
@@ -228,7 +243,7 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 			}
 
 			outBytes := outbuf.Bytes()
-			t.Logf("output is %s", outBytes)
+			t.Logf("output is:\n%s", outBytes)
 
 			decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(outBytes), 4096)
 			var gotSecrets []*ssv1alpha1.SealedSecret
@@ -244,7 +259,7 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 				gotSecrets = append(gotSecrets, &s)
 			}
 
-			if got, want := len(gotSecrets), 2; got != want {
+			if got, want := len(gotSecrets), 3; got != want {
 				t.Errorf("Wrong element output length: got: %d, want: %d", got, want)
 			}
 
@@ -252,10 +267,11 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 				if got, want := gotSecret.GetNamespace(), "testns"; got != want {
 					t.Errorf("got: %q, want: %q", got, want)
 				}
-				if got, want := gotSecret.GetName(), []string{"s1", "s2"}; !slices.Contains(want, got) {
+				if got, want := gotSecret.GetName(), []string{"s1", "s2", "s3"}; !slices.Contains(want, got) {
 					t.Errorf("got: %q, want: %q", got, want)
 				}
 			}
+			tc.checkTrailingChars(t, outBytes)
 		})
 	}
 }
@@ -959,7 +975,7 @@ func TestReadPrivKeySecret(t *testing.T) {
 	}
 	// defer os.RemoveAll(tmp.Name())
 
-	if err := resourceOutput(tmp, outputFormat, scheme.Codecs, v1.SchemeGroupVersion, sec); err != nil {
+	if err := resourceOutput(tmp, outputFormat, scheme.Codecs, v1.SchemeGroupVersion, sec, false); err != nil {
 		t.Fatal(err)
 	}
 	tmp.Close()
