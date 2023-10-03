@@ -8,7 +8,7 @@ require (
 	github.com/mattn/go-isatty v0.0.19
 	github.com/mkmik/multierror v0.3.0
 	github.com/onsi/ginkgo/v2 v2.12.1
-	github.com/onsi/gomega v1.27.10
+	github.com/onsi/gomega v1.28.0
 	github.com/prometheus/client_golang v1.16.0
 	github.com/spf13/pflag v1.0.5
 	github.com/throttled/throttled v2.2.5+incompatible
