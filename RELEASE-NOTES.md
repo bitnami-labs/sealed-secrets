@@ -4,6 +4,12 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.24.1
+
+### Changelog
+
+- fix: remove trailing dashes for multidoc yaml ([#1335](https://github.com/bitnami-labs/sealed-secrets/pull/1335))
+
 ## v0.24.0
 
 ### Changelog
