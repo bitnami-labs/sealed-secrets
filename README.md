@@ -741,10 +741,17 @@ kubectl get secret -n kube-system sealed-secrets-key -o yaml >>main.key
 
 To restore from a backup after some disaster, just put that secrets back before starting the controller - or if the controller was already started, replace the newly-created secrets and restart the controller:
 
-```bash
-kubectl apply -f main.key
-kubectl delete pod -n kube-system -l name=sealed-secrets-controller
-```
+* For Helm deployment:
+    ```bash
+    kubectl apply -f main.key
+    kubectl delete pod -n kube-system -l app.kubernetes.io/name=sealed-secrets
+    ```
+
+* For deployment via `controller.yaml` manifest
+    ```bash
+    kubectl apply -f main.key
+    kubectl delete pod -n kube-system -l name=sealed-secrets-controller
+    ```
 
 ### Can I decrypt my secrets offline with a backup key?
 
