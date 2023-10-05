@@ -220,7 +220,7 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 				t.Fatalf("Error writing to buffer: %v", err)
 			}
 
-			t.Logf("input is: %s", inbuf.String())
+			t.Logf("input is:\n%s", inbuf.String())
 
 			outbuf := bytes.Buffer{}
 			if err := Seal(clientConfig, outputFormat, &inbuf, &outbuf, scheme.Codecs, key, ssv1alpha1.NamespaceWideScope, false, "", ""); err != nil {
@@ -228,7 +228,17 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 			}
 
 			outBytes := outbuf.Bytes()
-			t.Logf("output is %s", outBytes)
+			t.Logf("output is:\n%s", outBytes)
+
+			if tc.asYaml {
+				if !strings.HasPrefix(string(outBytes), "---") {
+					t.Errorf("YAML output should start with ---")
+				}
+
+				if strings.HasSuffix(string(outBytes), "---\n") {
+					t.Errorf("YAML output should not end with ---")
+				}
+			}
 
 			decoder := yaml.NewYAMLOrJSONDecoder(bytes.NewReader(outBytes), 4096)
 			var gotSecrets []*ssv1alpha1.SealedSecret

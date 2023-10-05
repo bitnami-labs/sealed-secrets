@@ -389,6 +389,7 @@ func resourceOutput(out io.Writer, outputFormat string, codecs runtimeserializer
 		contentType = runtime.ContentTypeJSON
 	case "yaml":
 		contentType = runtime.ContentTypeYAML
+		fmt.Fprint(out, "---\n")
 	default:
 		return fmt.Errorf("unsupported output format: %s", outputFormat)
 	}
@@ -402,11 +403,8 @@ func resourceOutput(out io.Writer, outputFormat string, codecs runtimeserializer
 	}
 	_, _ = out.Write(buf)
 
-	switch contentType {
-	case runtime.ContentTypeJSON:
+	if contentType == runtime.ContentTypeJSON {
 		fmt.Fprint(out, "\n")
-	case runtime.ContentTypeYAML:
-		fmt.Fprint(out, "---\n")
 	}
 	return nil
 }
