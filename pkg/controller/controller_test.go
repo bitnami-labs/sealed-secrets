@@ -156,6 +156,53 @@ func TestSkipRecreateConfigDoesSkipIt(t *testing.T) {
 	}
 }
 
+func TestEmptyStatusSendsUpdate(t *testing.T) {
+	updateRequired := updateSealedSecretsStatusConditions(&ssv1alpha1.SealedSecretStatus{}, nil)
+
+	if !updateRequired {
+		t.Fatalf("expected status update, but no update was send")
+	}
+}
+
+func TestStatusUpdateSendsUpdate(t *testing.T) {
+	updateRequired := updateSealedSecretsStatusConditions(&ssv1alpha1.SealedSecretStatus{
+		Conditions: []ssv1alpha1.SealedSecretCondition{{
+			Status: "False",
+			Type:   ssv1alpha1.SealedSecretSynced,
+		}},
+	}, nil)
+
+	if !updateRequired {
+		t.Fatalf("expected status update, but no update was send")
+	}
+}
+
+func TestSameStatusNoUpdate(t *testing.T) {
+	updateRequired := updateSealedSecretsStatusConditions(&ssv1alpha1.SealedSecretStatus{
+		Conditions: []ssv1alpha1.SealedSecretCondition{{
+			Type:   ssv1alpha1.SealedSecretSynced,
+			Status: "False",
+		}},
+	}, errors.New("testerror"))
+
+	if updateRequired {
+		t.Fatalf("expected no status update, but update was send")
+	}
+}
+
+func TestSyncedSecretWithErrorSendsUpdate(t *testing.T) {
+	updateRequired := updateSealedSecretsStatusConditions(&ssv1alpha1.SealedSecretStatus{
+		Conditions: []ssv1alpha1.SealedSecretCondition{{
+			Type:   ssv1alpha1.SealedSecretSynced,
+			Status: "True",
+		}},
+	}, errors.New("testerror"))
+
+	if !updateRequired {
+		t.Fatalf("expected status update, but no update was send")
+	}
+}
+
 func testKeyRegister(t *testing.T, ctx context.Context, clientset kubernetes.Interface, ns string) *KeyRegistry {
 	t.Helper()
 
