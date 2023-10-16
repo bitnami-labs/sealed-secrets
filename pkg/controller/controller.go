@@ -412,20 +412,18 @@ func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, 
 		ssecret.Status = &ssv1alpha1.SealedSecretStatus{}
 	}
 
-	// No need to update the status if we already have observed it from the
-	// current generation of the resource.
-	if ssecret.Status.ObservedGeneration == ssecret.ObjectMeta.Generation {
-		return nil
+	ssecret.Status.ObservedGeneration = ssecret.ObjectMeta.Generation
+	updatedRequired := updateSealedSecretsStatusConditions(ssecret.Status, unsealError)
+	if updatedRequired {
+		_, err := c.ssclient.SealedSecrets(ssecret.GetObjectMeta().GetNamespace()).UpdateStatus(context.Background(), ssecret, metav1.UpdateOptions{})
+		return err
 	}
 
-	ssecret.Status.ObservedGeneration = ssecret.ObjectMeta.Generation
-	updateSealedSecretsStatusConditions(ssecret.Status, unsealError)
-
-	_, err := c.ssclient.SealedSecrets(ssecret.GetObjectMeta().GetNamespace()).UpdateStatus(context.Background(), ssecret, metav1.UpdateOptions{})
-	return err
+	return nil
 }
 
-func updateSealedSecretsStatusConditions(st *ssv1alpha1.SealedSecretStatus, unsealError error) {
+func updateSealedSecretsStatusConditions(st *ssv1alpha1.SealedSecretStatus, unsealError error) bool {
+	var updateRequired bool
 	cond := func() *ssv1alpha1.SealedSecretCondition {
 		for i := range st.Conditions {
 			if st.Conditions[i].Type == ssv1alpha1.SealedSecretSynced {
@@ -446,11 +444,16 @@ func updateSealedSecretsStatusConditions(st *ssv1alpha1.SealedSecretStatus, unse
 		status = corev1.ConditionFalse
 		cond.Message = unsealError.Error()
 	}
-	cond.LastUpdateTime = metav1.Now()
+
+	// Status has changed, update the transition time and signal that an update is required
 	if cond.Status != status {
 		cond.LastTransitionTime = cond.LastUpdateTime
 		cond.Status = status
+		cond.LastUpdateTime = metav1.Now()
+		updateRequired = true
 	}
+
+	return updateRequired
 }
 
 func isAnnotatedToBeManaged(secret *corev1.Secret) bool {
