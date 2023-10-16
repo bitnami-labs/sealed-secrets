@@ -4,6 +4,15 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.24.2
+
+### Changelog
+
+- Fix issue where sealed secrets status is not updated if sealed secret…  ([#1295](https://github.com/bitnami-labs/sealed-secrets/pull/1295))
+- Bump golang.org/x/crypto from 0.13.0 to 0.14.0([#1341](https://github.com/bitnami-labs/sealed-secrets/pull/1341))
+- Bump github.com/onsi/ginkgo/v2 from 2.12.1 to 2.13.0 ([#1342](https://github.com/bitnami-labs/sealed-secrets/pull/1342))
+- Bump golang.org/x/net from 0.14.0 to 0.17.0 ([#1344](https://github.com/bitnami-labs/sealed-secrets/pull/1344))
+
 ## v0.24.1
 
 ### Changelog
