@@ -447,3 +447,16 @@ metrics:
     ## @param metrics.dashboards.namespace Namespace where Grafana dashboard ConfigMap is deployed
     ##
     namespace: ""
+
+## @section PodDisruptionBudget Parameters
+
+pdb:
+  ## @param pdb.create Specifies whether a PodDisruptionBudget should be created
+  ##
+  create: false
+  ## @param pdb.minAvailable The minimum number of pods (non number to omit)
+  ##
+  minAvailable: 1
+  ## @param pdb.maxUnavailable The maximum number of unavailable pods (non number to omit)
+  ##
+  maxUnavailable: ""
