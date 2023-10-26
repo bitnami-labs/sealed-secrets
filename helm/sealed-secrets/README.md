@@ -204,6 +204,14 @@ The command removes all the Kubernetes components associated with the chart and 
 | `metrics.dashboards.annotations`           | Annotations to be added to the Grafana dashboard ConfigMap                             | `{}`    |
 | `metrics.dashboards.namespace`             | Namespace where Grafana dashboard ConfigMap is deployed                                | `""`    |
 
+### PodDisruptionBudget Parameters
+
+| Name                 | Description                                                 | Value   |
+| -------------------- | ----------------------------------------------------------- | ------- |
+| `pdb.create`         | Specifies whether a PodDisruptionBudget should be created   | `false` |
+| `pdb.minAvailable`   | The minimum number of pods (non number to omit)             | `1`     |
+| `pdb.maxUnavailable` | The maximum number of unavailable pods (non number to omit) | `""`    |
+
 
 Specify each parameter using the `--set key=value[,key=value]` argument to `helm install`. For example,
 

@@ -456,7 +456,7 @@ pdb:
   create: false
   ## @param pdb.minAvailable The minimum number of pods (non number to omit)
   ##
-  minAvailable: 0
+  minAvailable: 1
   ## @param pdb.maxUnavailable The maximum number of unavailable pods (non number to omit)
   ##
-  maxUnavailable:
+  maxUnavailable: ""
