@@ -412,9 +412,9 @@ func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, 
 		ssecret.Status = &ssv1alpha1.SealedSecretStatus{}
 	}
 
-	ssecret.Status.ObservedGeneration = ssecret.ObjectMeta.Generation
 	updatedRequired := updateSealedSecretsStatusConditions(ssecret.Status, unsealError)
-	if updatedRequired {
+	if updatedRequired || (ssecret.Status.ObservedGeneration != ssecret.ObjectMeta.Generation) {
+		ssecret.Status.ObservedGeneration = ssecret.ObjectMeta.Generation
 		_, err := c.ssclient.SealedSecrets(ssecret.GetObjectMeta().GetNamespace()).UpdateStatus(context.Background(), ssecret, metav1.UpdateOptions{})
 		return err
 	}
