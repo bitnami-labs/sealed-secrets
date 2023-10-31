@@ -56,6 +56,10 @@ func getStatus(ss *ssv1alpha1.SealedSecret) *ssv1alpha1.SealedSecretStatus {
 	return ss.Status
 }
 
+func getObservedGeneration(ss *ssv1alpha1.SealedSecret) int64 {
+	return ss.Status.ObservedGeneration
+}
+
 // get the first owner name assuming there is only one owner which is the sealed-secret object
 func getFirstOwnerName(s *v1.Secret) string {
 	return s.OwnerReferences[0].Name
@@ -230,6 +234,9 @@ var _ = Describe("create", func() {
 				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
 					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getObservedGeneration, Equal(int64(2))))
 			})
 		})
 
