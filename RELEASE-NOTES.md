@@ -4,6 +4,20 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.24.3
+
+### Changelog
+
+- fix a bug that kept a sealed secret's generation and observedgeneration out of sync ([#1360](https://github.com/bitnami-labs/sealed-secrets/pull/1360))
+- fix: add pdb ([#1340](https://github.com/bitnami-labs/sealed-secrets/pull/1340))
+- Bump k8s.io/code-generator from 0.28.2 to 0.28.3 ([#1358](https://github.com/bitnami-labs/sealed-secrets/pull/1340))
+- Bump github.com/onsi/gomega from 1.28.1 to 1.29.0 ([#1357](https://github.com/bitnami-labs/sealed-secrets/pull/1357))
+- Bump github.com/mattn/go-isatty from 0.0.19 to 0.0.20 ([#1353](https://github.com/bitnami-labs/sealed-secrets/pull/1353))
+- Bump github.com/onsi/gomega from 1.28.0 to 1.28.1 ([#1351](https://github.com/bitnami-labs/sealed-secrets/pull/1351))
+- Bump k8s.io/client-go from 0.28.2 to 0.28.3 ([#1350](https://github.com/bitnami-labs/sealed-secrets/pull/1350))
+- Bump k8s.io/api from 0.28.2 to 0.28.3 ([#1349](https://github.com/bitnami-labs/sealed-secrets/pull/1349))
+- Bump github.com/google/go-cmp from 0.5.9 to 0.6.0 ([#1348](https://github.com/bitnami-labs/sealed-secrets/pull/1348))
+
 ## v0.24.2
 
 ### Changelog
