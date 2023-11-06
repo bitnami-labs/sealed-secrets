@@ -441,8 +441,7 @@ The Sealed Secrets controller ensures compatibility with different versions of K
 echo -n bar | kubectl create secret generic mysecret --dry-run=client --from-file=foo=/dev/stdin -o json >mysecret.json
 
 # This is the important bit:
-# (note default format is json!)
-kubeseal <mysecret.json >mysealedsecret.json
+kubeseal -f mysecret.json -w mysealedsecret.json
 
 # At this point mysealedsecret.json is safe to upload to Github,
 # post on Twitter, etc.
