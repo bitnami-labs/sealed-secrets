@@ -1,7 +1,7 @@
 # Sealed Secrets Metrics
 
 The Sealed Secrets Controller running in Kubernetes exposes Prometheus
-metrics on `*:8080/metrics`.
+metrics on `*:8081/metrics`.
 
 These metrics enable operators to observe how it is performing. For example 
 how many `SealedSecret` unseals have been attempted and how many errors may 
@@ -30,13 +30,13 @@ After installing the Sealed Secrets Controller you can access the metrics via
 Kubernetes port-forward to your pod:
 
 ```
-$ kubectl port-forward sealed-secrets-controller-6566dc69c6-lqr6x 8080 &
+$ kubectl port-forward sealed-secrets-controller-6566dc69c6-lqr6x 8081 &
 [1] 293283
 ```
 
 Then query the metrics endpoint:
 ```
-$ curl localhost:8080/metrics
+$ curl localhost:8081/metrics
 
 <snip>
 # HELP sealed_secrets_controller_build_info Build information.

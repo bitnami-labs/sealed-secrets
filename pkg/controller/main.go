@@ -248,12 +248,21 @@ func Main(f *Flags, version string) error {
 	}
 
 	server := httpserver(cp, controller.AttemptUnseal, controller.Rotate, f.RateLimitBurst, f.RateLimitPerSecond)
+	serverMetrics := httpserverMetrics()
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
 	<-sigterm
 
-	return server.Shutdown(context.Background())
+	if err := server.Shutdown(context.Background()); err != nil {
+		return err
+	}
+
+	if err := serverMetrics.Shutdown(context.Background()); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func prepareController(clientset kubernetes.Interface, namespace string, tweakopts func(*metav1.ListOptions), f *Flags, ssclientset versioned.Interface, keyRegistry *KeyRegistry) (*Controller, error) {

@@ -17,9 +17,10 @@ import (
 )
 
 var (
-	listenAddr   = flag.String("listen-addr", ":8080", "HTTP serving address.")
-	readTimeout  = flag.Duration("read-timeout", 2*time.Minute, "HTTP request timeout.")
-	writeTimeout = flag.Duration("write-timeout", 2*time.Minute, "HTTP response timeout.")
+	listenAddr        = flag.String("listen-addr", ":8080", "HTTP serving address.")
+	listenMetricsAddr = flag.String("listen-metrics-addr", ":8081", "HTTP metrics serving address.")
+	readTimeout       = flag.Duration("read-timeout", 2*time.Minute, "HTTP request timeout.")
+	writeTimeout      = flag.Duration("write-timeout", 2*time.Minute, "HTTP response timeout.")
 )
 
 // Called on every request to /cert.  Errors will be logged and return a 500.
@@ -43,8 +44,6 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 			log.Fatal(err)
 		}
 	})
-
-	mux.Handle("/metrics", promhttp.Handler())
 
 	mux.Handle("/v1/verify", Instrument("/v1/verify", httpRateLimiter.RateLimit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		content, err := io.ReadAll(r.Body)
@@ -115,6 +114,26 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 	go func() {
 		err := server.ListenAndServe()
 		log.Errorf("HTTP server exiting: %v", err)
+	}()
+	return &server
+}
+
+func httpserverMetrics() *http.Server {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+
+	server := http.Server{
+		Addr:              *listenMetricsAddr,
+		Handler:           mux,
+		ReadTimeout:       *readTimeout,
+		ReadHeaderTimeout: *readTimeout,
+		WriteTimeout:      *writeTimeout,
+	}
+
+	log.Infof("HTTP metrics server serving on %s", server.Addr)
+	go func() {
+		err := server.ListenAndServe()
+		log.Errorf("HTTP metrics server exiting: %v", err)
 	}()
 	return &server
 }
