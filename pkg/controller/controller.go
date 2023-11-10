@@ -447,7 +447,9 @@ func updateSealedSecretsStatusConditions(st *ssv1alpha1.SealedSecretStatus, unse
 
 	// Status has changed, update the transition time and signal that an update is required
 	if cond.Status != status {
-		cond.LastTransitionTime = cond.LastUpdateTime
+		if !cond.LastUpdateTime.IsZero() {
+			cond.LastTransitionTime = cond.LastUpdateTime
+		}
 		cond.Status = status
 		cond.LastUpdateTime = metav1.Now()
 		updateRequired = true
