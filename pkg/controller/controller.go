@@ -449,6 +449,8 @@ func updateSealedSecretsStatusConditions(st *ssv1alpha1.SealedSecretStatus, unse
 	if cond.Status != status {
 		if !cond.LastUpdateTime.IsZero() {
 			cond.LastTransitionTime = cond.LastUpdateTime
+		} else {
+			cond.LastTransitionTime = metav1.Now()
 		}
 		cond.Status = status
 		cond.LastUpdateTime = metav1.Now()
