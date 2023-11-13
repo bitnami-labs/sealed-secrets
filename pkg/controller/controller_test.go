@@ -165,15 +165,25 @@ func TestEmptyStatusSendsUpdate(t *testing.T) {
 }
 
 func TestStatusUpdateSendsUpdate(t *testing.T) {
-	updateRequired := updateSealedSecretsStatusConditions(&ssv1alpha1.SealedSecretStatus{
+	status := &ssv1alpha1.SealedSecretStatus{
 		Conditions: []ssv1alpha1.SealedSecretCondition{{
-			Status: "False",
-			Type:   ssv1alpha1.SealedSecretSynced,
+			Status:         "False",
+			Type:           ssv1alpha1.SealedSecretSynced,
+			LastUpdateTime: metav1.Now(),
 		}},
-	}, nil)
+	}
+	updateRequired := updateSealedSecretsStatusConditions(status, nil)
 
 	if !updateRequired {
 		t.Fatalf("expected status update, but no update was send")
+	}
+
+	if status.Conditions[0].LastTransitionTime.IsZero() {
+		t.Fatalf("expected LastTransitionTime is not empty")
+	}
+
+	if status.Conditions[0].LastUpdateTime.IsZero() {
+		t.Fatalf("expected LastUpdateTime is not empty")
 	}
 }
 
