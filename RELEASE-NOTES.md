@@ -4,6 +4,17 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.24.4
+
+### Changelog
+
+- kubeseal: write help message to stdout ([#1377](https://github.com/bitnami-labs/sealed-secrets/pull/1377))
+- fix: Set up LastTransitionTime in case that it is empty ([#1370](https://github.com/bitnami-labs/sealed-secrets/pull/1370))
+- Bump github.com/onsi/gomega from 1.29.0 to 1.30.0 ([#1376](https://github.com/bitnami-labs/sealed-secrets/pull/1376))
+- Bump golang.org/x/crypto from 0.14.0 to 0.15.0 ([#1375](https://github.com/bitnami-labs/sealed-secrets/pull/1375))
+- Bump github.com/onsi/ginkgo/v2 from 2.13.0 to 2.13.1 ([#1374](https://github.com/bitnami-labs/sealed-secrets/pull/1374))
+- Bump k8s.io/klog/v2 from 2.100.1 to 2.110.1 ([#1367](https://github.com/bitnami-labs/sealed-secrets/pull/1367))
+
 ## v0.24.3
 
 ### Changelog
