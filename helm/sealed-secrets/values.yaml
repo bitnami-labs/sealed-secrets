@@ -61,7 +61,7 @@ secretName: "sealed-secrets-key"
 ##
 updateStatus: true
 ## @param skipRecreate Specifies whether the Sealed Secrets controller should skip recreating removed secrets
-## Setting it to false allows to optionally restore backward compatibility in low priviledge
+## Setting it to true allows to optionally restore backward compatibility in low priviledge
 ## environments when old versions of the controller did not require watch permissions on secrets
 ## for secret re-creation.
 ##
