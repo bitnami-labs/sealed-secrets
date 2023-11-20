@@ -9,11 +9,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    env:
-      controller_dockerhub_image_name: docker.io/bitnami/sealed-secrets-controller
-      controller_ghcr_image_name: ghcr.io/bitnami-labs/sealed-secrets-controller
-      kubeseal_dockerhub_image_name: docker.io/bitnami/sealed-secrets-kubeseal
-      kubeseal_ghcr_image_name: ghcr.io/bitnami-labs/sealed-secrets-kubeseal
     steps:
       # Checkout and set env
       - name: Checkout
@@ -22,6 +17,10 @@ jobs:
         run: |
           source $GITHUB_WORKSPACE/versions.env
           echo "GO_VERSION=$GO_VERSION" >> $GITHUB_ENV
+      - name: Configure Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
       - name: Set up Go
         uses: actions/setup-go@v3.3.1
         with:
@@ -40,109 +39,10 @@ jobs:
       - name: Tests
         run: make test
 
-      # Generate K8s manifests
-      - name: K8s manifests
-        run: |
-          export PATH=~/bin:$PATH
-          RELEASE_BRANCH="${{ github.ref }}"
-          VERSION_TAG=$(echo "${RELEASE_BRANCH}" | awk -F'/' '{print $NF}')
-          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
-          make CONTROLLER_IMAGE=${{ env.controller_dockerhub_image_name }}:${VERSION_TAG} controller.yaml controller-norbac.yaml
-
-      # Setup env for multi-arch builds
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2.0.0
-        with:
-          image: tonistiigi/binfmt:latest
-          platforms: arm64,arm
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2.0.0
-
-      # Setup Cosign
-      - name: Install Cosign
-        uses: sigstore/cosign-installer@v3.0.2
-      - name: Write Cosign key
-        run: echo "$COSIGN_KEY" > /tmp/cosign.key
-        env:
-          COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
-
       # Tag for GoReleaser from release branch name
       - name: Tag Release
         run: |
-          git tag "${VERSION_TAG}"
-
-      # Build & Release binaries
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3.1.0
-        if: success() && startsWith(github.ref, 'refs/heads/')
-        with:
-          version: v1.10.3
-          args: release --rm-dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-
-      # Build & Publish multi-arch image
-      - name: Login to Docker Hub
-        uses: docker/login-action@v2.0.0
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
-      - name: Login to GHRC
-        uses: docker/login-action@v2.0.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Extract metadata (tags, labels) for Docker controller image
-        id: meta_controller
-        uses: docker/metadata-action@v4.0.1
-        with:
-          images: |
-            ${{ env.controller_dockerhub_image_name }}
-            ${{ env.controller_ghcr_image_name }}
-          tags: |
-            type=raw,value=${{ env.VERSION_TAG }}
-            type=raw,value=latest
-      - name: Build and push controller image
-        id: docker_build_controller
-        uses: docker/build-push-action@v3.2.0
-        with:
-          context: .
-          file: ./docker/controller.Dockerfile
-          platforms: linux/amd64,linux/arm64,linux/arm
-          push: true
-          tags: ${{ steps.meta_controller.outputs.tags }}
-      - name: Extract metadata (tags, labels) for Docker kubeseal image
-        id: meta_kubeseal
-        uses: docker/metadata-action@v4.0.1
-        with:
-          images: |
-            ${{ env.kubeseal_dockerhub_image_name }}
-            ${{ env.kubeseal_ghcr_image_name }}
-          tags: |
-            type=raw,value=${{ env.VERSION_TAG }}
-            type=raw,value=latest
-      - name: Build and push kubeseal image
-        id: docker_build_kubeseal
-        uses: docker/build-push-action@v3.2.0
-        with:
-          context: .
-          file: ./docker/kubeseal.Dockerfile
-          platforms: linux/amd64,linux/arm64,linux/arm
-          push: true
-          tags: ${{ steps.meta_kubeseal.outputs.tags }}
-      - name: Sign controller image with a key in GHCR
-        run: |
-          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key --yes $TAG_CURRENT
-        env:
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-          TAG_CURRENT: ${{ steps.meta_controller.outputs.tags }}
-          COSIGN_REPOSITORY: ${{ env.controller_ghcr_image_name }}/signs
-      - name: Sign kubeseal image with a key in GHCR
-        run: |
-          echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key --yes $TAG_CURRENT
-        env:
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-          TAG_CURRENT: ${{ steps.meta_kubeseal.outputs.tags }}
-          COSIGN_REPOSITORY: ${{ env.kubeseal_ghcr_image_name }}/signs
+          RELEASE_BRANCH="${{ github.ref }}"
+          VERSION_TAG=$(echo "${RELEASE_BRANCH}" | awk -F'/' '{print $NF}')
+          git tag -a "${VERSION_TAG}" -m "Tag autogenerated ${VERSION_TAG}"
+          git push origin "${VERSION_TAG}"
