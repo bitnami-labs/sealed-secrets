@@ -34,6 +34,21 @@ local namespace = 'kube-system';
     target_pod: $.controller.spec.template,
   },
 
+  service_metrics: kube.Service('sealed-secrets-controller-metrics') + $.namespace {
+    local service = self,
+    target_pod: $.controller.spec.template,
+    spec: {
+      selector: service.target_pod.metadata.labels,
+      ports: [
+        {
+          port: 8081,
+          targetPort: 8081,
+        },
+      ],
+      type: "ClusterIP",
+    },
+  },
+
   controller: kube.Deployment('sealed-secrets-controller') + $.namespace {
     spec+: {
       template+: {
@@ -57,6 +72,7 @@ local namespace = 'kube-system';
               livenessProbe: self.readinessProbe,
               ports_+: {
                 http: { containerPort: 8080 },
+                metrics: { containerPort: 8081 },
               },
               securityContext+: {
                 allowPrivilegeEscalation: false,

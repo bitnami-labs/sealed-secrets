@@ -188,21 +188,25 @@ The command removes all the Kubernetes components associated with the chart and 
 
 ### Metrics parameters
 
-| Name                                       | Description                                                                            | Value   |
-| ------------------------------------------ | -------------------------------------------------------------------------------------- | ------- |
-| `metrics.serviceMonitor.enabled`           | Specify if a ServiceMonitor will be deployed for Prometheus Operator                   | `false` |
-| `metrics.serviceMonitor.namespace`         | Namespace where Prometheus Operator is running in                                      | `""`    |
-| `metrics.serviceMonitor.labels`            | Extra labels for the ServiceMonitor                                                    | `{}`    |
-| `metrics.serviceMonitor.annotations`       | Extra annotations for the ServiceMonitor                                               | `{}`    |
-| `metrics.serviceMonitor.interval`          | How frequently to scrape metrics                                                       | `""`    |
-| `metrics.serviceMonitor.scrapeTimeout`     | Timeout after which the scrape is ended                                                | `""`    |
-| `metrics.serviceMonitor.honorLabels`       | Specify if ServiceMonitor endPoints will honor labels                                  | `true`  |
-| `metrics.serviceMonitor.metricRelabelings` | Specify additional relabeling of metrics                                               | `[]`    |
-| `metrics.serviceMonitor.relabelings`       | Specify general relabeling                                                             | `[]`    |
-| `metrics.dashboards.create`                | Specifies whether a ConfigMap with a Grafana dashboard configuration should be created | `false` |
-| `metrics.dashboards.labels`                | Extra labels to be added to the Grafana dashboard ConfigMap                            | `{}`    |
-| `metrics.dashboards.annotations`           | Annotations to be added to the Grafana dashboard ConfigMap                             | `{}`    |
-| `metrics.dashboards.namespace`             | Namespace where Grafana dashboard ConfigMap is deployed                                | `""`    |
+| Name                                       | Description                                                                            | Value       |
+| ------------------------------------------ | -------------------------------------------------------------------------------------- | ----------- |
+| `metrics.serviceMonitor.enabled`           | Specify if a ServiceMonitor will be deployed for Prometheus Operator                   | `false`     |
+| `metrics.serviceMonitor.namespace`         | Namespace where Prometheus Operator is running in                                      | `""`        |
+| `metrics.serviceMonitor.labels`            | Extra labels for the ServiceMonitor                                                    | `{}`        |
+| `metrics.serviceMonitor.annotations`       | Extra annotations for the ServiceMonitor                                               | `{}`        |
+| `metrics.serviceMonitor.interval`          | How frequently to scrape metrics                                                       | `""`        |
+| `metrics.serviceMonitor.scrapeTimeout`     | Timeout after which the scrape is ended                                                | `""`        |
+| `metrics.serviceMonitor.honorLabels`       | Specify if ServiceMonitor endPoints will honor labels                                  | `true`      |
+| `metrics.serviceMonitor.metricRelabelings` | Specify additional relabeling of metrics                                               | `[]`        |
+| `metrics.serviceMonitor.relabelings`       | Specify general relabeling                                                             | `[]`        |
+| `metrics.dashboards.create`                | Specifies whether a ConfigMap with a Grafana dashboard configuration should be created | `false`     |
+| `metrics.dashboards.labels`                | Extra labels to be added to the Grafana dashboard ConfigMap                            | `{}`        |
+| `metrics.dashboards.annotations`           | Annotations to be added to the Grafana dashboard ConfigMap                             | `{}`        |
+| `metrics.dashboards.namespace`             | Namespace where Grafana dashboard ConfigMap is deployed                                | `""`        |
+| `metrics.service.type`                     | Sealed Secret Metrics service type                                                     | `ClusterIP` |
+| `metrics.service.port`                     | Sealed Secret service Metrics HTTP port                                                | `8081`      |
+| `metrics.service.nodePort`                 | Node port for HTTP                                                                     | `""`        |
+| `metrics.service.annotations`              | Additional custom annotations for Sealed Secret Metrics service                        | `{}`        |
 
 ### PodDisruptionBudget Parameters
 

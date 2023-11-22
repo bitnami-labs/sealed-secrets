@@ -6,6 +6,6 @@ USER 1001
 ARG TARGETARCH
 COPY dist/controller_linux_${TARGETARCH}*/controller /usr/local/bin/
 
-EXPOSE 8080
+EXPOSE 8080 8081
 
 ENTRYPOINT ["controller"]

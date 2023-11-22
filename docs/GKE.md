@@ -82,3 +82,14 @@ gcloud compute firewall-rules create gke-to-kubeseal-8080 \
   --target-tags "$NETWORK_TARGET_TAG" \
   --priority 1000
 ```
+
+Create the firewall rule to see the metrics
+
+```bash
+gcloud compute firewall-rules create gke-to-metrics-8081 \
+  --network "$NETWORK" \
+  --allow "tcp:8081" \
+  --source-ranges "$CP_IPV4_CIDR" \
+  --target-tags "$NETWORK_TARGET_TAG" \
+  --priority 1000
+```
