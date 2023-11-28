@@ -73,6 +73,10 @@ func getSecretType(s *v1.Secret) v1.SecretType {
 	return s.Type
 }
 
+func getSecretImmutable(s *v1.Secret) bool {
+	return *s.Immutable
+}
+
 func fetchKeys(ctx context.Context, c corev1.SecretsGetter) (map[string]*rsa.PrivateKey, []*x509.Certificate, error) {
 	list, err := c.Secrets(*controllerNs).List(ctx, metav1.ListOptions{
 		LabelSelector: keySelector,
@@ -116,6 +120,16 @@ func containEventWithReason(matcher types.GomegaMatcher) types.GomegaMatcher {
 		func(l *v1.EventList) []v1.Event { return l.Items },
 		ContainElement(WithTransform(
 			func(e v1.Event) string { return e.Reason },
+			matcher,
+		)),
+	)
+}
+
+func containEventWithMessage(matcher types.GomegaMatcher) types.GomegaMatcher {
+	return WithTransform(
+		func(l *v1.EventList) []v1.Event { return l.Items },
+		ContainElement(WithTransform(
+			func(e v1.Event) string { return e.Message },
 			matcher,
 		)),
 	)
@@ -565,6 +579,7 @@ var _ = Describe("create", func() {
 			delete(ss.Spec.EncryptedData, "foo")
 			ss.Spec.Template.Type = "kubernetes.io/dockerconfigjson"
 		})
+
 		It("should produce expected Secret", func() {
 			expected := map[string][]byte{
 				".dockerconfigjson": []byte("{\"auths\": {\"https://index.docker.io/v1/\": {\"auth\": \"c3R...zE2\"}}}"),
@@ -584,6 +599,76 @@ var _ = Describe("create", func() {
 				return c.Events(ns).Search(scheme.Scheme, ss)
 			}, Timeout, PollingInterval).Should(
 				containEventWithReason(Equal("Unsealed")),
+			)
+		})
+	})
+
+	Describe("Immutable Secret", func() {
+		BeforeEach(func() {
+			ss.Spec.Template.Immutable = new(bool)
+			*ss.Spec.Template.Immutable = true
+		})
+
+		It("should produce expected Secret", func() {
+			Eventually(func() (*v1.Secret, error) {
+				return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+			}, Timeout, PollingInterval).Should(WithTransform(getSecretImmutable, Equal(true)))
+			Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+				return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+			}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
+			Eventually(func() (*v1.EventList, error) {
+				return c.Events(ns).Search(scheme.Scheme, ss)
+			}, Timeout, PollingInterval).Should(
+				containEventWithReason(Equal("Unsealed")),
+			)
+		})
+	})
+
+	Describe("Immutable Secret Error", func() {
+		BeforeEach(func() {
+			ss.Spec.Template.Immutable = new(bool)
+			*ss.Spec.Template.Immutable = true
+		})
+
+		JustBeforeEach(func() {
+			var err error
+
+			Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+				return ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Get(context.Background(), secretName, metav1.GetOptions{})
+			}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
+
+			ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Get(context.Background(), secretName, metav1.GetOptions{})
+			Expect(err).NotTo(HaveOccurred())
+
+			resVer := ss.ResourceVersion
+
+			// update
+			s.Data["foo"] = []byte("baz")
+			ss, err = ssv1alpha1.NewSealedSecret(scheme.Codecs, pubKey, s)
+			Expect(err).NotTo(HaveOccurred())
+			ss.ResourceVersion = resVer
+
+			fmt.Fprintf(GinkgoWriter, "Updating to SealedSecret: %#v\n", ss)
+			ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Update(context.Background(), ss, metav1.UpdateOptions{})
+			Expect(err).NotTo(HaveOccurred())
+		})
+
+		It("should record update failure as an event", func() {
+			Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+				return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+			}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
+			Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+				return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+			}, Timeout, PollingInterval).Should(WithTransform(getObservedGeneration, Equal(int64(2))))
+			Eventually(func() (*v1.EventList, error) {
+				return c.Events(ns).Search(scheme.Scheme, ss)
+			}, Timeout, PollingInterval).Should(
+				containEventWithReason(Equal("ErrUpdateFailed")),
+			)
+			Eventually(func() (*v1.EventList, error) {
+				return c.Events(ns).Search(scheme.Scheme, ss)
+			}, Timeout, PollingInterval).Should(
+				containEventWithMessage(ContainSubstring("the target Secret is immutable")),
 			)
 		})
 	})
