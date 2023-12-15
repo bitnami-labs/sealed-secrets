@@ -4,6 +4,18 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.24.5
+
+### Changelog
+
+- feat: Helm - Add sources ([#1383](https://github.com/bitnami-labs/sealed-secrets/pull/1383))
+- Update golang to the latest tooling version ([#1398](https://github.com/bitnami-labs/sealed-secrets/pull/1398))
+- Bump github.com/onsi/ginkgo/v2 from 2.13.1 to 2.13.2 ([#1397](https://github.com/bitnami-labs/sealed-secrets/pull/1397))
+- Bump golang.org/x/crypto from 0.15.0 to 0.16.0 ([#1394](https://github.com/bitnami-labs/sealed-secrets/pull/1394))
+- Bump k8s.io/code-generator from 0.28.3 to 0.28.4  ([#1390](https://github.com/bitnami-labs/sealed-secrets/pull/1390))
+- Bump k8s.io/client-go from 0.28.3 to 0.28.4  ([#1389](https://github.com/bitnami-labs/sealed-secrets/pull/1389))
+- Bump k8s.io/client-go from 0.28.3 to 0.28.4  ([#1389](https://github.com/bitnami-labs/sealed-secrets/pull/1389))
+
 ## v0.24.4
 
 ### Changelog
