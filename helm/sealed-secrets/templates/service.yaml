@@ -29,6 +29,7 @@ spec:
       nodePort: null
       {{- end }}
   selector: {{- include "sealed-secrets.matchLabels" . | nindent 4 }}
+{{- if .Values.metrics.serviceMonitor.enabled }}
 ---
 apiVersion: v1
 kind: Service
@@ -44,20 +45,21 @@ metadata:
     {{- include "sealed-secrets.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
     {{- end }}
   {{- end }}
-  labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
+  labels: {{- include "sealed-secrets.metrics-labels" . | nindent 4 }}
     {{- if .Values.metrics.service.labels }}
     {{- include "sealed-secrets.render" ( dict "value" .Values.metrics.service.labels "context" $) | nindent 4 }}
     {{- end }}
 spec:
   type: {{ .Values.metrics.service.type }}
   ports:
-    - name: http
+    - name: metrics
       port: {{ .Values.metrics.service.port }}
-      targetPort: http
+      targetPort: metrics
       {{- if and (or (eq .Values.metrics.service.type "NodePort") (eq .Values.metrics.service.type "LoadBalancer")) (not (empty .Values.metrics.service.nodePort)) }}
       nodePort: {{ .Values.metrics.service.nodePort }}
       {{- else if eq .Values.metrics.service.type "ClusterIP" }}
       nodePort: null
       {{- end }}
   selector: {{- include "sealed-secrets.matchLabels" . | nindent 4 }}
+{{- end -}}
 {{- end }}
