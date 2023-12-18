@@ -21,6 +21,11 @@ extraDeploy: []
 ##
 commonAnnotations: {}
 
+## @param commonLabels [ojbect] Labels to add to all deployed resources
+## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/
+## 
+commonLabels: {}
+
 ## @section Sealed Secrets Parameters
 
 ## Sealed Secrets image
