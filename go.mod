@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.6.0
 	github.com/google/renameio v0.1.0
 	github.com/mattn/go-isatty v0.0.20
-	github.com/mkmik/multierror v0.3.0
+	github.com/mkmik/multierror v0.4.0
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
 	github.com/prometheus/client_golang v1.17.0
