@@ -15,12 +15,12 @@ require (
 	golang.org/x/crypto v0.17.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.28.4
-	k8s.io/apimachinery v0.28.4
+	k8s.io/apimachinery v0.29.0
 	k8s.io/client-go v0.28.4
 	k8s.io/code-generator v0.29.0
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.110.1
-	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 )
 
 require (
