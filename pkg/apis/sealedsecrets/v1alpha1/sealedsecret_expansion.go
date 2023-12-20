@@ -300,9 +300,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 		}
 
 		if errs != nil {
-			err := errors.Join(multierror.Uniq(errs)...)
-			err = multierror.Format(err, multierror.InlineFormatter)
-			return nil, err
+			return nil, multierror.Format(errors.Join(multierror.Uniq(errs)...), multierror.InlineFormatter)
 		}
 	} else if AcceptDeprecatedV1Data { // Support decrypting old secrets for backward compatibility
 		if len(s.Spec.EncryptedData) > 0 {
