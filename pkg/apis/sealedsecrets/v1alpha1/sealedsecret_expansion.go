@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"text/template"
 
@@ -299,7 +300,9 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 		}
 
 		if errs != nil {
-			return nil, multierror.Join(multierror.Uniq(errs), multierror.WithFormatter(multierror.InlineFormatter))
+			err := errors.Join(multierror.Uniq(errs)...)
+			err = multierror.Format(err, multierror.InlineFormatter)
+			return nil, err
 		}
 	} else if AcceptDeprecatedV1Data { // Support decrypting old secrets for backward compatibility
 		if len(s.Spec.EncryptedData) > 0 {
