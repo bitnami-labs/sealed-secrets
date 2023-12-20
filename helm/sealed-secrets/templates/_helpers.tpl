@@ -60,25 +60,11 @@ app.kubernetes.io/version: {{ .Chart.AppVersion }}
 app.kubernetes.io/part-of: sealed-secrets
 {{- end -}}
 
-{{- define "sealed-secrets.metrics-labels" -}}
-app.kubernetes.io/name: {{ include "sealed-secrets.name" . }}-metrics
-helm.sh/chart: {{ include "sealed-secrets.chart" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-app.kubernetes.io/managed-by: {{ .Release.Service }}
-app.kubernetes.io/version: {{ .Chart.AppVersion }}
-app.kubernetes.io/part-of: sealed-secrets
-{{- end -}}
-
 {{/*
 Labels to use on deploy.spec.selector.matchLabels and svc.spec.selector
 */}}
 {{- define "sealed-secrets.matchLabels" -}}
 app.kubernetes.io/name: {{ include "sealed-secrets.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
-{{- end -}}
-
-{{- define "sealed-secrets.metrics-matchLabels" -}}
-app.kubernetes.io/name: {{ include "sealed-secrets.name" . }}-metrics
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end -}}
 

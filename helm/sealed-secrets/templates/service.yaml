@@ -29,7 +29,6 @@ spec:
       nodePort: null
       {{- end }}
   selector: {{- include "sealed-secrets.matchLabels" . | nindent 4 }}
-{{- if .Values.metrics.serviceMonitor.enabled }}
 ---
 apiVersion: v1
 kind: Service
@@ -45,7 +44,7 @@ metadata:
     {{- include "sealed-secrets.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
     {{- end }}
   {{- end }}
-  labels: {{- include "sealed-secrets.metrics-labels" . | nindent 4 }}
+  labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
     {{- if .Values.metrics.service.labels }}
     {{- include "sealed-secrets.render" ( dict "value" .Values.metrics.service.labels "context" $) | nindent 4 }}
     {{- end }}
@@ -61,5 +60,4 @@ spec:
       nodePort: null
       {{- end }}
   selector: {{- include "sealed-secrets.matchLabels" . | nindent 4 }}
-{{- end -}}
 {{- end }}
