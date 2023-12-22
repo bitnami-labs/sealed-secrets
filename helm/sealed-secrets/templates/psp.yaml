@@ -4,6 +4,9 @@ kind: PodSecurityPolicy
 metadata:
   name: {{ include "sealed-secrets.fullname" . }}
   labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
+    {{- if .Values.commonLabels }}
+    {{- include "sealed-secrets.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
 spec:
   privileged: false
   allowPrivilegeEscalation: false
