@@ -46,18 +46,28 @@ footer {
     }
     .bottom-links {
         margin: 10px 0px 30px 0px;
-        float: right;
         p {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
             font-size: 12px;
+
+            .ot-sdk-show-settings {
+                cursor: pointer;
+            }
         }
         a {
             font-size: 12px;
             font-family: $metropolis-light;
+            text-decoration: underline;
         }
         img {
             max-width: 75px;
             vertical-align: middle;
             margin-left: 30px;
+        }
+        .footer-logo {
+            height: 3em;
         }
     }
     @include breakpoint(small) {
