@@ -17,6 +17,9 @@ metadata:
     {{- if .Values.service.labels }}
     {{- include "sealed-secrets.render" ( dict "value" .Values.service.labels "context" $) | nindent 4 }}
     {{- end }}
+    {{- if .Values.commonLabels }}
+    {{- include "sealed-secrets.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
+    {{- end }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -47,6 +50,9 @@ metadata:
   labels: {{- include "sealed-secrets.labels" . | nindent 4 }}
     {{- if .Values.metrics.service.labels }}
     {{- include "sealed-secrets.render" ( dict "value" .Values.metrics.service.labels "context" $) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.commonLabels }}
+    {{- include "sealed-secrets.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
 spec:
   type: {{ .Values.metrics.service.type }}
