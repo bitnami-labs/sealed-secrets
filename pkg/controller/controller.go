@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
@@ -261,6 +262,11 @@ func (c *Controller) processNextItem(ctx context.Context) bool {
 	if err == nil {
 		// No error, reset the ratelimit counters
 		c.queue.Forget(key)
+	} else if isImmutableError(err) {
+		// Do not retry updating immutable fields of an immutable secret
+		log.Errorf(formatImmutableError(key.(string)))
+		c.queue.Forget(key)
+		utilruntime.HandleError(err)
 	} else if c.queue.NumRequeues(key) < maxRetries {
 		log.Errorf("Error updating %s, will retry: %v", key, err)
 		c.queue.AddRateLimited(key)
@@ -377,7 +383,12 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	if !apiequality.Semantic.DeepEqual(origSecret, secret) {
 		_, err = c.sclient.Secrets(ssecret.GetObjectMeta().GetNamespace()).Update(ctx, secret, metav1.UpdateOptions{})
 		if err != nil {
-			c.recorder.Event(ssecret, corev1.EventTypeWarning, ErrUpdateFailed, err.Error())
+			var message = err.Error()
+			if isImmutableError(err) {
+				message = formatImmutableError(key)
+			}
+
+			c.recorder.Event(ssecret, corev1.EventTypeWarning, ErrUpdateFailed, message)
 			unsealErrorsTotal.WithLabelValues("update", ssecret.GetNamespace()).Inc()
 			return err
 		}
@@ -466,6 +477,14 @@ func isAnnotatedToBeManaged(secret *corev1.Secret) bool {
 
 func isAnnotatedToBePatched(secret *corev1.Secret) bool {
 	return secret.Annotations[ssv1alpha1.SealedSecretPatchAnnotation] == "true"
+}
+
+func isImmutableError(err error) bool {
+	return strings.HasSuffix(err.Error(), "field is immutable when `immutable` is set")
+}
+
+func formatImmutableError(key string) string {
+	return fmt.Sprintf("Error updating %s: the target Secret is immutable. Once a Secret is marked as immutable, it is not possible to revert this change nor to mutate the contents of the data field. You can only delete and recreate the Secret.", key)
 }
 
 // AttemptUnseal tries to unseal a secret.

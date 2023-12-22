@@ -209,7 +209,8 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		Spec: SealedSecretSpec{
 			Template: SecretTemplateSpec{
 				// ObjectMeta copied below
-				Type: secret.Type,
+				Type:      secret.Type,
+				Immutable: secret.Immutable,
 			},
 			EncryptedData: map[string]string{},
 		},
@@ -267,6 +268,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 	if s.Spec.Data == nil {
 		s.Spec.Template.ObjectMeta.DeepCopyInto(&secret.ObjectMeta)
 		secret.Type = s.Spec.Template.Type
+		secret.Immutable = s.Spec.Template.Immutable
 
 		secret.Data = map[string][]byte{}
 		data := map[string]string{}

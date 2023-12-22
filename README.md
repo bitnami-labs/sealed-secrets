@@ -116,7 +116,7 @@ In particular, the annotations and labels of a `SealedSecret` resource are not t
 
 To capture this distinction, the `SealedSecret` object has a `template` section which encodes all the fields you want the controller to put in the unsealed `Secret`.
 
-This includes metadata such as labels or annotations, but also things like the `type` of the secret.
+This includes metadata such as labels or annotations, but also things like `type` and `immutable` fields of the secret.
 
 ```yaml
 apiVersion: bitnami.com/v1alpha1
@@ -131,6 +131,7 @@ spec:
     .dockerconfigjson: AgBy3i4OJSWK+PiTySYZZA9rO43cGDEq.....
   template:
     type: kubernetes.io/dockerconfigjson
+    immutable: true
     # this is an example of labels and annotations that will be added to the output secret
     metadata:
       labels:
@@ -158,6 +159,7 @@ metadata:
     name: mysecret
     uid: 5caff6a0-c9ac-11e9-881e-42010aac003e
 type: kubernetes.io/dockerconfigjson
+immutable: true
 data:
   .dockerconfigjson: ewogICJjcmVk...
 ```
