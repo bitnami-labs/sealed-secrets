@@ -122,7 +122,7 @@ func openCertURI(uri string) (io.ReadCloser, error) {
 	// than using the file:// scheme below because there is no point in complicating our lives
 	// and escape the filename properly.
 
-	t := &http.Transport{}
+	t := &http.Transport{Proxy: http.ProxyFromEnvironment}
 	// #nosec: G111 -- we want to allow all files to be opened
 	t.RegisterProtocol("file", http.NewFileTransport(http.Dir("/")))
 	c := &http.Client{Transport: t}
