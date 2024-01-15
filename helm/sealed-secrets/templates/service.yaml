@@ -54,6 +54,7 @@ metadata:
     {{- if .Values.commonLabels }}
     {{- include "sealed-secrets.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
+    app.kubernetes.io/component: metrics
 spec:
   type: {{ .Values.metrics.service.type }}
   ports:
