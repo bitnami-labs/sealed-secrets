@@ -50,7 +50,7 @@ jobs:
           CHECK=$(./scripts/release-check ${{ env.controller_dockerhub_image_name }} $VERSION_TAG)
           echo "RELEASE=$CHECK" >> $GITHUB_ENV
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
-          echo "GORELEASER_CURRENT_TAG=$VERSION_TAG" >> $GITHUB_ENV
+          echo "GORELEASER_CURRENT_TAG=v$VERSION_TAG" >> $GITHUB_ENV
 
       # Run tests
       - name: Tests
