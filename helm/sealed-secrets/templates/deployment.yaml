@@ -120,6 +120,14 @@ spec:
             {{- if .Values.logInfoStdout }}
             - --log-info-stdout
             {{- end }}
+            {{- if .Values.logLevel }}
+            - --log-level
+            - {{ .Values.logLevel }}
+            {{- end }}
+            {{- if .Values.logFormat }}
+            - --log-level
+            - {{ .Values.logFormat }}
+            {{- end }}
           {{- end }}
           image: {{ printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
