@@ -52,6 +52,8 @@ func bindControllerFlags(f *controller.Flags, fs *flag.FlagSet) {
 	fs.BoolVar(&f.SkipRecreate, "skip-recreate", false, "if true the controller will skip listening for managed secret changes to recreate them. This helps on limited permission environments.")
 
 	fs.BoolVar(&f.LogInfoToStdout, "log-info-stdout", false, "if true the controller will log info to stdout.")
+	fs.StringVar(&f.LogLevel, "log-level", "INFO", "Log level (DEBUG|INFO|WARN|ERROR).")
+	fs.StringVar(&f.LogLevel, "log-format", "text", "Log format (text|json).")
 
 	fs.DurationVar(&f.KeyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
 	_ = fs.MarkDeprecated("rotate-period", "please use key-renew-period instead")

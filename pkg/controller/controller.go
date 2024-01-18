@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
 	"reflect"
 	"strings"
 	"time"
@@ -33,7 +34,6 @@ import (
 	ssscheme "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/scheme"
 	ssv1alpha1client "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/typed/sealedsecrets/v1alpha1"
 	ssinformer "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
-	"github.com/bitnami-labs/sealed-secrets/pkg/log"
 	"github.com/bitnami-labs/sealed-secrets/pkg/multidocyaml"
 )
 
@@ -82,7 +82,10 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 
 	utilruntime.Must(ssscheme.AddToScheme(scheme.Scheme))
 	eventBroadcaster := record.NewBroadcaster()
-	eventBroadcaster.StartLogging(log.Infof)
+	eventBroadcaster.StartLogging(func(format string, args ...interface{}) {
+		// Must use Sprintf to ensure slog doesn't interpret args... as key-value pairs
+		slog.Info(fmt.Sprintf(format, args...))
+	})
 	eventBroadcaster.StartRecordingToSink(&v1.EventSinkImpl{Interface: clientset.CoreV1().Events("")})
 	recorder := eventBroadcaster.NewRecorder(scheme.Scheme, corev1.EventSource{Component: "sealed-secrets"})
 
@@ -125,7 +128,7 @@ func watchSealedSecrets(ssinformer ssinformer.SharedInformerFactory, queue workq
 				if sealedSecretChanged(oldObj, newObj) {
 					queue.Add(key)
 				} else {
-					log.Infof("update suppressed, no changes in sealed secret spec of %v", key)
+					slog.Info("update suppressed, no changes in spec", "sealed-secret", key)
 				}
 			}
 		},
@@ -163,20 +166,20 @@ func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclien
 		DeleteFunc: func(obj interface{}) {
 			skey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
 			if err != nil {
-				log.Errorf("failed to fetch Secret key: %v", err)
+				slog.Error("failed to fetch Secret key", "error", err)
 				return
 			}
 
 			ns, name, err := cache.SplitMetaNamespaceKey(skey)
 			if err != nil {
-				log.Errorf("failed to get namespace and name from key: %v", err)
+				slog.Error("failed to get namespace and name from key", "secret", skey, "error", err)
 				return
 			}
 
 			ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
 			if err != nil {
 				if !k8serrors.IsNotFound(err) {
-					log.Errorf("failed to get SealedSecret: %v", err)
+					slog.Error("failed to get SealedSecret", "secret", skey, "error", err)
 				}
 				return
 			}
@@ -187,7 +190,7 @@ func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclien
 
 			sskey, err := cache.MetaNamespaceKeyFunc(ssecret)
 			if err != nil {
-				log.Errorf("failed to fetch SealedSecret key: %v", err)
+				slog.Error("failed to fetch SealedSecret key", "secret", skey, "error", err)
 				return
 			}
 
@@ -242,7 +245,7 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 		c.runWorker(context.Background())
 	}, time.Second, stopCh)
 
-	log.Errorf("Shutting down controller")
+	slog.Error("Shutting down controller")
 }
 
 func (c *Controller) runWorker(ctx context.Context) {
@@ -264,15 +267,15 @@ func (c *Controller) processNextItem(ctx context.Context) bool {
 		c.queue.Forget(key)
 	} else if isImmutableError(err) {
 		// Do not retry updating immutable fields of an immutable secret
-		log.Errorf(formatImmutableError(key.(string)))
+		slog.Error(formatImmutableError(key.(string)))
 		c.queue.Forget(key)
 		utilruntime.HandleError(err)
 	} else if c.queue.NumRequeues(key) < maxRetries {
-		log.Errorf("Error updating %s, will retry: %v", key, err)
+		slog.Error("Error updating, will retry", "key", key, "error", err)
 		c.queue.AddRateLimited(key)
 	} else {
 		// err != nil and too many retries
-		log.Errorf("Error updating %s, giving up: %v", key, err)
+		slog.Error("Error updating, giving up", "key", key, "error", err)
 		c.queue.Forget(key)
 		utilruntime.HandleError(err)
 	}
@@ -284,7 +287,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	unsealRequestsTotal.Inc()
 	obj, exists, err := c.ssInformer.GetIndexer().GetByKey(key)
 	if err != nil {
-		log.Errorf("Error fetching object with key %s from store: %v", key, err)
+		slog.Error("Error fetching object  from store", "key", key, "error", err)
 		unsealErrorsTotal.WithLabelValues("fetch", "").Inc()
 		return err
 	}
@@ -295,7 +298,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 
 		// TODO: remove this feature flag in a subsequent release.
 		if c.oldGCBehavior {
-			log.Infof("SealedSecret %s has gone, deleting Secret", key)
+			slog.Info("SealedSecret has gone, deleting Secret", "sealed-secret", key)
 			ns, name, err := cache.SplitMetaNamespaceKey(key)
 			if err != nil {
 				return err
@@ -312,7 +315,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	if err != nil {
 		return err
 	}
-	log.Infof("Updating %s", key)
+	slog.Info("Updating", "key", key)
 
 	// any exit of this function at this point will cause an update to the status subresource
 	// of the SealedSecret custom resource. The return value of the unseal function is available
@@ -321,7 +324,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	defer func() {
 		if err := c.updateSealedSecretStatus(ssecret, unsealErr); err != nil {
 			// Non-fatal.  Log and continue.
-			log.Errorf("Error updating SealedSecret %s status: %v", key, err)
+			slog.Error("Error updating SealedSecret status", "sealed-secret", key, "error", err)
 			unsealErrorsTotal.WithLabelValues("status", ssecret.GetNamespace()).Inc()
 		} else {
 			ObserveCondition(ssecret)
