@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set -o nounset
+
+function docker_tag_exists() {
+	docker pull $1:$2 > /dev/null
+}
+
+function find_release() {
+	curl -v --silent https://github.com/bitnami-labs/sealed-secrets/releases 2>&1 | grep $1 > /dev/null
+	echo $?
+}
+
+
+RELEASE=$(find_release $2)
+if [ $RELEASE -ne 0 ] ; then
+	if docker_tag_exists $1 $2; then
+		echo 1
+	else
+		echo 0
+	fi
+else
+	echo 0
+fi
