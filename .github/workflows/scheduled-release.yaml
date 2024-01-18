@@ -45,7 +45,7 @@ jobs:
       # Check Release
       - name: Check Release
         run: |
-          VERSION_TAG=$(git ls-remote --tags --refs --sort="v:refname" origin  | tail -n1 | sed 's/.*\///')
+          VERSION_TAG=$(git describe --tags --match "v[0-9]*" --abbrev=0 | tr -d v)
           echo "Tag looking for $VERSION_TAG"
           CHECK=$(./scripts/release-check ${{ env.controller_dockerhub_image_name }} $VERSION_TAG)
           echo "RELEASE=$CHECK" >> $GITHUB_ENV
