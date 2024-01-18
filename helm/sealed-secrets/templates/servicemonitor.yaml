@@ -40,5 +40,7 @@ spec:
     matchNames:
       - {{ include "sealed-secrets.namespace" . }}
   selector:
-    matchLabels: {{- include "sealed-secrets.matchLabels" . | nindent 6 }}
+    matchLabels:
+      {{- include "sealed-secrets.matchLabels" . | nindent 6 }}
+      app.kubernetes.io/component: metrics
 {{- end }}
