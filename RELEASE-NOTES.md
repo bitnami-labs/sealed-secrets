@@ -4,6 +4,20 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.25.0
+
+### Changelog
+
+- feat: support immutable secrets ([#1395](https://github.com/bitnami-labs/sealed-secrets/pull/1395))
+- Update dependencies ([#1411](https://github.com/bitnami-labs/sealed-secrets/pull/1411))
+- Support fetching certificate URL via proxy environment variables ([#1419](https://github.com/bitnami-labs/sealed-secrets/pull/1419))
+- Bump github.com/onsi/ginkgo/v2 from 2.13.2 to 2.14.0 ([#1432](https://github.com/bitnami-labs/sealed-secrets/pull/1432)
+- Bump k8s.io/klog/v2 from 2.110.1 to 2.120.0 ([#1431](https://github.com/bitnami-labs/sealed-secrets/pull/1431))
+- Bump golang.org/x/crypto from 0.17.0 to 0.18.0 ([#1425](https://github.com/bitnami-labs/sealed-secrets/pull/1425))
+- Bump github.com/prometheus/client_golang from 1.17.0 to 1.18.0 ([#1421](https://github.com/bitnami-labs/sealed-secrets/pull/1421))
+- Bump k8s.io/code-generator from 0.28.4 to 0.29.0 ([#1406](https://github.com/bitnami-labs/sealed-secrets/pull/1406))
+- Bump golang.org/x/crypto from 0.16.0 to 0.17.0 ([#1405](https://github.com/bitnami-labs/sealed-secrets/pull/1405))
+
 ## v0.24.5
 
 ### Changelog
