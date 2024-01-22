@@ -125,7 +125,7 @@ spec:
             - {{ .Values.logLevel }}
             {{- end }}
             {{- if .Values.logFormat }}
-            - --log-level
+            - --log-format
             - {{ .Values.logFormat }}
             {{- end }}
           {{- end }}
