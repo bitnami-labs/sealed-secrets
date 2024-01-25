@@ -102,8 +102,8 @@ func mainE(w io.Writer, fs *flag.FlagSet, gofs *goflag.FlagSet, args []string) e
 
 	ssv1alpha1.AcceptDeprecatedV1Data = flags.AcceptV1Data
 
-	slog.Info("controller version", "version", VERSION)
 	if printVersion {
+		fmt.Fprintf(w, "controller version: %s\n", VERSION)
 		return nil
 	}
 
