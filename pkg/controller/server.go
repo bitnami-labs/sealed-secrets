@@ -72,14 +72,14 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 	mux.Handle("/v1/rotate", Instrument("/v1/rotate", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		content, err := io.ReadAll(r.Body)
 		if err != nil {
-			slog.Error("Error handling /v1/rotate request: %v", err)
+			slog.Error("Error handling /v1/rotate request", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		newSecret, err := sr(content)
 		if err != nil {
-			slog.Error("Error rotating secret: %v", err)
+			slog.Error("Error rotating secret", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -92,7 +92,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 	mux.Handle("/v1/cert.pem", Instrument("/v1/cert.pem", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		certs, err := cp()
 		if err != nil {
-			slog.Error("cannot get certificates: %v", err)
+			slog.Error("cannot get certificates", "error", err)
 			http.Error(w, "cannot get certificate", http.StatusInternalServerError)
 			return
 		}
@@ -114,7 +114,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 	slog.Info("HTTP server serving", "addr", server.Addr)
 	go func() {
 		err := server.ListenAndServe()
-		slog.Error("HTTP server exiting: %v", err)
+		slog.Error("HTTP server exiting", "error", err)
 	}()
 	return &server
 }
@@ -134,7 +134,7 @@ func httpserverMetrics() *http.Server {
 	slog.Info("HTTP metrics server serving", "addr", server.Addr)
 	go func() {
 		err := server.ListenAndServe()
-		slog.Error("HTTP metrics server exiting: %v", err)
+		slog.Error("HTTP metrics server exiting", "error", err)
 	}()
 	return &server
 }
