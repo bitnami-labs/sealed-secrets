@@ -4,7 +4,7 @@ import (
 	goflag "flag"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"time"
 
@@ -12,6 +12,7 @@ import (
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/controller"
 	"github.com/bitnami-labs/sealed-secrets/pkg/flagenv"
+	"github.com/bitnami-labs/sealed-secrets/pkg/log"
 	"github.com/bitnami-labs/sealed-secrets/pkg/pflagenv"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
@@ -52,8 +53,8 @@ func bindControllerFlags(f *controller.Flags, fs *flag.FlagSet) {
 	fs.BoolVar(&f.SkipRecreate, "skip-recreate", false, "if true the controller will skip listening for managed secret changes to recreate them. This helps on limited permission environments.")
 
 	fs.BoolVar(&f.LogInfoToStdout, "log-info-stdout", false, "if true the controller will log info to stdout.")
-	fs.StringVar(&f.LogLevel, "log-level", "INFO", "Log level (DEBUG|INFO|WARN|ERROR).")
-	fs.StringVar(&f.LogLevel, "log-format", "text", "Log format (text|json).")
+	fs.StringVar(&f.LogLevel, "log-level", "INFO", "Log level (INFO|ERROR).")
+	fs.StringVar(&f.LogFormat, "log-format", "text", "Log format (text|json).")
 
 	fs.DurationVar(&f.KeyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
 	_ = fs.MarkDeprecated("rotate-period", "please use key-renew-period instead")
@@ -87,14 +88,26 @@ func mainE(w io.Writer, fs *flag.FlagSet, gofs *goflag.FlagSet, args []string) e
 		return err
 	}
 
+	// Set logging
+	logLevel := slog.Level(0)
+	logLevel.UnmarshalText([]byte(flags.LogLevel))
+	opts := &slog.HandlerOptions{
+		Level: logLevel,
+	}
+	if flags.LogInfoToStdout {
+		slog.SetDefault(slog.New(log.New(os.Stdout, os.Stderr, flags.LogFormat, opts)))
+	} else {
+		slog.SetDefault(slog.New(log.New(os.Stderr, os.Stderr, flags.LogFormat, opts)))
+	}
+
 	ssv1alpha1.AcceptDeprecatedV1Data = flags.AcceptV1Data
 
-	fmt.Fprintf(w, "controller version: %s\n", VERSION)
+	slog.Info("controller version", "version", VERSION)
 	if printVersion {
 		return nil
 	}
 
-	log.Printf("Starting sealed-secrets controller version: %s\n", VERSION)
+	slog.Info("Starting sealed-secrets controller", "version", VERSION)
 	if err := controller.Main(&flags, VERSION); err != nil {
 		panic(err)
 	}

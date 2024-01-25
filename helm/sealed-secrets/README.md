@@ -101,7 +101,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `privateKeyAnnotations`                           | Map of annotations to be set on the sealing keypairs                                                  | `{}`                                |
 | `privateKeyLabels`                                | Map of labels to be set on the sealing keypairs                                                       | `{}`                                |
 | `logInfoStdout`                                   | Specifies whether the Sealed Secrets controller will log info to stdout                               | `false`                             |
-| `logLevel`                                   | Specifies log level of controller (DEBUG,INFO,WARN,ERROR)                               | `""`                             |
+| `logLevel`                                   | Specifies log level of controller (INFO,ERROR)                               | `""`                             |
 | `logFormat`                                   | Specifies log format (text,json)                               | `""`                             |
 | `command`                                         | Override default container command                                                                    | `[]`                                |
 | `args`                                            | Override default container args                                                                       | `[]`                                |

@@ -49,14 +49,14 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 	mux.Handle("/v1/verify", Instrument("/v1/verify", httpRateLimiter.RateLimit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		content, err := io.ReadAll(r.Body)
 		if err != nil {
-			slog.Error("Error handling /v1/verify request: %v", err)
+			slog.Error("Error handling /v1/verify request", "error", err)
 			w.WriteHeader(http.StatusBadRequest)
 			return
 		}
 
 		valid, err := sc(content)
 		if err != nil {
-			slog.Error("Error validating secret: %v", err)
+			slog.Error("Error validating secret", "error", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}

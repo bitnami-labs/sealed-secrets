@@ -287,7 +287,7 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	unsealRequestsTotal.Inc()
 	obj, exists, err := c.ssInformer.GetIndexer().GetByKey(key)
 	if err != nil {
-		slog.Error("Error fetching object  from store", "key", key, "error", err)
+		slog.Error("Error fetching object from store", "key", key, "error", err)
 		unsealErrorsTotal.WithLabelValues("fetch", "").Inc()
 		return err
 	}

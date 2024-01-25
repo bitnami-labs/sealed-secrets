@@ -26,7 +26,6 @@ import (
 	"github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	sealedsecrets "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
-	"github.com/bitnami-labs/sealed-secrets/pkg/log"
 )
 
 var (
@@ -125,7 +124,7 @@ func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period, validFor
 	// wrapper function to log error thrown by generateKey function
 	keyGenFunc := func() {
 		if _, err := registry.generateKey(ctx, validFor, cn, privateKeyAnnotations, privateKeyLabels); err != nil {
-			slog.Error("Failed to generate new key : %v\n", err)
+			slog.Error("Failed to generate new key", "error", err)
 		}
 	}
 	if period == 0 {
@@ -144,18 +143,6 @@ func initKeyRenewal(ctx context.Context, registry *KeyRegistry, period, validFor
 
 func Main(f *Flags, version string) error {
 	registerMetrics(version)
-
-	// Set logging
-	logLevel := slog.Level(0)
-	(&logLevel).UnmarshalText([]byte(f.LogLevel))
-	opts := &slog.HandlerOptions{
-		Level: logLevel,
-	}
-	if f.LogInfoToStdout {
-		slog.SetDefault(slog.New(log.New(os.Stdout, os.Stderr, f.LogFormat, opts)))
-	} else {
-		slog.SetDefault(slog.New(log.New(os.Stderr, os.Stderr, f.LogFormat, opts)))
-	}
 
 	config, err := rest.InClusterConfig()
 	if err != nil {
@@ -244,7 +231,7 @@ func Main(f *Flags, version string) error {
 				}
 				ctlr.oldGCBehavior = f.OldGCBehavior
 				ctlr.updateStatus = f.UpdateStatus
-				slog.Info("Starting informer for namespace", "namespace", ns)
+				slog.Info("Starting informer", "namespace", ns)
 				go ctlr.Run(stop)
 			}
 		}

@@ -94,7 +94,7 @@ privateKeyLabels: {}
 ## @param logInfoStdout Specifies whether the Sealed Secrets controller will log info to stdout
 ##
 logInfoStdout: false
-## @param logLevel Specifies log level of controller (DEBUG,INFO,WARN,ERROR)
+## @param logLevel Specifies log level of controller (INFO,ERROR)
 ##
 logLevel: ""
 ## @param logFormat Specifies log format (text,json)
