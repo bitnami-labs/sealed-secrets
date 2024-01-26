@@ -1,36 +1,53 @@
 package log
 
 import (
-	"log"
-	"os"
+	"context"
+	"io"
+	"log/slog"
 )
 
-var (
-	infoLogger  *log.Logger
-	errorLogger *log.Logger
-)
-
-func init() {
-	infoLogger = log.New(os.Stderr, "", 0)
-	errorLogger = log.New(os.Stderr, "", 0)
+// MultiStreamHandler slog handler for directing different
+type MultiStreamHandler struct {
+	level       slog.Level
+	lowHandler  slog.Handler
+	highHandler slog.Handler
 }
 
-func SetInfoToStdout() {
-	infoLogger.SetOutput(os.Stdout)
+// New returns new MultiStreamHandler
+func New(outLow, outHigh io.Writer, format string, opts *slog.HandlerOptions) *MultiStreamHandler {
+	if format == "json" {
+		return &MultiStreamHandler{
+			level:       opts.Level.Level(),
+			lowHandler:  slog.NewJSONHandler(outLow, opts),
+			highHandler: slog.NewJSONHandler(outHigh, opts),
+		}
+	}
+	return &MultiStreamHandler{
+		level:       opts.Level.Level(),
+		lowHandler:  slog.NewTextHandler(outLow, opts),
+		highHandler: slog.NewTextHandler(outHigh, opts),
+	}
 }
 
-func Infof(format string, v ...interface{}) {
-	infoLogger.Printf(format, v...)
+// Enabled check if log level is enabled
+func (m *MultiStreamHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return level >= m.level.Level()
 }
 
-func Errorf(format string, v ...interface{}) {
-	errorLogger.Printf(format, v...)
+// Handle pass to Low or High handlers based on log level
+func (m *MultiStreamHandler) Handle(ctx context.Context, r slog.Record) error {
+	if r.Level <= slog.LevelInfo.Level() {
+		return m.lowHandler.Handle(ctx, r)
+	}
+	return m.highHandler.Handle(ctx, r)
 }
 
-func Fatal(v ...any) {
-	errorLogger.Fatal(v...)
+func (m *MultiStreamHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	// Not used within the code
+	panic("Not implemented")
 }
 
-func Panic(v ...any) {
-	errorLogger.Panic(v...)
+func (m *MultiStreamHandler) WithGroup(string) slog.Handler {
+	// Not used within the code
+	panic("Not implemented")
 }
