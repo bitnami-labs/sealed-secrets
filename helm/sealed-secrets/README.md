@@ -188,6 +188,9 @@ The command removes all the Kubernetes components associated with the chart and 
 | `rbac.namespacedRolesName`   | Specifies the name for the namesapced Role resource                                                      | `secrets-unsealer` |
 | `rbac.labels`                | Extra labels to be added to RBAC resources                                                               | `{}`               |
 | `rbac.pspEnabled`            | PodSecurityPolicy                                                                                        | `false`            |
+| `rbac.proxier.create`        | Specifies whether to create the "proxier" role, to allow access the SealedSecret API                     | `true`             |
+| `rbac.proxier.bind`          | Specifies whether to create a RoleBinding for the "proxier" role                                         | `true`             |
+| `rbac.proxier.subjects`      | Specifies the Subjects to grant the "proxier" role to, in the created RoleBinding                        | `[{"apiGroup": "rbac.authorization.k8s.io", "kind": "Group", "name": "system:authenticated"}]` |
 
 ### Metrics parameters
 
