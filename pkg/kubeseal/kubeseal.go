@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -106,7 +107,7 @@ func getServicePortName(ctx context.Context, client corev1.CoreV1Interface, name
 
 // openCertLocal opens a cert URI or local filename, by fetching it locally from the client
 // (as opposed as openCertCluster which fetches it via HTTP but through the k8s API proxy).
-func openCertLocal(filenameOrURI string) (io.ReadCloser, error) {
+func openCertLocal(filenameOrURI string, conf *rest.Config) (io.ReadCloser, error) {
 	// detect if a certificate is a local file or an URI.
 	if ok, err := isFilename(filenameOrURI); err != nil {
 		return nil, err
@@ -114,15 +115,20 @@ func openCertLocal(filenameOrURI string) (io.ReadCloser, error) {
 		// #nosec G304 -- should open user provided file
 		return os.Open(filenameOrURI)
 	}
-	return openCertURI(filenameOrURI)
+	return openCertURI(filenameOrURI, conf)
 }
 
-func openCertURI(uri string) (io.ReadCloser, error) {
+func openCertURI(uri string, conf *rest.Config) (io.ReadCloser, error) {
 	// support file:// scheme. Note: we're opening the file using os.Open rather
 	// than using the file:// scheme below because there is no point in complicating our lives
 	// and escape the filename properly.
 
-	t := &http.Transport{Proxy: http.ProxyFromEnvironment}
+	// #nosec G402 -- disable TLS verification if requested
+	tlsConfig := &tls.Config{InsecureSkipVerify: conf.TLSClientConfig.Insecure}
+	t := &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
+		TLSClientConfig: tlsConfig,
+	}
 	// #nosec: G111 -- we want to allow all files to be opened
 	t.RegisterProtocol("file", http.NewFileTransport(http.Dir("/")))
 	c := &http.Client{Transport: t}
@@ -152,15 +158,16 @@ func openCertCluster(ctx context.Context, c corev1.CoreV1Interface, namespace, n
 }
 
 func OpenCert(ctx context.Context, clientConfig ClientConfig, controllerNs, controllerName string, certURL string) (io.ReadCloser, error) {
-	if certURL != "" {
-		return openCertLocal(certURL)
-	}
-
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
 		return nil, err
 	}
 	conf.AcceptContentTypes = "application/x-pem-file, */*"
+
+	if certURL != "" {
+		return openCertLocal(certURL, conf)
+	}
+
 	restClient, err := corev1.NewForConfig(conf)
 	if err != nil {
 		return nil, err
