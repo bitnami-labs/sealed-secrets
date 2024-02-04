@@ -49,6 +49,8 @@ type cliFlags struct {
 	dumpCert                 bool
 	allowEmptyData           bool
 	validateSecret           bool
+	validateSecretOffline    bool
+	controllerUUID           string
 	mergeInto                string
 	raw                      bool
 	secretName               string
@@ -94,6 +96,8 @@ func bindFlags(f *cliFlags, fs *flag.FlagSet) {
 	fs.BoolVar(&f.dumpCert, "fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
 	fs.BoolVar(&f.allowEmptyData, "allow-empty-data", false, "Allow empty data in the secret object")
 	fs.BoolVar(&f.validateSecret, "validate", false, "Validate that the sealed secret can be decrypted")
+	fs.BoolVar(&f.validateSecretOffline, "validate-offline", false, "Validate that the sealed secret can be decrypted without attempting to communicate with controller, required --controller-uuid.")
+	fs.StringVar(&f.controllerUUID, "controller-uuid", "", "Required for offline validation.")
 	fs.StringVar(&f.mergeInto, "merge-into", "", "Merge items from secret into an existing sealed secret file, updating the file in-place instead of writing to stdout.")
 	fs.BoolVar(&f.raw, "raw", false, "Encrypt a raw value passed via the --from-* flags instead of the whole secret object")
 	fs.StringVar(&f.secretName, "name", "", "Name of the sealed secret (required with --raw and default (strict) scope)")
@@ -194,6 +198,13 @@ func runCLI(w io.Writer, cfg *config) (err error) {
 
 	if flags.validateSecret {
 		return kubeseal.ValidateSealedSecret(cfg.ctx, cfg.clientConfig, flags.controllerNs, flags.controllerName, input)
+	}
+
+	if flags.validateSecretOffline {
+		if flags.controllerUUID == "" {
+			return fmt.Errorf("--controller-uuid required but not set")
+		}
+		return kubeseal.ValidateSealedSecretOffline(input, flags.controllerUUID)
 	}
 
 	if flags.reEncrypt {

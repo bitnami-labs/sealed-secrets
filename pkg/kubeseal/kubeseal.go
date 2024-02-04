@@ -278,6 +278,48 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 	return nil
 }
 
+func ValidateSealedSecretOffline(in io.Reader, controllerUUID string) error {
+	secrets, err := readSealedSecrets(in)
+	if err != nil {
+		return fmt.Errorf("unable to decrypt sealed secret")
+	}
+
+	for _, secret := range secrets {
+		for k, v := range secret.Spec.EncryptedData {
+			if !strings.Contains(v, ";") {
+				// For backward compatability, skip secret values that don't include validation separator
+				fmt.Printf("Skipping field %s in sealedsecret %s: no offline validation data.", k, secret.GetName())
+				continue
+			}
+			validationDatab64 := strings.Split(v, ";")[0]
+			validationDataBytes, err := base64.StdEncoding.DecodeString(validationDatab64)
+			if err != nil {
+				return fmt.Errorf("unable to decode validation data in field %s in secret %s", k, secret.GetName())
+			}
+			var validationData map[string]string
+			err = json.Unmarshal(validationDataBytes, &validationData)
+			if err != nil {
+				return fmt.Errorf("unable to decode validation data in field %s in secret %s", k, secret.GetName())
+			}
+			// If strict and name doesn't match
+			if validationData["name"] != secret.GetName() && validationData["scope"] == "0" {
+				return fmt.Errorf("validation error: secret name doesn't match in sealedsecret %s field %s", secret.GetName(), k)
+			}
+			// If not cluster-wide and namespace doesn't match
+			if validationData["namespace"] != secret.GetNamespace() && validationData["scope"] != "2" {
+				return fmt.Errorf("validation error: secret namespace doesn't match in sealedsecret %s field %s", secret.GetName(), k)
+			}
+			// If controller uuid doesn't match
+			if validationData["uuid"] != controllerUUID {
+				return fmt.Errorf("validation error: controller uuid doesn't match in sealedsecret %s field %s", secret.GetName(), k)
+			}
+
+		}
+	}
+
+	return nil
+}
+
 func ValidateSealedSecret(ctx context.Context, clientConfig ClientConfig, controllerNs, controllerName string, in io.Reader) error {
 	conf, err := clientConfig.ClientConfig()
 	if err != nil {
