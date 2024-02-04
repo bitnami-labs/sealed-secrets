@@ -287,7 +287,7 @@ func ValidateSealedSecretOffline(in io.Reader, controllerUUID string) error {
 	for _, secret := range secrets {
 		for k, v := range secret.Spec.EncryptedData {
 			if !strings.Contains(v, ";") {
-				// For backward compatability, skip secret values that don't include validation separator
+				// For backward compatibility, skip secret values that don't include validation separator
 				fmt.Printf("Skipping field %s in sealedsecret %s: no offline validation data.", k, secret.GetName())
 				continue
 			}
