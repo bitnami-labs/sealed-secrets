@@ -55,6 +55,7 @@ type Flags struct {
 	RateLimitBurst           int
 	OldGCBehavior            bool
 	UpdateStatus             bool
+	AddOfflineValidationData bool
 	SkipRecreate             bool
 	LogInfoToStdout          bool
 	LogLevel                 string
@@ -306,6 +307,7 @@ func Main(f *Flags, version string) error {
 	}
 	controller.oldGCBehavior = f.OldGCBehavior
 	controller.updateStatus = f.UpdateStatus
+	controller.addOfflineValidationData = f.AddOfflineValidationData
 
 	stop := make(chan struct{})
 	defer close(stop)

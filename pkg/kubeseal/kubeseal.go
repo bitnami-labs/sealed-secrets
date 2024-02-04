@@ -220,7 +220,7 @@ func readSealedSecrets(r io.Reader) ([]*ssv1alpha1.SealedSecret, error) {
 // Seal reads a k8s Secret resource parsed from an input reader by a given codec, encrypts all its secrets
 // with a given public key, using the name and namespace found in the input secret, unless explicitly overridden
 // by the overrideName and overrideNamespace arguments.
-func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool, overrideName, overrideNamespace string) error {
+func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.Writer, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData, addOfflineValidationData bool, overrideName, overrideNamespace, controllerUUID string) error {
 	secrets, err := readSecrets(in)
 	if err != nil {
 		return err
@@ -266,7 +266,7 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 		secret.SetDeletionTimestamp(nil)
 		secret.DeletionGracePeriodSeconds = nil
 
-		ssecret, err := ssv1alpha1.NewSealedSecret(codecs, pubKey, secret)
+		ssecret, err := ssv1alpha1.NewSealedSecret(codecs, pubKey, secret, controllerUUID, addOfflineValidationData)
 		if err != nil {
 			return err
 		}
@@ -421,7 +421,7 @@ func decodeSealedSecret(codecs runtimeserializer.CodecFactory, b []byte) (*ssv1a
 	return &ss, nil
 }
 
-func SealMergingInto(clientConfig ClientConfig, outputFormat string, in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData bool) error {
+func SealMergingInto(clientConfig ClientConfig, outputFormat string, in io.Reader, filename string, codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, scope ssv1alpha1.SealingScope, allowEmptyData, addOfflineValidationData bool, controllerUUID string) error {
 	// #nosec G304 -- should open user provided file
 	f, err := os.OpenFile(filename, os.O_RDWR, 0)
 	if err != nil {
@@ -441,7 +441,7 @@ func SealMergingInto(clientConfig ClientConfig, outputFormat string, in io.Reade
 	}
 
 	var buf bytes.Buffer
-	if err := Seal(clientConfig, outputFormat, in, &buf, codecs, pubKey, scope, allowEmptyData, orig.Name, orig.Namespace); err != nil {
+	if err := Seal(clientConfig, outputFormat, in, &buf, codecs, pubKey, scope, allowEmptyData, addOfflineValidationData, orig.Name, orig.Namespace, controllerUUID); err != nil {
 		return err
 	}
 
@@ -486,13 +486,29 @@ func SealMergingInto(clientConfig ClientConfig, outputFormat string, in io.Reade
 	return nil
 }
 
-func EncryptSecretItem(w io.Writer, secretName, ns string, data []byte, scope ssv1alpha1.SealingScope, pubKey *rsa.PublicKey) error {
+func EncryptSecretItem(w io.Writer, secretName, ns string, data []byte, scope ssv1alpha1.SealingScope, pubKey *rsa.PublicKey, addOfflineValidationData bool, controllerUUID string) error {
 	// TODO(mkm): refactor cluster-wide/namespace-wide to an actual enum so we can have a simple flag
 	// to refer to the scope mode that is not a tuple of booleans.
 	label := ssv1alpha1.EncryptionLabel(ns, secretName, scope)
 	out, err := crypto.HybridEncrypt(rand.Reader, pubKey, data, label)
 	if err != nil {
 		return err
+	}
+	if addOfflineValidationData {
+		validationMap := map[string]string{
+			"uuid":      controllerUUID,
+			"scope":     fmt.Sprintf("%d", scope),
+			"namespace": ns,
+			"name":      secretName,
+		}
+		validationBytes, err := json.Marshal(validationMap)
+		if err != nil {
+			return err
+		}
+
+		validationString := base64.StdEncoding.EncodeToString(validationBytes)
+		fmt.Fprintf(w, "%s;%s", validationString, base64.StdEncoding.EncodeToString(out))
+		return nil
 	}
 	fmt.Fprint(w, base64.StdEncoding.EncodeToString(out))
 	return nil
@@ -618,4 +634,27 @@ func UnsealSealedSecret(w io.Writer, in io.Reader, privKeysFilenames []string, o
 	}
 
 	return resourceOutput(w, outputFormat, codecs, v1.SchemeGroupVersion, sec)
+}
+
+// ReadControllerUUID get controller UUID from configmap in sealed secrets namespace
+func ReadControllerUUID(ctx context.Context, clientConfig ClientConfig, namespace, configmapName string) (string, error) {
+	conf, err := clientConfig.ClientConfig()
+	if err != nil {
+		return "", err
+	}
+	restClient, err := corev1.NewForConfig(conf)
+	if err != nil {
+		return "", err
+	}
+
+	cm, err := restClient.ConfigMaps(namespace).Get(ctx, configmapName, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	if val, ok := cm.Data["uuid"]; ok {
+		return val, nil
+	}
+
+	return "", fmt.Errorf("key 'uuid' not found in UUID configmap")
 }

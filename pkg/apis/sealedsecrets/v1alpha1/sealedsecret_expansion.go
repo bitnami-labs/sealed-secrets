@@ -5,8 +5,11 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"log/slog"
+	"strings"
 	"text/template"
 
 	v1 "k8s.io/api/core/v1"
@@ -118,7 +121,7 @@ func (s *SealedSecret) Scope() SealingScope {
 // provided secret. This encrypts all the secrets into a single encrypted
 // blob and stores it in the `Data` attribute. Keeping this for backward
 // compatibility.
-func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
+func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret, controllerUUID string, addOfflineValidationData bool) (*SealedSecret, error) {
 	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
 	if !ok {
 		return nil, fmt.Errorf("binary can't serialize JSON")
@@ -141,6 +144,22 @@ func NewSealedSecretV1(codecs runtimeserializer.CodecFactory, pubKey *rsa.Public
 	ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, plaintext, label)
 	if err != nil {
 		return nil, err
+	}
+
+	if addOfflineValidationData {
+		validationMap := map[string]string{
+			"uuid":      controllerUUID,
+			"scope":     fmt.Sprintf("%d", SecretScope(secret)),
+			"namespace": secret.GetNamespace(),
+			"name":      secret.GetName(),
+		}
+		validationBytes, err := json.Marshal(validationMap)
+		if err != nil {
+			return nil, err
+		}
+
+		validationString := base64.StdEncoding.EncodeToString(validationBytes)
+		ciphertext = []byte(validationString + ";" + string(ciphertext))
 	}
 
 	s := &SealedSecret{
@@ -196,7 +215,7 @@ func StripLastAppliedAnnotations(annotations map[string]string) {
 // NewSealedSecret creates a new SealedSecret object wrapping the
 // provided secret. This encrypts only the values of each secrets
 // individually, so secrets can be updated one by one.
-func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret) (*SealedSecret, error) {
+func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKey, secret *v1.Secret, controllerUUID string, addOfflineValidationData bool) (*SealedSecret, error) {
 	if SecretScope(secret) != ClusterWideScope && secret.GetNamespace() == "" {
 		return nil, fmt.Errorf("secret must declare a namespace")
 	}
@@ -231,12 +250,33 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 	// during decryption.
 	label := labelFor(secret)
 
+	var validationString string
+
+	if addOfflineValidationData {
+		validationMap := map[string]string{
+			"uuid":      controllerUUID,
+			"scope":     fmt.Sprintf("%d", SecretScope(secret)),
+			"namespace": secret.GetNamespace(),
+			"name":      secret.GetName(),
+		}
+		validationBytes, err := json.Marshal(validationMap)
+		if err != nil {
+			return nil, err
+		}
+
+		validationString = base64.StdEncoding.EncodeToString(validationBytes)
+	}
+
 	for key, value := range secret.Data {
 		ciphertext, err := crypto.HybridEncrypt(rand.Reader, pubKey, value, label)
 		if err != nil {
 			return nil, err
 		}
-		s.Spec.EncryptedData[key] = base64.StdEncoding.EncodeToString(ciphertext)
+		if addOfflineValidationData {
+			s.Spec.EncryptedData[key] = validationString + ";" + base64.StdEncoding.EncodeToString(ciphertext)
+		} else {
+			s.Spec.EncryptedData[key] = base64.StdEncoding.EncodeToString(ciphertext)
+		}
 	}
 
 	for key, value := range secret.StringData {
@@ -244,7 +284,11 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 		if err != nil {
 			return nil, err
 		}
-		s.Spec.EncryptedData[key] = base64.StdEncoding.EncodeToString(ciphertext)
+		if addOfflineValidationData {
+			s.Spec.EncryptedData[key] = validationString + ";" + base64.StdEncoding.EncodeToString(ciphertext)
+		} else {
+			s.Spec.EncryptedData[key] = base64.StdEncoding.EncodeToString(ciphertext)
+		}
 	}
 
 	s.Annotations = UpdateScopeAnnotations(s.Annotations, SecretScope(secret))
@@ -275,6 +319,15 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 
 		var errs []error
 		for key, value := range s.Spec.EncryptedData {
+			if strings.Contains(value, ";") {
+				parts := strings.Split(value, ";")
+				if len(parts) != 2 {
+					slog.Error("validation data found but more than one separator located, attempting unseal of entire value.")
+				} else {
+					// Discard offline validation data
+					value = parts[1]
+				}
+			}
 			valueBytes, err := base64.StdEncoding.DecodeString(value)
 			if err != nil {
 				return nil, err

@@ -493,7 +493,7 @@ func TestSealMetadataPreservation(t *testing.T) {
 			},
 		}
 
-		ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret)
+		ssecret, err := NewSealedSecret(codecs, &key.PublicKey, &secret, "", false)
 		if err != nil {
 			t.Fatalf("NewSealedSecret returned error: %v", err)
 		}
@@ -572,7 +572,7 @@ func TestRejectBothEncryptedDataAndDeprecatedV1Data(t *testing.T) {
 	}))
 }
 
-func sealSecret(t *testing.T, secret *v1.Secret, newSealedSecret func(serializer.CodecFactory, *rsa.PublicKey, *v1.Secret) (*SealedSecret, error)) (*SealedSecret, serializer.CodecFactory, map[string]*rsa.PrivateKey) {
+func sealSecret(t *testing.T, secret *v1.Secret, newSealedSecret func(serializer.CodecFactory, *rsa.PublicKey, *v1.Secret, string, bool) (*SealedSecret, error)) (*SealedSecret, serializer.CodecFactory, map[string]*rsa.PrivateKey) {
 	scheme := runtime.NewScheme()
 	codecs := serializer.NewCodecFactory(scheme)
 
@@ -581,7 +581,7 @@ func sealSecret(t *testing.T, secret *v1.Secret, newSealedSecret func(serializer
 
 	key, keys := generateTestKey(t, testRand(), 2048)
 
-	sealedSecret, err := newSealedSecret(codecs, &key.PublicKey, secret)
+	sealedSecret, err := newSealedSecret(codecs, &key.PublicKey, secret, "", false)
 	if err != nil {
 		t.Fatalf("NewSealedSecret returned error: %v", err)
 	}

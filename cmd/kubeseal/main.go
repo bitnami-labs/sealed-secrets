@@ -37,25 +37,27 @@ var (
 )
 
 type cliFlags struct {
-	certURL        string
-	controllerNs   string
-	controllerName string
-	outputFormat   string
-	outputFileName string
-	inputFileName  string
-	kubeconfig     string
-	dumpCert       bool
-	allowEmptyData bool
-	validateSecret bool
-	mergeInto      string
-	raw            bool
-	secretName     string
-	fromFile       []string
-	sealingScope   ssv1alpha1.SealingScope
-	reEncrypt      bool
-	unseal         bool
-	privKeys       []string
-	help           bool
+	certURL                  string
+	controllerNs             string
+	controllerName           string
+	uuidConfigmapName        string
+	outputFormat             string
+	outputFileName           string
+	inputFileName            string
+	kubeconfig               string
+	addOfflineValidationData bool
+	dumpCert                 bool
+	allowEmptyData           bool
+	validateSecret           bool
+	mergeInto                string
+	raw                      bool
+	secretName               string
+	fromFile                 []string
+	sealingScope             ssv1alpha1.SealingScope
+	reEncrypt                bool
+	unseal                   bool
+	privKeys                 []string
+	help                     bool
 }
 
 type config struct {
@@ -84,9 +86,11 @@ func bindFlags(f *cliFlags, fs *flag.FlagSet) {
 	fs.StringVar(&f.certURL, "cert", "", "Certificate / public key file/URL to use for encryption. Overrides --controller-*")
 	fs.StringVar(&f.controllerNs, "controller-namespace", metav1.NamespaceSystem, "Namespace of sealed-secrets controller.")
 	fs.StringVar(&f.controllerName, "controller-name", "sealed-secrets-controller", "Name of sealed-secrets controller.")
+	fs.StringVar(&f.uuidConfigmapName, "uuid-configmap-name", "sealed-secrets-controller-id", "Name of sealed-secrets controller UUID configmap.")
 	fs.StringVarP(&f.outputFormat, "format", "o", "json", "Output format for sealed secret. Either json or yaml")
 	fs.StringVarP(&f.outputFileName, "sealed-secret-file", "w", "", "Sealed-secret (output) file")
 	fs.StringVarP(&f.inputFileName, "secret-file", "f", "", "Secret (input) file")
+	fs.BoolVar(&f.addOfflineValidationData, "add-offline-validation-data", false, "(BETA) Add validation data required for offline validation to sealedsecret value.")
 	fs.BoolVar(&f.dumpCert, "fetch-cert", false, "Write certificate to stdout. Useful for later use with --cert")
 	fs.BoolVar(&f.allowEmptyData, "allow-empty-data", false, "Allow empty data in the secret object")
 	fs.BoolVar(&f.validateSecret, "validate", false, "Validate that the sealed secret can be decrypted")
@@ -213,8 +217,16 @@ func runCLI(w io.Writer, cfg *config) (err error) {
 		return err
 	}
 
+	var controllerUUID string
+	if flags.addOfflineValidationData {
+		controllerUUID, err = kubeseal.ReadControllerUUID(cfg.ctx, cfg.clientConfig, flags.controllerNs, flags.uuidConfigmapName)
+		if err != nil {
+			return err
+		}
+	}
+
 	if flags.mergeInto != "" {
-		return kubeseal.SealMergingInto(cfg.clientConfig, flags.outputFormat, input, flags.mergeInto, scheme.Codecs, pubKey, flags.sealingScope, flags.allowEmptyData)
+		return kubeseal.SealMergingInto(cfg.clientConfig, flags.outputFormat, input, flags.mergeInto, scheme.Codecs, pubKey, flags.sealingScope, flags.allowEmptyData, flags.addOfflineValidationData, controllerUUID)
 	}
 
 	if flags.raw {
@@ -256,10 +268,10 @@ func runCLI(w io.Writer, cfg *config) (err error) {
 			return err
 		}
 
-		return kubeseal.EncryptSecretItem(w, flags.secretName, ns, data, flags.sealingScope, pubKey)
+		return kubeseal.EncryptSecretItem(w, flags.secretName, ns, data, flags.sealingScope, pubKey, flags.addOfflineValidationData, controllerUUID)
 	}
 
-	return kubeseal.Seal(cfg.clientConfig, flags.outputFormat, input, w, scheme.Codecs, pubKey, flags.sealingScope, flags.allowEmptyData, flags.secretName, "")
+	return kubeseal.Seal(cfg.clientConfig, flags.outputFormat, input, w, scheme.Codecs, pubKey, flags.sealingScope, flags.allowEmptyData, flags.addOfflineValidationData, flags.secretName, "", controllerUUID)
 }
 
 func mainE(w io.Writer, fs *flag.FlagSet, gofs *goflag.FlagSet, args []string) error {

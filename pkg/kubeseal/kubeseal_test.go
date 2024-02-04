@@ -223,7 +223,7 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 			t.Logf("input is:\n%s", inbuf.String())
 
 			outbuf := bytes.Buffer{}
-			if err := Seal(clientConfig, outputFormat, &inbuf, &outbuf, scheme.Codecs, key, ssv1alpha1.NamespaceWideScope, false, "", ""); err != nil {
+			if err := Seal(clientConfig, outputFormat, &inbuf, &outbuf, scheme.Codecs, key, ssv1alpha1.NamespaceWideScope, false, false, "", "", ""); err != nil {
 				t.Fatalf("seal() returned error: %v", err)
 			}
 
@@ -447,7 +447,7 @@ func TestSeal(t *testing.T) {
 			t.Logf("input is: %s", inbuf.String())
 
 			outbuf := bytes.Buffer{}
-			if err := Seal(clientConfig, outputFormat, &inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, "", ""); err != nil {
+			if err := Seal(clientConfig, outputFormat, &inbuf, &outbuf, scheme.Codecs, key, tc.scope, false, false, "", "", ""); err != nil {
 				t.Fatalf("seal() returned error: %v", err)
 			}
 
@@ -557,7 +557,7 @@ func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string, 
 	outputFormat := "json"
 	inbuf := bytes.NewBuffer(mkTestSecret(t, key, value, opts...))
 	var outbuf bytes.Buffer
-	if err := Seal(clientConfig, outputFormat, inbuf, &outbuf, scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, "", ""); err != nil {
+	if err := Seal(clientConfig, outputFormat, inbuf, &outbuf, scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, false, "", "", ""); err != nil {
 		t.Fatalf("seal() returned error: %v", err)
 	}
 
@@ -702,7 +702,7 @@ func TestMergeInto(t *testing.T) {
 		f.Close()
 
 		buf := bytes.NewBuffer(newSecret)
-		if err := SealMergingInto(clientConfig, outputFormat, buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false); err != nil {
+		if err := SealMergingInto(clientConfig, outputFormat, buf, f.Name(), scheme.Codecs, pubKey, ssv1alpha1.DefaultScope, false, false, ""); err != nil {
 			t.Fatal(err)
 		}
 
@@ -850,7 +850,7 @@ func sealTestItem(certFilename, secretNS, secretName, secretValue string, scope 
 		return "", err
 	}
 
-	if err := EncryptSecretItem(&buf, secretName, secretNS, []byte(secretValue), scope, pubKey); err != nil {
+	if err := EncryptSecretItem(&buf, secretName, secretNS, []byte(secretValue), scope, pubKey, false, ""); err != nil {
 		return "", err
 	}
 	return buf.String(), nil

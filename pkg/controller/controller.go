@@ -73,8 +73,9 @@ type Controller struct {
 	keyRegistry *KeyRegistry
 	uuid        string
 
-	oldGCBehavior bool // feature flag to revert to old behavior where we delete the secrets instead of relying on owners reference.
-	updateStatus  bool // feature flag that enables updating the status subresource.
+	addOfflineValidationData bool // feature flag that enables adding offline validation data to sealed secret entries.
+	oldGCBehavior            bool // feature flag to revert to old behavior where we delete the secrets instead of relying on owners reference.
+	updateStatus             bool // feature flag that enables updating the status subresource.
 }
 
 // NewController returns the main sealed-secrets controller loop.
@@ -530,7 +531,7 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 			return nil, fmt.Errorf("error decrypting secret. %v", err)
 		}
 		latestPrivKey := c.keyRegistry.latestPrivateKey()
-		resealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, &latestPrivKey.PublicKey, secret)
+		resealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, &latestPrivKey.PublicKey, secret, c.uuid, c.addOfflineValidationData)
 		if err != nil {
 			return nil, fmt.Errorf("error creating new sealed secret. %v", err)
 		}
