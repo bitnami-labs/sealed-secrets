@@ -100,6 +100,10 @@ The command removes all the Kubernetes components associated with the chart and 
 | `additionalNamespaces`                            | List of namespaces used to manage the Sealed Secrets                                                  | `[]`                                |
 | `privateKeyAnnotations`                           | Map of annotations to be set on the sealing keypairs                                                  | `{}`                                |
 | `privateKeyLabels`                                | Map of labels to be set on the sealing keypairs                                                       | `{}`                                |
+| `uuidConfigMapAnnotations`                        | Map of annotations to be set on the configmap storing controller UUID                                 | `{}`                                |
+| `uuidConfigMapLabels`                             | Map of labels to be set on the configmap storing controller UUID                                      | `{}`                                |
+| `enableOfflineValidation`                         | Feature flag for offline validation feature                                                           | `false`                             |
+| `uuidConfigmapName`                               | The name of the configmap to contain the controller UUID                                              | `sealed-secrets-controller-id`      |
 | `logInfoStdout`                                   | Specifies whether the Sealed Secrets controller will log info to stdout                               | `false`                             |
 | `logLevel`                                   | Specifies log level of controller (INFO,ERROR)                               | `""`                             |
 | `logFormat`                                   | Specifies log format (text,json)                               | `""`                             |

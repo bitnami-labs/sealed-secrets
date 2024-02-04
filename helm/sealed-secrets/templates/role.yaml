@@ -20,6 +20,7 @@ rules:
       - secrets
     verbs:
       - get
+  {{- if .Values.enableOfflineValidation }}
   - apiGroups:
       - ""
     resourceNames:
@@ -28,11 +29,14 @@ rules:
       - configmaps
     verbs:
       - get
+  {{- end }}
   - apiGroups:
       - ""
     resources:
       - secrets
+  {{- if .Values.enableOfflineValidation }}
       - configmaps
+  {{- end }}
     verbs:
       - create
       - list

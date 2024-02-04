@@ -154,6 +154,9 @@ spec:
             - --log-format
             - {{ .Values.logFormat }}
             {{- end }}
+            {{- if .Values.enableOfflineValidation }}
+            - --add-offline-validation-data
+            {{- end }}
           {{- end }}
           image: {{ printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
