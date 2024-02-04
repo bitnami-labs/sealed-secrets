@@ -313,7 +313,6 @@ func ValidateSealedSecretOffline(in io.Reader, controllerUUID string) error {
 			if validationData["uuid"] != controllerUUID {
 				return fmt.Errorf("validation error: controller uuid doesn't match in sealedsecret %s field %s", secret.GetName(), k)
 			}
-
 		}
 	}
 
