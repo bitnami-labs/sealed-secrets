@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/x509"
+	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -13,14 +14,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/client-go/informers"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-
-	"k8s.io/client-go/informers"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	"github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
@@ -28,33 +29,41 @@ import (
 	ssinformers "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions"
 )
 
+// SealedSecretsControllerUUIDLabel is that label used to locate current controller UUID for offline verification support.
+const SealedSecretsControllerUUIDLabel = "sealedsecrets.bitnami.com/controller-uuid"
+
 var (
 	// Selector used to find existing public/private key pairs on startup.
 	keySelector = fields.OneTermEqualSelector(SealedSecretsKeyLabel, "active")
+	// Selector used to find existing controller UUID on startup.
+	uuidSelector = fields.OneTermEqualSelector(SealedSecretsControllerUUIDLabel, "active")
 )
 
 // Flags to configure the controller.
 type Flags struct {
-	KeyPrefix             string
-	KeySize               int
-	ValidFor              time.Duration
-	MyCN                  string
-	KeyRenewPeriod        time.Duration
-	AcceptV1Data          bool
-	KeyCutoffTime         string
-	NamespaceAll          bool
-	AdditionalNamespaces  string
-	LabelSelector         string
-	RateLimitPerSecond    int
-	RateLimitBurst        int
-	OldGCBehavior         bool
-	UpdateStatus          bool
-	SkipRecreate          bool
-	LogInfoToStdout       bool
-	LogLevel              string
-	LogFormat             string
-	PrivateKeyAnnotations string
-	PrivateKeyLabels      string
+	KeyPrefix                string
+	KeySize                  int
+	ValidFor                 time.Duration
+	MyCN                     string
+	KeyRenewPeriod           time.Duration
+	AcceptV1Data             bool
+	KeyCutoffTime            string
+	NamespaceAll             bool
+	AdditionalNamespaces     string
+	LabelSelector            string
+	RateLimitPerSecond       int
+	RateLimitBurst           int
+	OldGCBehavior            bool
+	UpdateStatus             bool
+	SkipRecreate             bool
+	LogInfoToStdout          bool
+	LogLevel                 string
+	LogFormat                string
+	PrivateKeyAnnotations    string
+	PrivateKeyLabels         string
+	UUIDConfigMapName        string
+	UUIDConfigMapAnnotations string
+	UUIDConfigMapLabels      string
 }
 
 func initKeyPrefix(keyPrefix string) (string, error) {
@@ -92,6 +101,84 @@ func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Read
 		}
 	}
 	return keyRegistry, nil
+}
+
+func initControllerUUID(ctx context.Context, client kubernetes.Interface, namespace, name, additionalAnnotations, additionalLabels string) (string, error) {
+	slog.Info("Searching for existing controller UUID", "namespace", namespace)
+	configMapList, err := client.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: uuidSelector.String(),
+	})
+	if err != nil {
+		return "", err
+	}
+
+	items := configMapList.Items
+
+	if len(items) > 1 {
+		slog.Error("Multiple controller UUID configmaps found", "selector", uuidSelector.String(), "namespace", namespace)
+		return "", fmt.Errorf("found %d configmaps matching %s in namespace %s, expecting 0 or 1", len(items), uuidSelector.String(), namespace)
+	}
+
+	if len(items) == 0 {
+		slog.Info("No existing controller UUID found, generating")
+		uuidVal := uuid.New()
+		labels := map[string]string{
+			SealedSecretsControllerUUIDLabel: "active",
+		}
+
+		annotations := map[string]string{}
+
+		if additionalLabels != "" {
+			for _, label := range removeDuplicates(strings.Split(additionalLabels, ",")) {
+				key := strings.Split(label, "=")[0]
+				value := strings.Split(label, "=")[1]
+				if key != SealedSecretsControllerUUIDLabel {
+					labels[key] = value
+				}
+			}
+		}
+
+		if additionalAnnotations != "" {
+			for _, label := range removeDuplicates(strings.Split(additionalAnnotations, ",")) {
+				key := strings.Split(label, "=")[0]
+				value := strings.Split(label, "=")[1]
+				annotations[key] = value
+			}
+		}
+		configmap := v1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace:   namespace,
+				Name:        name,
+				Labels:      labels,
+				Annotations: annotations,
+			},
+			Data: map[string]string{
+				"uuid": uuidVal.String(),
+			},
+		}
+
+		_, err = client.CoreV1().ConfigMaps(namespace).Create(ctx, &configmap, metav1.CreateOptions{})
+		if err != nil {
+			slog.Error("Error saving generated uuid", "namespace", namespace, "error", err)
+			return "", err
+		}
+
+		slog.Info("Generated UUID for controller", "uuid", uuidVal.String())
+		return uuidVal.String(), nil
+	}
+
+	cm, err := client.CoreV1().ConfigMaps(namespace).Get(ctx, items[0].Name, metav1.GetOptions{})
+	if err != nil {
+		return "", err
+	}
+
+	if val, ok := cm.Data["uuid"]; ok {
+		slog.Info("Loaded UUID for controller", "uuid", val)
+		return val, nil
+	}
+
+	slog.Error("Key 'uuid' not found in UUID configmap", "namespace", namespace, "configmap", cm.Name)
+	return "", fmt.Errorf("expected key 'uuid' in configmap %s/%s", namespace, cm.Name)
 }
 
 func myNamespace() string {
@@ -188,6 +275,18 @@ func Main(f *Flags, version string) error {
 
 	initKeyGenSignalListener(trigger)
 
+	var uuid string
+	if f.AddOfflineValidationData {
+		uuidName, err := initKeyPrefix(f.UUIDConfigMapName)
+		if err != nil {
+			return err
+		}
+		uuid, err = initControllerUUID(ctx, clientset, myNs, uuidName, f.UUIDConfigMapAnnotations, f.UUIDConfigMapLabels)
+		if err != nil {
+			return err
+		}
+	}
+
 	namespace := v1.NamespaceAll
 	if !f.NamespaceAll || f.AdditionalNamespaces != "" {
 		namespace = myNamespace()
@@ -201,7 +300,7 @@ func Main(f *Flags, version string) error {
 		}
 	}
 
-	controller, err := prepareController(clientset, namespace, tweakopts, f, ssclientset, keyRegistry)
+	controller, err := prepareController(clientset, namespace, tweakopts, f, ssclientset, keyRegistry, uuid)
 	if err != nil {
 		return err
 	}
@@ -225,7 +324,7 @@ func Main(f *Flags, version string) error {
 				return err
 			}
 			if ns != namespace {
-				ctlr, err := prepareController(clientset, ns, tweakopts, f, ssclientset, keyRegistry)
+				ctlr, err := prepareController(clientset, ns, tweakopts, f, ssclientset, keyRegistry, uuid)
 				if err != nil {
 					return err
 				}
@@ -263,10 +362,10 @@ func Main(f *Flags, version string) error {
 	return nil
 }
 
-func prepareController(clientset kubernetes.Interface, namespace string, tweakopts func(*metav1.ListOptions), f *Flags, ssclientset versioned.Interface, keyRegistry *KeyRegistry) (*Controller, error) {
+func prepareController(clientset kubernetes.Interface, namespace string, tweakopts func(*metav1.ListOptions), f *Flags, ssclientset versioned.Interface, keyRegistry *KeyRegistry, uuid string) (*Controller, error) {
 	sinformer := initSecretInformerFactory(clientset, namespace, tweakopts, f.SkipRecreate)
 	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, tweakopts)
-	controller, err := NewController(clientset, ssclientset, ssinformer, sinformer, keyRegistry)
+	controller, err := NewController(clientset, ssclientset, ssinformer, sinformer, keyRegistry, uuid)
 	return controller, err
 }
 

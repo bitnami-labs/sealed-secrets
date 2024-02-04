@@ -62,6 +62,9 @@ createController: true
 ## @param secretName The name of an existing TLS secret containing the key used to encrypt secrets
 ##
 secretName: "sealed-secrets-key"
+## @param uuidConfigmapName The name of the configmap to contain the controller UUID
+##
+uuidConfigMapName: "sealed-secrets-controller-id"
 ## @param updateStatus Specifies whether the Sealed Secrets controller should update the status subresource
 ##
 updateStatus: true
@@ -91,6 +94,12 @@ privateKeyAnnotations: {}
 ## @param privateKeyLabels Map of labels to be set on the sealing keypairs
 ## 
 privateKeyLabels: {}
+## @param uuidConfigMapAnnotations Map of annotations to be set on the configmap storing controller UUID
+## 
+uuidConfigMapAnnotations: {}
+## @param uuidConfigMapLabels Map of labels to be set on the configmap storing controller UUID
+## 
+uuidConfigMapLabels: {}
 ## @param logInfoStdout Specifies whether the Sealed Secrets controller will log info to stdout
 ##
 logInfoStdout: false

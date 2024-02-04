@@ -117,6 +117,32 @@ spec:
             - --privatekey-labels
             - {{ trimSuffix "," $privateKeyLabels | quote }}
             {{- end }}
+            {{- if $.Values.uuidConfigMapName }}
+            - --uuid-configmap-name
+            - {{ .Values.uuidConfigMapName | quote }}
+            {{- end }}
+            {{- if $.Values.uuidConfigMapAnnotations }}
+            {{- $uuidConfigmapAnnotations := ""}}
+            {{- range $k, $v := $.Values.uuidConfigMapAnnotations }}
+              {{- if not (and $v (kindIs "string" $v)) }}
+                {{ fail "Annotation values have to be strings"}}
+              {{- end }}
+              {{- $uuidConfigmapAnnotations = printf "%s=%s,%s" $k $v $uuidConfigmapAnnotations}}
+            {{- end }}
+            - --uuid-configmap-annotations
+            - {{ trimSuffix "," $uuidConfigmapAnnotations | quote }}
+            {{- end }}            
+            {{- if $.Values.uuidConfigMapLabels }}
+            {{- $uuidConfigMapLabels := ""}}
+            {{- range $k, $v := $.Values.uuidConfigMapLabels }}
+              {{- if not (and $v (kindIs "string" $v)) }}
+                {{ fail "Label values have to be strings"}}
+              {{- end }}
+              {{- $uuidConfigMapLabels = printf "%s=%s,%s" $k $v $uuidConfigMapLabels}}
+            {{- end }}
+            - --uuid-configmap-labels
+            - {{ trimSuffix "," $uuidConfigMapLabels | quote }}
+            {{- end }}
             {{- if .Values.logInfoStdout }}
             - --log-info-stdout
             {{- end }}

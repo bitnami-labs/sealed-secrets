@@ -125,7 +125,7 @@ func TestDefaultConfigDoesNotSkipRecreate(t *testing.T) {
 	ssc := ssfake.NewSimpleClientset()
 	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
 
-	got, err := prepareController(clientset, ns, tweakopts, &Flags{SkipRecreate: false}, ssc, keyRegistry)
+	got, err := prepareController(clientset, ns, tweakopts, &Flags{SkipRecreate: false}, ssc, keyRegistry, "")
 	if err != nil {
 		t.Fatalf("err %v want %v", got, nil)
 	}
@@ -144,7 +144,7 @@ func TestSkipRecreateConfigDoesSkipIt(t *testing.T) {
 	ssc := ssfake.NewSimpleClientset()
 	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
 
-	got, err := prepareController(clientset, ns, tweakopts, &Flags{SkipRecreate: true}, ssc, keyRegistry)
+	got, err := prepareController(clientset, ns, tweakopts, &Flags{SkipRecreate: true}, ssc, keyRegistry, "")
 	if err != nil {
 		t.Fatalf("err %v want %v", got, nil)
 	}

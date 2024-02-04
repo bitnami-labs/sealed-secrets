@@ -71,13 +71,14 @@ type Controller struct {
 	ssclient    ssv1alpha1client.SealedSecretsGetter
 	recorder    record.EventRecorder
 	keyRegistry *KeyRegistry
+	uuid        string
 
 	oldGCBehavior bool // feature flag to revert to old behavior where we delete the secrets instead of relying on owners reference.
 	updateStatus  bool // feature flag that enables updating the status subresource.
 }
 
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry) (*Controller, error) {
+func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry, uuid string) (*Controller, error) {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
 	utilruntime.Must(ssscheme.AddToScheme(scheme.Scheme))
@@ -110,6 +111,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 		ssclient:    ssclientset.BitnamiV1alpha1(),
 		recorder:    recorder,
 		keyRegistry: keyRegistry,
+		uuid:        uuid,
 	}, nil
 }
 

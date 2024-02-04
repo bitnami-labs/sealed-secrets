@@ -56,6 +56,10 @@ func bindControllerFlags(f *controller.Flags, fs *flag.FlagSet) {
 	fs.StringVar(&f.LogLevel, "log-level", "INFO", "Log level (INFO|ERROR).")
 	fs.StringVar(&f.LogFormat, "log-format", "text", "Log format (text|json).")
 
+	fs.StringVar(&f.UUIDConfigMapName, "uuid-configmap-name", "sealed-secrets-controller-id", "ConfigMap name for storing controller UUID.")
+	fs.StringVar(&f.UUIDConfigMapAnnotations, "uuid-configmap-annotations", "", "Comma-separated list of additional annotations to be put on controller UUID configmap.")
+	fs.StringVar(&f.UUIDConfigMapLabels, "uuid-configmap-labels", "", "Comma-separated list of additional labels to be put on controller UUID configmap.")
+
 	fs.DurationVar(&f.KeyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
 	_ = fs.MarkDeprecated("rotate-period", "please use key-renew-period instead")
 }

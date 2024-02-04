@@ -22,8 +22,17 @@ rules:
       - get
   - apiGroups:
       - ""
+    resourceNames:
+      - {{ .Values.uuidConfigMapName }}
+    resources:
+      - configmaps
+    verbs:
+      - get
+  - apiGroups:
+      - ""
     resources:
       - secrets
+      - configmaps
     verbs:
       - create
       - list
