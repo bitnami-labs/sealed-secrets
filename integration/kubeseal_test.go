@@ -124,6 +124,17 @@ var _ = Describe("kubeseal", func() {
 			args = append(args, "--add-offline-validation-data")
 		})
 
+		AfterEach(func() {
+			// Remove --add-offline-validation-data from args
+			var newArgs []string
+			for _, v := range args {
+				if v != "--add-offline-validation-data" {
+					newArgs = append(newArgs, v)
+				}
+			}
+			args = newArgs
+		})
+
 		It("should create secret as usual", func() {
 			s, err := ss.Unseal(scheme.Codecs, privKeys)
 			Expect(err).NotTo(HaveOccurred())
