@@ -230,9 +230,13 @@ func runCLI(w io.Writer, cfg *config) (err error) {
 
 	var controllerUUID string
 	if flags.addOfflineValidationData {
-		controllerUUID, err = kubeseal.ReadControllerUUID(cfg.ctx, cfg.clientConfig, flags.controllerNs, flags.uuidConfigmapName)
-		if err != nil {
-			return err
+		if flags.controllerUUID == "" {
+			controllerUUID, err = kubeseal.ReadControllerUUID(cfg.ctx, cfg.clientConfig, flags.controllerNs, flags.uuidConfigmapName)
+			if err != nil {
+				return err
+			}
+		} else {
+			controllerUUID = flags.controllerUUID
 		}
 	}
 
