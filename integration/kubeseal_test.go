@@ -117,6 +117,24 @@ var _ = Describe("kubeseal", func() {
 		})
 	})
 
+	Context("With --add-offline-validation-data", func() {
+		const testNs = "offlinevalns"
+		BeforeEach(func() {
+			input.Namespace = testNs
+			args = append(args, "--add-offline-validation-data")
+		})
+
+		It("should create secret as usual", func() {
+			s, err := ss.Unseal(scheme.Codecs, privKeys)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(s.Data).To(HaveKeyWithValue("foo", []byte("bar")))
+		})
+
+		It("should contain validation data", func() {
+			Expect(ss.Spec.EncryptedData["foo"]).To(ContainSubstring(";"))
+		})
+	})
+
 	Context("No input namespace", func() {
 		const testNs = "nons"
 

@@ -551,6 +551,8 @@ metadata:
 
 ### Validate a Sealed Secret
 
+#### Online validation
+
 If you want to validate an existing sealed secret, `kubeseal` has the flag `--validate` to help you.
 
 Giving a file named `sealed-secrets.yaml` containing the following sealed secret:
@@ -578,6 +580,12 @@ In case of an invalid sealed secret, `kubeseal` will show:
 $ cat sealed-secrets.yaml | kubeseal --validate
 error: unable to decrypt sealed secret
 ```
+
+#### Offline validation
+
+If you need to validate sealed secret values but cannot access the cluster, you can use the `--add-offline-validation-data` flag when sealing secrets, this will add extra validation data to your sealedsecret values.
+
+You can then validate those values without cluster access using `kubeseal --validate-offline`
 
 ## Secret Rotation
 
