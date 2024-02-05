@@ -46,6 +46,12 @@ controller {
         // Can't limit create by resource name as keys are produced on the fly
         verbs: ['create', 'list'],
       },
+      {
+        apiGroups: [''],
+        resources: ['configmaps'],
+        // Can't limit create by resource name as keys are produced on the fly
+        verbs: ['create', 'list'],
+      },
     ],
   },
 
