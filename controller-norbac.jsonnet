@@ -66,6 +66,7 @@ local namespace = 'kube-system';
               image: $.controllerImage,
               imagePullPolicy: $.imagePullPolicy,
               command: ['controller'],
+              args: ['--add-offline-validation-data'],
               readinessProbe: {
                 httpGet: { path: '/healthz', port: 'http' },
               },

@@ -298,7 +298,7 @@ jobs:
 
     - name: Testing environment setup
       run: |
-        helm install sealed-secrets -n kube-system --set fullnameOverride=sealed-secrets-controller --set image.registry=$controller_registry --set image.repository=$controller_repository --set image.tag=$controller_tag --set image.pullPolicy=Never helm/sealed-secrets
+        helm install sealed-secrets -n kube-system --set enableOfflineValidation=true --set fullnameOverride=sealed-secrets-controller --set image.registry=$controller_registry --set image.repository=$controller_repository --set image.tag=$controller_tag --set image.pullPolicy=Never helm/sealed-secrets
         kubectl rollout status deployment/sealed-secrets-controller -n kube-system -w --timeout=1m || kubectl -n kube-system describe pod -lapp.kubernetes.io/name=sealed-secrets
 
     - name: Integration tests
