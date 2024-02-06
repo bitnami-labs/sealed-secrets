@@ -191,7 +191,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `rbac.pspEnabled`            | PodSecurityPolicy                                                                                        | `false`            |
 | `rbac.serviceProxier.create` | Specifies whether to create the "service proxier" role, to allow access to the SealedSecret API          | `true`             |
 | `rbac.serviceProxier.bind`   | Specifies whether to create a RoleBinding for the "service proxier" role                                 | `true`             |
-| `rbac.serviceProxier.subjects` | Specifies the Subjects to grant the "service proxier" role to, in the created RoleBinding. Using this chart's default value that grants access to the `system:authenticated` group is [discouraged in GKE][gkebp] | `[{"apiGroup": "rbac.authorization.k8s.io", "kind": "Group", "name": "system:authenticated"}]` |
+| `rbac.serviceProxier.subjects` | Specifies the Subjects to grant the "service proxier" role to, in the created RoleBinding. Using this chart's default value that grants access to the `system:authenticated` group is [discouraged in GKE][gkebp] | `"[{"apiGroup": "rbac.authorization.k8s.io", "kind": "Group", "name": "system:authenticated"}]"` |
 
 [gkebp]: https://cloud.google.com/kubernetes-engine/docs/best-practices/rbac#default-roles-groups
 

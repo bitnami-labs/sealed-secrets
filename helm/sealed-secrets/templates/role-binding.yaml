@@ -40,14 +40,7 @@ roleRef:
   kind: Role
   name: {{ printf "%s-service-proxier" (include "sealed-secrets.fullname" .) }}
 subjects:
-  {{- range .Values.rbac.serviceProxier.subjects }}
-  - apiGroup: {{ .apiGroup | default "rbac.authorization.k8s.io" | quote }}
-    kind: {{ quote .kind }}
-    name: {{ quote .name }}
-    {{- with .namespace }}
-    namespace: {{ quote . }}
-    {{- end }}
-  {{- end }}
+  {{- include "sealed-secrets.render" (dict "value" .Values.rbac.serviceProxier.subjects "context" $) | nindent 2 }}
 ---
 {{ end }}
 {{ if and (and .Values.rbac.create .Values.rbac.namespacedRoles) (not $.Values.rbac.clusterRole) }}
