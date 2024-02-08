@@ -74,6 +74,7 @@ skipRecreate: false
 ## @param keyrenewperiod Specifies key renewal period. Default 30 days
 ## e.g
 ## keyrenewperiod: "720h30m"
+## To disable use "0", with quotes!
 ##
 keyrenewperiod: ""
 ## @param rateLimit Number of allowed sustained request per second for verify endpoint
