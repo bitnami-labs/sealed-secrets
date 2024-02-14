@@ -405,6 +405,22 @@ rbac:
   ## @param rbac.pspEnabled PodSecurityPolicy
   ##
   pspEnabled: false
+  ## "Proxier" RBAC Role configuration
+  ##
+  serviceProxier:
+    ## @param create Specifies whether to create the "proxier" role, to allow external users to access the SealedSecret API
+    ##
+    create: true
+    ## @param bind Specifies whether to create a RoleBinding for the "proxier" role
+    ##
+    bind: true
+    ## @param subjects Specifies the RBAC subjects to grant the "proxier" role to, in the created RoleBinding
+    ## It is best to change this to something narrower, as the default binding gives `system:authenticated` access, which is very broad
+    ##
+    subjects: |
+      - apiGroup: rbac.authorization.k8s.io
+        kind: Group
+        name: system:authenticated
 
 ## @section Metrics parameters
 

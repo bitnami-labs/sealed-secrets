@@ -21,6 +21,8 @@ subjects:
     name: {{ include "sealed-secrets.serviceAccountName" . }}
     namespace: {{ include "sealed-secrets.namespace" . }}
 ---
+{{ end }}
+{{ if and (and .Values.rbac.create .Values.rbac.serviceProxier.create) .Values.rbac.serviceProxier.bind }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
@@ -38,11 +40,9 @@ roleRef:
   kind: Role
   name: {{ printf "%s-service-proxier" (include "sealed-secrets.fullname" .) }}
 subjects:
-- apiGroup: rbac.authorization.k8s.io
-  kind: Group
-  name: system:authenticated
-{{ end }}
+  {{- include "sealed-secrets.render" (dict "value" .Values.rbac.serviceProxier.subjects "context" $) | nindent 2 }}
 ---
+{{ end }}
 {{ if and (and .Values.rbac.create .Values.rbac.namespacedRoles) (not $.Values.rbac.clusterRole) }}
   {{- range $additionalNamespace := $.Values.additionalNamespaces }}
 apiVersion: rbac.authorization.k8s.io/v1

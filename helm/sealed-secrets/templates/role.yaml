@@ -28,6 +28,8 @@ rules:
       - create
       - list
 ---
+{{- end }}
+{{- if and .Values.rbac.create .Values.rbac.serviceProxier.create }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
@@ -60,8 +62,8 @@ rules:
     verbs:
       - create
       - get
-{{ end }}
 ---
+{{- end }}
 {{ if and (and .Values.rbac.create .Values.rbac.namespacedRoles) (not $.Values.rbac.clusterRole) }}
   {{- range $additionalNamespace := $.Values.additionalNamespaces }}
 apiVersion: rbac.authorization.k8s.io/v1
