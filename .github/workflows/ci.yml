@@ -38,7 +38,8 @@ jobs:
       matrix:
         go: ${{ fromJSON(needs.load-versions.outputs.go_version_list) }}
         os: [ubuntu-latest]
-        golangci-lint: ["1.52.2"]
+        golangci-lint: ["1.56.1"]
+        gosec: ["2.19.0"]
     steps:
     - name: Set up Go 1.x
       uses: actions/setup-go@v3.3.1
@@ -52,35 +53,12 @@ jobs:
     - name: Install dependencies
       run: |
         go install github.com/golangci/golangci-lint/cmd/golangci-lint@v${{ matrix.golangci-lint }}
-
-    - name: Run linter
-      run: make lint
-
-  gosec:
-    needs: load-versions
-    name: Run gosec
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go: ${{ fromJSON(needs.load-versions.outputs.go_version_list) }}
-        os: [ubuntu-latest]
-        gosec: ["2.15.0"]
-    steps:
-    - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.1
-      with:
-        go-version: ${{ matrix.go }}
-      id: go
-
-    - name: Check out code into the Go module directory
-      uses: actions/checkout@v3.1.0
-
-    - name: Install dependencies
-      run: |
         go install github.com/securego/gosec/v2/cmd/gosec@v${{ matrix.gosec }}
 
-    - name: Run gosec
-      run: make lint-gosec
+    - name: Run linter
+      run: |
+        make lint
+        make lint-gosec
 
   test:
     needs: load-versions
