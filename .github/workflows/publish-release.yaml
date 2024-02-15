@@ -73,6 +73,9 @@ jobs:
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
 
+      - name: Checkout version
+        run: git checkout "$GORELEASER_CURRENT_TAG"
+
       # Build & Release binaries
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v3.1.0
