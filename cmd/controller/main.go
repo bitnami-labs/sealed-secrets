@@ -90,7 +90,7 @@ func mainE(w io.Writer, fs *flag.FlagSet, gofs *goflag.FlagSet, args []string) e
 
 	// Set logging
 	logLevel := slog.Level(0)
-	logLevel.UnmarshalText([]byte(flags.LogLevel))
+	_ = logLevel.UnmarshalText([]byte(flags.LogLevel))
 	opts := &slog.HandlerOptions{
 		Level: logLevel,
 	}
