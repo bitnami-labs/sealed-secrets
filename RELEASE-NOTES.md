@@ -4,6 +4,22 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.26.0
+
+### Changelog
+
+- feat: Implement structured logging ([#1438](https://github.com/bitnami-labs/sealed-secrets/pull/1438))
+- feat: [helm] add rbac.proxier config ([#1451](https://github.com/bitnami-labs/sealed-secrets/pull/1451))
+- docs: Add clarity around template Secret fields ([#1456](https://github.com/bitnami-labs/sealed-secrets/pull/1456))
+- docs: [helm] adding disable keyrenewperiod comment ([#1455](https://github.com/bitnami-labs/sealed-secrets/pull/1455))
+- chore: Update Go version and dependencies ([#1460](https://github.com/bitnami-labs/sealed-secrets/pull/1460))
+- chore: Bump golang.org/x/crypto from 0.18.0 to 0.19.0 ([#1458](https://github.com/bitnami-labs/sealed-secrets/pull/1458))
+- chore: Bump k8s.io/client-go from 0.29.0 to 0.29.1 ([#1452](https://github.com/bitnami-labs/sealed-secrets/pull/1452))
+- chore: Bump k8s.io/code-generator from 0.29.0 to 0.29.1 ([#1441](https://github.com/bitnami-labs/sealed-secrets/pull/1441))
+- chore: Bump k8s.io/api from 0.29.0 to 0.29.1 ([#1443](https://github.com/bitnami-labs/sealed-secrets/pull/1443))
+- chore: Bump k8s.io/klog/v2 from 2.120.0 to 2.120.1 ([#1439](https://github.com/bitnami-labs/sealed-secrets/pull/1439))
+- chore: Bump github.com/onsi/gomega from 1.30.0 to 1.31.1 ([#1440](https://github.com/bitnami-labs/sealed-secrets/pull/1440))
+
 ## v0.25.0
 
 ### Changelog
