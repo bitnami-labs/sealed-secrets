@@ -39,7 +39,7 @@ commonLabels: {}
 image:
   registry: docker.io
   repository: bitnami/sealed-secrets-controller
-  tag: 0.25.0
+  tag: 0.26.0
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -408,13 +408,13 @@ rbac:
   ## "Proxier" RBAC Role configuration
   ##
   serviceProxier:
-    ## @param create Specifies whether to create the "proxier" role, to allow external users to access the SealedSecret API
+    ## @param rbac.serviceProxier.create Specifies whether to create the "proxier" role, to allow external users to access the SealedSecret API
     ##
     create: true
-    ## @param bind Specifies whether to create a RoleBinding for the "proxier" role
+    ## @param rbac.serviceProxier.bind Specifies whether to create a RoleBinding for the "proxier" role
     ##
     bind: true
-    ## @param subjects Specifies the RBAC subjects to grant the "proxier" role to, in the created RoleBinding
+    ## @param rbac.serviceProxier.subjects Specifies the RBAC subjects to grant the "proxier" role to, in the created RoleBinding
     ## It is best to change this to something narrower, as the default binding gives `system:authenticated` access, which is very broad
     ##
     subjects: |
