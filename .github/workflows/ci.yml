@@ -56,9 +56,10 @@ jobs:
         go install github.com/securego/gosec/v2/cmd/gosec@v${{ matrix.gosec }}
 
     - name: Run linter
-      run: |
-        make lint
-        make lint-gosec
+      run: make lint
+
+    - name: Run gosec
+      run: make lint-gosec
 
   test:
     needs: load-versions
