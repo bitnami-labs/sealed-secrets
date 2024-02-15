@@ -116,7 +116,9 @@ In particular, the annotations and labels of a `SealedSecret` resource are not t
 
 To capture this distinction, the `SealedSecret` object has a `template` section which encodes all the fields you want the controller to put in the unsealed `Secret`.
 
-This includes metadata such as labels or annotations, but also things like `type` and `immutable` fields of the secret.
+The `metadata` block is copied as is (the `ownerReference` field will be updated [unless disabled](#seal-secret-which-can-skip-set-owner-references)).
+
+Other secret fields are handled individually. The `type` and `immutable` fields are copied, and the `data` field can be used to [template complex values](docs/examples/config-template) on the `Secret`. All other fields are currently ignored.
 
 ```yaml
 apiVersion: bitnami.com/v1alpha1
