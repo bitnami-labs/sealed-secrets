@@ -8,9 +8,10 @@ metadata:
     {{- if .Values.commonLabels }}
     {{- include "sealed-secrets.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
-  {{- if .Values.commonAnnotations }}
-  annotations: {{- toYaml .Values.commonAnnotations | nindent 4 }}
-  {{- end }}
+  annotations:
+    {{- if .Values.commonAnnotations }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
 spec:
   {{- if regexMatch "64$" (typeOf .Values.pdb.minAvailable) }}
   minAvailable: {{ .Values.pdb.minAvailable }}
