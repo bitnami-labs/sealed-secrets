@@ -77,6 +77,15 @@ func getSecretImmutable(s *v1.Secret) bool {
 	return *s.Immutable
 }
 
+func compareLastTimes(ss *ssv1alpha1.SealedSecret) bool {
+	for i := range ss.Status.Conditions {
+		if ss.Status.Conditions[i].Type == ssv1alpha1.SealedSecretSynced {
+			return ss.Status.Conditions[i].LastTransitionTime == ss.Status.Conditions[i].LastUpdateTime
+		}
+	}
+	return false
+}
+
 func fetchKeys(ctx context.Context, c corev1.SecretsGetter) (map[string]*rsa.PrivateKey, []*x509.Certificate, error) {
 	list, err := c.Secrets(*controllerNs).List(ctx, metav1.ListOptions{
 		LabelSelector: keySelector,
@@ -207,6 +216,9 @@ var _ = Describe("create", func() {
 				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
 					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(compareLastTimes, Equal(true)))
 				Eventually(func() (*v1.EventList, error) {
 					return c.Events(ns).Search(scheme.Scheme, ss)
 				}, Timeout, PollingInterval).Should(
@@ -233,6 +245,7 @@ var _ = Describe("create", func() {
 				Expect(err).NotTo(HaveOccurred())
 				ss.ResourceVersion = resVer
 
+				time.Sleep(1 * time.Second)
 				fmt.Fprintf(GinkgoWriter, "Updating to SealedSecret: %#v\n", ss)
 				ss, err = ssc.BitnamiV1alpha1().SealedSecrets(ss.Namespace).Update(context.Background(), ss, metav1.UpdateOptions{})
 				Expect(err).NotTo(HaveOccurred())
@@ -251,6 +264,9 @@ var _ = Describe("create", func() {
 				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
 					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
 				}, Timeout, PollingInterval).Should(WithTransform(getObservedGeneration, Equal(int64(2))))
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(compareLastTimes, Equal(false)))
 			})
 		})
 
