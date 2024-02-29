@@ -359,16 +359,24 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	secret = secret.DeepCopy()
 
 	if isAnnotatedToBePatched(secret) {
+		if secret.Data == nil {
+			secret.Data = make(map[string][]byte)
+		}
+
 		for k, v := range newSecret.Data {
 			secret.Data[k] = v
 		}
 
-		for k, v := range newSecret.ObjectMeta.Annotations {
-			secret.ObjectMeta.Annotations[k] = v
+		if secret.ObjectMeta.Labels == nil {
+			secret.ObjectMeta.Labels = make(map[string]string)
 		}
 
 		for k, v := range newSecret.ObjectMeta.Labels {
 			secret.ObjectMeta.Labels[k] = v
+		}
+
+		for k, v := range newSecret.ObjectMeta.Annotations {
+			secret.ObjectMeta.Annotations[k] = v
 		}
 
 		if isAnnotatedToBeManaged(secret) {

@@ -438,6 +438,50 @@ var _ = Describe("create", func() {
 				}, Timeout, PollingInterval).Should(WithTransform(getLabels, Equal(expectedLabels)))
 			})
 		})
+
+		Context("With patch annotation and empty secret", func() {
+			BeforeEach(func() {
+				// Empty secret has no data nor labels field
+				s.Data = nil
+				s.Labels = nil
+				s.Annotations = map[string]string{
+					ssv1alpha1.SealedSecretPatchAnnotation: "true",
+				}
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+			})
+
+			It("should not take ownership of existing Secret while patching the Secret", func() {
+				expectedData := map[string][]byte{
+					"foo": []byte("bar"),
+				}
+				expectedAnnotations := map[string]string{
+					ssv1alpha1.SealedSecretPatchAnnotation: "true",
+				}
+				expectedLabels := map[string]string{
+					"mylabel": "myvalue",
+				}
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
+				Eventually(func() (*ssv1alpha1.SealedSecret, error) {
+					return ssc.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).ShouldNot(WithTransform(getStatus, BeNil()))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getNumberOfOwners, Equal(0)))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getData, Equal(expectedData)))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getAnnotations, Equal(expectedAnnotations)))
+				Eventually(func() (*v1.Secret, error) {
+					return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+				}, Timeout, PollingInterval).Should(WithTransform(getLabels, Equal(expectedLabels)))
+			})
+		})
 	})
 
 	Describe("Secret Recreation", func() {
