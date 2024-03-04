@@ -8,6 +8,10 @@ metadata:
     {{- if .Values.commonLabels }}
     {{- include "sealed-secrets.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
+  annotations:
+    {{- if .Values.commonAnnotations }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
 spec:
   podSelector:
     matchLabels: {{- include "sealed-secrets.matchLabels" . | nindent 6 }}

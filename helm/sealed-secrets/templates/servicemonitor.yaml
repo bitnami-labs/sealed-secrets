@@ -15,9 +15,13 @@ metadata:
     {{- if .Values.commonLabels }}
     {{- include "sealed-secrets.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
-  {{- if .Values.metrics.serviceMonitor.annotations }}
-  annotations: {{- include "sealed-secrets.render" (dict "value" .Values.metrics.serviceMonitor.annotations "context" $) | nindent 4 }}
-  {{- end }}
+  annotations:
+    {{- if .Values.metrics.serviceMonitor.annotations }}
+    {{- include "sealed-secrets.render" (dict "value" .Values.metrics.serviceMonitor.annotations "context" $) | nindent 4 }}
+    {{- end }}
+    {{- if .Values.commonAnnotations }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
 spec:
   endpoints:
     - port: metrics

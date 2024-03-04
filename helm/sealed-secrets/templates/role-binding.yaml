@@ -11,6 +11,10 @@ metadata:
     {{- if .Values.commonLabels }}
     {{- include "sealed-secrets.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
+  annotations:
+    {{- if .Values.commonAnnotations }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -35,6 +39,10 @@ metadata:
     {{- if .Values.commonLabels }}
     {{- include "sealed-secrets.render" (dict "value" .Values.commonLabels "context" $) | nindent 4 }}
     {{- end }}
+  annotations:
+    {{- if .Values.commonAnnotations }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
+    {{- end }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -53,6 +61,10 @@ metadata:
   labels: {{- include "sealed-secrets.labels" $ | nindent 4 }}
     {{- if $.Values.rbac.labels }}
     {{- include "sealed-secrets.render" ( dict "value" $.Values.rbac.labels "context" $) | nindent 4 }}
+    {{- end }}
+  annotations:
+    {{- if .Values.commonAnnotations }}
+    {{- include "sealed-secrets.render" ( dict "value" .Values.commonAnnotations "context" $ ) | nindent 4 }}
     {{- end }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
