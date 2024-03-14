@@ -44,8 +44,8 @@ kubectl -n "$NAMESPACE" logs -l name=sealed-secrets-controller
 controller version: v0.12.1+dirty
 2020/06/09 14:30:45 Starting sealed-secrets controller version: v0.12.1+dirty
 2020/06/09 14:30:45 Searching for existing private keys
-2020/06/09 14:30:45 ----- sealed-secrets-key5rxd9
-2020/06/09 14:30:45 ----- mycustomkeys
+2020/06/09 14:30:45 registered private key secretname=sealed-secrets-key5rxd9
+2020/06/09 14:30:45 registered private key secretname=mycustomkeys
 2020/06/09 14:30:45 HTTP server serving on :8080
 ```
 

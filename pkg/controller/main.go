@@ -90,6 +90,7 @@ func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Read
 		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], certs[0].NotBefore); err != nil {
 			return nil, err
 		}
+		slog.Info("registered private key", "secretname", secret.Name)
 	}
 	return keyRegistry, nil
 }
