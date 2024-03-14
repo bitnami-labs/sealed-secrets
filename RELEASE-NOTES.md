@@ -4,6 +4,22 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.26.1
+
+### Changelog
+
+- fix: panic when patching empty secret ([#1474](https://github.com/bitnami-labs/sealed-secrets/pull/1474))
+- fix: Modify LastUpdateTime when the Sealed Secrets is being updated ([#1475](https://github.com/bitnami-labs/sealed-secrets/pull/1475))
+- fix: Bring back private keys logging ([#1481](https://github.com/bitnami-labs/sealed-secrets/pull/1481))
+- fix: missing common annotations in the helm chart ([#1471](https://github.com/bitnami-labs/sealed-secrets/pull/1471))
+- fix: Add metrics port to allow ingress traffic in the netpols ([#1473](https://github.com/bitnami-labs/sealed-secrets/pull/1473))
+- chore: Bump google.golang.org/protobuf from 1.32.0 to 1.33.0 ([#1480](https://github.com/bitnami-labs/sealed-secrets/pull/1480))
+- chore: Bump golang.org/x/crypto from 0.20.0 to 0.21.0 ([#1477](https://github.com/bitnami-labs/sealed-secrets/pull/1477))
+- chore: Bump github.com/onsi/ginkgo/v2 from 2.15.0 to 2.16.0 ([#1478](https://github.com/bitnami-labs/sealed-secrets/pull/1478))
+- chore: Bump github.com/prometheus/client_golang from 1.18.0 to 1.19.0 ([#1476](https://github.com/bitnami-labs/sealed-secrets/pull/1476))
+- chore: Bump golang.org/x/crypto from 0.19.0 to 0.20.0 ([#1472](https://github.com/bitnami-labs/sealed-secrets/pull/1472))
+- chore: Bump k8s.io/code-generator from 0.29.1 to 0.29.2 ([#1467](https://github.com/bitnami-labs/sealed-secrets/pull/1467))
+
 ## v0.26.0
 
 ### Changelog
