@@ -8,9 +8,10 @@ Latest release:
 
 ### Changelog
 
-- fix: missing common annotations in the helm chart ([#1471](https://github.com/bitnami-labs/sealed-secrets/pull/1471))
-- fix: Modify LastUpdateTime when the Sealed Secrets is being updated ([#1475](https://github.com/bitnami-labs/sealed-secrets/pull/1475))
 - fix: panic when patching empty secret ([#1474](https://github.com/bitnami-labs/sealed-secrets/pull/1474))
+- fix: Modify LastUpdateTime when the Sealed Secrets is being updated ([#1475](https://github.com/bitnami-labs/sealed-secrets/pull/1475))
+- fix: Bring back private keys logging ([#1481](https://github.com/bitnami-labs/sealed-secrets/pull/1481))
+- fix: missing common annotations in the helm chart ([#1471](https://github.com/bitnami-labs/sealed-secrets/pull/1471))
 - fix: Add metrics port to allow ingress traffic in the netpols ([#1473](https://github.com/bitnami-labs/sealed-secrets/pull/1473))
 - chore: Bump google.golang.org/protobuf from 1.32.0 to 1.33.0 ([#1480](https://github.com/bitnami-labs/sealed-secrets/pull/1480))
 - chore: Bump golang.org/x/crypto from 0.20.0 to 0.21.0 ([#1477](https://github.com/bitnami-labs/sealed-secrets/pull/1477))
