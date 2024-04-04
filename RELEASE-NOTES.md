@@ -4,6 +4,20 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.26.2
+
+### Changelog
+
+- fix: update dependencies and version for CVE-2023-45288 ([#1501](https://github.com/bitnami-labs/sealed-secrets/pull/1501))
+- fix(helm): role binding annotations ([#1494](https://github.com/bitnami-labs/sealed-secrets/pull/1494))
+- chore: update cosign version ([#1495](https://github.com/bitnami-labs/sealed-secrets/pull/1495))
+- chore: Bump github.com/onsi/ginkgo/v2 from 2.16.0 to 2.17.1 ([#1497](https://github.com/bitnami-labs/sealed-secrets/pull/1497))
+- chore: Bump k8s.io/client-go from 0.29.2 to 0.29.3 ([#1486](https://github.com/bitnami-labs/sealed-secrets/pull/1486))
+- chore: Bump k8s.io/code-generator from 0.29.2 to 0.29.3 ([#1488](https://github.com/bitnami-labs/sealed-secrets/pull/1488))
+- chore: Bump github.com/onsi/gomega from 1.31.1 to 1.32.0 ([#1489](https://github.com/bitnami-labs/sealed-secrets/pull/1489))
+- chore: Bump k8s.io/apimachinery from 0.29.2 to 0.29.3 ([#1490](https://github.com/bitnami-labs/sealed-secrets/pull/1490))
+- chore: Update security contact and other references DL to the new team one ([#1500](https://github.com/bitnami-labs/sealed-secrets/pull/1500))
+
 ## v0.26.1
 
 ### Changelog
