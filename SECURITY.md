@@ -10,13 +10,13 @@ For a list of support versions that this project will potentially create securit
 
 Security is of the highest importance and all security vulnerabilities or suspected security vulnerabilities should be reported to this project privately, to minimize attacks against current users  before they are fixed. Vulnerabilities will be investigated and patched on the next patch (or minor) release as soon as possible. This information could be kept entirely internal to the project.
 
-If you know of a publicly disclosed security vulnerability for this project, please **IMMEDIATELY** contact the [maintainers](mailto:bitnami-sealed-secrets@vmware.com) of this project privately. The use of encrypted email is encouraged.
+If you know of a publicly disclosed security vulnerability for this project, please **IMMEDIATELY** contact the [maintainers](mailto:sealed-secrets.pdl@broadcom.com) of this project privately. The use of encrypted email is encouraged.
 
 >**IMPORTANT:** Do not file public issues on GitHub for security vulnerabilities
 
 To report a vulnerability or a security-related issue, please contact the maintainers with enough details through one of the following channels:
 
-* Directly via the team email addresses (bitnami-sealed-secrets@vmware.com)
+* Directly via the team email addresses (sealed-secrets.pdl@broadcom.com)
 * Open a [GitHub Security Advisory](https://docs.github.com/en/code-security/security-advisories/guidance-on-reporting-and-writing/privately-reporting-a-security-vulnerability). This allows for anyone to report security vulnerabilities directly and privately to the maintainers via GitHub. Note that this option may not be present for every repository.
 
 The report will be fielded by the [maintainers](https://github.com/bitnami-labs/sealed-secrets/blob/main/MAINTAINERS.md) who have committer and release permissions. Feedback will be sent within 3 business days, including a detailed plan to investigate the issue and any potential workarounds to perform in the meantime.
