@@ -46,8 +46,9 @@ jobs:
         run: |
           VERSION_TAG=$(git describe --tags --match "v[0-9]*" --abbrev=0 | tr -d v)
           echo "Tag looking for $VERSION_TAG"
-          CHECK=$(./scripts/release-check ${{ env.controller_dockerhub_image_name }} $VERSION_TAG)
-          echo "RELEASE=$CHECK" >> $GITHUB_ENV
+          CHECK_CONTROLLER=$(./scripts/release-check ${{ env.controller_dockerhub_image_name }} $VERSION_TAG)
+          CHECK_KUBESEAL=$(./scripts/release-check ${{ env.kubeseal_dockerhub_image_name }} $VERSION_TAG)
+          echo "RELEASE=$(($CHECK_CONTROLLER * $CHECK_KUBESEAL))" >> $GITHUB_ENV
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
           echo "GORELEASER_CURRENT_TAG=v$VERSION_TAG" >> $GITHUB_ENV
 
