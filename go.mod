@@ -1,8 +1,7 @@
 module github.com/bitnami-labs/sealed-secrets
 
 go 1.21
-
-toolchain go1.21.9
+toolchain go1.22.2
 
 require (
 	github.com/google/go-cmp v0.6.0
@@ -16,9 +15,9 @@ require (
 	github.com/throttled/throttled v2.2.5+incompatible
 	golang.org/x/crypto v0.22.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.29.3
-	k8s.io/apimachinery v0.29.3
-	k8s.io/client-go v0.29.3
+	k8s.io/api v0.30.0
+	k8s.io/apimachinery v0.30.0
+	k8s.io/client-go v0.30.0
 	k8s.io/code-generator v0.29.3
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.120.1
