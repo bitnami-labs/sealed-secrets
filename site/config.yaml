@@ -4,6 +4,9 @@ title: "Sealed Secrets"
 theme: "template"
 outputs:
   home: [ "HTML", "REDIRECTS" ]
+disableKinds:
+  - taxonomy
+  - term
 pygmentsCodefences: true
 pygmentsStyle: "pygments"
 markup:
