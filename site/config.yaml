@@ -37,6 +37,7 @@ params:
   github_url: "https://github.com/bitnami-labs/sealed-secrets"
   slack_url: "https://kubernetes.slack.com/messages/sealed-secrets"
   github_base_url: "https://github.com/bitnami-labs/sealed-secrets"
+  oneTrustID: "018ee37f-861a-71d5-8408-7a1202512048"
   use_advanced_docs: true
   docs_right_sidebar: true
   docs_search: false
