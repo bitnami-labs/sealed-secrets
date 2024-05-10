@@ -298,7 +298,7 @@ func TestSealRoundTripWithMisMatchClusterWide(t *testing.T) {
 
 	_, err := ssecret.Unseal(codecs, keys)
 	if err == nil {
-		t.Fatalf("Unseal did not return expected error: %v", err)
+		t.Fatal("Expecting error: got nil instead")
 	}
 }
 
@@ -570,6 +570,37 @@ func TestRejectBothEncryptedDataAndDeprecatedV1Data(t *testing.T) {
 			t.Fatalf("Expecting error: %v to contain %q", err, needle)
 		}
 	}))
+}
+
+func TestInvalidBase64(t *testing.T) {
+	sealedSecret := &SealedSecret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+		},
+		Spec: SealedSecretSpec{
+			EncryptedData: map[string]string{
+				"foo": "NOTVALIDBASE64",
+			},
+		},
+	}
+
+	scheme := runtime.NewScheme()
+	codecs := serializer.NewCodecFactory(scheme)
+	_, keys := generateTestKey(t, testRand(), 2048)
+
+	_, err := sealedSecret.Unseal(codecs, keys)
+	if err == nil {
+		t.Fatal("Expecting error: got nil instead")
+	}
+
+	if !strings.Contains(err.Error(), "foo") {
+		t.Errorf("Expecting error: %q to contain field %q", err, "foo")
+	}
+
+	if strings.Contains(err.Error(), "decrypt") {
+		t.Errorf("Expecting error: %q to not contain %q (invalid base64 should skip decryption)", err, "decrypt")
+	}
 }
 
 func sealSecret(t *testing.T, secret *v1.Secret, newSealedSecret func(serializer.CodecFactory, *rsa.PublicKey, *v1.Secret) (*SealedSecret, error)) (*SealedSecret, serializer.CodecFactory, map[string]*rsa.PrivateKey) {
