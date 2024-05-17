@@ -106,7 +106,7 @@ spec:
             {{- end }}
             - --privatekey-annotations
             - {{ trimSuffix "," $privatekeyAnnotations | quote }}
-            {{- end }}            
+            {{- end }}
             {{- if $.Values.privateKeyLabels }}
             {{- $privateKeyLabels := ""}}
             {{- range $k, $v := $.Values.privateKeyLabels }}
@@ -181,13 +181,13 @@ spec:
           {{- end }}
           volumeMounts:
             {{- if .Values.additionalVolumeMounts }}
-              {{- toYaml .Values.additionalVolumeMounts | nindent 12 }} 
+              {{- toYaml .Values.additionalVolumeMounts | nindent 12 }}
             {{- end }}
             - mountPath: /tmp
               name: tmp
-      volumes: 
+      volumes:
       {{- if .Values.additionalVolumes }}
-        {{- toYaml .Values.additionalVolumes | nindent 8 }} 
+        {{- toYaml .Values.additionalVolumes | nindent 8 }}
       {{- end }}
         - name: tmp
           emptyDir: {}
