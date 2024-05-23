@@ -4,6 +4,28 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.26.3
+
+### Changelog
+
+- fix: code generation ([#1536](https://github.com/bitnami-labs/sealed-secrets/pull/1536))
+- fix: show field name in error message when base64 decoding fails ([#1519](https://github.com/bitnami-labs/sealed-secrets/pull/1519))
+- helm: Set `GOMAXPROCS` and `GOMEMLIMIT` environment variables ([#1528](https://github.com/bitnami-labs/sealed-secrets/pull/1528))
+- docs: mention limitation of backup with key renewal ([#1533](https://github.com/bitnami-labs/sealed-secrets/pull/1533))
+- chore: update dependencies ([#1535](https://github.com/bitnami-labs/sealed-secrets/pull/1535))
+- chore: Bump k8s.io/code-generator from 0.30.0 to 0.30.1 ([#1529](https://github.com/bitnami-labs/sealed-secrets/pull/1529))
+- chore: Bump k8s.io/client-go from 0.30.0 to 0.30.1 ([#1532](https://github.com/bitnami-labs/sealed-secrets/pull/1532))
+- chore: Bump github.com/onsi/ginkgo/v2 from 2.17.2 to 2.17.3 ([#1527](https://github.com/bitnami-labs/sealed-secrets/pull/1527))
+- chore: Bump github.com/prometheus/client_golang from 1.19.0 to 1.19.1 ([#1526](https://github.com/bitnami-labs/sealed-secrets/pull/1526))
+- chore: Bump k8s.io/code-generator from 0.29.3 to 0.30.0 ([#1513](https://github.com/bitnami-labs/sealed-secrets/pull/1513))
+- chore: Update dependencies ([#1524](https://github.com/bitnami-labs/sealed-secrets/pull/1524))
+- chore: Bump github.com/onsi/gomega from 1.33.0 to 1.33.1 ([#1522](https://github.com/bitnami-labs/sealed-secrets/pull/1522))
+- chore: Bump github.com/onsi/ginkgo/v2 from 2.17.1 to 2.17.2 ([#1520](https://github.com/bitnami-labs/sealed-secrets/pull/1520))
+- chore: Bump github.com/onsi/gomega from 1.32.0 to 1.33.0 ([#1512](https://github.com/bitnami-labs/sealed-secrets/pull/1512))
+- chore: increase vib timeout ([#1509](https://github.com/bitnami-labs/sealed-secrets/pull/1509))
+- chore: fix publish-release workflow ([#1508](https://github.com/bitnami-labs/sealed-secrets/pull/1508))
+- chore: Bump golang.org/x/crypto from 0.21.0 to 0.22.0 ([#1505](https://github.com/bitnami-labs/sealed-secrets/pull/1505))
+
 ## v0.26.2
 
 ### Changelog
