@@ -106,7 +106,7 @@ spec:
             {{- end }}
             - --privatekey-annotations
             - {{ trimSuffix "," $privatekeyAnnotations | quote }}
-            {{- end }}            
+            {{- end }}
             {{- if $.Values.privateKeyLabels }}
             {{- $privateKeyLabels := ""}}
             {{- range $k, $v := $.Values.privateKeyLabels }}
@@ -132,6 +132,19 @@ spec:
           {{- end }}
           image: {{ printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            {{- if (.Values.resources.limits).cpu }}
+            - name: GOMAXPROCS
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.cpu
+            {{- end }}
+            {{- if (.Values.resources.limits).memory }}
+            - name: GOMEMLIMIT
+              valueFrom:
+                resourceFieldRef:
+                  resource: limits.memory
+            {{- end }}
           ports:
             - containerPort: 8080
               name: http
@@ -168,13 +181,13 @@ spec:
           {{- end }}
           volumeMounts:
             {{- if .Values.additionalVolumeMounts }}
-              {{- toYaml .Values.additionalVolumeMounts | nindent 12 }} 
+              {{- toYaml .Values.additionalVolumeMounts | nindent 12 }}
             {{- end }}
             - mountPath: /tmp
               name: tmp
-      volumes: 
+      volumes:
       {{- if .Values.additionalVolumes }}
-        {{- toYaml .Values.additionalVolumes | nindent 8 }} 
+        {{- toYaml .Values.additionalVolumes | nindent 8 }}
       {{- end }}
         - name: tmp
           emptyDir: {}
