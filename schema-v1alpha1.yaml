@@ -1,16 +1,28 @@
 openAPIV3Schema:
-  description: SealedSecret is the K8s representation of a "sealed Secret" - a regular k8s Secret that has been sealed (encrypted) using the controller's key.
+  description: |-
+    SealedSecret is the K8s representation of a "sealed Secret" - a
+    regular k8s Secret that has been sealed (encrypted) using the
+    controller's key.
   properties:
     apiVersion:
-      description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+      description: |-
+        APIVersion defines the versioned schema of this representation of an object.
+        Servers should convert recognized schemas to the latest internal value, and
+        may reject unrecognized values.
+        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
       type: string
     kind:
-      description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+      description: |-
+        Kind is a string value representing the REST resource this object represents.
+        Servers may infer this from the endpoint the client submits requests to.
+        Cannot be updated.
+        In CamelCase.
+        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
       type: string
     metadata:
       type: object
     spec:
-      description: SealedSecretSpec is the specification of a SealedSecret
+      description: SealedSecretSpec is the specification of a SealedSecret.
       properties:
         data:
           description: Data is deprecated and will be removed eventually. Use per-value EncryptedData instead.
@@ -22,16 +34,27 @@ openAPIV3Schema:
           type: object
           x-kubernetes-preserve-unknown-fields: true
         template:
-          description: Template defines the structure of the Secret that will be created from this sealed secret.
+          description: |-
+            Template defines the structure of the Secret that will be
+            created from this sealed secret.
           properties:
             data:
               additionalProperties:
                 type: string
-              description: Keys that should be templated using decrypted data
+              description: Keys that should be templated using decrypted data.
               nullable: true
               type: object
+            immutable:
+              description: |-
+                Immutable, if set to true, ensures that data stored in the Secret cannot
+                be updated (only object metadata can be modified).
+                If not set to true, the field can be modified at any time.
+                Defaulted to nil.
+              type: boolean
             metadata:
-              description: 'Standard object''s metadata. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata'
+              description: |-
+                Standard object's metadata.
+                More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#metadata
               nullable: true
               properties:
                 annotations:
@@ -55,9 +78,6 @@ openAPIV3Schema:
             type:
               description: Used to facilitate programmatic handling of secret data.
               type: string
-            immutable:
-              description: 'Immutable, if set to true, ensures that data stored in the Secret cannot be updated (only object metadata can be modified). If not set to true, the field can be modified at any time. Defaulted to nil.'
-              type: boolean
           type: object
       required:
         - encryptedData
@@ -85,10 +105,14 @@ openAPIV3Schema:
                 description: The reason for the condition's last transition.
                 type: string
               status:
-                description: 'Status of the condition for a sealed secret. Valid values for "Synced": "True", "False", or "Unknown".'
+                description: |-
+                  Status of the condition for a sealed secret.
+                  Valid values for "Synced": "True", "False", or "Unknown".
                 type: string
               type:
-                description: 'Type of condition for a sealed secret. Valid value: "Synced"'
+                description: |-
+                  Type of condition for a sealed secret.
+                  Valid value: "Synced"
                 type: string
             required:
               - status
