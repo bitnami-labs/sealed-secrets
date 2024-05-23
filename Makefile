@@ -10,7 +10,7 @@ GO_FLAGS =
 KUBECFG = kubecfg
 DOCKER = docker
 GINKGO = ginkgo -p
-CONTROLLER_GEN ?= controller-gen
+CONTROLLER_GEN ?= go run sigs.k8s.io/controller-tools/cmd/controller-gen@latest
 
 REGISTRY ?= docker.io
 CONTROLLER_IMAGE = $(REGISTRY)/bitnami/sealed-secrets-controller:latest
@@ -45,8 +45,10 @@ GO_LD_FLAGS = -X main.VERSION=$(VERSION)
 
 all: controller kubeseal
 
-generate: $(GO_FILES)
-	$(GO) generate $(GO_PACKAGES)
+generate:
+	$(GO) mod vendor
+	./hack/update-codegen.sh
+	rm -rf vendor
 
 manifests:
 	$(CONTROLLER_GEN) crd:generateEmbeddedObjectMeta=true paths="./pkg/apis/..." output:stdout | tail -n +2 > helm/sealed-secrets/crds/bitnami.com_sealedsecrets.yaml
@@ -128,7 +130,7 @@ lint:
 	 $(GOLANGCILINT) run --enable goimports --timeout=5m
 
 lint-gosec:
-	 $(GOSEC) -r --severity low
+	 $(GOSEC) -r -severity low -exclude-generated
 
 clean:
 	$(RM) ./controller ./kubeseal
