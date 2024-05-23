@@ -130,7 +130,7 @@ lint:
 	 $(GOLANGCILINT) run --enable goimports --timeout=5m
 
 lint-gosec:
-	 $(GOSEC) -r --severity low
+	 $(GOSEC) -r -severity low -exclude-generated
 
 clean:
 	$(RM) ./controller ./kubeseal
