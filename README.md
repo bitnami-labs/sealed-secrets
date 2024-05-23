@@ -742,6 +742,8 @@ kubectl get secret -n kube-system sealed-secrets-key -o yaml >>main.key
 
 > NOTE: This file will contain the controller's public + private keys and should be kept omg-safe!
 
+> NOTE: After sealing key renewal you should recreate your backup. Otherwise, your backup won't be able to decrypt new sealed secrets.
+
 To restore from a backup after some disaster, just put that secrets back before starting the controller - or if the controller was already started, replace the newly-created secrets and restart the controller:
 
 * For Helm deployment:
