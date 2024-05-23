@@ -277,7 +277,8 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 		for key, value := range s.Spec.EncryptedData {
 			valueBytes, err := base64.StdEncoding.DecodeString(value)
 			if err != nil {
-				return nil, err
+				errs = append(errs, multierror.Tag(key, err))
+				continue
 			}
 			plaintext, err := crypto.HybridDecrypt(rand.Reader, privKeys, valueBytes, label)
 			if err != nil {
