@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rsa"
 	"encoding/base64"
+	"encoding/json"
 	"io"
 	mathrand "math/rand"
 	"reflect"
@@ -359,14 +360,16 @@ func TestSealRoundTripTemplateData(t *testing.T) {
 			Namespace: "myns",
 		},
 		Data: map[string][]byte{
-			"foo": []byte("bar"),
+			"foo":      []byte("bar"),
+			"password": []byte("hunter2'\"="),
 		},
 	}
 
 	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
 
 	ssecret.Spec.Template.Data = map[string]string{
-		"bar": `secret {{ index . "foo"}} !`,
+		"bar":           `secret {{ index . "foo" }} !`,
+		"password-json": `{{ toJson .password }}`,
 	}
 
 	secret2, err := ssecret.Unseal(codecs, keys)
@@ -375,6 +378,15 @@ func TestSealRoundTripTemplateData(t *testing.T) {
 	}
 
 	if got, want := string(secret2.Data["bar"]), "secret bar !"; got != want {
+		t.Errorf("got: %q, want: %q", got, want)
+	}
+
+	want, err := json.Marshal(string(secret.Data["password"]))
+	if err != nil {
+		t.Fatalf("json.Marshal returned error: %v", err)
+	}
+
+	if got := string(secret2.Data["password-json"]); got != string(want) {
 		t.Errorf("got: %q, want: %q", got, want)
 	}
 }
