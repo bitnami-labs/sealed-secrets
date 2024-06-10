@@ -14,6 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/mkmik/multierror"
 
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
@@ -290,7 +291,7 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 
 		for key, value := range s.Spec.Template.Data {
 			var plaintext bytes.Buffer
-			template, err := template.New(key).Parse(value)
+			template, err := template.New(key).Funcs(sprig.FuncMap()).Parse(value)
 			if err != nil {
 				errs = append(errs, multierror.Tag(key, err))
 				continue
