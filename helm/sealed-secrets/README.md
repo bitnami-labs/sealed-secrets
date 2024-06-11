@@ -152,6 +152,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | Name                               | Description                                                                                                                      | Value                    |
 | ---------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
 | `service.type`                     | Sealed Secret service type                                                                                                       | `ClusterIP`              |
+| `service.loadBalancerClass`        | Sealed Secret service loadBalancerClass                                                                                          | ``                       |
 | `service.port`                     | Sealed Secret service HTTP port                                                                                                  | `8080`                   |
 | `service.nodePort`                 | Node port for HTTP                                                                                                               | `""`                     |
 | `service.annotations`              | Additional custom annotations for Sealed Secret service                                                                          | `{}`                     |
@@ -213,6 +214,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `metrics.dashboards.annotations`           | Annotations to be added to the Grafana dashboard ConfigMap                             | `{}`        |
 | `metrics.dashboards.namespace`             | Namespace where Grafana dashboard ConfigMap is deployed                                | `""`        |
 | `metrics.service.type`                     | Sealed Secret Metrics service type                                                     | `ClusterIP` |
+| `metrics.service.loadBalancerClass`        | Sealed Secret service Metrics loadBalancerClass                                        | ``          |
 | `metrics.service.port`                     | Sealed Secret service Metrics HTTP port                                                | `8081`      |
 | `metrics.service.nodePort`                 | Node port for HTTP                                                                     | `""`        |
 | `metrics.service.annotations`              | Additional custom annotations for Sealed Secret Metrics service                        | `{}`        |
