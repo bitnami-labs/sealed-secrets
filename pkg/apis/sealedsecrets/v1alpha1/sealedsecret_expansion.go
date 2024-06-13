@@ -324,10 +324,6 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 		return nil, fmt.Errorf("using deprecated 'data' field, use 'encryptedData' or flip the feature flag")
 	}
 
-	// Ensure these are set to what we expect
-	secret.SetNamespace(smeta.GetNamespace())
-	secret.SetName(smeta.GetName())
-
 	gvk := s.GetObjectKind().GroupVersionKind()
 	if anno, ok := s.Spec.Template.Annotations[SealedSecretSkipSetOwnerReferencesAnnotation]; !ok || anno != "true" {
 		// Refer back to owning SealedSecret
