@@ -241,6 +241,9 @@ service:
   ## @param service.type Sealed Secret service type
   ##
   type: ClusterIP
+  ## @param service.loadBalancerClass Sealed Secret service loadBalancerClass
+  ##
+  loadBalancerClass: ""
   ## @param service.port Sealed Secret service HTTP port
   ##
   port: 8080
@@ -482,6 +485,9 @@ metrics:
     ## @param metrics.service.type Sealed Secret Metrics service type
     ##
     type: ClusterIP
+    ## @param metrics.service.loadBalancerClass Sealed Secret Metrics service loadBalancerClass
+    ##
+    loadBalancerClass: ""
     ## @param metrics.service.port Sealed Secret service Metrics HTTP port
     ##
     port: 8081
