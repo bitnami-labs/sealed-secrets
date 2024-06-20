@@ -4,6 +4,17 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.27.0
+
+- feature: loadbalancerclass ([#1545](https://github.com/bitnami-labs/sealed-secrets/pull/1545))
+- Add sprig function library for templating ([#1542](https://github.com/bitnami-labs/sealed-secrets/pull/1542))
+- Update install instructions for consistent HTTP request package ([#1546](https://github.com/bitnami-labs/sealed-secrets/pull/1546))
+- Bump k8s.io/client-go from 0.30.1 to 0.30.2 ([#1552](https://github.com/bitnami-labs/sealed-secrets/pull/1552))
+- Bump k8s.io/klog/v2 from 2.120.1 to 2.130.0 ([#1551](https://github.com/bitnami-labs/sealed-secrets/pull/1551))
+- Bump k8s.io/code-generator from 0.30.1 to 0.30.2 ([#1550](https://github.com/bitnami-labs/sealed-secrets/pull/1550))
+- Bump golang.org/x/crypto from 0.23.0 to 0.24.0 ([#1544](https://github.com/bitnami-labs/sealed-secrets/pull/1544))
+- Bump github.com/onsi/ginkgo/v2 from 2.17.3 to 2.19.0 ([#1540](https://github.com/bitnami-labs/sealed-secrets/pull/1540))
+
 ## v0.26.3
 
 ### Changelog
