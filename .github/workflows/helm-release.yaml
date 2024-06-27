@@ -65,17 +65,20 @@ jobs:
           IMGPKG_REGISTRY_USERNAME: ${{ github.actor }}
           IMGPKG_REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          imgpkg push -b ghcr.io/${{ github.repository_owner }}/sealed-secrets-carvel:${{ env.chart_version }} -f .
+          imgpkg push -b ghcr.io/${{ github.repository_owner }}/sealed-secrets-carvel:${{ env.chart_version }} -f . --json > output
+          echo carvel_pkg=$(cat output | grep Pushed | cut -d "'" -f2 ) >> $GITHUB_ENV
 
       - name: Update package.yaml
         run: |
           yq -i '.spec.version = "${{ env.chart_version }}"' carvel/package.yaml
           yq -i '.metadata.name = "sealedsecrets.bitnami.com.${{ env.chart_version }}"' carvel/package.yaml
-          yq -i '.spec.template.spec.fetch.0.imgpkgBundle.image = "ghcr.io/${{ github.repository_owner }}/sealed-secrets-carvel:${{ env.chart_version }}"' carvel/package.yaml
+          yq -i '.spec.template.spec.fetch.0.imgpkgBundle.image = "${{ env.carvel_pkg }}"' carvel/package.yaml
+          git checkout -B 'release-carvel-${{ env.chart_version }}'
+          git add carvel/package.yaml
+          git commit -m 'Release carvel package ${{ env.chart_version }}'
+          git push origin 'release-carvel-${{ env.chart_version }}'
 
-      # Commenting the git commit action
-      #- name: Commit package.yaml
-        #run: |
-          #git add ./carvel/package.yaml
-          #git commit -s -m 'Update package to version ${{ env.chart_version }}'
-          #git push
+      - name: Create PR
+        run: gh pr create --fill --base main --repo $GITHUB_REPOSITORY
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

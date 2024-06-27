@@ -1,4 +1,4 @@
-name: Release
+name: Prepare Release
 
 # Only release when a new GH release branch is pushed
 on:
