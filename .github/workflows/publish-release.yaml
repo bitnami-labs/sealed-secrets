@@ -2,9 +2,14 @@ name: Publish Release
 
 on:
   workflow_dispatch:
+    inputs:
+      chart:
+        description: 'Chart version (e.g. 2.11.3)'
+        required: true
+        type: string
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     env:
       controller_dockerhub_image_name: docker.io/bitnami/sealed-secrets-controller
@@ -153,3 +158,38 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
           TAG_CURRENT: ${{ steps.meta_kubeseal.outputs.tags }}
           COSIGN_REPOSITORY: ${{ env.kubeseal_ghcr_image_name }}/signs
+
+  chart-pr:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@c85c95e3d7251135ab7dc9ce3241c5835cc595a9 # v3
+        with:
+          fetch-depth: 0
+
+      - name: Config Git
+        run: |
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
+
+      - name: Fetch Versions
+        run: |
+          echo NEW_VERSION=$(git describe --tags --match "v[0-9]*" --abbrev=0 | tr -d v) >> "$GITHUB_ENV"
+          echo PREV_VERSION=$(grep appVersion helm/sealed-secrets/Chart.yaml | grep -o '[0-9.]*') >> "$GITHUB_ENV"
+
+      - name: Update Version
+        run: |
+          sed -i "s/version: .*/version: ${{ inputs.chart }}/" helm/sealed-secrets/Chart.yaml
+          sed -i "s/appVersion: .*/appVersion: $NEW_VERSION/" helm/sealed-secrets/Chart.yaml
+          sed -i "s/tag: .*/tag: $NEW_VERSION/" helm/sealed-secrets/values.yaml
+          sed -i "s/\`$PREV_VERSION\`/\`$NEW_VERSION\`/" helm/sealed-secrets/README.md
+          git checkout -B 'release-chart-${{ inputs.chart }}'
+          git add helm/sealed-secrets/Chart.yaml helm/sealed-secrets/values.yaml helm/sealed-secrets/README.md
+          git commit -m 'Release chart ${{ inputs.chart }}'
+          git push origin 'release-chart-${{ inputs.chart }}'
+
+      - name: Create PR
+        run: gh pr create --fill --base main --repo $GITHUB_REPOSITORY
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
