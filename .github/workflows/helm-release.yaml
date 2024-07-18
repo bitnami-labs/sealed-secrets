@@ -75,7 +75,7 @@ jobs:
           yq -i '.spec.template.spec.fetch.0.imgpkgBundle.image = "${{ env.carvel_pkg }}"' carvel/package.yaml
           git checkout -B 'release-carvel-${{ env.chart_version }}'
           git add carvel/package.yaml
-          git commit -m 'Release carvel package ${{ env.chart_version }}'
+          git commit -sm 'Release carvel package ${{ env.chart_version }}'
           git push origin 'release-carvel-${{ env.chart_version }}'
 
       - name: Create PR
