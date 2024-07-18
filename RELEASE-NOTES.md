@@ -4,6 +4,13 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.27.1
+
+- chore: Update dependencies ([#1565](https://github.com/bitnami-labs/sealed-secrets/pull/1565))
+- chore: Bump golang.org/x/crypto from 0.24.0 to 0.25.0 ([#1561](https://github.com/bitnami-labs/sealed-secrets/pull/1561))
+- chore: Bump k8s.io/klog/v2 from 2.130.0 to 2.130.1 ([#1558](https://github.com/bitnami-labs/sealed-secrets/pull/1558))
+- chore: Improve release process ([#1559](https://github.com/bitnami-labs/sealed-secrets/pull/1559))
+
 ## v0.27.0
 
 - feature: loadbalancerclass ([#1545](https://github.com/bitnami-labs/sealed-secrets/pull/1545))
