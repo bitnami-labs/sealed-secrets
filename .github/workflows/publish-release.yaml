@@ -186,7 +186,7 @@ jobs:
           sed -i "s/\`$PREV_VERSION\`/\`$NEW_VERSION\`/" helm/sealed-secrets/README.md
           git checkout -B 'release-chart-${{ inputs.chart }}'
           git add helm/sealed-secrets/Chart.yaml helm/sealed-secrets/values.yaml helm/sealed-secrets/README.md
-          git commit -m 'Release chart ${{ inputs.chart }}'
+          git commit -sm 'Release chart ${{ inputs.chart }}'
           git push origin 'release-chart-${{ inputs.chart }}'
 
       - name: Create PR
