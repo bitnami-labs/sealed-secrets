@@ -1,7 +1,7 @@
 ---
-first_name: Alejandro
-last_name: Moreno
-image: /img/team/alemorcuq.png
-github_handle: alemorcuq
+first_name: Alvaro
+last_name: Neira
+image: /img/team/alvneiayu.png
+github_handle: alvneiayu
 ---
 Maintainer
