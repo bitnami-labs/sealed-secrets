@@ -17,6 +17,7 @@ const (
 	labelNamespace = "namespace"
 	labelName      = "name"
 	labelCondition = "condition"
+	labelInstance  = "ss_app_kubernetes_io_instance"
 )
 
 var conditionStatusToGaugeValue = map[v1.ConditionStatus]float64{
@@ -47,11 +48,14 @@ var (
 		[]string{"reason", "namespace"},
 	)
 
-	conditionInfo = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Namespace: metricNamespace,
-		Name:      "condition_info",
-		Help:      "Current SealedSecret condition status. Values are -1 (false), 0 (unknown or absent), 1 (true)",
-	}, []string{labelNamespace, labelName, labelCondition})
+	conditionInfo = prometheus.NewGaugeVec(
+		prometheus.GaugeOpts{
+			Namespace: metricNamespace,
+			Name:      "condition_info",
+			Help:      "Current SealedSecret condition status. Values are -1 (false), 0 (unknown or absent), 1 (true)",
+		},
+		[]string{labelNamespace, labelName, labelCondition, labelInstance},
+	)
 
 	httpRequestsTotal = prometheus.NewCounterVec(
 		prometheus.CounterOpts{
@@ -102,6 +106,7 @@ func ObserveCondition(ssecret *v1alpha1.SealedSecret) {
 			labelNamespace: ssecret.Namespace,
 			labelName:      ssecret.Name,
 			labelCondition: string(condition.Type),
+			labelInstance:  ssecret.Labels["app.kubernetes.io/instance"],
 		}).Set(conditionStatusToGaugeValue[condition.Status])
 	}
 }
@@ -112,7 +117,7 @@ func UnregisterCondition(ssecret *v1alpha1.SealedSecret) {
 		return
 	}
 	for _, condition := range ssecret.Status.Conditions {
-		conditionInfo.MetricVec.DeleteLabelValues(ssecret.Namespace, ssecret.Name, string(condition.Type))
+		conditionInfo.MetricVec.DeleteLabelValues(ssecret.Namespace, ssecret.Name, string(condition.Type), labelInstance)
 	}
 }
 
