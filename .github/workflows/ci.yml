@@ -138,13 +138,13 @@ jobs:
         docker save $CONTROLLER_IMAGE -o /tmp/controller-image.tar
 
     - name: Upload manifest artifact
-      uses: actions/upload-artifact@v3.1.0
+      uses: actions/upload-artifact@v4.4.0
       with:
         name: controller-manifest
         path: controller.yaml
 
     - name: Upload container image artifact
-      uses: actions/upload-artifact@v3.1.0
+      uses: actions/upload-artifact@v4.4.0
       with:
         name: controller-image
         path: /tmp/controller-image.tar
