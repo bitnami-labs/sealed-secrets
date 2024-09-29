@@ -189,6 +189,21 @@ var _ = Describe("kubeseal", func() {
 	})
 })
 
+var _ = Describe("kubeseal (with invalid input)", func() {
+	var input io.Reader
+	var output *bytes.Buffer
+	var args []string
+
+	BeforeEach(func() {
+		output = &bytes.Buffer{}
+	})
+
+	It("should throw an error", func() {
+		err := runKubeseal(args, input, output)
+		Expect(err).To(HaveOccurred())
+	})
+})
+
 var _ = Describe("kubeseal --fetch-cert", func() {
 	var c corev1.CoreV1Interface
 	var input io.Reader
