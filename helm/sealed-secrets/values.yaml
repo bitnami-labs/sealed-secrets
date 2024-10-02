@@ -230,9 +230,25 @@ additionalVolumes: []
 additionalVolumeMounts: []
 ## @param hostNetwork Sealed Secrets pods' hostNetwork
 hostNetwork: false
+## Sealed Secrets controller ports to open
+## If hostNetwork true: the hostPort is set identical to the containerPort
+## @param containerPorts.http Controller HTTP Port on the Host and Container
+## @param containerPorts.metrics Metrics HTTP Port on the Host and Container
+##
+containerPorts:
+  http: 8080
+  metrics: 8081
+## Sealed Secrets controller ports to be exposed as hostPort
+## If hostNetwork is false, only the ports specified here will be exposed (or not if set to an empty string)
+## @param hostPorts.http Controller HTTP Port on the Host
+## @param hostPorts.metrics Metrics HTTP Port on the Host
+##
+hostPorts:
+  http: ""
+  metrics: ""
+
 ## @param dnsPolicy Sealed Secrets pods' dnsPolicy
 dnsPolicy: ""
-
 ## @section Traffic Exposure Parameters
 
 ## Sealed Secret service parameters
