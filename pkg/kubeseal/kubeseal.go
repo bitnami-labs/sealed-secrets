@@ -189,6 +189,7 @@ func readSecrets(r io.Reader) ([]*v1.Secret, error) {
 			return nil, err
 		}
 	}
+
 	return secrets, nil
 }
 
@@ -224,6 +225,10 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 	secrets, err := readSecrets(in)
 	if err != nil {
 		return err
+	}
+
+	if len(secrets) == 0 {
+		return fmt.Errorf("no secrets found. Ensure the input is valid and UTF-8 encoded")
 	}
 
 	for _, secret := range secrets {
