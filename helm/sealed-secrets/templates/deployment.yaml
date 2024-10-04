@@ -129,6 +129,14 @@ spec:
             - --log-format
             - {{ .Values.logFormat }}
             {{- end }}
+            {{- if .Values.containerPorts.http }}
+            - --listen-addr
+            - {{ printf ":%s" (.Values.containerPorts.http | toString ) }}
+            {{- end }}
+            {{- if .Values.containerPorts.metrics }}
+            - --listen-metrics-addr
+            - {{ printf ":%s" (.Values.containerPorts.metrics | toString) }}
+            {{- end }}
           {{- end }}
           image: {{ printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
@@ -146,10 +154,20 @@ spec:
                   resource: limits.memory
             {{- end }}
           ports:
-            - containerPort: 8080
-              name: http
-            - containerPort: 8081
-              name: metrics
+            - name: http
+              containerPort: {{ .Values.containerPorts.http | default "8080" }}
+              {{- if .Values.hostNetwork }}
+              hostPort: {{ .Values.containerPorts.http }}
+              {{- else if .Values.hostPorts.http }}
+              hostPort: {{ .Values.hostPorts.http }}
+              {{- end }}
+            - name: metrics
+              containerPort: {{ .Values.containerPorts.metrics | default "8081" }}
+              {{- if .Values.hostNetwork }}
+              hostPort: {{ .Values.containerPorts.metrics }}
+              {{- else if .Values.hostPorts.metrics }}
+              hostPort: {{ .Values.hostPorts.metrics }}
+              {{- end }}
           {{- if .Values.startupProbe.enabled }}
           startupProbe: {{- include "sealed-secrets.render" (dict "value" (omit .Values.startupProbe "enabled") "context" $) | nindent 12 }}
             tcpSocket:
