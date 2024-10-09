@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	maxRetries = 5
+	maxRetries = 15
 
 	// SuccessUnsealed is used as part of the Event 'reason' when
 	// a SealedSecret is unsealed successfully.
