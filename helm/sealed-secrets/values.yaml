@@ -77,6 +77,17 @@ skipRecreate: false
 ## To disable use "0", with quotes!
 ##
 keyrenewperiod: ""
+## @param keyttl Specifies the certificate validity duration. Default 10 years.
+## e.g for one year
+## keyttl: "8760h00m00s"
+##
+keyttl: ""
+## @param keycutofftime Specifies a date at which the controller should generate a new certificate. Useful in early key renewal scenarios.
+## Takes a date formated according to RFC1123. Can be obtained with the 'date -R' command on a unix system.
+## e.g 
+## keycutofftime: "Mon, 14 Oct 2024 21:45:30 +0200"
+##
+keycutofftime: ""
 ## @param rateLimit Number of allowed sustained request per second for verify endpoint
 ##
 rateLimit: ""

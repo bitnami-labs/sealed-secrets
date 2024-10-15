@@ -95,6 +95,8 @@ The command removes all the Kubernetes components associated with the chart and 
 | `updateStatus`                                    | Specifies whether the Sealed Secrets controller should update the status subresource                  | `true`                              |
 | `skipRecreate`                                    | Specifies whether the Sealed Secrets controller should skip recreating removed secrets                | `false`                             |
 | `keyrenewperiod`                                  | Specifies key renewal period. Default 30 days                                                         | `""`                                |
+| `keyttl`                                          | Specifies generated certificate validity duration. Default 10 years                                   | `""`                                |
+| `keycutofftime`                                   | Specifies a date at which the controller must generate a new key. Useful in early renewal scenarios.  | `""`                                |
 | `rateLimit`                                       | Number of allowed sustained request per second for verify endpoint                                    | `""`                                |
 | `rateLimitBurst`                                  | Number of requests allowed to exceed the rate limit per second for verify endpoint                    | `""`                                |
 | `additionalNamespaces`                            | List of namespaces used to manage the Sealed Secrets                                                  | `[]`                                |
