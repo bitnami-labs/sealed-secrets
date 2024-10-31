@@ -4,6 +4,15 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.27.2
+
+- feature: Show error if there's no secret to encode ([#1580](https://github.com/bitnami-labs/sealed-secrets/pull/1580))
+- feature: allow container port configuration ([#1606](https://github.com/bitnami-labs/sealed-secrets/pull/1606))
+- chore: Update go version to 1.22.8 ([#1621](https://github.com/bitnami-labs/sealed-secrets/pull/1621))
+- chore: Update the TCSP settings for helm testing ([#1608](https://github.com/bitnami-labs/sealed-secrets/pull/1608))
+- chore: Redirect external site to the GitHub Repository ([#1589](https://github.com/bitnami-labs/sealed-secrets/pull/1589))
+- chore: Update dependencies (Several automatic PRs)
+
 ## v0.27.1
 
 - chore: Update dependencies ([#1565](https://github.com/bitnami-labs/sealed-secrets/pull/1565))
