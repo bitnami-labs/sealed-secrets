@@ -82,6 +82,14 @@ spec:
             - --key-renew-period
             - {{ .Values.keyrenewperiod | quote }}
             {{- end }}
+            {{- if .Values.keyttl }}
+            - --key-ttl
+            - {{ .Values.keyttl | quote }}
+            {{- end }}
+            {{- if .Values.keycutofftime }}
+            - --key-cutoff-time
+            - {{ .Values.keycutofftime | quote }}
+            {{- end }}
             {{- if .Values.rateLimit }}
             - --rate-limit
             - {{ .Values.rateLimit | quote }}
