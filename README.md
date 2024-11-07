@@ -60,7 +60,7 @@ original Secret from the SealedSecret.
   - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
   - [How to verify the images?](#how-to-verify-the-images)
   - [How to use one controller for a subset of namespaces](#How-to-use-one-controller-for-a-subset-of-namespaces)
-  - [Can I configure the controller retries](#can-i-configure-the-controller-retries)
+  - [Can I configure the controller unseal retries](#can-i-configure-the-controller-unseal-retries)
 
 - [Community](#community)
   - [Related projects](#related-projects)
