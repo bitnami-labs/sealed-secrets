@@ -58,6 +58,8 @@ func bindControllerFlags(f *controller.Flags, fs *flag.FlagSet) {
 
 	fs.DurationVar(&f.KeyRenewPeriod, "rotate-period", defaultKeyRenewPeriod, "")
 	_ = fs.MarkDeprecated("rotate-period", "please use key-renew-period instead")
+
+	fs.IntVar(&f.MaxRetries, "max-retries", 5, "Max retries.")
 }
 
 func bindFlags(f *controller.Flags, fs *flag.FlagSet, gofs *goflag.FlagSet) {

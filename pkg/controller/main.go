@@ -55,6 +55,7 @@ type Flags struct {
 	LogFormat             string
 	PrivateKeyAnnotations string
 	PrivateKeyLabels      string
+	MaxRetries            int
 }
 
 func initKeyPrefix(keyPrefix string) (string, error) {
@@ -267,7 +268,7 @@ func Main(f *Flags, version string) error {
 func prepareController(clientset kubernetes.Interface, namespace string, tweakopts func(*metav1.ListOptions), f *Flags, ssclientset versioned.Interface, keyRegistry *KeyRegistry) (*Controller, error) {
 	sinformer := initSecretInformerFactory(clientset, namespace, tweakopts, f.SkipRecreate)
 	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, tweakopts)
-	controller, err := NewController(clientset, ssclientset, ssinformer, sinformer, keyRegistry)
+	controller, err := NewController(clientset, ssclientset, ssinformer, sinformer, keyRegistry, f.MaxRetries)
 	return controller, err
 }
 

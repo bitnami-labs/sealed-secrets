@@ -112,6 +112,9 @@ logLevel: ""
 ## @param logFormat Specifies log format (text,json)
 ##
 logFormat: ""
+## @param maxRetries Number of maximum retries
+##
+maxRetries: ""
 ## @param command Override default container command
 ##
 command: []
