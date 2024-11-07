@@ -146,7 +146,7 @@ spec:
             - {{ printf ":%s" (.Values.containerPorts.metrics | toString) }}
             {{- end }}
             {{- if .Values.maxRetries }}
-            - --max-retries
+            - --max-unseal-retries
             - {{ .Values.maxRetries | quote }}
             {{- end }}
           {{- end }}

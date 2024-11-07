@@ -829,7 +829,7 @@ If you want to use one controller for more than one namespace, but not all names
 
 ### Can I configure the Controller unseal retries?
 
-The answer is yes, you can configure the number of retries in your controller using the flag `--max-retries`. This flag allows you to configure the number of maximum retries to unseal your Sealed Secrets.
+The answer is yes, you can configure the number of retries in your controller using the flag `--max-unseal-retries`. This flag allows you to configure the number of maximum retries to unseal your Sealed Secrets.
 
 ## Community
 
