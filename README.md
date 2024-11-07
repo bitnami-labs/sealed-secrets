@@ -827,7 +827,7 @@ cosign verify --key .github/workflows/cosign.pub docker.io/bitnami/sealed-secret
 
 If you want to use one controller for more than one namespace, but not all namespaces, you can provide additional namespaces using the command line flag `--additional-namespaces=<namespace1>,<namespace2>,<...>`. Make sure you provide appropriate roles and rolebindings in the target namespaces, so the controller can manage the secrets in there.
 
-### Can I configure the Controller retries?
+### Can I configure the Controller unseal retries?
 
 The answer is yes, you can configure the number of retries in your controller using the flag `--max-retries`. This flag allows you to configure the number of maximum retries to unseal your Sealed Secrets.
 
