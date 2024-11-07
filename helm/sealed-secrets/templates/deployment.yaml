@@ -145,6 +145,10 @@ spec:
             - --listen-metrics-addr
             - {{ printf ":%s" (.Values.containerPorts.metrics | toString) }}
             {{- end }}
+            {{- if .Values.maxRetries }}
+            - --max-unseal-retries
+            - {{ .Values.maxRetries | quote }}
+            {{- end }}
           {{- end }}
           image: {{ printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}

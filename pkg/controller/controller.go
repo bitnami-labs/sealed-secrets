@@ -38,8 +38,6 @@ import (
 )
 
 const (
-	maxRetries = 5
-
 	// SuccessUnsealed is used as part of the Event 'reason' when
 	// a SealedSecret is unsealed successfully.
 	SuccessUnsealed = "Unsealed"
@@ -60,6 +58,8 @@ const (
 var (
 	// ErrCast happens when a K8s any type cannot be casted to the expected type.
 	ErrCast = errors.New("cast error")
+
+	maxRetries = 5
 )
 
 // Controller implements the main sealed-secrets-controller loop.
@@ -77,7 +77,7 @@ type Controller struct {
 }
 
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry) (*Controller, error) {
+func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry, maxRetriesConfig int) (*Controller, error) {
 	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
 
 	utilruntime.Must(ssscheme.AddToScheme(scheme.Scheme))
@@ -101,6 +101,8 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 			return nil, err
 		}
 	}
+
+	maxRetries = maxRetriesConfig
 
 	return &Controller{
 		ssInformer:  ssInformer,

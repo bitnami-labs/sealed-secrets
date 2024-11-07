@@ -60,6 +60,7 @@ original Secret from the SealedSecret.
   - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
   - [How to verify the images?](#how-to-verify-the-images)
   - [How to use one controller for a subset of namespaces](#How-to-use-one-controller-for-a-subset-of-namespaces)
+  - [Can I configure the controller unseal retries](#can-i-configure-the-controller-unseal-retries)
 
 - [Community](#community)
   - [Related projects](#related-projects)
@@ -825,6 +826,10 @@ cosign verify --key .github/workflows/cosign.pub docker.io/bitnami/sealed-secret
 ### How to use one controller for a subset of namespaces
 
 If you want to use one controller for more than one namespace, but not all namespaces, you can provide additional namespaces using the command line flag `--additional-namespaces=<namespace1>,<namespace2>,<...>`. Make sure you provide appropriate roles and rolebindings in the target namespaces, so the controller can manage the secrets in there.
+
+### Can I configure the Controller unseal retries?
+
+The answer is yes, you can configure the number of retries in your controller using the flag `--max-unseal-retries`. This flag allows you to configure the number of maximum retries to unseal your Sealed Secrets.
 
 ## Community
 
