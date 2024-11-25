@@ -144,7 +144,7 @@ func runCLI(w io.Writer, cfg *config) (err error) {
 		// #nosec G304 -- should open user provided file
 		f, err := os.Open(flags.inputFileName)
 		if err != nil {
-			return nil
+			return fmt.Errorf("Could not read file specified with --secret-file")
 		}
 		// #nosec: G307 -- this deferred close is fine because it is not on a writable file
 		defer f.Close()
