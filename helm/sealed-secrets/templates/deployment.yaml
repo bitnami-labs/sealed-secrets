@@ -150,7 +150,11 @@ spec:
             - {{ .Values.maxRetries | quote }}
             {{- end }}
           {{- end }}
+          {{- if .Values.image.digest }}
+          image: {{ printf "%s/%s@sha256:%s" .Values.image.registry .Values.image.repository .Values.image.digest }}
+          {{- else }}
           image: {{ printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
+          {{- end }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             {{- if (.Values.resources.limits).cpu }}
