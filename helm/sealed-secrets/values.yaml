@@ -429,7 +429,7 @@ rbac:
   ## @param rbac.namespacedRoles Specifies whether the namespaced Roles should be created (in each of the specified additionalNamespaces)
   ##
   namespacedRoles: false
-  ## @param rbac.namespacedRolesName Specifies the name for the namesapced Role resource
+  ## @param rbac.namespacedRolesName Specifies the name for the namespaced Role resource
   ##
   namespacedRolesName: "secrets-unsealer"
   ## @param rbac.labels Extra labels to be added to RBAC resources
