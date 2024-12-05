@@ -4,6 +4,21 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.27.3
+
+- Bump k8s.io/apimachinery from 0.31.2 to 0.31.3 ([#1642](https://github.com/bitnami-labs/sealed-secrets/pull/1642))
+- Bump k8s.io/code-generator from 0.31.2 to 0.31.3 ([#1643](https://github.com/bitnami-labs/sealed-secrets/pull/1643))
+- Bump github.com/onsi/gomega from 1.35.1 to 1.36.0 ([#1645](https://github.com/bitnami-labs/sealed-secrets/pull/1645))
+- re-introduce install instructions with to releases ([#1649](https://github.com/bitnami-labs/sealed-secrets/pull/1649))
+- Properly error out when input file doesn't exist ([#1640](https://github.com/bitnami-labs/sealed-secrets/pull/1640))
+- Bump github.com/onsi/ginkgo/v2 from 2.21.0 to 2.22.0 ([#1641](https://github.com/bitnami-labs/sealed-secrets/pull/1641))
+- Bump golang.org/x/crypto from 0.28.0 to 0.29.0 ([#1635](https://github.com/bitnami-labs/sealed-secrets/pull/1635))
+- Configure max retries ([#1633](https://github.com/bitnami-labs/sealed-secrets/pull/1633))
+- Label "app.kubernetes.io/instance" in the Prometheus metric ([#1620](https://github.com/bitnami-labs/sealed-secrets/pull/1620))
+- Bump github.com/onsi/gomega from 1.34.2 to 1.35.1 ([#1624](https://github.com/bitnami-labs/sealed-secrets/pull/1624))
+- Adding keyttl and keycutofftime options to helm chart ([#1610](https://github.com/bitnami-labs/sealed-secrets/pull/1610))
+- Bump github.com/onsi/ginkgo/v2 from 2.20.2 to 2.21.0 ([#1623](https://github.com/bitnami-labs/sealed-secrets/pull/1623))
+
 ## v0.27.2
 
 - feature: Show error if there's no secret to encode ([#1580](https://github.com/bitnami-labs/sealed-secrets/pull/1580))
