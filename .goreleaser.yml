@@ -58,11 +58,73 @@ release:
 
     New v{{ .Version }} release!
   footer: |
+    ## Installation Instructions
+
+    ### Cluster-side
+
+    Install the SealedSecret CRD and server-side controller into the `kube-system` namespace:
+
+    ```sh
+    kubectl apply -f https://github.com/bitnami-labs/sealed-secrets/releases/download/v{{ .Version }}/controller.yaml
+    ```
+
+    ### Client-side
+
+    Install the client-side tool into `/usr/local/bin/`:
+
+    **Linux x86_64:**
+    ```sh
+    curl -OL "https://github.com/bitnami-labs/sealed-secrets/releases/download/v{{ .Version }}/kubeseal-{{ .Version }}-linux-amd64.tar.gz"
+    tar -xvzf kubeseal-{{ .Version }}-linux-amd64.tar.gz kubeseal
+    sudo install -m 755 kubeseal /usr/local/bin/kubeseal
+    ```
+
+    **macOS:**
+    The `kubeseal` client is available on [homebrew](https://formulae.brew.sh/formula/kubeseal):
+
+    ```sh
+    brew install kubeseal
+    ```
+
+    **MacPorts:**
+
+    The `kubeseal` client is available on [MacPorts](https://ports.macports.org/port/kubeseal/summary):
+
+    ```sh
+    port install kubeseal
+    ```
+
+    #### Nixpkgs
+
+    The `kubeseal` client is available on [Nixpkgs](https://search.nixos.org/packages?channel=unstable&show=kubeseal&from=0&size=50&sort=relevance&type=packages&query=kubeseal): (**DISCLAIMER**: Not maintained by bitnami-labs)
+
+    ```sh
+    nix-env -iA nixpkgs.kubeseal
+    ```
+
+    **Other OS/Arch:**
+    Binaries for other OS/arch combinations are attached to this release below.
+
+    If you just want the latest client tool, it can be installed into
+    `$GOPATH/bin` with:
+
+    ```sh
+    go install github.com/bitnami-labs/sealed-secrets/cmd/kubeseal@main
+    ```
+
+    You can specify a release tag or a commit SHA instead of `main`.
+
+    The `go install` command will place the `kubeseal` binary at `$GOPATH/bin`:
+
+    ```sh
+    $(go env GOPATH)/bin/kubeseal
+    ```
+
     ## Release Notes
 
-    Please read the [RELEASE_NOTES](https://github.com/bitnami-labs/sealed-secrets/blob/main/RELEASE-NOTES.md) which contain among other things important information for who is upgrading from previous releases.
-
+    Please read the [RELEASE_NOTES](https://github.com/bitnami-labs/sealed-secrets/blob/main/RELEASE-NOTES.md) which contain among other things important information for those upgrading from previous releases.
     ## Thanks!
+
   extra_files:
     - glob: ./controller.yaml
     - glob: ./controller-norbac.yaml
