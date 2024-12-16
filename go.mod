@@ -1,6 +1,7 @@
 module github.com/bitnami-labs/sealed-secrets
 
 go 1.22.0
+toolchain go1.23.4
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
@@ -16,12 +17,12 @@ require (
 	golang.org/x/crypto v0.31.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.30.3
-	k8s.io/apimachinery v0.31.3
+	k8s.io/apimachinery v0.32.0
 	k8s.io/client-go v0.30.3
-	k8s.io/code-generator v0.31.3
+	k8s.io/code-generator v0.32.0
 	k8s.io/klog v1.0.0
 	k8s.io/klog/v2 v2.130.1
-	k8s.io/utils v0.0.0-20240711033017-18e509b52bc8
+	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
 )
 
 require (
@@ -73,14 +74,14 @@ require (
 	golang.org/x/sys v0.28.0 // indirect
 	golang.org/x/term v0.27.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	golang.org/x/time v0.5.0 // indirect
+	golang.org/x/time v0.7.0 // indirect
 	golang.org/x/tools v0.26.0 // indirect
 	google.golang.org/protobuf v1.35.1 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	k8s.io/gengo/v2 v2.0.0-20240228010128-51d4e06bde70 // indirect
-	k8s.io/kube-openapi v0.0.0-20240709000822-3c01b740850f // indirect
-	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
-	sigs.k8s.io/structured-merge-diff/v4 v4.4.1 // indirect
+	k8s.io/gengo/v2 v2.0.0-20240911193312-2b36238f13e9 // indirect
+	k8s.io/kube-openapi v0.0.0-20241105132330-32ad38e42d3f // indirect
+	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
+	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
