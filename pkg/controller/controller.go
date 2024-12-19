@@ -64,7 +64,7 @@ var (
 
 // Controller implements the main sealed-secrets-controller loop.
 type Controller struct {
-	queue       workqueue.RateLimitingInterface
+	queue       workqueue.TypedRateLimitingInterface[string]
 	ssInformer  cache.SharedIndexInformer
 	sInformer   cache.SharedIndexInformer
 	sclient     v1.SecretsGetter
@@ -78,7 +78,7 @@ type Controller struct {
 
 // NewController returns the main sealed-secrets controller loop.
 func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry, maxRetriesConfig int) (*Controller, error) {
-	queue := workqueue.NewRateLimitingQueue(workqueue.DefaultControllerRateLimiter())
+	queue := workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 
 	utilruntime.Must(ssscheme.AddToScheme(scheme.Scheme))
 	eventBroadcaster := record.NewBroadcaster()
@@ -115,7 +115,7 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 	}, nil
 }
 
-func watchSealedSecrets(ssinformer ssinformer.SharedInformerFactory, queue workqueue.RateLimitingInterface) (cache.SharedIndexInformer, error) {
+func watchSealedSecrets(ssinformer ssinformer.SharedInformerFactory, queue workqueue.TypedRateLimitingInterface[string]) (cache.SharedIndexInformer, error) {
 	ssInformer := ssinformer.Bitnami().V1alpha1().SealedSecrets().Informer()
 	_, err := ssInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
@@ -162,7 +162,7 @@ func sealedSecretChanged(oldObj, newObj interface{}) bool {
 	return !reflect.DeepEqual(oldSealedSecret.Spec, newSealedSecret.Spec)
 }
 
-func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclientset.Interface, queue workqueue.RateLimitingInterface) (cache.SharedIndexInformer, error) {
+func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclientset.Interface, queue workqueue.TypedRateLimitingInterface[string]) (cache.SharedIndexInformer, error) {
 	sInformer := sinformer.Core().V1().Secrets().Informer()
 	_, err := sInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		DeleteFunc: func(obj interface{}) {
@@ -263,13 +263,13 @@ func (c *Controller) processNextItem(ctx context.Context) bool {
 	}
 
 	defer c.queue.Done(key)
-	err := c.unseal(ctx, key.(string))
+	err := c.unseal(ctx, key)
 	if err == nil {
 		// No error, reset the ratelimit counters
 		c.queue.Forget(key)
 	} else if isImmutableError(err) {
 		// Do not retry updating immutable fields of an immutable secret
-		slog.Error(formatImmutableError(key.(string)))
+		slog.Error(formatImmutableError(key))
 		c.queue.Forget(key)
 		utilruntime.HandleError(err)
 	} else if c.queue.NumRequeues(key) < maxRetries {
@@ -323,15 +323,15 @@ func (c *Controller) unseal(ctx context.Context, key string) (unsealErr error) {
 	// of the SealedSecret custom resource. The return value of the unseal function is available
 	// to the deferred function body in the unsealErr named return value (even if explicit return
 	// statements are used to return).
-	defer func() {
-		if err := c.updateSealedSecretStatus(ssecret, unsealErr); err != nil {
+	defer func(ctx context.Context) {
+		if err := c.updateSealedSecretStatus(ctx, ssecret, unsealErr); err != nil {
 			// Non-fatal.  Log and continue.
 			slog.Error("Error updating SealedSecret status", "sealed-secret", key, "error", err)
 			unsealErrorsTotal.WithLabelValues("status", ssecret.GetNamespace()).Inc()
 		} else {
 			ObserveCondition(ssecret)
 		}
-	}()
+	}(ctx)
 
 	newSecret, err := c.attemptUnseal(ssecret)
 	if err != nil {
@@ -426,7 +426,7 @@ func convertSealedSecret(obj any) (*ssv1alpha1.SealedSecret, error) {
 	return sealedSecret, nil
 }
 
-func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, unsealError error) error {
+func (c *Controller) updateSealedSecretStatus(ctx context.Context, ssecret *ssv1alpha1.SealedSecret, unsealError error) error {
 	if !c.updateStatus {
 		klog.V(2).Infof("not updating status because updateStatus feature flag not turned on")
 		return nil
@@ -439,7 +439,7 @@ func (c *Controller) updateSealedSecretStatus(ssecret *ssv1alpha1.SealedSecret, 
 	updatedRequired := updateSealedSecretsStatusConditions(ssecret.Status, unsealError)
 	if updatedRequired || (ssecret.Status.ObservedGeneration != ssecret.ObjectMeta.Generation) {
 		ssecret.Status.ObservedGeneration = ssecret.ObjectMeta.Generation
-		_, err := c.ssclient.SealedSecrets(ssecret.GetObjectMeta().GetNamespace()).UpdateStatus(context.Background(), ssecret, metav1.UpdateOptions{})
+		_, err := c.ssclient.SealedSecrets(ssecret.GetObjectMeta().GetNamespace()).UpdateStatus(ctx, ssecret, metav1.UpdateOptions{})
 		return err
 	}
 
