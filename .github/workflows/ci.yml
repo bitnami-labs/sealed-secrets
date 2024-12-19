@@ -38,7 +38,7 @@ jobs:
       matrix:
         go: ${{ fromJSON(needs.load-versions.outputs.go_version_list) }}
         os: [ubuntu-latest]
-        golangci-lint: ["1.56.1"]
+        golangci-lint: ["1.62.2"]
         gosec: ["2.19.0"]
     steps:
     - name: Set up Go 1.x
