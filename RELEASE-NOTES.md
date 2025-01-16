@@ -4,6 +4,18 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.28.0
+
+- fix: explicitly set resourceFieldRef.divisor ([#1655](https://github.com/bitnami-labs/sealed-secrets/pull/1655))
+- Fix deprecated functions for bumping client-go ([#1667](https://github.com/bitnami-labs/sealed-secrets/pull/1667))
+- Bump github.com/onsi/ginkgo/v2 from 2.22.1 to 2.22.2 ([#1670](https://github.com/bitnami-labs/sealed-secrets/pull/1670))
+- Bump golang.org/x/crypto from 0.31.0 to 0.32.0 ([#1671](https://github.com/bitnami-labs/sealed-secrets/pull/1671))
+- Bump github.com/onsi/gomega from 1.36.1 to 1.36.2 ([#1669](https://github.com/bitnami-labs/sealed-secrets/pull/1669))
+- Bump github.com/onsi/ginkgo/v2 from 2.22.0 to 2.22.1 ([#1668](https://github.com/bitnami-labs/sealed-secrets/pull/1668))
+- Bump github.com/onsi/gomega from 1.36.0 to 1.36.1 ([#1664](https://github.com/bitnami-labs/sealed-secrets/pull/1664))
+- Bump golang.org/x/crypto from 0.30.0 to 0.31.0 ([#1659](https://github.com/bitnami-labs/sealed-secrets/pull/1659))
+- Bump golang.org/x/crypto from 0.29.0 to 0.30.0 ([#1657](https://github.com/bitnami-labs/sealed-secrets/pull/1657))
+
 ## v0.27.3
 
 - Bump k8s.io/apimachinery from 0.31.2 to 0.31.3 ([#1642](https://github.com/bitnami-labs/sealed-secrets/pull/1642))
