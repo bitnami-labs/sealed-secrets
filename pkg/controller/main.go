@@ -88,7 +88,7 @@ func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Read
 		if err != nil {
 			slog.Error("Error reading key", "secret", secret.Name, "error", err)
 		}
-		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], certs[0].NotBefore); err != nil {
+		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], secret.GetCreationTimestamp().Time); err != nil {
 			return nil, err
 		}
 		slog.Info("registered private key", "secretname", secret.Name)
