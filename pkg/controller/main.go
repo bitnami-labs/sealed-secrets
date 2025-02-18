@@ -40,6 +40,7 @@ type Flags struct {
 	ValidFor              time.Duration
 	MyCN                  string
 	KeyRenewPeriod        time.Duration
+	KeyOrderPriority      string
 	AcceptV1Data          bool
 	KeyCutoffTime         string
 	NamespaceAll          bool
@@ -62,7 +63,7 @@ func initKeyPrefix(keyPrefix string) (string, error) {
 	return validateKeyPrefix(keyPrefix)
 }
 
-func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int) (*KeyRegistry, error) {
+func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Reader, namespace, prefix, label string, keysize int, keyOrderPriority string) (*KeyRegistry, error) {
 	slog.Info("Searching for existing private keys")
 	secretList, err := client.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: keySelector.String(),
@@ -88,12 +89,28 @@ func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Read
 		if err != nil {
 			slog.Error("Error reading key", "secret", secret.Name, "error", err)
 		}
-		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], secret.GetCreationTimestamp().Time); err != nil {
+
+		// Select ordering time based on the keyOrderPriority flag
+		orderingTime := getKeyOrderPriority(keyOrderPriority, certs[0], secret)
+
+		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], orderingTime); err != nil {
 			return nil, err
 		}
 		slog.Info("registered private key", "secretname", secret.Name)
 	}
 	return keyRegistry, nil
+}
+
+func getKeyOrderPriority(keyOrderPriority string, cert *x509.Certificate, secret corev1.Secret) time.Time {
+	switch keyOrderPriority {
+	case "CertNotBefore":
+		return cert.NotBefore
+	case "SecretCreationTimestamp":
+		return secret.GetCreationTimestamp().Time
+	default:
+		slog.Error("Invalid keyOrderPriority. Use CertNotBefore or SecretCreationTimestamp", "keyOrderPriority", keyOrderPriority)
+	}
+	return cert.NotBefore
 }
 
 func myNamespace() string {
@@ -169,7 +186,7 @@ func Main(f *Flags, version string) error {
 		return err
 	}
 
-	keyRegistry, err := initKeyRegistry(ctx, clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, f.KeySize)
+	keyRegistry, err := initKeyRegistry(ctx, clientset, rand.Reader, myNs, prefix, SealedSecretsKeyLabel, f.KeySize, f.KeyOrderPriority)
 	if err != nil {
 		return err
 	}
