@@ -219,7 +219,7 @@ func testKeyRegister(t *testing.T, ctx context.Context, clientset kubernetes.Int
 	keyLabel := SealedSecretsKeyLabel
 	prefix := "test-keys"
 	testKeySize := 4096
-	keyRegistry, err := initKeyRegistry(ctx, clientset, rand.Reader, ns, prefix, keyLabel, testKeySize)
+	keyRegistry, err := initKeyRegistry(ctx, clientset, rand.Reader, ns, prefix, keyLabel, testKeySize, "CertNotBefore")
 	if err != nil {
 		t.Fatalf("failed to provision key registry: %v", err)
 	}

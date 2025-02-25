@@ -101,7 +101,7 @@ func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Read
 	return keyRegistry, nil
 }
 
-func getKeyOrderPriority(keyOrderPriority string, cert *x509.Certificate, secret corev1.Secret) time.Time {
+func getKeyOrderPriority(keyOrderPriority string, cert *x509.Certificate, secret v1.Secret) time.Time {
 	switch keyOrderPriority {
 	case "CertNotBefore":
 		return cert.NotBefore
