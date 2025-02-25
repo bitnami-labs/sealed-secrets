@@ -620,6 +620,18 @@ It doesn't help that this feature has been historically called "key rotation", w
 Sealed secrets are not automatically rotated and old keys are not deleted
 when new keys are generated. Old `SealedSecret` resources can be still decrypted (that's because old sealing keys are not deleted).
 
+### Key registry init priority order
+
+When the controller starts, it will initialize the key registry. The most recent key is used to seal secrets. By default, this certificate is chosen based on the NotBefore attribute of the certificate. If you want to change the priority order of the keys in the registry, you can use the `--key-order-priority` flag. 
+
+The `--key-order-priority` flag accepts the following values:
+- `CertNotBefore`: (default) The key registry will be ordered based on the NotBefore attribute of the key certificate.
+- `SecretCreationTimestamp`: The key registry will be ordered based on the creation timestamp of the secret.
+
+This flag influences the public key used to encrypt secrets and the certificate retrieved by `kubeseal --fetch-cert`. 
+
+
+
 ### User secret rotation
 
 The *sealing key* renewal and SealedSecret rotation are **not a substitute** for rotating your actual secrets.
