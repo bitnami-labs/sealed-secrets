@@ -20,8 +20,9 @@ import (
 )
 
 const (
-	flagEnvPrefix         = "SEALED_SECRETS"
-	defaultKeyRenewPeriod = 30 * 24 * time.Hour
+	flagEnvPrefix           = "SEALED_SECRETS"
+	defaultKeyRenewPeriod   = 30 * 24 * time.Hour
+	defaultKeyOrderPriority = "CertNotBefore"
 )
 
 var (
@@ -36,6 +37,7 @@ func bindControllerFlags(f *controller.Flags, fs *flag.FlagSet) {
 	fs.StringVar(&f.MyCN, "my-cn", "", "Common name to be used as issuer/subject DN in generated certificate.")
 
 	fs.DurationVar(&f.KeyRenewPeriod, "key-renew-period", defaultKeyRenewPeriod, "New key generation period (automatic rotation deactivated if 0)")
+	fs.StringVar(&f.KeyOrderPriority, "key-order-priority", defaultKeyOrderPriority, "Ordering of keys based on NotBefore certificate attribute or secret creation timestamp.")
 	fs.BoolVar(&f.AcceptV1Data, "accept-deprecated-v1-data", true, "Accept deprecated V1 data field.")
 	fs.StringVar(&f.KeyCutoffTime, "key-cutoff-time", "", "Create a new key if latest one is older than this cutoff time. RFC1123 format with numeric timezone expected.")
 	fs.BoolVar(&f.NamespaceAll, "all-namespaces", true, "Scan all namespaces or only the current namespace (default=true).")
