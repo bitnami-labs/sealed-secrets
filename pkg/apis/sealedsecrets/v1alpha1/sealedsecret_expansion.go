@@ -35,7 +35,16 @@ const (
 var (
 	// TODO(mkm): remove after a release.
 	AcceptDeprecatedV1Data = false
+
+	sprigFuncMap = sprig.GenericFuncMap() // a singleton for better performance
 )
+
+func init() {
+	// Avoid allowing the user to learn things about the environment.
+	delete(sprigFuncMap, "env")
+	delete(sprigFuncMap, "expandenv")
+	delete(sprigFuncMap, "getHostByName")
+}
 
 // SealedSecretExpansion has methods to work with SealedSecrets resources.
 type SealedSecretExpansion interface {
@@ -291,7 +300,8 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 
 		for key, value := range s.Spec.Template.Data {
 			var plaintext bytes.Buffer
-			template, err := template.New(key).Funcs(sprig.FuncMap()).Parse(value)
+
+			template, err := template.New(key).Funcs(sprigFuncMap).Parse(value)
 			if err != nil {
 				errs = append(errs, multierror.Tag(key, err))
 				continue
