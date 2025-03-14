@@ -117,7 +117,7 @@ In particular, the annotations and labels of a `SealedSecret` resource are not t
 
 To capture this distinction, the `SealedSecret` object has a `template` section which encodes all the fields you want the controller to put in the unsealed `Secret`.
 
-The [Sprig function library](https://masterminds.github.io/sprig/) is available in addition to the default Go Text Template functions.
+The [Sprig function library](https://masterminds.github.io/sprig/) is available (except for `env`, `expandenv` and `getHostByName`) in addition to the default Go Text Template functions.
 
 The `metadata` block is copied as is (the `ownerReference` field will be updated [unless disabled](#seal-secret-which-can-skip-set-owner-references)).
 
