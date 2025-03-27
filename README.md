@@ -411,6 +411,43 @@ sudo install -m 755 kubeseal /usr/local/bin/kubeseal
 
 where `KUBESEAL_VERSION` is the [version tag](https://github.com/bitnami-labs/sealed-secrets/tags) of the kubeseal release you want to use. For example: `v0.18.0`.
 
+#### OpenShift
+
+Due to the default high security settings in OpenShift will the default yaml 
+config not run on OpenShift. The issues are the `runAsUser` and `fsGroup`.
+
+There are several possible solution to fix this here are one example.
+
+```bash
+# change the v0.28.0 to the latest version from releases
+curl -sSL https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.28.0/controller.yaml |\
+sed -E '/.*(fsGroup|runAsUser):.*/d' | oc apply -f -
+```
+
+##### Use another Namespace
+
+Some Setups requires to install `SealedSecret` into another none default 
+namespace.
+
+The following command replaces the `kube-system` with `sealed-secrets` namespace.
+
+```bash
+# change the v0.28.0 to the latest version from releases
+curl -sSL https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.28.0/controller.yaml |\
+sed 's/namespace: kube-system/namespace: sealed-secrets/g' | oc apply -f -
+```
+
+##### One command for both
+
+Here is the command which make both changes in one step with 
+[yq](https://mikefarah.gitbook.io/yq).
+
+```bash
+# change the v0.28.0 to the latest version from releases
+curl -sSL https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.28.0/controller.yaml |\
+yq 'del(.spec.template.spec.securityContext.runAsUser,.spec.template.spec.securityContext.fsGroup)|.metadata.namespace = "sealed-secrets"' | oc apply -f -
+```
+
 #### Installation from source
 
 If you just want the latest client tool, it can be installed into
