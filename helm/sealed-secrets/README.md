@@ -86,7 +86,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ----------------------------------- |
 | `image.registry`                                  | Sealed Secrets image registry                                                                                      | `docker.io`                         |
 | `image.repository`                                | Sealed Secrets image repository                                                                                    | `bitnami/sealed-secrets-controller` |
-| `image.tag`                                       | Sealed Secrets image tag (immutable tags are recommended)                                                          | `0.28.0`                            |
+| `image.tag`                                       | Sealed Secrets image tag (immutable tags are recommended)                                                          | `0.29.0`                            |
 | `image.pullPolicy`                                | Sealed Secrets image pull policy                                                                                   | `IfNotPresent`                      |
 | `image.pullSecrets`                               | Sealed Secrets image pull secrets                                                                                  | `[]`                                |
 | `revisionHistoryLimit`                            | Number of old history to retain to allow rollback (If not set, default Kubernetes value is set to 10)              | `""`                                |
