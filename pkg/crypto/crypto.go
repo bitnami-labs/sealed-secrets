@@ -59,6 +59,7 @@ func HybridEncrypt(rnd io.Reader, pubKey *rsa.PublicKey, plaintext, label []byte
 	// First 2 bytes are RSA ciphertext length, so we can separate
 	// all the pieces later.
 	ciphertext := make([]byte, 2)
+	// #nosec G115
 	binary.BigEndian.PutUint16(ciphertext, uint16(len(rsaCiphertext)))
 	ciphertext = append(ciphertext, rsaCiphertext...)
 

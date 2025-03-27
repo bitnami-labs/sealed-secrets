@@ -215,7 +215,7 @@ linters:
     #- errorlint # finds code that will cause problems with the error wrapping scheme introduced in Go 1.13
     #- execinquery # checks query string in Query function which reads your Go src files and warning it finds
     - exhaustive # checks exhaustiveness of enum switch statements
-    - exportloopref # checks for pointers to enclosing loop variables
+    #- exportloopref # checks for pointers to enclosing loop variables
     #- forbidigo # forbids identifiers
     #- funlen # tool for detection of long functions
     #- gochecknoinits # checks that no init functions are present in Go code
