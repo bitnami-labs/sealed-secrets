@@ -17,7 +17,7 @@ func testRand() io.Reader {
 func TestSignKey(t *testing.T) {
 	rand := testRand()
 
-	key, err := rsa.GenerateKey(rand, 512)
+	key, err := rsa.GenerateKey(rand, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate test key: %v", err)
 	}
