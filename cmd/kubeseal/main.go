@@ -256,7 +256,16 @@ func runCLI(w io.Writer, cfg *config) (err error) {
 			return err
 		}
 
-		return kubeseal.EncryptSecretItem(w, flags.secretName, ns, data, flags.sealingScope, pubKey)
+		separator := ""
+		if isatty.IsTerminal(os.Stdin.Fd()) {
+			separator = "\n"
+		}
+
+		fmt.Fprint(os.Stderr, separator)
+		fmt.Fprint(os.Stderr, separator)
+		err = kubeseal.EncryptSecretItem(w, flags.secretName, ns, data, flags.sealingScope, pubKey)
+		fmt.Fprint(os.Stderr, separator)
+		return err
 	}
 
 	return kubeseal.Seal(cfg.clientConfig, flags.outputFormat, input, w, scheme.Codecs, pubKey, flags.sealingScope, flags.allowEmptyData, flags.secretName, "")
