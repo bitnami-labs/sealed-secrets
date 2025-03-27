@@ -4,6 +4,30 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.29.0
+
+- Fix register a key using secret creationTimestamp instead of certificate validity timestamp ([#1681](https://github.com/bitnami-labs/sealed-secrets/pull/1681))
+- Bump to go1.23.7 ([#1714](https://github.com/bitnami-labs/sealed-secrets/pull/1714))
+- Update environment k8s version on CI ([#1688](https://github.com/bitnami-labs/sealed-secrets/pull/1688))
+- Update go tooling to 1.23.6 ([#1686](https://github.com/bitnami-labs/sealed-secrets/pull/1686))
+- Bump github.com/onsi/gomega from 1.36.2 to 1.36.3 ([#1712](https://github.com/bitnami-labs/sealed-secrets/pull/1712))
+- Bump github.com/onsi/ginkgo/v2 from 2.23.0 to 2.23.3 ([#1711](https://github.com/bitnami-labs/sealed-secrets/pull/1711))
+- Bump k8s.io/code-generator from 0.32.2 to 0.32.3 ([#1708](https://github.com/bitnami-labs/sealed-secrets/pull/1708))
+- Bump k8s.io/client-go from 0.32.2 to 0.32.3 ([#1705](https://github.com/bitnami-labs/sealed-secrets/pull/1705))
+- Bump golang.org/x/net from 0.35.0 to 0.36.0 in the go_modules group ([#1702](https://github.com/bitnami-labs/sealed-secrets/pull/1702))
+- Bump golang.org/x/crypto from 0.35.0 to 0.36.0 ([#1699](https://github.com/bitnami-labs/sealed-secrets/pull/1699))
+- Bump github.com/prometheus/client_golang from 1.21.0 to 1.21.1 ([#1699](https://github.com/bitnami-labs/sealed-secrets/pull/1699))
+- Bump github.com/onsi/ginkgo/v2 from 2.22.2 to 2.23.0 ([#1701](https://github.com/bitnami-labs/sealed-secrets/pull/1701))
+- Bump github.com/prometheus/client_golang from 1.20.5 to 1.21.0 ([#1695](https://github.com/bitnami-labs/sealed-secrets/pull/1695))
+- Bump github.com/google/go-cmp from 0.6.0 to 0.7.0 ([#1696](https://github.com/bitnami-labs/sealed-secrets/pull/1696))
+- Bump golang.org/x/crypto from 0.33.0 to 0.35.0 ([#1697](https://github.com/bitnami-labs/sealed-secrets/pull/1697))
+- Bump k8s.io/client-go from 0.32.1 to 0.32.2 ([#1691](https://github.com/bitnami-labs/sealed-secrets/pull/1691))
+- Bump k8s.io/code-generator from 0.32.1 to 0.32.2 ([#1693](https://github.com/bitnami-labs/sealed-secrets/pull/1693))
+- Bump golang.org/x/crypto from 0.32.0 to 0.33.0 ([#1685](https://github.com/bitnami-labs/sealed-secrets/pull/1685))
+- Bump github.com/spf13/pflag from 1.0.5 to 1.0.6 ([#1683](https://github.com/bitnami-labs/sealed-secrets/pull/1683))
+- Bump k8s.io/client-go from 0.32.0 to 0.32.1 ([#1678](https://github.com/bitnami-labs/sealed-secrets/pull/1678))
+- Bump k8s.io/code-generator from 0.32.0 to 0.32.1 ([#1677](https://github.com/bitnami-labs/sealed-secrets/pull/1677))
+
 ## v0.28.0
 
 - fix: explicitly set resourceFieldRef.divisor ([#1655](https://github.com/bitnami-labs/sealed-secrets/pull/1655))
