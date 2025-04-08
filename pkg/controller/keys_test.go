@@ -38,7 +38,7 @@ func signKeyWithNotBefore(r io.Reader, key *rsa.PrivateKey, notBefore time.Time)
 func TestReadKey(t *testing.T) {
 	rand := testRand()
 
-	key, err := rsa.GenerateKey(rand, 512)
+	key, err := rsa.GenerateKey(rand, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate test key: %v", err)
 	}
@@ -77,7 +77,7 @@ func TestReadKey(t *testing.T) {
 func TestWriteKey(t *testing.T) {
 	ctx := context.Background()
 	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 512)
+	key, err := rsa.GenerateKey(rand, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate test key: %v", err)
 	}
@@ -125,7 +125,7 @@ func TestWriteKey(t *testing.T) {
 		labelKey := strings.Split(label, "=")[0]
 		labelValue := strings.Split(label, "=")[1]
 		if labels.(map[string]interface{})[labelKey] != labelValue {
-			t.Errorf("writeKey didn't set label " + labelKey + " to value '" + labelValue + "'")
+			t.Errorf("writeKey didn't set label %v to value '%v'", labelKey, labelValue)
 		}
 	}
 
@@ -133,7 +133,7 @@ func TestWriteKey(t *testing.T) {
 		annotationKey := strings.Split(annotation, "=")[0]
 		annotationValue := strings.Split(annotation, "=")[1]
 		if annotations.(map[string]interface{})[annotationKey] != annotationValue {
-			t.Errorf("writeKey didn't set annotation '" + annotationKey + "' to value '" + annotationValue + "'")
+			t.Errorf("writeKey didn't set annotation '%v' to value '%v'", annotationKey, annotationValue)
 		}
 	}
 }

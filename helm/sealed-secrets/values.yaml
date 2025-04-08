@@ -39,7 +39,7 @@ commonLabels: {}
 image:
   registry: docker.io
   repository: bitnami/sealed-secrets-controller
-  tag: 0.28.0
+  tag: 0.29.0
   ## Specify a imagePullPolicy
   ## Defaults to 'Always' if image tag is 'latest', else set to 'IfNotPresent'
   ## ref: http://kubernetes.io/docs/user-guide/images/#pre-pulling-images
@@ -429,7 +429,7 @@ rbac:
   ## @param rbac.namespacedRoles Specifies whether the namespaced Roles should be created (in each of the specified additionalNamespaces)
   ##
   namespacedRoles: false
-  ## @param rbac.namespacedRolesName Specifies the name for the namesapced Role resource
+  ## @param rbac.namespacedRolesName Specifies the name for the namespaced Role resource
   ##
   namespacedRolesName: "secrets-unsealer"
   ## @param rbac.labels Extra labels to be added to RBAC resources

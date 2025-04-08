@@ -160,7 +160,7 @@ func TestInitKeyRotationTick(t *testing.T) {
 func TestReuseKey(t *testing.T) {
 	ctx := context.Background()
 	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 512)
+	key, err := rsa.GenerateKey(rand, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate test key: %v", err)
 	}
@@ -199,7 +199,7 @@ func TestReuseKey(t *testing.T) {
 func TestRenewStaleKey(t *testing.T) {
 	ctx := context.Background()
 	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 512)
+	key, err := rsa.GenerateKey(rand, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate test key: %v", err)
 	}
@@ -259,7 +259,7 @@ func TestRenewStaleKey(t *testing.T) {
 func TestKeyCutoff(t *testing.T) {
 	ctx := context.Background()
 	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 512)
+	key, err := rsa.GenerateKey(rand, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate test key: %v", err)
 	}
@@ -331,7 +331,7 @@ func writeLegacyKey(ctx context.Context, client kubernetes.Interface, key *rsa.P
 func TestLegacySecret(t *testing.T) {
 	ctx := context.Background()
 	rand := testRand()
-	key, err := rsa.GenerateKey(rand, 512)
+	key, err := rsa.GenerateKey(rand, 2048)
 	if err != nil {
 		t.Fatalf("Failed to generate test key: %v", err)
 	}
