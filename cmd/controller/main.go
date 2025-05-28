@@ -51,6 +51,7 @@ func bindControllerFlags(f *controller.Flags, fs *flag.FlagSet) {
 	fs.BoolVar(&f.OldGCBehavior, "old-gc-behavior", false, "Revert to old GC behavior where the controller deletes secrets instead of delegating that to k8s itself.")
 
 	fs.BoolVar(&f.UpdateStatus, "update-status", true, "beta: if true, the controller will update the status sub-resource whenever it processes a sealed secret")
+	fs.BoolVar(&f.WatchForSecrets, "watch-for-secrets", false, "beta: If this is true, the controller will watch for key secrets. This is useful if you create the key secrets externally.")
 
 	fs.BoolVar(&f.SkipRecreate, "skip-recreate", false, "if true the controller will skip listening for managed secret changes to recreate them. This helps on limited permission environments.")
 

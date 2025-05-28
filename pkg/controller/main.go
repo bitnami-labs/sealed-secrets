@@ -13,6 +13,8 @@ import (
 	"syscall"
 	"time"
 
+	"k8s.io/apimachinery/pkg/watch"
+
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -57,6 +59,7 @@ type Flags struct {
 	PrivateKeyAnnotations string
 	PrivateKeyLabels      string
 	MaxRetries            int
+	WatchForSecrets       bool
 }
 
 func initKeyPrefix(keyPrefix string) (string, error) {
@@ -85,23 +88,31 @@ func initKeyRegistry(ctx context.Context, client kubernetes.Interface, r io.Read
 	keyRegistry := NewKeyRegistry(client, namespace, prefix, label, keysize)
 	sort.Sort(ssv1alpha1.ByCreationTimestamp(items))
 	for _, secret := range items {
-		key, certs, err := readKey(secret)
+		err = registryNewKeyWithSecret(&secret, keyRegistry, keyOrderPriority)
 		if err != nil {
-			slog.Error("Error reading key", "secret", secret.Name, "error", err)
-		}
-
-		// Select ordering time based on the keyOrderPriority flag
-		orderingTime := getKeyOrderPriority(keyOrderPriority, certs[0], secret)
-
-		if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], orderingTime); err != nil {
 			return nil, err
 		}
-		slog.Info("registered private key", "secretname", secret.Name)
 	}
 	return keyRegistry, nil
 }
 
-func getKeyOrderPriority(keyOrderPriority string, cert *x509.Certificate, secret v1.Secret) time.Time {
+func registryNewKeyWithSecret(secret *v1.Secret, keyRegistry *KeyRegistry, keyOrderPriority string) error {
+	key, certs, err := readKey(secret)
+	if err != nil {
+		slog.Error("Error reading key", "secret", secret.Name, "error", err)
+	}
+
+	// Select ordering time based on the keyOrderPriority flag
+	orderingTime := getKeyOrderPriority(keyOrderPriority, certs[0], secret)
+
+	if err := keyRegistry.registerNewKey(secret.Name, key, certs[0], orderingTime); err != nil {
+		return err
+	}
+	slog.Info("registered private key", "secretname", secret.Name)
+	return nil
+}
+
+func getKeyOrderPriority(keyOrderPriority string, cert *x509.Certificate, secret *v1.Secret) time.Time {
 	switch keyOrderPriority {
 	case "CertNotBefore":
 		return cert.NotBefore
@@ -111,6 +122,37 @@ func getKeyOrderPriority(keyOrderPriority string, cert *x509.Certificate, secret
 		slog.Error("Invalid keyOrderPriority. Use CertNotBefore or SecretCreationTimestamp", "keyOrderPriority", keyOrderPriority)
 	}
 	return cert.NotBefore
+}
+
+func watchKeyRegistry(ctx context.Context, client kubernetes.Interface, keyRegistry *KeyRegistry, namespace, keyOrderPriority string) error {
+	watcher, err := client.CoreV1().Secrets(namespace).Watch(ctx, metav1.ListOptions{
+		LabelSelector: keySelector.String(),
+	})
+	if err != nil {
+		return err
+	}
+
+	for event := range watcher.ResultChan() {
+		secret := event.Object.(*v1.Secret)
+		if secret == nil {
+			continue
+		}
+
+		switch event.Type {
+		case watch.Added:
+			err = registryNewKeyWithSecret(secret, keyRegistry, keyOrderPriority)
+			if err != nil {
+				return err
+			}
+		case watch.Modified:
+		case watch.Deleted:
+		case watch.Error:
+		case watch.Bookmark:
+		default:
+			slog.Info("Unexpected watch event", "type", event.Type)
+		}
+	}
+	return nil
 }
 
 func myNamespace() string {
@@ -231,6 +273,13 @@ func Main(f *Flags, version string) error {
 	defer close(stop)
 
 	go controller.Run(stop)
+
+	if f.WatchForSecrets {
+		go func() {
+			err := watchKeyRegistry(ctx, clientset, keyRegistry, myNs, f.KeyOrderPriority)
+			slog.Error("Watch fo secrets", "err", err)
+		}()
+	}
 
 	if f.AdditionalNamespaces != "" {
 		addNS := removeDuplicates(strings.Split(f.AdditionalNamespaces, ","))

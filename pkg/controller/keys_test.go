@@ -60,7 +60,7 @@ func TestReadKey(t *testing.T) {
 		Type: v1.SecretTypeTLS,
 	}
 
-	key2, cert2, err := readKey(secret)
+	key2, cert2, err := readKey(&secret)
 	if err != nil {
 		t.Errorf("readKey() failed with: %v", err)
 	}
