@@ -4,6 +4,26 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.30.0
+
+- Bump golang to 1.24.4 ([#1743](https://github.com/bitnami-labs/sealed-secrets/pull/1743))
+- Fix typo in RBAC namespaced roles documentation ([#1720](https://github.com/bitnami-labs/sealed-secrets/pull/1720))
+- Bump to go1.24.1 ([#1713](https://github.com/bitnami-labs/sealed-secrets/pull/1713))
+- Fix potential controller sensitive data exposure by sprig template functions ([#1703](https://github.com/bitnami-labs/sealed-secrets/pull/1703))
+- Bump golang.org/x/crypto from 0.38.0 to 0.39.0 ([#1742](https://github.com/bitnami-labs/sealed-secrets/pull/1742))
+- Bump k8s.io/client-go from 0.33.0 to 0.33.1 ([#1734](https://github.com/bitnami-labs/sealed-secrets/pull/1734))
+- Bump k8s.io/api from 0.33.0 to 0.33.1 ([#1733](https://github.com/bitnami-labs/sealed-secrets/pull/1733))
+- Bump k8s.io/code-generator from 0.33.0 to 0.33.1 ([#1732](https://github.com/bitnami-labs/sealed-secrets/pull/1732))
+- Bump golang.org/x/crypto from 0.37.0 to 0.38.0 ([#1731](https://github.com/bitnami-labs/sealed-secrets/pull/1731))
+- Bump k8s.io/client-go from 0.32.3 to 0.33.0 ([#1729](https://github.com/bitnami-labs/sealed-secrets/pull/1729))
+- Bump k8s.io/code-generator from 0.32.3 to 0.33.0 ([#1728](https://github.com/bitnami-labs/sealed-secrets/pull/1728))
+- Bump k8s.io/api from 0.32.3 to 0.33.0 ([#1730](https://github.com/bitnami-labs/sealed-secrets/pull/1730))
+- Bump golang.org/x/net from 0.37.0 to 0.38.0 in the go_modules group ([#1725](https://github.com/bitnami-labs/sealed-secrets/pull/1725))
+- Bump github.com/prometheus/client_golang from 1.21.1 to 1.22.0 ([#1724](https://github.com/bitnami-labs/sealed-secrets/pull/1724))
+- Bump github.com/onsi/gomega from 1.36.3 to 1.37.0 ([#1722](https://github.com/bitnami-labs/sealed-secrets/pull/1722))
+- Bump github.com/onsi/ginkgo/v2 from 2.23.3 to 2.23.4 ([#1723](https://github.com/bitnami-labs/sealed-secrets/pull/1723))
+- Bump golang.org/x/crypto from 0.36.0 to 0.37.0 ([#1721](https://github.com/bitnami-labs/sealed-secrets/pull/1721))
+
 ## v0.29.0
 
 - Fix register a key using secret creationTimestamp instead of certificate validity timestamp ([#1681](https://github.com/bitnami-labs/sealed-secrets/pull/1681))
