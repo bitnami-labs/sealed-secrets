@@ -62,7 +62,7 @@ func testConfigOverrides() *clientcmd.ConfigOverrides {
 	flagset := flag.NewFlagSet("test", flag.PanicOnError)
 	var overrides clientcmd.ConfigOverrides
 	initUsualKubectlFlagsForTests(&overrides, flagset)
-	err := flagset.Parse([]string{"-n", "default"})
+	err := flagset.Parse([]string{})
 	if err != nil {
 		fmt.Printf("flagset parse err: %v\n", err)
 		os.Exit(1)

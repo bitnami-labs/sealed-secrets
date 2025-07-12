@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/utils/strings/slices"
+	"k8s.io/client-go/rest"
 
 	flag "github.com/spf13/pflag"
 
@@ -124,6 +125,10 @@ func testClientConfig() clientcmd.ClientConfig {
 	return initClient("", testConfigOverrides(), os.Stdin)
 }
 
+func testClientConfigWithNamespace(namespace string) clientcmd.ClientConfig {
+	return initClient("", testConfigOverridesWithNamespace(namespace), os.Stdin)
+}
+
 /* repeated from main here... ENDs */
 
 func initUsualKubectlFlagsForTests(overrides *clientcmd.ConfigOverrides, flagset *flag.FlagSet) {
@@ -135,7 +140,19 @@ func testConfigOverrides() *clientcmd.ConfigOverrides {
 	flagset := flag.NewFlagSet("test", flag.PanicOnError)
 	var overrides clientcmd.ConfigOverrides
 	initUsualKubectlFlagsForTests(&overrides, flagset)
-	err := flagset.Parse([]string{"-n", "default"})
+	err := flagset.Parse([]string{})
+	if err != nil {
+		fmt.Printf("flagset parse err: %v\n", err)
+		os.Exit(1)
+	}
+	return &overrides
+}
+
+func testConfigOverridesWithNamespace(namespace string) *clientcmd.ConfigOverrides {
+	flagset := flag.NewFlagSet("test", flag.PanicOnError)
+	var overrides clientcmd.ConfigOverrides
+	initUsualKubectlFlagsForTests(&overrides, flagset)
+	err := flagset.Parse([]string{"-n", namespace})
 	if err != nil {
 		fmt.Printf("flagset parse err: %v\n", err)
 		os.Exit(1)
@@ -433,6 +450,10 @@ func TestSeal(t *testing.T) {
 	for i, tc := range testCases {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
 			clientConfig := testClientConfig()
+			// For test cases where the secret has no namespace and we expect it to be filled with "default"
+			if tc.secret.GetNamespace() == "" && tc.want.GetNamespace() == "default" {
+				clientConfig = testClientConfigWithNamespace("default")
+			}
 			outputFormat := "json"
 			info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
 			if !ok {
@@ -1010,4 +1031,131 @@ func TestReadPrivKeyPEM(t *testing.T) {
 	if got, want := pkr.D.String(), pkw.D.String(); got != want {
 		t.Errorf("got: %q, want: %q", got, want)
 	}
+}
+
+func TestNamespaceMismatchValidation(t *testing.T) {
+	key, err := ParseKey(strings.NewReader(testCert))
+	if err != nil {
+		t.Fatalf("Failed to parse test key: %v", err)
+	}
+
+	testCases := []struct {
+		name               string
+		secret             v1.Secret
+		configNamespace    string
+		namespaceSet       bool
+		expectedError      string
+	}{
+		{
+			name: "namespace mismatch should fail",
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "secretns",
+				},
+				Data: map[string][]byte{
+					"foo": []byte("sekret"),
+				},
+			},
+			configNamespace: "flagns",
+			namespaceSet:    true,
+			expectedError:   "namespace mismatch: input secret is in namespace \"secretns\" but \"flagns\" was specified",
+		},
+		{
+			name: "matching namespaces should succeed",
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "samens",
+				},
+				Data: map[string][]byte{
+					"foo": []byte("sekret"),
+				},
+			},
+			configNamespace: "samens",
+			namespaceSet:    true,
+			expectedError:   "",
+		},
+		{
+			name: "no namespace flag set should succeed",
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "secretns",
+				},
+				Data: map[string][]byte{
+					"foo": []byte("sekret"),
+				},
+			},
+			configNamespace: "flagns",
+			namespaceSet:    false,
+			expectedError:   "",
+		},
+		{
+			name: "empty secret namespace with flag set should succeed",
+			secret: v1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "mysecret",
+					Namespace: "",
+				},
+				Data: map[string][]byte{
+					"foo": []byte("sekret"),
+				},
+			},
+			configNamespace: "flagns",
+			namespaceSet:    true,
+			expectedError:   "",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Create a mock client config that returns the test namespace
+			mockClientConfig := &mockClientConfig{
+				namespace:    tc.configNamespace,
+				namespaceSet: tc.namespaceSet,
+			}
+
+			outputFormat := "json"
+			info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
+			if !ok {
+				t.Fatalf("binary can't serialize JSON")
+			}
+			enc := scheme.Codecs.EncoderForVersion(info.Serializer, v1.SchemeGroupVersion)
+			inbuf := bytes.Buffer{}
+			if err := enc.Encode(&tc.secret, &inbuf); err != nil {
+				t.Fatalf("Error encoding: %v", err)
+			}
+
+			outbuf := bytes.Buffer{}
+			err := Seal(mockClientConfig, outputFormat, &inbuf, &outbuf, scheme.Codecs, key, ssv1alpha1.DefaultScope, false, "", "")
+
+			if tc.expectedError != "" {
+				if err == nil {
+					t.Fatalf("Expected error %q but got nil", tc.expectedError)
+				}
+				if got, want := err.Error(), tc.expectedError; got != want {
+					t.Errorf("got error: %q, want: %q", got, want)
+				}
+			} else {
+				if err != nil {
+					t.Fatalf("Unexpected error: %v", err)
+				}
+			}
+		})
+	}
+}
+
+// mockClientConfig implements clientcmd.ClientConfig for testing
+type mockClientConfig struct {
+	namespace    string
+	namespaceSet bool
+}
+
+func (m *mockClientConfig) Namespace() (string, bool, error) {
+	return m.namespace, m.namespaceSet, nil
+}
+
+func (m *mockClientConfig) ClientConfig() (*rest.Config, error) {
+	return &rest.Config{}, nil
 }

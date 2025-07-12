@@ -252,14 +252,22 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 			secret.Annotations = ssv1alpha1.UpdateScopeAnnotations(secret.Annotations, scope)
 		}
 
-		if ssv1alpha1.SecretScope(secret) != ssv1alpha1.ClusterWideScope && secret.GetNamespace() == "" {
-			ns, _, err := clientConfig.Namespace()
-			if clientcmd.IsEmptyConfig(err) {
+		if ssv1alpha1.SecretScope(secret) != ssv1alpha1.ClusterWideScope {
+			ns, namespaceSet, err := clientConfig.Namespace()
+			if clientcmd.IsEmptyConfig(err) && secret.GetNamespace() == "" {
 				return fmt.Errorf("input secret has no namespace and cannot infer the namespace automatically when no kube config is available")
 			} else if err != nil {
 				return err
 			}
-			secret.SetNamespace(ns)
+
+			// Check for namespace mismatch when namespace is explicitly set via command line
+			if namespaceSet && secret.GetNamespace() != "" && secret.GetNamespace() != ns {
+				return fmt.Errorf("namespace mismatch: input secret is in namespace %q but %q was specified", secret.GetNamespace(), ns)
+			}
+
+			if secret.GetNamespace() == "" {
+				secret.SetNamespace(ns)
+			}
 		}
 
 		// Strip read-only server-side ObjectMeta (if present)
@@ -278,7 +286,7 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 		if err = sealedSecretOutput(out, outputFormat, codecs, ssecret); err != nil {
 			return err
 		}
-		//return nil
+		// return nil
 	}
 	return nil
 }
