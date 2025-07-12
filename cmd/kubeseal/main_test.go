@@ -76,23 +76,6 @@ func testConfig(flags *cliFlags) *config {
 	}
 }
 
-func initUsualKubectlFlagsForTests(overrides *clientcmd.ConfigOverrides, flagset *flag.FlagSet) {
-	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	clientcmd.BindOverrideFlags(overrides, flagset, kflags)
-}
-
-func testConfigOverrides() *clientcmd.ConfigOverrides {
-	flagset := flag.NewFlagSet("test", flag.PanicOnError)
-	var overrides clientcmd.ConfigOverrides
-	initUsualKubectlFlagsForTests(&overrides, flagset)
-	err := flagset.Parse([]string{})
-	if err != nil {
-		fmt.Printf("flagset parse err: %v\n", err)
-		os.Exit(1)
-	}
-	return &overrides
-}
-
 func TestMainError(t *testing.T) {
 	badFileName := filepath.Join("this", "file", "cannot", "possibly", "exist", "can", "it?")
 	flags := cliFlags{certURL: badFileName}

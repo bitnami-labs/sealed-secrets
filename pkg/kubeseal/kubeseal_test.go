@@ -19,21 +19,18 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/yaml"
-	"k8s.io/utils/strings/slices"
-	"k8s.io/client-go/rest"
-
-	flag "github.com/spf13/pflag"
-
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/yaml"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/keyutil"
+	"k8s.io/utils/strings/slices"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	"github.com/bitnami-labs/sealed-secrets/pkg/crypto"
@@ -115,51 +112,11 @@ func TestParseKey(t *testing.T) {
 
 /* repeated from main here... STARTs */
 
-func initClient(kubeConfigPath string, cfgOverrides *clientcmd.ConfigOverrides, r io.Reader) clientcmd.ClientConfig {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
-	loadingRules.ExplicitPath = kubeConfigPath
-	return clientcmd.NewInteractiveDeferredLoadingClientConfig(loadingRules, cfgOverrides, r)
-}
-
 func testClientConfig() clientcmd.ClientConfig {
-	return initClient("", testConfigOverrides(), os.Stdin)
-}
-
-func testClientConfigWithNamespace(namespace string) clientcmd.ClientConfig {
-	return initClient("", testConfigOverridesWithNamespace(namespace), os.Stdin)
+	return &mockClientConfig{namespace: "testns", namespaceSet: false}
 }
 
 /* repeated from main here... ENDs */
-
-func initUsualKubectlFlagsForTests(overrides *clientcmd.ConfigOverrides, flagset *flag.FlagSet) {
-	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	clientcmd.BindOverrideFlags(overrides, flagset, kflags)
-}
-
-func testConfigOverrides() *clientcmd.ConfigOverrides {
-	flagset := flag.NewFlagSet("test", flag.PanicOnError)
-	var overrides clientcmd.ConfigOverrides
-	initUsualKubectlFlagsForTests(&overrides, flagset)
-	err := flagset.Parse([]string{})
-	if err != nil {
-		fmt.Printf("flagset parse err: %v\n", err)
-		os.Exit(1)
-	}
-	return &overrides
-}
-
-func testConfigOverridesWithNamespace(namespace string) *clientcmd.ConfigOverrides {
-	flagset := flag.NewFlagSet("test", flag.PanicOnError)
-	var overrides clientcmd.ConfigOverrides
-	initUsualKubectlFlagsForTests(&overrides, flagset)
-	err := flagset.Parse([]string{"-n", namespace})
-	if err != nil {
-		fmt.Printf("flagset parse err: %v\n", err)
-		os.Exit(1)
-	}
-	return &overrides
-}
 
 func TestOpenCertFile(t *testing.T) {
 	ctx := context.Background()
@@ -1041,11 +998,11 @@ func TestNamespaceMismatchValidation(t *testing.T) {
 	}
 
 	testCases := []struct {
-		name               string
-		secret             v1.Secret
-		configNamespace    string
-		namespaceSet       bool
-		expectedError      string
+		name            string
+		secret          v1.Secret
+		configNamespace string
+		namespaceSet    bool
+		expectedError   string
 	}{
 		{
 			name: "namespace mismatch should fail",
