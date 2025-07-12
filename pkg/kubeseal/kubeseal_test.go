@@ -32,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/util/keyutil"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
@@ -229,7 +230,7 @@ func TestSealWithMultiDocSecrets(t *testing.T) {
 			s2 := mkTestSecret(t, "bar", "2", withSecretName("s2"), asYAML(tc.asYaml))
 			multiDocYaml := fmt.Sprintf("%s%s%s", s1, tc.inputSeparator, s2)
 
-			clientConfig := testClientConfig()
+			clientConfig := &mockClientConfig{namespace: "testns", namespaceSet: false}
 			outputFormat := tc.outputFormat
 			inbuf := bytes.Buffer{}
 			_, err = bytes.NewBuffer([]byte(multiDocYaml)).WriteTo(&inbuf)
@@ -449,10 +450,10 @@ func TestSeal(t *testing.T) {
 
 	for i, tc := range testCases {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			clientConfig := testClientConfig()
+			clientConfig := &mockClientConfig{namespace: "testns", namespaceSet: false}
 			// For test cases where the secret has no namespace and we expect it to be filled with "default"
 			if tc.secret.GetNamespace() == "" && tc.want.GetNamespace() == "default" {
-				clientConfig = testClientConfigWithNamespace("default")
+				clientConfig = &mockClientConfig{namespace: "default", namespaceSet: true}
 			}
 			outputFormat := "json"
 			info, ok := runtime.SerializerInfoForMediaType(scheme.Codecs.SupportedMediaTypes(), runtime.ContentTypeJSON)
@@ -574,7 +575,7 @@ func mkTestSecret(t *testing.T, key, value string, opts ...mkTestSecretOpt) []by
 }
 
 func mkTestSealedSecret(t *testing.T, pubKey *rsa.PublicKey, key, value string, opts ...mkTestSecretOpt) []byte {
-	clientConfig := testClientConfig()
+	clientConfig := &mockClientConfig{namespace: "testns", namespaceSet: false}
 	outputFormat := "json"
 	inbuf := bytes.NewBuffer(mkTestSecret(t, key, value, opts...))
 	var outbuf bytes.Buffer
@@ -708,7 +709,7 @@ func TestUnsealList(t *testing.T) {
 }
 
 func TestMergeInto(t *testing.T) {
-	clientConfig := testClientConfig()
+	clientConfig := &mockClientConfig{namespace: "testns", namespaceSet: false}
 	outputFormat := "json"
 	pubKey, privKeys := newTestKeyPair(t)
 
@@ -1158,4 +1159,12 @@ func (m *mockClientConfig) Namespace() (string, bool, error) {
 
 func (m *mockClientConfig) ClientConfig() (*rest.Config, error) {
 	return &rest.Config{}, nil
+}
+
+func (m *mockClientConfig) ConfigAccess() clientcmd.ConfigAccess {
+	return nil
+}
+
+func (m *mockClientConfig) RawConfig() (clientcmdapi.Config, error) {
+	return clientcmdapi.Config{}, nil
 }
