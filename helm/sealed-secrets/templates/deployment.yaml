@@ -78,7 +78,7 @@ spec:
             {{- if .Values.skipRecreate }}
             - --skip-recreate
             {{- end }}
-            {{- if .Values.keyrenewperiod }}
+            {{- if ne (.Values.keyrenewperiod | toString) "" }}
             - --key-renew-period
             - {{ .Values.keyrenewperiod | quote }}
             {{- end }}
