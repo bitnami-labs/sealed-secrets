@@ -22,9 +22,32 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	certUtil "k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
 )
+
+// mockClientConfig implements clientcmd.ClientConfig for testing
+type mockClientConfig struct {
+	namespace    string
+	namespaceSet bool
+}
+
+func (m *mockClientConfig) Namespace() (string, bool, error) {
+	return m.namespace, m.namespaceSet, nil
+}
+
+func (m *mockClientConfig) ClientConfig() (*rest.Config, error) {
+	return &rest.Config{}, nil
+}
+
+func (m *mockClientConfig) ConfigAccess() clientcmd.ConfigAccess {
+	return nil
+}
+
+func (m *mockClientConfig) RawConfig() (clientcmdapi.Config, error) {
+	return clientcmdapi.Config{}, nil
+}
 
 func TestVersion(t *testing.T) {
 	buf := bytes.NewBufferString("")
@@ -41,7 +64,7 @@ func TestVersion(t *testing.T) {
 }
 
 func testClientConfig() clientcmd.ClientConfig {
-	return initClient("", testConfigOverrides(), os.Stdin)
+	return &mockClientConfig{namespace: "default", namespaceSet: false}
 }
 
 func testConfig(flags *cliFlags) *config {
@@ -51,23 +74,6 @@ func testConfig(flags *cliFlags) *config {
 		clientConfig: clientConfig,
 		ctx:          context.Background(),
 	}
-}
-
-func initUsualKubectlFlagsForTests(overrides *clientcmd.ConfigOverrides, flagset *flag.FlagSet) {
-	kflags := clientcmd.RecommendedConfigOverrideFlags("")
-	clientcmd.BindOverrideFlags(overrides, flagset, kflags)
-}
-
-func testConfigOverrides() *clientcmd.ConfigOverrides {
-	flagset := flag.NewFlagSet("test", flag.PanicOnError)
-	var overrides clientcmd.ConfigOverrides
-	initUsualKubectlFlagsForTests(&overrides, flagset)
-	err := flagset.Parse([]string{"-n", "default"})
-	if err != nil {
-		fmt.Printf("flagset parse err: %v\n", err)
-		os.Exit(1)
-	}
-	return &overrides
 }
 
 func TestMainError(t *testing.T) {
