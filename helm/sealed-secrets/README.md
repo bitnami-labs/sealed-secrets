@@ -106,6 +106,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `logLevel`                                        | Specifies log level of controller (INFO,ERROR)                                                                     | `""`                                |
 | `logFormat`                                       | Specifies log format (text,json)                                                                                   | `""`                                |
 | `maxRetries`                                      | Number of maximum retries                                                                                          | `""`                                |
+| `watchForSecrets`                                 | Specifies whether the Sealed Secrets controller will watch for new secrets                                         | `false`                             |
 | `command`                                         | Override default container command                                                                                 | `[]`                                |
 | `args`                                            | Override default container args                                                                                    | `[]`                                |
 | `livenessProbe.enabled`                           | Enable livenessProbe on Sealed Secret containers                                                                   | `true`                              |
