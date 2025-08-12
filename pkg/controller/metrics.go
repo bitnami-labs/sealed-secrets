@@ -117,7 +117,7 @@ func UnregisterCondition(ssecret *v1alpha1.SealedSecret) {
 		return
 	}
 	for _, condition := range ssecret.Status.Conditions {
-		conditionInfo.MetricVec.DeleteLabelValues(ssecret.Namespace, ssecret.Name, string(condition.Type), labelInstance)
+		conditionInfo.DeleteLabelValues(ssecret.Namespace, ssecret.Name, string(condition.Type), ssecret.Labels["app.kubernetes.io/instance"])
 	}
 }
 
