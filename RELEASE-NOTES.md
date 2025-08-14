@@ -4,6 +4,25 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.31.0
+
+- Helm: add watch for secrets ([#1758](https://github.com/bitnami-labs/sealed-secrets/pull/1758))
+- Simplify VIB helm chart validation ([#1771](https://github.com/bitnami-labs/sealed-secrets/pull/1771))
+- Fix: metrics cleanup for deleted SealedSecrets ([#1764](https://github.com/bitnami-labs/sealed-secrets/pull/1764))
+- Fix keyrenewperiod template chart ([#1756](https://github.com/bitnami-labs/sealed-secrets/pull/1756))
+- Fix namespace validation to prevent mismatch errors ([#1754](https://github.com/bitnami-labs/sealed-secrets/pull/1754))
+- Bump VIB action version and updates the service URL ([#1770](https://github.com/bitnami-labs/sealed-secrets/pull/1770))
+- Bump golang version to latest available one for 1.24 ([#1769](https://github.com/bitnami-labs/sealed-secrets/pull/1769))
+- Bump golang.org/x/crypto from 0.40.0 to 0.41.0 ([#1768](https://github.com/bitnami-labs/sealed-secrets/pull/1768))
+- Bump github.com/prometheus/client_golang from 1.22.0 to 1.23.0 ([#1767](https://github.com/bitnami-labs/sealed-secrets/pull/1767))
+- Bump k8s.io/api from 0.33.2 to 0.33.3 ([#1766](https://github.com/bitnami-labs/sealed-secrets/pull/1766))
+- Bump github.com/spf13/pflag from 1.0.6 to 1.0.7 ([#1765](https://github.com/bitnami-labs/sealed-secrets/pull/1765))
+- Bump k8s.io/client-go from 0.33.2 to 0.33.3 ([#1761](https://github.com/bitnami-labs/sealed-secrets/pull/1761))
+- Bump github.com/onsi/gomega from 1.37.0 to 1.38.0 ([#1760](https://github.com/bitnami-labs/sealed-secrets/pull/1760))
+- Bump k8s.io/code-generator from 0.33.2 to 0.33.3 ([#1759](https://github.com/bitnami-labs/sealed-secrets/pull/1759))
+- Bump golang.org/x/crypto from 0.39.0 to 0.40.0 ([#1755](https://github.com/bitnami-labs/sealed-secrets/pull/1755))
+- Bump k8s.io/code-generator from 0.33.1 to 0.33.2 ([#1752](https://github.com/bitnami-labs/sealed-secrets/pull/1752))
+
 ## v0.30.0
 
 - Bump golang to 1.24.4 ([#1743](https://github.com/bitnami-labs/sealed-secrets/pull/1743))
