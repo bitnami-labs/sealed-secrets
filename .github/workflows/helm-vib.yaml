@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+    paths:
+       - 'helm/**'
 
 env:
   CSP_API_URL: https://console.tanzu.broadcom.com
