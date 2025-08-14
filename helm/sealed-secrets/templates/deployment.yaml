@@ -149,6 +149,9 @@ spec:
             - --max-unseal-retries
             - {{ .Values.maxRetries | quote }}
             {{- end }}
+            {{- if .Values.watchForSecrets }}
+            - --watch-for-secrets
+            {{- end }}
           {{- end }}
           image: {{ printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
