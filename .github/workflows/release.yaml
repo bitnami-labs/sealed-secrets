@@ -75,11 +75,12 @@ jobs:
 
       # Build & Release binaries
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v3.1.0
+        uses: goreleaser/goreleaser-action@v6
         if: success() && startsWith(github.ref, 'refs/heads/')
         with:
-          version: v1.10.3
-          args: release --rm-dist
+          distribution: goreleaser
+          version: v2.11.2
+          args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
