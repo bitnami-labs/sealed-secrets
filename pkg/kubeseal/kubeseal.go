@@ -30,7 +30,6 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/cert"
 	"k8s.io/client-go/util/keyutil"
 )
@@ -253,13 +252,7 @@ func Seal(clientConfig ClientConfig, outputFormat string, in io.Reader, out io.W
 		}
 
 		if ssv1alpha1.SecretScope(secret) != ssv1alpha1.ClusterWideScope {
-			ns, namespaceSet, err := clientConfig.Namespace()
-			if clientcmd.IsEmptyConfig(err) && secret.GetNamespace() == "" {
-				return fmt.Errorf("input secret has no namespace and cannot infer the namespace automatically when no kube config is available")
-			} else if err != nil {
-				return err
-			}
-
+			ns, namespaceSet, _ := clientConfig.Namespace()
 			// Check for namespace mismatch when namespace is explicitly set via command line
 			if namespaceSet && secret.GetNamespace() != "" && secret.GetNamespace() != ns {
 				return fmt.Errorf("namespace mismatch: input secret is in namespace %q but %q was specified", secret.GetNamespace(), ns)
