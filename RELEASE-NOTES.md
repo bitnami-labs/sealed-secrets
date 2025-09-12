@@ -4,6 +4,21 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.32.0
+
+- Fix regression mismatching namespace ([#1798](https://github.com/bitnami-labs/sealed-secrets/pull/1798))
+- Bump k8s.io/apimachinery from 0.33.4 to 0.34.0 ([#1795](https://github.com/bitnami-labs/sealed-secrets/pull/1795))
+- Bump github.com/spf13/pflag from 1.0.7 to 1.0.10 ([#1794](https://github.com/bitnami-labs/sealed-secrets/pull/1794))
+- Bump github.com/onsi/ginkgo/v2 from 2.25.1 to 2.25.3 ([#1793](https://github.com/bitnami-labs/sealed-secrets/pull/1793))
+- Bump golang.org/x/crypto from 0.41.0 to 0.42.0 ([#1797](https://github.com/bitnami-labs/sealed-secrets/pull/1797))
+- Bump github.com/prometheus/client_golang from 1.23.0 to 1.23.2 ([#1796](https://github.com/bitnami-labs/sealed-secrets/pull/1796))
+- Bump github.com/onsi/gomega from 1.38.0 to 1.38.1 ([#1787](https://github.com/bitnami-labs/sealed-secrets/pull/1787))
+- Bump k8s.io/client-go from 0.33.3 to 0.33.4 ([#1774](https://github.com/bitnami-labs/sealed-secrets/pull/1774))
+- Bump k8s.io/api from 0.33.3 to 0.33.4 ([#1775](https://github.com/bitnami-labs/sealed-secrets/pull/1775))
+- Bump github.com/onsi/ginkgo/v2 from 2.23.4 to 2.24.0 ([#1776](https://github.com/bitnami-labs/sealed-secrets/pull/1776))
+- Bump k8s.io/apimachinery from 0.33.3 to 0.33.4 ([#1777](https://github.com/bitnami-labs/sealed-secrets/pull/1788))
+- Bump k8s.io/code-generator from 0.33.3 to 0.33.4 ([#1778](https://github.com/bitnami-labs/sealed-secrets/pull/1778))
+
 ## v0.31.0
 
 - Helm: add watch for secrets ([#1758](https://github.com/bitnami-labs/sealed-secrets/pull/1758))
