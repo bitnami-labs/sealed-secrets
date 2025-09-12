@@ -4,6 +4,10 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.32.1
+
+- Bump distroless version ([#1804](https://github.com/bitnami-labs/sealed-secrets/pull/1804))
+
 ## v0.32.0
 
 - Fix regression mismatching namespace ([#1798](https://github.com/bitnami-labs/sealed-secrets/pull/1798))
