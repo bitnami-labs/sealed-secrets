@@ -1,10 +1,10 @@
 apiVersion: data.packaging.carvel.dev/v1alpha1
 kind: Package
 metadata:
-  name: "sealedsecrets.bitnami.com.2.17.5"
+  name: "sealedsecrets.bitnami.com.2.17.6"
 spec:
   refName: "sealedsecrets.bitnami.com"
-  version: "2.17.5"
+  version: "2.17.6"
   valuesSchema:
     openAPIv3:
       title: Chart Values
@@ -424,7 +424,7 @@ spec:
     spec:
       fetch:
         - imgpkgBundle:
-            image: ghcr.io/bitnami-labs/sealed-secrets-carvel@sha256:2d6bf9d3ba1f79c659245b27b69ee17f14625606d1c1a2b4dd64b382a3b0bdbb
+            image: ghcr.io/bitnami-labs/sealed-secrets-carvel@sha256:3366cfb123fda4a6cfd197d4efab75726e923f821a0f8ecce48d11338b0d6c01
       template:
         - helmTemplate:
             path: sealed-secrets
