@@ -49,6 +49,8 @@ jobs:
           RELEASE_BRANCH="${{ github.ref }}"
           VERSION_TAG=$(echo "${RELEASE_BRANCH}" | awk -F'/' '{print $NF}')
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
+          IMAGE_TAG=$(echo "${VERSION_TAG}" | sed 's/^v//')
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
           make CONTROLLER_IMAGE=${{ env.controller_dockerhub_image_name }}:${VERSION_TAG} controller.yaml controller-norbac.yaml
 
       # Setup env for multi-arch builds
@@ -105,7 +107,7 @@ jobs:
             ${{ env.controller_dockerhub_image_name }}
             ${{ env.controller_ghcr_image_name }}
           tags: |
-            type=raw,value=${{ env.VERSION_TAG }}
+            type=raw,value=${{ env.IMAGE_TAG }}
             type=raw,value=latest
       - name: Build and push controller image
         id: docker_build_controller
@@ -124,7 +126,7 @@ jobs:
             ${{ env.kubeseal_dockerhub_image_name }}
             ${{ env.kubeseal_ghcr_image_name }}
           tags: |
-            type=raw,value=${{ env.VERSION_TAG }}
+            type=raw,value=${{ env.IMAGE_TAG }}
             type=raw,value=latest
       - name: Build and push kubeseal image
         id: docker_build_kubeseal
