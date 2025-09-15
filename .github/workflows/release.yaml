@@ -51,7 +51,7 @@ jobs:
           echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
           IMAGE_TAG=$(echo "${VERSION_TAG}" | sed 's/^v//')
           echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
-          make CONTROLLER_IMAGE=${{ env.controller_dockerhub_image_name }}:${VERSION_TAG} controller.yaml controller-norbac.yaml
+          make CONTROLLER_IMAGE=${{ env.controller_dockerhub_image_name }}:${IMAGE_TAG} controller.yaml controller-norbac.yaml
 
       # Setup env for multi-arch builds
       - name: Set up QEMU
