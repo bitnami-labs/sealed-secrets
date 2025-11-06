@@ -4,6 +4,13 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.33.0
+
+- Bump Go to 1.25.4 ([#1823](https://github.com/bitnami-labs/sealed-secrets/pull/1823))
+- Bump github.com/onsi/ginkgo/v2 from 2.26.0 to 2.27.2 ([#1820](https://github.com/bitnami-labs/sealed-secrets/pull/1820))
+- Bump golang.org/x/crypto from 0.42.0 to 0.43.0 ([#1818](https://github.com/bitnami-labs/sealed-secrets/pull/1818))
+- Bump github.com/onsi/ginkgo/v2 from 2.25.3 to 2.26.0 ([#1817](https://github.com/bitnami-labs/sealed-secrets/pull/1817))
+
 ## v0.32.2
 
 - Fix controller yaml ([#1811](https://github.com/bitnami-labs/sealed-secrets/pull/1811))
