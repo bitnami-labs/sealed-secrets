@@ -4,6 +4,10 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.33.1
+
+- Release done to fix missing helm chart code.
+
 ## v0.33.0
 
 - Bump Go to 1.25.4 ([#1823](https://github.com/bitnami-labs/sealed-secrets/pull/1823))
