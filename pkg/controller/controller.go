@@ -67,6 +67,7 @@ type Controller struct {
 	queue       workqueue.TypedRateLimitingInterface[string]
 	ssInformer  cache.SharedIndexInformer
 	sInformer   cache.SharedIndexInformer
+	kInformer   cache.SharedIndexInformer
 	sclient     v1.SecretsGetter
 	ssclient    ssv1alpha1client.SealedSecretsGetter
 	recorder    record.EventRecorder
@@ -77,7 +78,16 @@ type Controller struct {
 }
 
 // NewController returns the main sealed-secrets controller loop.
-func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Interface, ssinformer ssinformer.SharedInformerFactory, sinformer informers.SharedInformerFactory, keyRegistry *KeyRegistry, maxRetriesConfig int) (*Controller, error) {
+func NewController(
+	clientset kubernetes.Interface,
+	ssclientset ssclientset.Interface,
+	ssinformer ssinformer.SharedInformerFactory,
+	sinformer informers.SharedInformerFactory,
+	kinformer informers.SharedInformerFactory,
+	keyRegistry *KeyRegistry,
+	maxRetriesConfig int,
+	keyOrderPriority string,
+) (*Controller, error) {
 	queue := workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 
 	utilruntime.Must(ssscheme.AddToScheme(scheme.Scheme))
@@ -102,17 +112,43 @@ func NewController(clientset kubernetes.Interface, ssclientset ssclientset.Inter
 		}
 	}
 
+	var kInformer cache.SharedIndexInformer
+	if kinformer != nil {
+		kInformer, err = watchKeySecrets(kinformer, keyRegistry, keyOrderPriority)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	maxRetries = maxRetriesConfig
 
 	return &Controller{
 		ssInformer:  ssInformer,
 		sInformer:   sInformer,
+		kInformer:   kInformer,
 		queue:       queue,
 		sclient:     clientset.CoreV1(),
 		ssclient:    ssclientset.BitnamiV1alpha1(),
 		recorder:    recorder,
 		keyRegistry: keyRegistry,
 	}, nil
+}
+
+func watchKeySecrets(kinformer informers.SharedInformerFactory, registry *KeyRegistry, keyOrderPriority string) (cache.SharedIndexInformer, error) {
+	kInformer := kinformer.Core().V1().Secrets().Informer()
+	_, err := kInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			err := registryNewKeyWithSecret(obj.(*corev1.Secret), registry, keyOrderPriority)
+			if err != nil {
+				slog.Error("failed to register key", "error", err)
+				return
+			}
+		},
+	})
+	if err != nil {
+		return nil, fmt.Errorf("could not add event handler to secrets informer: %w", err)
+	}
+	return kInformer, nil
 }
 
 func watchSealedSecrets(ssinformer ssinformer.SharedInformerFactory, queue workqueue.TypedRateLimitingInterface[string]) (cache.SharedIndexInformer, error) {
@@ -236,6 +272,9 @@ func (c *Controller) Run(stopCh <-chan struct{}) {
 	go c.ssInformer.Run(stopCh)
 	if c.sInformer != nil {
 		go c.sInformer.Run(stopCh)
+	}
+	if c.kInformer != nil {
+		go c.kInformer.Run(stopCh)
 	}
 
 	if !cache.WaitForCacheSync(stopCh, c.HasSynced) {
