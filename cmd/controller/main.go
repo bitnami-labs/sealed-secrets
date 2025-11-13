@@ -63,6 +63,9 @@ func bindControllerFlags(f *controller.Flags, fs *flag.FlagSet) {
 	_ = fs.MarkDeprecated("rotate-period", "please use key-renew-period instead")
 
 	fs.IntVar(&f.MaxRetries, "max-unseal-retries", 5, "Max unseal retries.")
+
+	fs.Float32Var(&f.KubeClientQPS, "kubeclient-qps", 5, "Kubeclient QPS (negative value disables ratelimiting)")
+	fs.IntVar(&f.KubeClientBurst, "kubeclient-burst", 10, "Kubeclient Burst")
 }
 
 func bindFlags(f *controller.Flags, fs *flag.FlagSet, gofs *goflag.FlagSet) {

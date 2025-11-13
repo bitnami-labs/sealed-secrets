@@ -60,6 +60,8 @@ type Flags struct {
 	PrivateKeyLabels      string
 	MaxRetries            int
 	WatchForSecrets       bool
+	KubeClientQPS         float32
+	KubeClientBurst       int
 }
 
 func initKeyPrefix(keyPrefix string) (string, error) {
@@ -209,6 +211,9 @@ func Main(f *Flags, version string) error {
 	if err != nil {
 		return err
 	}
+
+	config.QPS = f.KubeClientQPS
+	config.Burst = f.KubeClientBurst
 
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
