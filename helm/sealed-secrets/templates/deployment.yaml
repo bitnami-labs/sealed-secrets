@@ -152,6 +152,14 @@ spec:
             {{- if .Values.watchForSecrets }}
             - --watch-for-secrets
             {{- end }}
+            {{- if .Values.kubeClientQPS }}
+            - --kubeclient-qps
+            - {{ .Values.kubeClientQPS | quote }}
+            {{- end }}
+            {{- if .Values.kubeClientBurst }}
+            - --kubeclient-burst
+            - {{ .Values.kubeClientBurst | quote }}
+            {{- end }}
           {{- end }}
           image: {{ printf "%s/%s:%s" .Values.image.registry .Values.image.repository .Values.image.tag }}
           imagePullPolicy: {{ .Values.image.pullPolicy }}
