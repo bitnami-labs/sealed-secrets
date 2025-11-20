@@ -118,6 +118,12 @@ maxRetries: ""
 ## @param watchForSecrets Specifies whether the Sealed Secrets controller will watch for new secrets
 ##
 watchForSecrets: false
+## @param kubeClientQPS Kubeclient QPS (negative value disables ratelimiting)
+##
+kubeClientQPS: ""
+## @param kubeClientBurst Kubeclient Burst
+##
+kubeClientBurst: ""
 ## @param command Override default container command
 ##
 command: []
