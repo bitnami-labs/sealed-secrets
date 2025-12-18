@@ -4,6 +4,23 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.34.0
+
+- Add kseal to README ([#1852)](https://github.com/bitnami-labs/sealed-secrets/pull/1852))
+- Bump golang version to the latest available 1.24 ([#1854](https://github.com/bitnami-labs/sealed-secrets/pull/1854))
+- Bump k8s.io/code-generator from 0.34.2 to 0.34.3 ([#1850](https://github.com/bitnami-labs/sealed-secrets/pull/1850))
+- Bump k8s.io/client-go from 0.34.2 to 0.34.3 ([#1848](https://github.com/bitnami-labs/sealed-secrets/pull/1848))
+- Bump github.com/onsi/ginkgo/v2 from 2.27.2 to 2.27.3 ([#1843](https://github.com/bitnami-labs/sealed-secrets/pull/1843))
+- Bump distroless/static from `87bce11` to `4b2a093` in /docker ([#1846](https://github.com/bitnami-labs/sealed-secrets/pull/1846))
+- Bump github.com/onsi/gomega from 1.38.2 to 1.38.3 ([#1844](https://github.com/bitnami-labs/sealed-secrets/pull/1844))
+- Bump golang.org/x/crypto from 0.45.0 to 0.46.0 ([#1845](https://github.com/bitnami-labs/sealed-secrets/pull/1845))
+- Make controllers kubeclient QPS & Burst configurable. ([#1834](https://github.com/bitnami-labs/sealed-secrets/pull/1834))
+- use default method to watch for key secrets ([#1831](https://github.com/bitnami-labs/sealed-secrets/pull/1831))
+- Bump golang.org/x/crypto from 0.44.0 to 0.45.0 in the go_modules group across 1 directory ([#1840](https://github.com/bitnami-labs/sealed-secrets/pull/1840))
+- Bump k8s.io/code-generator from 0.34.1 to 0.34.2 ([#1839](https://github.com/bitnami-labs/sealed-secrets/pull/1839))
+- Bump golang.org/x/crypto from 0.43.0 to 0.44.0 ([#1835](https://github.com/bitnami-labs/sealed-secrets/pull/1835))
+- Bump k8s.io/client-go from 0.34.1 to 0.34.2 ([#1837](https://github.com/bitnami-labs/sealed-secrets/pull/1837))
+
 ## v0.33.1
 
 - Release done to fix missing helm chart code.
