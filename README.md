@@ -851,6 +851,7 @@ Click [here](http://slack.k8s.io) to sign up to the Kubernetes Slack org.
 
 ### Related projects
 
+- `kseal` A Kubeseal Companion: [https://github.com/eznix86/kseal](https://github.com/eznix86/kseal)
 - `kubeseal-convert`: [https://github.com/EladLeev/kubeseal-convert](https://github.com/EladLeev/kubeseal-convert)
 - Visual Studio Code extension: [https://marketplace.visualstudio.com/items?itemName=codecontemplator.kubeseal](https://marketplace.visualstudio.com/items?itemName=codecontemplator.kubeseal)
 - WebSeal: generates secrets in the browser: [https://socialgouv.github.io/webseal](https://socialgouv.github.io/webseal)
