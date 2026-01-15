@@ -46,7 +46,7 @@ func generateNameReactor(action ktesting.Action) (handled bool, ret runtime.Obje
 func TestInitKeyRegistry(t *testing.T) {
 	ctx := context.Background()
 	rand := testRand()
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
 	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024, "CertNotBefore")
@@ -81,7 +81,7 @@ func TestInitKeyRegistry(t *testing.T) {
 func TestInitKeyRotation(t *testing.T) {
 	ctx := context.Background()
 	rand := testRand()
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
 	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024, "CertNotBefore")
@@ -122,7 +122,7 @@ func TestInitKeyRotation(t *testing.T) {
 func TestInitKeyRotationTick(t *testing.T) {
 	ctx := context.Background()
 	rand := testRand()
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
 	registry, err := initKeyRegistry(ctx, client, rand, "namespace", "prefix", "label", 1024, "CertNotBefore")
@@ -170,7 +170,7 @@ func TestReuseKey(t *testing.T) {
 		t.Fatalf("signKey failed: %v", err)
 	}
 
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
 	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix", "", "")
@@ -219,7 +219,7 @@ func TestRenewStaleKey(t *testing.T) {
 		t.Fatalf("signKey failed: %v", err)
 	}
 
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
 	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix", "", "")
@@ -275,7 +275,7 @@ func TestKeyCutoff(t *testing.T) {
 		period = 24 * time.Hour
 		oldAge = 1 * time.Hour
 	)
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
 	_, err = writeKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", SealedSecretsKeyLabel, "prefix", "", "",
@@ -341,7 +341,7 @@ func TestLegacySecret(t *testing.T) {
 		t.Fatalf("signKey failed: %v", err)
 	}
 
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 	client.PrependReactor("create", "secrets", generateNameReactor)
 
 	_, err = writeLegacyKey(ctx, client, key, []*x509.Certificate{cert}, "namespace", "prefix")

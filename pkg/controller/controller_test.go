@@ -121,7 +121,7 @@ func TestConvert2SealedSecretPassThrough(t *testing.T) {
 func TestDefaultConfigDoesNotSkipRecreate(t *testing.T) {
 	ns := "some-namespace"
 	var tweakopts func(*metav1.ListOptions)
-	clientset := fake.NewSimpleClientset()
+	clientset := fake.NewClientset()
 	ssc := ssfake.NewSimpleClientset()
 	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
 
@@ -140,7 +140,7 @@ func TestDefaultConfigDoesNotSkipRecreate(t *testing.T) {
 func TestSkipRecreateConfigDoesSkipIt(t *testing.T) {
 	ns := "some-namespace"
 	var tweakopts func(*metav1.ListOptions)
-	clientset := fake.NewSimpleClientset()
+	clientset := fake.NewClientset()
 	ssc := ssfake.NewSimpleClientset()
 	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
 
