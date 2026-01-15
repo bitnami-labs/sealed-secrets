@@ -234,7 +234,7 @@ func Main(f *Flags, version string) error {
 		}
 	}
 
-	controller, err := prepareController(clientset, namespace, tweakopts, f, ssclientset, keyRegistry)
+	controller, err := prepareController(clientset, namespace, myNs, tweakopts, f, ssclientset, keyRegistry)
 	if err != nil {
 		return err
 	}
@@ -258,7 +258,7 @@ func Main(f *Flags, version string) error {
 				return err
 			}
 			if ns != namespace {
-				ctlr, err := prepareController(clientset, ns, tweakopts, f, ssclientset, keyRegistry)
+				ctlr, err := prepareController(clientset, ns, myNs, tweakopts, f, ssclientset, keyRegistry)
 				if err != nil {
 					return err
 				}
@@ -299,22 +299,23 @@ func Main(f *Flags, version string) error {
 func prepareController(
 	clientset kubernetes.Interface,
 	namespace string,
+	keyNamespace string,
 	tweakopts func(*metav1.ListOptions),
 	f *Flags,
 	ssclientset versioned.Interface,
 	keyRegistry *KeyRegistry,
 ) (*Controller, error) {
-	kinformer := initSecretInformerFactory(clientset, namespace, func(options *metav1.ListOptions) {
+	kinformer := initSecretInformerFactory(clientset, keyNamespace, func(options *metav1.ListOptions) {
 		options.LabelSelector = keySelector.String()
 	}, f.WatchForSecrets)
-	sinformer := initSecretInformerFactory(clientset, namespace, tweakopts, f.SkipRecreate)
+	sinformer := initSecretInformerFactory(clientset, namespace, tweakopts, !f.SkipRecreate)
 	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, tweakopts)
 	controller, err := NewController(clientset, ssclientset, ssinformer, sinformer, kinformer, keyRegistry, f.MaxRetries, f.KeyOrderPriority)
 	return controller, err
 }
 
 func initSecretInformerFactory(clientset kubernetes.Interface, ns string, tweakopts func(*metav1.ListOptions), enabled bool) informers.SharedInformerFactory {
-	if enabled {
+	if !enabled {
 		return nil
 	}
 	return informers.NewSharedInformerFactoryWithOptions(clientset, 0, informers.WithNamespace(ns), informers.WithTweakListOptions(tweakopts))
