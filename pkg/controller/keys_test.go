@@ -87,7 +87,7 @@ func TestWriteKey(t *testing.T) {
 		t.Fatalf("signKey failed: %v", err)
 	}
 
-	client := fake.NewSimpleClientset()
+	client := fake.NewClientset()
 
 	namespace := "myns"
 	defaultLabel := "default-label"
