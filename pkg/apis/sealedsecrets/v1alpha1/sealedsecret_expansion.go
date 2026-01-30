@@ -337,15 +337,19 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 		// a real secret value.
 		// See https://github.com/bitnami-labs/sealed-secrets/issues/1607
 		for key, value := range s.Spec.Template.Data {
-			if _, exists := data[key]; !exists {
-				data[key] = value
+			if _, exists := data[key]; !exists && value != nil {
+				data[key] = *value
 			}
 		}
 
 		for key, value := range s.Spec.Template.Data {
 			var plaintext bytes.Buffer
 
-			template, err := template.New(key).Funcs(sprigFuncMap).Parse(value)
+			if value == nil {
+				delete(secret.Data, key)
+				continue
+			}
+			template, err := template.New(key).Funcs(sprigFuncMap).Parse(*value)
 			if err != nil {
 				errs = append(errs, multierror.Tag(key, err))
 				continue
