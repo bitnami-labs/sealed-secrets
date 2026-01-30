@@ -41,7 +41,10 @@ openAPIV3Schema:
             data:
               additionalProperties:
                 type: string
-              description: Keys that should be templated using decrypted data.
+              description: |-
+                Keys that should be templated using decrypted data.
+                Set a key with the same name as in `encryptedData`
+                to `null` to omit the unsealed data from the final secret.
               nullable: true
               type: object
             immutable:

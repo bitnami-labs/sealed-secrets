@@ -199,9 +199,17 @@ func (in *SecretTemplateSpec) DeepCopyInto(out *SecretTemplateSpec) {
 	}
 	if in.Data != nil {
 		in, out := &in.Data, &out.Data
-		*out = make(map[string]string, len(*in))
+		*out = make(map[string]*string, len(*in))
 		for key, val := range *in {
-			(*out)[key] = val
+			var outVal *string
+			if val == nil {
+				(*out)[key] = nil
+			} else {
+				in, out := &val, &outVal
+				*out = new(string)
+				**out = **in
+			}
+			(*out)[key] = outVal
 		}
 	}
 	return
