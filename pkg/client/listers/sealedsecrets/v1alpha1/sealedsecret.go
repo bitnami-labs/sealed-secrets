@@ -3,10 +3,10 @@
 package v1alpha1
 
 import (
-	v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
-	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/tools/cache"
+	sealedsecretsv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
+	labels "k8s.io/apimachinery/pkg/labels"
+	listers "k8s.io/client-go/listers"
+	cache "k8s.io/client-go/tools/cache"
 )
 
 // SealedSecretLister helps list SealedSecrets.
@@ -14,7 +14,7 @@ import (
 type SealedSecretLister interface {
 	// List lists all SealedSecrets in the indexer.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.SealedSecret, err error)
+	List(selector labels.Selector) (ret []*sealedsecretsv1alpha1.SealedSecret, err error)
 	// SealedSecrets returns an object that can list and get SealedSecrets.
 	SealedSecrets(namespace string) SealedSecretNamespaceLister
 	SealedSecretListerExpansion
@@ -22,25 +22,17 @@ type SealedSecretLister interface {
 
 // sealedSecretLister implements the SealedSecretLister interface.
 type sealedSecretLister struct {
-	indexer cache.Indexer
+	listers.ResourceIndexer[*sealedsecretsv1alpha1.SealedSecret]
 }
 
 // NewSealedSecretLister returns a new SealedSecretLister.
 func NewSealedSecretLister(indexer cache.Indexer) SealedSecretLister {
-	return &sealedSecretLister{indexer: indexer}
-}
-
-// List lists all SealedSecrets in the indexer.
-func (s *sealedSecretLister) List(selector labels.Selector) (ret []*v1alpha1.SealedSecret, err error) {
-	err = cache.ListAll(s.indexer, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.SealedSecret))
-	})
-	return ret, err
+	return &sealedSecretLister{listers.New[*sealedsecretsv1alpha1.SealedSecret](indexer, sealedsecretsv1alpha1.Resource("sealedsecret"))}
 }
 
 // SealedSecrets returns an object that can list and get SealedSecrets.
 func (s *sealedSecretLister) SealedSecrets(namespace string) SealedSecretNamespaceLister {
-	return sealedSecretNamespaceLister{indexer: s.indexer, namespace: namespace}
+	return sealedSecretNamespaceLister{listers.NewNamespaced[*sealedsecretsv1alpha1.SealedSecret](s.ResourceIndexer, namespace)}
 }
 
 // SealedSecretNamespaceLister helps list and get SealedSecrets.
@@ -48,36 +40,15 @@ func (s *sealedSecretLister) SealedSecrets(namespace string) SealedSecretNamespa
 type SealedSecretNamespaceLister interface {
 	// List lists all SealedSecrets in the indexer for a given namespace.
 	// Objects returned here must be treated as read-only.
-	List(selector labels.Selector) (ret []*v1alpha1.SealedSecret, err error)
+	List(selector labels.Selector) (ret []*sealedsecretsv1alpha1.SealedSecret, err error)
 	// Get retrieves the SealedSecret from the indexer for a given namespace and name.
 	// Objects returned here must be treated as read-only.
-	Get(name string) (*v1alpha1.SealedSecret, error)
+	Get(name string) (*sealedsecretsv1alpha1.SealedSecret, error)
 	SealedSecretNamespaceListerExpansion
 }
 
 // sealedSecretNamespaceLister implements the SealedSecretNamespaceLister
 // interface.
 type sealedSecretNamespaceLister struct {
-	indexer   cache.Indexer
-	namespace string
-}
-
-// List lists all SealedSecrets in the indexer for a given namespace.
-func (s sealedSecretNamespaceLister) List(selector labels.Selector) (ret []*v1alpha1.SealedSecret, err error) {
-	err = cache.ListAllByNamespace(s.indexer, s.namespace, selector, func(m interface{}) {
-		ret = append(ret, m.(*v1alpha1.SealedSecret))
-	})
-	return ret, err
-}
-
-// Get retrieves the SealedSecret from the indexer for a given namespace and name.
-func (s sealedSecretNamespaceLister) Get(name string) (*v1alpha1.SealedSecret, error) {
-	obj, exists, err := s.indexer.GetByKey(s.namespace + "/" + name)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, errors.NewNotFound(v1alpha1.Resource("sealedsecret"), name)
-	}
-	return obj.(*v1alpha1.SealedSecret), nil
+	listers.ResourceIndexer[*sealedsecretsv1alpha1.SealedSecret]
 }
