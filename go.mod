@@ -1,6 +1,6 @@
 module github.com/bitnami-labs/sealed-secrets
 
-go 1.25.5
+go 1.26.0
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
