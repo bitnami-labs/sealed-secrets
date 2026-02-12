@@ -4,6 +4,17 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.35.0
+
+- my namespace as key namespace ([#1867](https://github.com/bitnami-labs/sealed-secrets/pull/1867))
+- Bump go 1.25.7 ([#1880](https://github.com/bitnami-labs/sealed-secrets/pull/1880))
+- Update client-go and api 0.35.0 ([#1868](https://github.com/bitnami-labs/sealed-secrets/pull/1868))
+- Bump golang.org/x/crypto from 0.46.0 to 0.47.0 ([#1863](https://github.com/bitnami-labs/sealed-secrets/pull/1863))
+- Bump github.com/onsi/gomega from 1.38.3 to 1.39.0 ([#1865](https://github.com/bitnami-labs/sealed-secrets/pull/1865))
+- Bump github.com/onsi/ginkgo/v2 from 2.27.3 to 2.27.5 ([#1864](https://github.com/bitnami-labs/sealed-secrets/pull/1864))
+- Bump distroless/static from `4b2a093` to `cd64bec` in /docker ([#1866](https://github.com/bitnami-labs/sealed-secrets/pull/1866))
+- Bump k8s.io/code-generator from 0.34.3 to 0.35.0 ([#1858](https://github.com/bitnami-labs/sealed-secrets/pull/1858))
+
 ## v0.34.0
 
 - Add kseal to README ([#1852)](https://github.com/bitnami-labs/sealed-secrets/pull/1852))
