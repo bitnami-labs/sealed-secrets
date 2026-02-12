@@ -27,7 +27,7 @@ jobs:
       fail-fast: false
     name: Verify chart (${{ matrix.name }})
     steps:
-      - uses: actions/checkout@v3.1.0
+      - uses: actions/checkout@v6.0.2
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
