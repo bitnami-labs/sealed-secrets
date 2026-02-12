@@ -155,7 +155,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        k8s: ["1.29.13","1.30.9","1.31.5","1.32.1"]
+        k8s: ["1.32.12","1.33.8","1.34.4","1.35.1"]
     env:
       MINIKUBE_WANTUPDATENOTIFICATION: "false"
       MINIKUBE_WANTREPORTERRORPROMPT: "false"
@@ -178,9 +178,9 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v6.0.2
 
-    - uses: medyagh/setup-minikube@v0.0.19
+    - uses: medyagh/setup-minikube@v0.0.21
       with:
-        minikube-version: 1.35.0
+        minikube-version: 1.38.0
         kubernetes-version: ${{ matrix.k8s }}
 
     # need to delete old state of the cluster, see:
@@ -223,7 +223,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        k8s: ["1.29.13","1.30.9","1.31.5","1.32.1"]
+        k8s: ["1.32.12","1.33.8","1.34.4","1.35.1"]
     env:
       MINIKUBE_WANTUPDATENOTIFICATION: "false"
       MINIKUBE_WANTREPORTERRORPROMPT: "false"
@@ -246,9 +246,9 @@ jobs:
     - name: Check out code into the Go module directory
       uses: actions/checkout@v6.0.2
 
-    - uses: medyagh/setup-minikube@v0.0.19
+    - uses: medyagh/setup-minikube@v0.0.21
       with:
-        minikube-version: 1.35.0
+        minikube-version: 1.38.0
         kubernetes-version: ${{ matrix.k8s }}
 
     - name: Install Helm
