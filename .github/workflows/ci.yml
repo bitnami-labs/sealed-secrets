@@ -42,7 +42,7 @@ jobs:
         gosec: ["2.22.2"]
     steps:
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.1
+      uses: actions/setup-go@v6.2.0
       with:
         go-version: ${{ matrix.go }}
       id: go
@@ -73,7 +73,7 @@ jobs:
     steps:
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.1
+      uses: actions/setup-go@v6.2.0
       with:
         go-version: ${{ matrix.go }}
       id: go
@@ -124,7 +124,7 @@ jobs:
         chmod +x ~/bin/kubecfg
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.1
+      uses: actions/setup-go@v6.2.0
       with:
         go-version: ${{ needs.load-versions.outputs.go_version }}
       id: go
@@ -166,7 +166,7 @@ jobs:
         echo "CONTROLLER_IMAGE=$controller_registry/$controller_repository:$controller_tag" >> $GITHUB_ENV
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.1
+      uses: actions/setup-go@v6.2.0
       with:
         go-version: ${{ needs.load-versions.outputs.go_version }}
       id: go
@@ -234,7 +234,7 @@ jobs:
         echo "CONTROLLER_IMAGE=$controller_registry/$controller_repository:$controller_tag" >> $GITHUB_ENV
 
     - name: Set up Go 1.x
-      uses: actions/setup-go@v3.3.1
+      uses: actions/setup-go@v6.2.0
       with:
         go-version: ${{ needs.load-versions.outputs.go_version }}
       id: go
