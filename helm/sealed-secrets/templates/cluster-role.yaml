@@ -43,6 +43,12 @@ rules:
   - apiGroups:
       - ""
     resources:
+      - namespaces
+    verbs:
+      - list
+  - apiGroups:
+      - ""
+    resources:
       - events
     verbs:
       - create

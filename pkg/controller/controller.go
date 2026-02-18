@@ -69,6 +69,7 @@ type Controller struct {
 	sInformer   cache.SharedIndexInformer
 	kInformer   cache.SharedIndexInformer
 	sclient     v1.SecretsGetter
+	nclient     v1.NamespacesGetter
 	ssclient    ssv1alpha1client.SealedSecretsGetter
 	recorder    record.EventRecorder
 	keyRegistry *KeyRegistry
@@ -129,6 +130,7 @@ func NewController(
 		queue:       queue,
 		sclient:     clientset.CoreV1(),
 		ssclient:    ssclientset.BitnamiV1alpha1(),
+		nclient:     clientset.CoreV1(),
 		recorder:    recorder,
 		keyRegistry: keyRegistry,
 	}, nil
@@ -568,6 +570,10 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 
 	switch s := object.(type) {
 	case *ssv1alpha1.SealedSecret:
+		if err := verifySealedSecretsConsistency(s, c.ssclient, c.nclient); err != nil {
+			return nil, fmt.Errorf ("error unconsistency sealed secrets. %v", err)
+		}
+
 		secret, err := c.attemptUnseal(s)
 		if err != nil {
 			return nil, fmt.Errorf("error decrypting secret. %v", err)
@@ -585,6 +591,67 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 	default:
 		return nil, fmt.Errorf("unexpected resource type: %s", s.GetObjectKind().GroupVersionKind().String())
 	}
+}
+
+func verifySealedSecretsConsistency(ss *ssv1alpha1.SealedSecret, ssclientget ssv1alpha1client.SealedSecretsGetter, nclient v1.NamespacesGetter) error {
+	ssecret, err := findSealedSecrets(ss, ssclientget, nclient)
+	if err != nil {
+		return err
+	}
+
+	if err := isAnnotatedVerifiedClusterWide(ssecret, ss); err != nil {
+		return err
+	}
+
+	if err := isAnnotatedVerifiedNamespaceWide(ssecret, ss); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func isAnnotatedVerifiedClusterWide(ssorig *ssv1alpha1.SealedSecret, ss *ssv1alpha1.SealedSecret) error {
+	if (ssorig.ObjectMeta.Annotations[ssv1alpha1.SealedSecretClusterWideAnnotation] == "true") != (ss.ObjectMeta.Annotations[ssv1alpha1.SealedSecretClusterWideAnnotation] == "true") {
+		return fmt.Errorf("Sealed Secret received doesn't match with the Sealed Secret annotations running in the cluster")
+	}
+
+	return nil
+}
+
+func isAnnotatedVerifiedNamespaceWide(ssorig *ssv1alpha1.SealedSecret, ss *ssv1alpha1.SealedSecret) error {
+	if (ssorig.ObjectMeta.Annotations[ssv1alpha1.SealedSecretNamespaceWideAnnotation] == "true") != (ss.ObjectMeta.Annotations[ssv1alpha1.SealedSecretNamespaceWideAnnotation] == "true") {
+		return fmt.Errorf("Sealed Secret received doesn't match with the Sealed Secret annotations running in the cluster")
+	}
+
+	return nil
+}
+
+func findSealedSecrets(ss *ssv1alpha1.SealedSecret, ssclientget ssv1alpha1client.SealedSecretsGetter, nclient v1.NamespacesGetter) (*ssv1alpha1.SealedSecret, error) {
+	if ss.GetNamespace() != "" {
+		ssecret, err := ssclientget.SealedSecrets(ss.GetNamespace()).Get(context.Background(), ss.GetName(), metav1.GetOptions{})
+		if err != nil {
+			return nil, fmt.Errorf("error getting rotated sealed secret: %v", err)
+		}
+		return ssecret, nil
+	}
+
+	namespaces, err := nclient.Namespaces().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, ns := range namespaces.Items {
+		ssecret, err := ssclientget.SealedSecrets(ns.Name).Get(context.Background(), ss.GetName(), metav1.GetOptions{})
+		if err != nil {
+			if k8serrors.IsNotFound(err) {
+				continue
+			}
+		}
+
+		return ssecret, nil
+	}
+
+	return nil, fmt.Errorf("sealed secret received is not running in the cluster")
 }
 
 func (c *Controller) attemptUnseal(ss *ssv1alpha1.SealedSecret) (*corev1.Secret, error) {
