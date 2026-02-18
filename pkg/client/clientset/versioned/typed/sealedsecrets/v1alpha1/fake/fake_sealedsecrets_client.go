@@ -13,7 +13,7 @@ type FakeBitnamiV1alpha1 struct {
 }
 
 func (c *FakeBitnamiV1alpha1) SealedSecrets(namespace string) v1alpha1.SealedSecretInterface {
-	return &FakeSealedSecrets{c, namespace}
+	return newFakeSealedSecrets(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

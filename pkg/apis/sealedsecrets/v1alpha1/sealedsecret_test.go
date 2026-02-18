@@ -353,6 +353,10 @@ func TestSealRoundTripWithMisMatchNamespaceWide(t *testing.T) {
 	}
 }
 
+func someStr(s string) *string {
+	return &s
+}
+
 func TestSealRoundTripTemplateData(t *testing.T) {
 	secret := v1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -367,9 +371,9 @@ func TestSealRoundTripTemplateData(t *testing.T) {
 
 	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
 
-	ssecret.Spec.Template.Data = map[string]string{
-		"bar":           `secret {{ index . "foo" }} !`,
-		"password-json": `{{ toJson .password }}`,
+	ssecret.Spec.Template.Data = map[string]*string{
+		"bar":           someStr(`secret {{ index . "foo" }} !`),
+		"password-json": someStr(`{{ toJson .password }}`),
 	}
 
 	secret2, err := ssecret.Unseal(codecs, keys)
@@ -395,7 +399,7 @@ func TestTemplateWithoutEncryptedData(t *testing.T) {
 	sealed := SealedSecret{
 		Spec: SealedSecretSpec{
 			Template: SecretTemplateSpec{
-				Data: map[string]string{"foo": "bar"},
+				Data: map[string]*string{"foo": someStr("bar")},
 			},
 		},
 	}
@@ -410,6 +414,41 @@ func TestTemplateWithoutEncryptedData(t *testing.T) {
 	}
 }
 
+func TestTemplateOmitEncryptedData(t *testing.T) {
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+		},
+		Data: map[string][]byte{
+			"foo": []byte("bar"),
+			"baz": []byte("qux"),
+		},
+	}
+
+	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
+
+	sealed := SealedSecret{
+		ObjectMeta: secret.ObjectMeta,
+		Spec: SealedSecretSpec{
+			EncryptedData: ssecret.Spec.EncryptedData,
+			Template: SecretTemplateSpec{
+				ObjectMeta: secret.ObjectMeta,
+				Data:       map[string]*string{"foo": nil, "bar": someStr("qux {{ .foo }} qux")},
+			},
+		},
+	}
+
+	unsealed, err := sealed.Unseal(codecs, keys)
+	if err != nil {
+		t.Fatalf("Unseal returned error: %v", err)
+	}
+
+	if got, want := unsealed.Data, map[string][]byte{"bar": []byte("qux bar qux"), "baz": []byte("qux")}; !reflect.DeepEqual(got, want) {
+		t.Errorf("got: %q, want: %q (input: %q)", got, want, ssecret.Spec.EncryptedData)
+	}
+}
+
 func TestSkipSetOwnerReference(t *testing.T) {
 	testCases := []struct {
 		sealedSecret          SealedSecret
@@ -420,7 +459,7 @@ func TestSkipSetOwnerReference(t *testing.T) {
 			sealedSecret: SealedSecret{
 				Spec: SealedSecretSpec{
 					Template: SecretTemplateSpec{
-						Data: map[string]string{"foo": "bar"},
+						Data: map[string]*string{"foo": someStr("bar")},
 					},
 				},
 			},
@@ -433,7 +472,7 @@ func TestSkipSetOwnerReference(t *testing.T) {
 			sealedSecret: SealedSecret{
 				Spec: SealedSecretSpec{
 					Template: SecretTemplateSpec{
-						Data: map[string]string{"foo": "bar"},
+						Data: map[string]*string{"foo": someStr("bar")},
 					},
 				},
 			},
