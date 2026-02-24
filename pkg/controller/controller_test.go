@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"encoding/json"
+
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -382,8 +384,17 @@ func TestRotateKeepScope(t *testing.T) {
 		t.Fatalf("unexpected encoding the sealed secret: %v", err)
 	}
 
-	_, err = controller.Rotate(data)
-	if err == nil {
+	out, err := controller.Rotate(data)
+	if err != nil {
 		t.Fatalf("expected failure is not hit")
+	}
+
+	s := &ssv1alpha1.SealedSecret{}
+	if err = json.Unmarshal(out, s); err != nil {
+		t.Fatalf("error unmarshalling the rotate sealed secret")
+	}
+
+	if ssv1alpha1.SecretScope(s) != ssv1alpha1.SecretScope(ssecret) {
+		t.Fatalf("Scope from the original and the rotate sealed secret do not match")
 	}
 }
