@@ -3,15 +3,20 @@ package controller
 import (
 	"context"
 	"crypto/rand"
+	"crypto/rsa"
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
 	ssv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	runtimeserializer "k8s.io/apimachinery/pkg/runtime/serializer"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/kubernetes/scheme"
 
 	ssfake "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/fake"
 )
@@ -226,4 +231,159 @@ func testKeyRegister(t *testing.T, ctx context.Context, clientset kubernetes.Int
 		t.Fatalf("failed to provision key registry: %v", err)
 	}
 	return keyRegistry
+}
+
+func prettyEncoder(codecs runtimeserializer.CodecFactory, mediaType string, gv runtime.GroupVersioner) (runtime.Encoder, error) {
+	info, ok := runtime.SerializerInfoForMediaType(codecs.SupportedMediaTypes(), mediaType)
+	if !ok {
+		return nil, fmt.Errorf("binary can't serialize %s", mediaType)
+	}
+
+	prettyEncoder := info.PrettySerializer
+	if prettyEncoder == nil {
+		prettyEncoder = info.Serializer
+	}
+
+	enc := codecs.EncoderForVersion(prettyEncoder, gv)
+	return enc, nil
+}
+
+func TestRotate(t *testing.T) {
+	ns := "some-namespace"
+	keyNs := "some-key-namespace"
+	var tweakopts func(*metav1.ListOptions)
+	clientset := fake.NewClientset()
+	ssc := ssfake.NewSimpleClientset()
+	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
+
+	// Add a key to the controller for second test
+	validFor := time.Hour
+	cn := "my-cn"
+	_, err := keyRegistry.generateKey(context.Background(), validFor, cn, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	controller, err := prepareController(clientset, ns, keyNs, tweakopts, &Flags{SkipRecreate: false}, ssc, keyRegistry)
+	if err != nil {
+		t.Fatalf("err %v want %v", err, nil)
+	}
+	if controller == nil {
+		t.Fatalf("ctrl %v want non nil", controller)
+	}
+	if controller.sInformer == nil {
+		t.Fatalf("sInformer %v want non nil", controller.sInformer)
+	}
+
+	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ss",
+			Namespace: "default",
+		},
+		Data: map[string][]byte{
+			// dGVtcG9yYWw= is base64 for "temporal"
+			"password": []byte("temporal"),
+		},
+	}
+
+	cert, err := controller.keyRegistry.getCert()
+	if err != nil {
+		t.Fatalf("error getting certificate: %v", err)
+	}
+
+	ssecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, cert.PublicKey.(*rsa.PublicKey), secret)
+	if err != nil {
+		t.Fatalf("error creating sealed secrets: %v", err)
+	}
+
+	prettyEnc, err := prettyEncoder(scheme.Codecs, runtime.ContentTypeYAML, ssv1alpha1.SchemeGroupVersion)
+	if err != nil {
+		t.Fatalf("unexpected pretty encoding: %v", err)
+	}
+
+	data, err := runtime.Encode(prettyEnc, ssecret)
+	if err != nil {
+		t.Fatalf("unexpected encoding the sealed secret: %v", err)
+	}
+
+	got, err := controller.Rotate(data)
+	if err != nil {
+		t.Fatalf("unexpected failure converting to a sealed secret: %v", err)
+	}
+	if string(got) == string(data) {
+		t.Fatalf("got %v want %v", string(got), string(data))
+	}
+}
+
+func TestRotateKeepScope(t *testing.T) {
+	ns := "some-namespace"
+	keyNs := "some-key-namespace"
+	var tweakopts func(*metav1.ListOptions)
+	clientset := fake.NewClientset()
+	ssc := ssfake.NewSimpleClientset()
+	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
+
+	// Add a key to the controller for second test
+	validFor := time.Hour
+	cn := "my-cn"
+	_, err := keyRegistry.generateKey(context.Background(), validFor, cn, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	controller, err := prepareController(clientset, ns, keyNs, tweakopts, &Flags{SkipRecreate: false}, ssc, keyRegistry)
+	if err != nil {
+		t.Fatalf("err %v want %v", err, nil)
+	}
+	if controller == nil {
+		t.Fatalf("ctrl %v want non nil", controller)
+	}
+	if controller.sInformer == nil {
+		t.Fatalf("sInformer %v want non nil", controller.sInformer)
+	}
+
+	secret := &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "ss",
+			Namespace: "default",
+		},
+		Data: map[string][]byte{
+			// dGVtcG9yYWw= is base64 for "temporal"
+			"password": []byte("temporal"),
+		},
+	}
+
+	cert, err := controller.keyRegistry.getCert()
+	if err != nil {
+		t.Fatalf("error getting certificate: %v", err)
+	}
+
+	ssecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, cert.PublicKey.(*rsa.PublicKey), secret)
+	if err != nil {
+		t.Fatalf("error creating sealed secrets: %v", err)
+	}
+	ssecret.Spec.Template.ObjectMeta.Annotations = map[string]string{ssv1alpha1.SealedSecretClusterWideAnnotation: "true"}
+
+	prettyEnc, err := prettyEncoder(scheme.Codecs, runtime.ContentTypeJSON, ssv1alpha1.SchemeGroupVersion)
+	if err != nil {
+		t.Fatalf("unexpected pretty encoding: %v", err)
+	}
+
+	data, err := runtime.Encode(prettyEnc, ssecret)
+	if err != nil {
+		t.Fatalf("unexpected encoding the sealed secret: %v", err)
+	}
+
+	_, err = controller.Rotate(data)
+	if err == nil {
+		t.Fatalf("expected failure is not hit")
+	}
 }
