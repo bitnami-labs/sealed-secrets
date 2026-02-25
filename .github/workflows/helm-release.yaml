@@ -53,15 +53,16 @@ jobs:
           echo "chart_version=$(yq .version < ./helm/sealed-secrets/Chart.yaml)" >> $GITHUB_ENV
 
       - name: OCI Push
-        env:
-          OCI_PASS: ${{ secrets.OCI_PASSWORD }}
-          OCI_USR: ${{ secrets.OCI_USERNAME }}
-          HELM_EXPERIMENTAL_OCI: 1
-        run: |
-          echo VERSION=$(grep version helm/sealed-secrets/Chart.yaml | grep -o '[0-9.]*') >> "$GITHUB_ENV"
-          echo $OCI_PASS | helm registry login -u $OCI_USR --password-stdin oci://registry-1.docker.io
-          helm package helm/sealed-secrets/
-          helm push sealed-secrets-$VERSION.tgz oci://registry-1.docker.io/bitnamicharts/sealed-secrets
+        uses: appany/helm-oci-chart-releaser@v0.5.0
+        with:
+          name: sealed-secrets
+          repository: appany
+          tag: 0.1.0
+          path: helm/sealed-secrets
+          registry: registry-1.docker.io/bitnamicharts/sealed-secrets
+          registry_username: ${{ secrets.OCI_USERNAME }}
+          registry_password: ${{ secrets.OCI_PASSWORD }}
+          update_dependencies: 'true' # Defaults to false
 
       - name: Create imglock file
         working-directory: ./helm
