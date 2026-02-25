@@ -4,6 +4,13 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.36.0
+
+- [Security] Preserve scope during Sealed Secret rotation ([#1886](https://github.com/bitnami-labs/sealed-secrets/pull/1886))
+- [Security] Throw an error in case of inconsistencies in the Sealed Secrets ([#1885](https://github.com/bitnami-labs/sealed-secrets/pull/1885))
+- Bump distroless/static from `972618c` to `d90359c` in /docker ([#1884](https://github.com/bitnami-labs/sealed-secrets/pull/1884))
+- Set up OCI GH to release helm chart ([#1883](https://github.com/bitnami-labs/sealed-secrets/pull/1883))
+
 ## v0.35.0
 
 - my namespace as key namespace ([#1867](https://github.com/bitnami-labs/sealed-secrets/pull/1867))
