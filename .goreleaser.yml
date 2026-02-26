@@ -40,6 +40,11 @@ changelog:
       - '^helm:'
       - '^integration:'
       - '^vendor_jsonnet:'
+sboms:
+  - id: archive
+    artifacts: archive
+  - id: source
+    artifacts: source
 signs:
   - cmd: cosign
     stdin: '{{ .Env.COSIGN_PASSWORD }}'
