@@ -298,8 +298,6 @@ However this is confusing, so our current versioning rule is:
 There can be thus multiple revisions of the helm chart, with fixes that apply only to the helm chart without
 affecting the static YAML manifests or the controller image itself.
 
-> NOTE: The helm chart readme still contains a deprecation notice, but it no longer reflects reality and will be removed upon the next release.
-
 > NOTE: The helm chart by default installs the controller with the name `sealed-secrets`, while the `kubeseal` command line interface (CLI) tries to access the controller with the name `sealed-secrets-controller`. You can explicitly pass `--controller-name` to the CLI:
 
 ```bash
