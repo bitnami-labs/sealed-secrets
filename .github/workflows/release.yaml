@@ -70,6 +70,9 @@ jobs:
         env:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
 
+      - name: Install Syft
+        uses: anchore/sbom-action/download-syft@v0.18.0
+
       # Tag for GoReleaser from release branch name
       - name: Tag Release
         run: |
@@ -118,6 +121,7 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm
           push: true
           tags: ${{ steps.meta_controller.outputs.tags }}
+          sbom: true
       - name: Extract metadata (tags, labels) for Docker kubeseal image
         id: meta_kubeseal
         uses: docker/metadata-action@v4.0.1
@@ -137,6 +141,7 @@ jobs:
           platforms: linux/amd64,linux/arm64,linux/arm
           push: true
           tags: ${{ steps.meta_kubeseal.outputs.tags }}
+          sbom: true
       - name: Sign controller image with a key in GHCR
         run: |
           echo -n "$COSIGN_PASSWORD" | cosign sign --key /tmp/cosign.key --yes $TAG_CURRENT
