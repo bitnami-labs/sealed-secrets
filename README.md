@@ -20,28 +20,36 @@ original Secret from the SealedSecret.
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
+
 - [Overview](#overview)
   - [SealedSecrets as templates for secrets](#sealedsecrets-as-templates-for-secrets)
   - [Public key / Certificate](#public-key--certificate)
   - [Scopes](#scopes)
 - [Installation](#installation)
+  - [Installation in Restricted Environments (No RBAC)](#installation-in-restricted-environments-no-rbac)
   - [Controller](#controller)
     - [Kustomize](#kustomize)
     - [Helm Chart](#helm-chart)
+      - [Helm Chart on a restricted environment](#helm-chart-on-a-restricted-environment)
   - [Kubeseal](#kubeseal)
     - [Homebrew](#homebrew)
     - [MacPorts](#macports)
+    - [Nixpkgs](#nixpkgs)
     - [Linux](#linux)
     - [Installation from source](#installation-from-source)
 - [Upgrade](#upgrade)
+  - [Supported Versions](#supported-versions)
+  - [Compatibility with Kubernetes versions](#compatibility-with-kubernetes-versions)
 - [Usage](#usage)
   - [Managing existing secrets](#managing-existing-secrets)
   - [Patching existing secrets](#patching-existing-secrets)
+  - [Seal secret which can skip set owner references](#seal-secret-which-can-skip-set-owner-references)
   - [Update existing secrets](#update-existing-secrets)
   - [Raw mode (experimental)](#raw-mode-experimental)
   - [Validate a Sealed Secret](#validate-a-sealed-secret)
 - [Secret Rotation](#secret-rotation)
   - [Sealing key renewal](#sealing-key-renewal)
+  - [Key registry init priority order](#key-registry-init-priority-order)
   - [User secret rotation](#user-secret-rotation)
   - [Early key renewal](#early-key-renewal)
   - [Common misconceptions about key renewal](#common-misconceptions-about-key-renewal)
@@ -51,6 +59,7 @@ original Secret from the SealedSecret.
   - [Crypto](#crypto)
 - [Developing](#developing)
 - [FAQ](#faq)
+  - [Can I encrypt multiple secrets at once, in one YAML / JSON file?](#can-i-encrypt-multiple-secrets-at-once-in-one-yaml--json-file)
   - [Will you still be able to decrypt if you no longer have access to your cluster?](#will-you-still-be-able-to-decrypt-if-you-no-longer-have-access-to-your-cluster)
   - [How can I do a backup of my SealedSecrets?](#how-can-i-do-a-backup-of-my-sealedsecrets)
   - [Can I decrypt my secrets offline with a backup key?](#can-i-decrypt-my-secrets-offline-with-a-backup-key)
@@ -59,9 +68,9 @@ original Secret from the SealedSecret.
   - [Can I bring my own (pre-generated) certificates?](#can-i-bring-my-own-pre-generated-certificates)
   - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
   - [How to verify the images?](#how-to-verify-the-images)
-  - [How to use one controller for a subset of namespaces](#How-to-use-one-controller-for-a-subset-of-namespaces)
-  - [Can I configure the controller unseal retries](#can-i-configure-the-controller-unseal-retries)
-
+  - [How to use one controller for a subset of namespaces](#how-to-use-one-controller-for-a-subset-of-namespaces)
+  - [Can I configure the Controller unseal retries?](#can-i-configure-the-controller-unseal-retries)
+  - [How to manage SealedSecrets across the cluster or specific namespaces?](#how-to-manage-sealedsecrets-across-the-cluster-or-specific-namespaces)
 - [Community](#community)
   - [Related projects](#related-projects)
 
@@ -259,6 +268,16 @@ See https://github.com/bitnami-labs/sealed-secrets/releases for the latest relea
 Cloud platform specific notes and instructions:
 
 - [GKE](docs/GKE.md)
+
+### Installation in Restricted Environments (No RBAC)
+
+In environments where you lack permissions to create cluster-wide RBAC resources (like `ClusterRoles`), you can use the **`controller-norbac.yaml`** manifest available on the Releases page.
+
+This version is a minimal deployment that includes only the **Deployment**, **Service**, and **CustomResourceDefinition**. It intentionally omits `ServiceAccount`, `ClusterRole`, and `ClusterRoleBinding`.
+
+**Requirements:**
+1. A cluster administrator must have already installed the SealedSecret CRDs.
+2. You must have an allocated Service Account to run the deployment
 
 ### Controller
 
@@ -842,6 +861,14 @@ If you want to use one controller for more than one namespace, but not all names
 ### Can I configure the Controller unseal retries?
 
 The answer is yes, you can configure the number of retries in your controller using the flag `--max-unseal-retries`. This flag allows you to configure the number of maximum retries to unseal your Sealed Secrets.
+
+### How to manage SealedSecrets across the cluster or specific namespaces?
+
+By default, the controller watches for `SealedSecret` resources across **all namespaces** using the `--all-namespaces` flag (which defaults to `true`).
+
+If you need to restrict the controller's scope, you have two options:
+- **Watch a subset of namespaces:** Use the `--additional-namespaces=<ns1>,<ns2>` flag to provide a comma-separated list of namespaces for the controller to manage.
+- **Watch only the local namespace:** Set `--all-namespaces=false` (or the environment variable `SEALED_SECRETS_ALL_NAMESPACES=false`). This is useful for multi-tenant clusters where you want isolated controllers with independent sealing keys in each namespace.
 
 ## Community
 
