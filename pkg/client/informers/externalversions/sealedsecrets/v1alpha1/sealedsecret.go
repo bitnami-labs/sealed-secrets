@@ -3,13 +3,13 @@
 package v1alpha1
 
 import (
-	"context"
+	context "context"
 	time "time"
 
-	sealedsecretsv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
+	apissealedsecretsv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	versioned "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned"
 	internalinterfaces "github.com/bitnami-labs/sealed-secrets/pkg/client/informers/externalversions/internalinterfaces"
-	v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/listers/sealedsecrets/v1alpha1"
+	sealedsecretsv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/listers/sealedsecrets/v1alpha1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	watch "k8s.io/apimachinery/pkg/watch"
@@ -20,7 +20,7 @@ import (
 // SealedSecrets.
 type SealedSecretInformer interface {
 	Informer() cache.SharedIndexInformer
-	Lister() v1alpha1.SealedSecretLister
+	Lister() sealedsecretsv1alpha1.SealedSecretLister
 }
 
 type sealedSecretInformer struct {
@@ -41,21 +41,33 @@ func NewSealedSecretInformer(client versioned.Interface, namespace string, resyn
 // one. This reduces memory footprint and number of connections to the server.
 func NewFilteredSealedSecretInformer(client versioned.Interface, namespace string, resyncPeriod time.Duration, indexers cache.Indexers, tweakListOptions internalinterfaces.TweakListOptionsFunc) cache.SharedIndexInformer {
 	return cache.NewSharedIndexInformer(
-		&cache.ListWatch{
+		cache.ToListWatcherWithWatchListSemantics(&cache.ListWatch{
 			ListFunc: func(options v1.ListOptions) (runtime.Object, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.BitnamiV1alpha1().SealedSecrets(namespace).List(context.TODO(), options)
+				return client.BitnamiV1alpha1().SealedSecrets(namespace).List(context.Background(), options)
 			},
 			WatchFunc: func(options v1.ListOptions) (watch.Interface, error) {
 				if tweakListOptions != nil {
 					tweakListOptions(&options)
 				}
-				return client.BitnamiV1alpha1().SealedSecrets(namespace).Watch(context.TODO(), options)
+				return client.BitnamiV1alpha1().SealedSecrets(namespace).Watch(context.Background(), options)
 			},
-		},
-		&sealedsecretsv1alpha1.SealedSecret{},
+			ListWithContextFunc: func(ctx context.Context, options v1.ListOptions) (runtime.Object, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.BitnamiV1alpha1().SealedSecrets(namespace).List(ctx, options)
+			},
+			WatchFuncWithContext: func(ctx context.Context, options v1.ListOptions) (watch.Interface, error) {
+				if tweakListOptions != nil {
+					tweakListOptions(&options)
+				}
+				return client.BitnamiV1alpha1().SealedSecrets(namespace).Watch(ctx, options)
+			},
+		}, client),
+		&apissealedsecretsv1alpha1.SealedSecret{},
 		resyncPeriod,
 		indexers,
 	)
@@ -66,9 +78,9 @@ func (f *sealedSecretInformer) defaultInformer(client versioned.Interface, resyn
 }
 
 func (f *sealedSecretInformer) Informer() cache.SharedIndexInformer {
-	return f.factory.InformerFor(&sealedsecretsv1alpha1.SealedSecret{}, f.defaultInformer)
+	return f.factory.InformerFor(&apissealedsecretsv1alpha1.SealedSecret{}, f.defaultInformer)
 }
 
-func (f *sealedSecretInformer) Lister() v1alpha1.SealedSecretLister {
-	return v1alpha1.NewSealedSecretLister(f.Informer().GetIndexer())
+func (f *sealedSecretInformer) Lister() sealedsecretsv1alpha1.SealedSecretLister {
+	return sealedsecretsv1alpha1.NewSealedSecretLister(f.Informer().GetIndexer())
 }

@@ -301,7 +301,11 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 		for key, value := range s.Spec.Template.Data {
 			var plaintext bytes.Buffer
 
-			template, err := template.New(key).Funcs(sprigFuncMap).Parse(value)
+			if value == nil {
+				delete(secret.Data, key)
+				continue
+			}
+			template, err := template.New(key).Funcs(sprigFuncMap).Parse(*value)
 			if err != nil {
 				errs = append(errs, multierror.Tag(key, err))
 				continue

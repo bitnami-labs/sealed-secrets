@@ -3,123 +3,34 @@
 package fake
 
 import (
-	"context"
-
 	v1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	sealedsecretsv1alpha1 "github.com/bitnami-labs/sealed-secrets/pkg/client/clientset/versioned/typed/sealedsecrets/v1alpha1"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeSealedSecrets implements SealedSecretInterface
-type FakeSealedSecrets struct {
+// fakeSealedSecrets implements SealedSecretInterface
+type fakeSealedSecrets struct {
+	*gentype.FakeClientWithList[*v1alpha1.SealedSecret, *v1alpha1.SealedSecretList]
 	Fake *FakeBitnamiV1alpha1
-	ns   string
 }
 
-var sealedsecretsResource = v1alpha1.SchemeGroupVersion.WithResource("sealedsecrets")
-
-var sealedsecretsKind = v1alpha1.SchemeGroupVersion.WithKind("SealedSecret")
-
-// Get takes name of the sealedSecret, and returns the corresponding sealedSecret object, and an error if there is any.
-func (c *FakeSealedSecrets) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1alpha1.SealedSecret, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(sealedsecretsResource, c.ns, name), &v1alpha1.SealedSecret{})
-
-	if obj == nil {
-		return nil, err
+func newFakeSealedSecrets(fake *FakeBitnamiV1alpha1, namespace string) sealedsecretsv1alpha1.SealedSecretInterface {
+	return &fakeSealedSecrets{
+		gentype.NewFakeClientWithList[*v1alpha1.SealedSecret, *v1alpha1.SealedSecretList](
+			fake.Fake,
+			namespace,
+			v1alpha1.SchemeGroupVersion.WithResource("sealedsecrets"),
+			v1alpha1.SchemeGroupVersion.WithKind("SealedSecret"),
+			func() *v1alpha1.SealedSecret { return &v1alpha1.SealedSecret{} },
+			func() *v1alpha1.SealedSecretList { return &v1alpha1.SealedSecretList{} },
+			func(dst, src *v1alpha1.SealedSecretList) { dst.ListMeta = src.ListMeta },
+			func(list *v1alpha1.SealedSecretList) []*v1alpha1.SealedSecret {
+				return gentype.ToPointerSlice(list.Items)
+			},
+			func(list *v1alpha1.SealedSecretList, items []*v1alpha1.SealedSecret) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1alpha1.SealedSecret), err
-}
-
-// List takes label and field selectors, and returns the list of SealedSecrets that match those selectors.
-func (c *FakeSealedSecrets) List(ctx context.Context, opts v1.ListOptions) (result *v1alpha1.SealedSecretList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(sealedsecretsResource, sealedsecretsKind, c.ns, opts), &v1alpha1.SealedSecretList{})
-
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1alpha1.SealedSecretList{ListMeta: obj.(*v1alpha1.SealedSecretList).ListMeta}
-	for _, item := range obj.(*v1alpha1.SealedSecretList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested sealedSecrets.
-func (c *FakeSealedSecrets) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(sealedsecretsResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a sealedSecret and creates it.  Returns the server's representation of the sealedSecret, and an error, if there is any.
-func (c *FakeSealedSecrets) Create(ctx context.Context, sealedSecret *v1alpha1.SealedSecret, opts v1.CreateOptions) (result *v1alpha1.SealedSecret, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(sealedsecretsResource, c.ns, sealedSecret), &v1alpha1.SealedSecret{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.SealedSecret), err
-}
-
-// Update takes the representation of a sealedSecret and updates it. Returns the server's representation of the sealedSecret, and an error, if there is any.
-func (c *FakeSealedSecrets) Update(ctx context.Context, sealedSecret *v1alpha1.SealedSecret, opts v1.UpdateOptions) (result *v1alpha1.SealedSecret, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(sealedsecretsResource, c.ns, sealedSecret), &v1alpha1.SealedSecret{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.SealedSecret), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeSealedSecrets) UpdateStatus(ctx context.Context, sealedSecret *v1alpha1.SealedSecret, opts v1.UpdateOptions) (*v1alpha1.SealedSecret, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(sealedsecretsResource, "status", c.ns, sealedSecret), &v1alpha1.SealedSecret{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.SealedSecret), err
-}
-
-// Delete takes name of the sealedSecret and deletes it. Returns an error if one occurs.
-func (c *FakeSealedSecrets) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(sealedsecretsResource, c.ns, name, opts), &v1alpha1.SealedSecret{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeSealedSecrets) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(sealedsecretsResource, c.ns, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1alpha1.SealedSecretList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched sealedSecret.
-func (c *FakeSealedSecrets) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1alpha1.SealedSecret, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(sealedsecretsResource, c.ns, name, pt, data, subresources...), &v1alpha1.SealedSecret{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1alpha1.SealedSecret), err
 }
