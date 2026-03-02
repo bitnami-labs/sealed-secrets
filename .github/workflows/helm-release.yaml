@@ -7,6 +7,7 @@ on:
       - 'helm/sealed-secrets/Chart.yaml'
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   release:
@@ -23,9 +24,9 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Install Helm
-        uses: azure/setup-helm@v3.4
+        uses: azure/setup-helm@v4.3.1
         with:
-          version: v3.4.2
+          version: v4.1.1
 
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@v1.4.1
@@ -52,16 +53,20 @@ jobs:
           export PATH=~/bin:$PATH
           echo "chart_version=$(yq .version < ./helm/sealed-secrets/Chart.yaml)" >> $GITHUB_ENV
 
+      - name: Configure DNS for registry access
+        run: |
+          echo "nameserver 8.8.8.8" | sudo tee /etc/resolv.conf > /dev/null
+          echo "nameserver 8.8.4.4" | sudo tee -a /etc/resolv.conf > /dev/null
+
       - name: OCI Push
         env:
           OCI_PASS: ${{ secrets.OCI_PASSWORD }}
           OCI_USR: ${{ secrets.OCI_USERNAME }}
           HELM_EXPERIMENTAL_OCI: 1
         run: |
-          echo VERSION=$(grep version helm/sealed-secrets/Chart.yaml | grep -o '[0-9.]*') >> "$GITHUB_ENV"
-          echo $OCI_PASS | helm registry login -u $OCI_USR --password-stdin oci://registry-1.docker.io
+          echo $OCI_PASS | helm registry login -u $OCI_USR --password-stdin registry-1.docker.io
           helm package helm/sealed-secrets/
-          helm push sealed-secrets-$VERSION.tgz oci://registry-1.docker.io/bitnamicharts/sealed-secrets
+          helm push sealed-secrets-${{ env.chart_version }}.tgz oci://registry-1.docker.io/bitnamicharts/sealed-secrets
 
       - name: Create imglock file
         working-directory: ./helm
