@@ -2,7 +2,6 @@ package controller
 
 import (
 	"context"
-	"crypto/rsa"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -579,7 +578,10 @@ func (c *Controller) Rotate(content []byte) ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error decrypting secret. %v", err)
 		}
-		latestPrivKey := c.keyRegistry.latestPrivateKey()
+		latestPrivKey, err := c.keyRegistry.latestPrivateKey()
+		if err != nil {
+			return nil, fmt.Errorf("error getting latest private key. %v", err)
+		}
 		resealedSecret, err := ssv1alpha1.NewSealedSecret(scheme.Codecs, &latestPrivKey.PublicKey, secret)
 		if err != nil {
 			return nil, fmt.Errorf("error creating new sealed secret. %v", err)
@@ -599,9 +601,5 @@ func (c *Controller) attemptUnseal(ss *ssv1alpha1.SealedSecret) (*corev1.Secret,
 }
 
 func attemptUnseal(ss *ssv1alpha1.SealedSecret, keyRegistry *KeyRegistry) (*corev1.Secret, error) {
-	privateKeys := map[string]*rsa.PrivateKey{}
-	for k, v := range keyRegistry.keys {
-		privateKeys[k] = v.private
-	}
-	return ss.Unseal(scheme.Codecs, privateKeys)
+	return ss.Unseal(scheme.Codecs, keyRegistry.privateKeys())
 }
