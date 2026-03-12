@@ -29,6 +29,7 @@ spec:
     - name: http
       port: {{ .Values.service.port }}
       targetPort: http
+      protocol: TCP
       {{- if and (or (eq .Values.service.type "NodePort") (eq .Values.service.type "LoadBalancer")) (not (empty .Values.service.nodePort)) }}
       nodePort: {{ .Values.service.nodePort }}
       {{- else if eq .Values.service.type "ClusterIP" }}
@@ -67,6 +68,7 @@ spec:
     - name: metrics
       port: {{ .Values.metrics.service.port }}
       targetPort: metrics
+      protocol: TCP
       {{- if and (or (eq .Values.metrics.service.type "NodePort") (eq .Values.metrics.service.type "LoadBalancer")) (not (empty .Values.metrics.service.nodePort)) }}
       nodePort: {{ .Values.metrics.service.nodePort }}
       {{- else if eq .Values.metrics.service.type "ClusterIP" }}

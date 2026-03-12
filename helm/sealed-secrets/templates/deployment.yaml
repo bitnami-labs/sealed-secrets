@@ -181,6 +181,7 @@ spec:
           ports:
             - name: http
               containerPort: {{ .Values.containerPorts.http | default "8080" }}
+              protocol: TCP
               {{- if .Values.hostNetwork }}
               hostPort: {{ .Values.containerPorts.http }}
               {{- else if .Values.hostPorts.http }}
@@ -188,6 +189,7 @@ spec:
               {{- end }}
             - name: metrics
               containerPort: {{ .Values.containerPorts.metrics | default "8081" }}
+              protocol: TCP
               {{- if .Values.hostNetwork }}
               hostPort: {{ .Values.containerPorts.metrics }}
               {{- else if .Values.hostPorts.metrics }}
