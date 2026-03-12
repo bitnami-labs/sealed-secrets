@@ -4,6 +4,20 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.36.1
+
+- Doc/issue 501 all namespaces ([#1900](https://github.com/bitnami-labs/sealed-secrets/pull/1900))
+- Bump go 1.26.1 ([#1914](https://github.com/bitnami-labs/sealed-secrets/pull/1914))
+- Update actions/setup-go to v6.2.0 ([#1906](https://github.com/bitnami-labs/sealed-secrets/pull/1906))
+- fix: explicitly specify TCP protocol for helm SSA compatibility (#692) ([#1901](https://github.com/bitnami-labs/sealed-secrets/pull/1901))
+- docs: document GKE Warden and RBAC restrictions ([#1892](https://github.com/bitnami-labs/sealed-secrets/pull/1892))
+- Bump k8s.io/klog/v2 from 2.130.1 to 2.140.0 ([#1913](https://github.com/bitnami-labs/sealed-secrets/pull/1913))
+- chore: remove note about deprecation of helm chart. ([#1902](https://github.com/bitnami-labs/sealed-secrets/pull/1902))
+- Bump k8s.io/code-generator from 0.35.1 to 0.35.2 ([#1909](https://github.com/bitnami-labs/sealed-secrets/pull/1909))
+- Bump k8s.io/client-go from 0.35.1 to 0.35.2 ([#1908](https://github.com/bitnami-labs/sealed-secrets/pull/1908))
+- Bump distroless/static from `d90359c` to `28efbe9` in /docker ([#1912](https://github.com/bitnami-labs/sealed-secrets/pull/1912))
+- Fix oci push action ([#1899](https://github.com/bitnami-labs/sealed-secrets/pull/1899))
+
 ## v0.36.0
 
 - [Security] Preserve scope during Sealed Secret rotation ([#1886](https://github.com/bitnami-labs/sealed-secrets/pull/1886))
