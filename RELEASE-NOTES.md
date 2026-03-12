@@ -17,7 +17,6 @@ Latest release:
 - Bump k8s.io/client-go from 0.35.1 to 0.35.2 ([#1908](https://github.com/bitnami-labs/sealed-secrets/pull/1908))
 - Bump distroless/static from `d90359c` to `28efbe9` in /docker ([#1912](https://github.com/bitnami-labs/sealed-secrets/pull/1912))
 - Fix oci push action ([#1899](https://github.com/bitnami-labs/sealed-secrets/pull/1899))
-- Fix oci ([#1889](https://github.com/bitnami-labs/sealed-secrets/pull/1889))
 
 ## v0.36.0
 
