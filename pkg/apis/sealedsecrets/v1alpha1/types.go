@@ -59,9 +59,11 @@ type SecretTemplateSpec struct {
 	Immutable *bool `json:"immutable,omitempty" protobuf:"varint,5,opt,name=immutable"`
 
 	// Keys that should be templated using decrypted data.
+	// Set a key with the same name as in `encryptedData`
+	// to `null` to omit the unsealed data from the final secret.
 	// +optional
 	// +nullable
-	Data map[string]string `json:"data,omitempty"`
+	Data map[string]*string `json:"data,omitempty"`
 }
 
 // SealedSecretSpec is the specification of a SealedSecret.
