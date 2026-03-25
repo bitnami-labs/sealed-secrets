@@ -17,7 +17,7 @@ jobs:
     steps:
       # Checkout and set env
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - id: load-version
@@ -25,7 +25,7 @@ jobs:
           source $GITHUB_WORKSPACE/versions.env
           echo "GO_VERSION=$GO_VERSION" >> $GITHUB_ENV
       - name: Set up Go
-        uses: actions/setup-go@v6.3.0
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version: ${{ env.GO_VERSION }}
       - name: Setup kubecfg
@@ -55,16 +55,16 @@ jobs:
 
       # Setup env for multi-arch builds
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v2.0.0
+        uses: docker/setup-qemu-action@8b122486cedac8393e77aa9734c3528886e4a1a8 # v2.0.0
         with:
           image: tonistiigi/binfmt:latest
           platforms: arm64,arm
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2.0.0
+        uses: docker/setup-buildx-action@dc7b9719a96d48369863986a06765841d7ea23f6 # v2.0.0
 
       # Setup Cosign
       - name: Install Cosign
-        uses: sigstore/cosign-installer@v3.0.2
+        uses: sigstore/cosign-installer@0f983226cbf1ee0368469d3e2b33417ceec4c225 # v3.0.2
       - name: Write Cosign key
         run: echo "$COSIGN_KEY" > /tmp/cosign.key
         env:
@@ -77,7 +77,7 @@ jobs:
 
       # Build & Release binaries
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         if: success() && startsWith(github.ref, 'refs/heads/')
         with:
           distribution: goreleaser
@@ -89,19 +89,19 @@ jobs:
 
       # Build & Publish multi-arch image
       - name: Login to Docker Hub
-        uses: docker/login-action@v2.0.0
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # v2.0.0
         with:
           username: ${{ secrets.BITNAMI_USERNAME }}
           password: ${{ secrets.BITNAMI_PASSWORD }}
       - name: Login to GHRC
-        uses: docker/login-action@v2.0.0
+        uses: docker/login-action@49ed152c8eca782a232dede0303416e8f356c37b # v2.0.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Extract metadata (tags, labels) for Docker controller image
         id: meta_controller
-        uses: docker/metadata-action@v4.0.1
+        uses: docker/metadata-action@69f6fc9d46f2f8bf0d5491e4aabe0bb8c6a4678a # v4.0.1
         with:
           images: |
             ${{ env.controller_dockerhub_image_name }}
@@ -111,7 +111,7 @@ jobs:
             type=raw,value=latest
       - name: Build and push controller image
         id: docker_build_controller
-        uses: docker/build-push-action@v3.2.0
+        uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5 # v3.2.0
         with:
           context: .
           file: ./docker/controller.Dockerfile
@@ -120,7 +120,7 @@ jobs:
           tags: ${{ steps.meta_controller.outputs.tags }}
       - name: Extract metadata (tags, labels) for Docker kubeseal image
         id: meta_kubeseal
-        uses: docker/metadata-action@v4.0.1
+        uses: docker/metadata-action@69f6fc9d46f2f8bf0d5491e4aabe0bb8c6a4678a # v4.0.1
         with:
           images: |
             ${{ env.kubeseal_dockerhub_image_name }}
@@ -130,7 +130,7 @@ jobs:
             type=raw,value=latest
       - name: Build and push kubeseal image
         id: docker_build_kubeseal
-        uses: docker/build-push-action@v3.2.0
+        uses: docker/build-push-action@c56af957549030174b10d6867f20e78cfd7debc5 # v3.2.0
         with:
           context: .
           file: ./docker/kubeseal.Dockerfile
