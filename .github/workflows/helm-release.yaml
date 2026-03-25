@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
 
@@ -24,12 +24,12 @@ jobs:
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
 
       - name: Install Helm
-        uses: azure/setup-helm@v4.3.1
+        uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4.3.1
         with:
           version: v4.1.1
 
       - name: Run chart-releaser
-        uses: helm/chart-releaser-action@v1.4.1
+        uses: helm/chart-releaser-action@98bccfd32b0f76149d188912ac8e45ddd3f8695f # v1.4.1
         with:
           charts_dir: helm
         env:
@@ -37,7 +37,7 @@ jobs:
           CR_RELEASE_NAME_TEMPLATE: "helm-v{{ .Version }}"
 
       - name: Install Carvel
-        uses: carvel-dev/setup-action@v1.3.0
+        uses: carvel-dev/setup-action@a11507416d8fea298e923fe4356f4e4f4097f15b # v1.3.0
         with:
           only: kbld, imgpkg
           token: ${{ secrets.GITHUB_TOKEN }}
