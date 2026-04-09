@@ -4,6 +4,9 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.36.4
+- ci: bump K8s integration matrix to latest 1.33/1.34/1.35 patches ([#1935](https://github.com/bitnami-labs/sealed-secrets/pull/1935))
+
 ## v0.36.3
 - Incomplete release for dockerhub credentials problems
 
