@@ -4,6 +4,9 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.36.6
+- Incomplete release for dockerhub credentials problems
+
 ## v0.36.5
 - Incomplete release for dockerhub credentials problems
 
