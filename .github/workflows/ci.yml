@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+
 env:
   controller_registry: docker.io
   controller_repository: bitnami/sealed-secrets-controller
