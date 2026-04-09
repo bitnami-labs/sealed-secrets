@@ -4,6 +4,17 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.36.2
+
+- Bump Golang to 1.26.2 ([#1931](https://github.com/bitnami-labs/sealed-secrets/pull/1931))
+- Remove unneeded internal tests ([#1930](https://github.com/bitnami-labs/sealed-secrets/pull/1930))
+- fix: send INFO logs to stdout by default ([#1925](https://github.com/bitnami-labs/sealed-secrets/pull/1925))
+- Use commit sha in GH Actions ([#1924](https://github.com/bitnami-labs/sealed-secrets/pull/1924))
+- Bump k8s.io/code-generator from 0.35.2 to 0.35.3 ([#1922](https://github.com/bitnami-labs/sealed-secrets/pull/1922))
+- Bump k8s.io/client-go from 0.35.2 to 0.35.3 ([#1920](https://github.com/bitnami-labs/sealed-secrets/pull/1920))
+- Bump golang.org/x/crypto from 0.48.0 to 0.49.0 ([#1918](https://github.com/bitnami-labs/sealed-secrets/pull/1918))
+- Bump distroless/static from `28efbe9` to `47b2d72` in /docker ([#1919](https://github.com/bitnami-labs/sealed-secrets/pull/1919))
+
 ## v0.36.1
 
 - Doc/issue 501 all namespaces ([#1900](https://github.com/bitnami-labs/sealed-secrets/pull/1900))
