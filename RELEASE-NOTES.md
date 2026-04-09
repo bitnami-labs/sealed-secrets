@@ -4,6 +4,9 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami-labs/sealed-secrets.svg)](https://github.com/bitnami-labs/sealed-secrets/releases/latest)
 
+## v0.36.3
+- Incomplete release for dockerhub credentials problems
+
 ## v0.36.2
 
 - Bump Golang to 1.26.2 ([#1931](https://github.com/bitnami-labs/sealed-secrets/pull/1931))
