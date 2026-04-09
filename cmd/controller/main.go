@@ -55,7 +55,7 @@ func bindControllerFlags(f *controller.Flags, fs *flag.FlagSet) {
 
 	fs.BoolVar(&f.SkipRecreate, "skip-recreate", false, "if true the controller will skip listening for managed secret changes to recreate them. This helps on limited permission environments.")
 
-	fs.BoolVar(&f.LogInfoToStdout, "log-info-stdout", false, "if true the controller will log info to stdout.")
+	fs.BoolVar(&f.LogInfoToStdout, "log-info-stdout", true, "if true the controller will log info to stdout and error/warn to stderr.")
 	fs.StringVar(&f.LogLevel, "log-level", "INFO", "Log level (INFO|ERROR).")
 	fs.StringVar(&f.LogFormat, "log-format", "text", "Log format (text|json).")
 
