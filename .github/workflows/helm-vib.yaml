@@ -7,6 +7,9 @@ on:
     paths:
        - 'helm/**'
 
+permissions:
+  contents: read
+
 env:
   CSP_API_URL: https://console.tanzu.broadcom.com
   CSP_API_TOKEN: ${{ secrets.CSP_API_TOKEN }}
