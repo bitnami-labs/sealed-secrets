@@ -298,6 +298,20 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 			data[key] = string(plaintext)
 		}
 
+		// Expose raw plaintext values from spec.template.data in the
+		// template rendering context, so that templates defined in
+		// spec.template.data can reference sibling plaintext keys as
+		// {{ .key }} variables (e.g. {{ .username }} alongside an
+		// encrypted password). Encrypted values take precedence on key
+		// collision so adding a plaintext key can never silently shadow
+		// a real secret value.
+		// See https://github.com/bitnami-labs/sealed-secrets/issues/1607
+		for key, value := range s.Spec.Template.Data {
+			if _, exists := data[key]; !exists {
+				data[key] = value
+			}
+		}
+
 		for key, value := range s.Spec.Template.Data {
 			var plaintext bytes.Buffer
 
