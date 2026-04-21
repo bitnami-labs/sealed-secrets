@@ -488,6 +488,11 @@ func TestTemplateDataEncryptedTakesPrecedenceOverPlaintext(t *testing.T) {
 	if got, want := string(unsealed.Data["out.txt"]), "from-encrypted"; got != want {
 		t.Errorf("out.txt: got %q, want %q", got, want)
 	}
+	// The output Secret's "shared" key must retain the decrypted value,
+	// not be overwritten by the plaintext template.data entry.
+	if got, want := string(unsealed.Data["shared"]), "from-encrypted"; got != want {
+		t.Errorf("shared key in output Secret: got %q, want %q (plaintext template.data must not overwrite encrypted value)", got, want)
+	}
 }
 
 func TestTemplateWithoutEncryptedData(t *testing.T) {

@@ -324,7 +324,12 @@ func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys ma
 			if err != nil {
 				errs = append(errs, multierror.Tag(key, err))
 			}
-			secret.Data[key] = plaintext.Bytes()
+			// Do not overwrite a key that was already populated from
+			// encryptedData; encrypted values take precedence in the
+			// output Secret as well as in the template rendering context.
+			if _, fromEncrypted := s.Spec.EncryptedData[key]; !fromEncrypted {
+				secret.Data[key] = plaintext.Bytes()
+			}
 		}
 
 		if errs != nil {
