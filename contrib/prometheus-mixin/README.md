@@ -5,7 +5,7 @@ metrics on `*:8081/metrics`.
 
 These metrics enable operators to observe how it is performing. For example 
 how many `SealedSecret` unseals have been attempted and how many errors may 
-have occured due to RBAC permissions, wrong key, corrupted data, etc.
+have occurred due to RBAC permissions, wrong key, corrupted data, etc.
 
 These metrics can be scraped by a Prometheus server and viewed in Prometheus,
 displayed on a Grafana dashboard and/or trigger alerts to Slack/etc.
