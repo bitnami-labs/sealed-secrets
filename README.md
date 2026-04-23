@@ -21,58 +21,60 @@ original Secret from the SealedSecret.
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
 
-- [Overview](#overview)
-  - [SealedSecrets as templates for secrets](#sealedsecrets-as-templates-for-secrets)
-  - [Public key / Certificate](#public-key--certificate)
-  - [Scopes](#scopes)
-- [Installation](#installation)
-  - [Installation in Restricted Environments (No RBAC)](#installation-in-restricted-environments-no-rbac)
-  - [Controller](#controller)
-    - [Kustomize](#kustomize)
-    - [Helm Chart](#helm-chart)
-      - [Helm Chart on a restricted environment](#helm-chart-on-a-restricted-environment)
-  - [Kubeseal](#kubeseal)
-    - [Homebrew](#homebrew)
-    - [MacPorts](#macports)
-    - [Nixpkgs](#nixpkgs)
-    - [Linux](#linux)
-    - [Installation from source](#installation-from-source)
-- [Upgrade](#upgrade)
-  - [Supported Versions](#supported-versions)
-  - [Compatibility with Kubernetes versions](#compatibility-with-kubernetes-versions)
-- [Usage](#usage)
-  - [Managing existing secrets](#managing-existing-secrets)
-  - [Patching existing secrets](#patching-existing-secrets)
-  - [Seal secret which can skip set owner references](#seal-secret-which-can-skip-set-owner-references)
-  - [Update existing secrets](#update-existing-secrets)
-  - [Raw mode (experimental)](#raw-mode-experimental)
-  - [Validate a Sealed Secret](#validate-a-sealed-secret)
-- [Secret Rotation](#secret-rotation)
-  - [Sealing key renewal](#sealing-key-renewal)
-  - [Key registry init priority order](#key-registry-init-priority-order)
-  - [User secret rotation](#user-secret-rotation)
-  - [Early key renewal](#early-key-renewal)
-  - [Common misconceptions about key renewal](#common-misconceptions-about-key-renewal)
-  - [Manual key management (advanced)](#manual-key-management-advanced)
-  - [Re-encryption (advanced)](#re-encryption-advanced)
-- [Details (advanced)](#details-advanced)
-  - [Crypto](#crypto)
-- [Developing](#developing)
-- [FAQ](#faq)
-  - [Can I encrypt multiple secrets at once, in one YAML / JSON file?](#can-i-encrypt-multiple-secrets-at-once-in-one-yaml--json-file)
-  - [Will you still be able to decrypt if you no longer have access to your cluster?](#will-you-still-be-able-to-decrypt-if-you-no-longer-have-access-to-your-cluster)
-  - [How can I do a backup of my SealedSecrets?](#how-can-i-do-a-backup-of-my-sealedsecrets)
-  - [Can I decrypt my secrets offline with a backup key?](#can-i-decrypt-my-secrets-offline-with-a-backup-key)
-  - [What flags are available for kubeseal?](#what-flags-are-available-for-kubeseal)
-  - [How do I update parts of JSON/YAML/TOML/.. file encrypted with sealed secrets?](#how-do-i-update-parts-of-jsonyamltoml-file-encrypted-with-sealed-secrets)
-  - [Can I bring my own (pre-generated) certificates?](#can-i-bring-my-own-pre-generated-certificates)
-  - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
-  - [How to verify the images?](#how-to-verify-the-images)
-  - [How to use one controller for a subset of namespaces](#how-to-use-one-controller-for-a-subset-of-namespaces)
-  - [Can I configure the Controller unseal retries?](#can-i-configure-the-controller-unseal-retries)
-  - [How to manage SealedSecrets across the cluster or specific namespaces?](#how-to-manage-sealedsecrets-across-the-cluster-or-specific-namespaces)
-- [Community](#community)
-  - [Related projects](#related-projects)
+- ["Sealed Secrets" for Kubernetes](#sealed-secrets-for-kubernetes)
+  - [Overview](#overview)
+    - [SealedSecrets as templates for secrets](#sealedsecrets-as-templates-for-secrets)
+    - [Public key / Certificate](#public-key--certificate)
+    - [Scopes](#scopes)
+  - [High-level Overview](#high-level-overview)
+  - [Installation](#installation)
+    - [Installation in Restricted Environments (No RBAC)](#installation-in-restricted-environments-no-rbac)
+    - [Controller](#controller)
+      - [Kustomize](#kustomize)
+      - [Helm Chart](#helm-chart)
+        - [Helm Chart on a restricted environment](#helm-chart-on-a-restricted-environment)
+    - [Kubeseal](#kubeseal)
+      - [Homebrew](#homebrew)
+      - [MacPorts](#macports)
+      - [Nixpkgs](#nixpkgs)
+      - [Linux](#linux)
+      - [Installation from source](#installation-from-source)
+  - [Upgrade](#upgrade)
+    - [Supported Versions](#supported-versions)
+    - [Compatibility with Kubernetes versions](#compatibility-with-kubernetes-versions)
+  - [Usage](#usage)
+    - [Managing existing secrets](#managing-existing-secrets)
+    - [Patching existing secrets](#patching-existing-secrets)
+    - [Seal secret which can skip set owner references](#seal-secret-which-can-skip-set-owner-references)
+    - [Update existing secrets](#update-existing-secrets)
+    - [Raw mode (experimental)](#raw-mode-experimental)
+    - [Validate a Sealed Secret](#validate-a-sealed-secret)
+  - [Secret Rotation](#secret-rotation)
+    - [Sealing key renewal](#sealing-key-renewal)
+    - [Key registry init priority order](#key-registry-init-priority-order)
+    - [User secret rotation](#user-secret-rotation)
+    - [Early key renewal](#early-key-renewal)
+    - [Common misconceptions about key renewal](#common-misconceptions-about-key-renewal)
+    - [Manual key management (advanced)](#manual-key-management-advanced)
+    - [Re-encryption (advanced)](#re-encryption-advanced)
+  - [Details (advanced)](#details-advanced)
+    - [Crypto](#crypto)
+  - [Developing](#developing)
+  - [FAQ](#faq)
+    - [Can I encrypt multiple secrets at once, in one YAML / JSON file?](#can-i-encrypt-multiple-secrets-at-once-in-one-yaml--json-file)
+    - [Will you still be able to decrypt if you no longer have access to your cluster?](#will-you-still-be-able-to-decrypt-if-you-no-longer-have-access-to-your-cluster)
+    - [How can I do a backup of my SealedSecrets?](#how-can-i-do-a-backup-of-my-sealedsecrets)
+    - [Can I decrypt my secrets offline with a backup key?](#can-i-decrypt-my-secrets-offline-with-a-backup-key)
+    - [What flags are available for kubeseal?](#what-flags-are-available-for-kubeseal)
+    - [How do I update parts of JSON/YAML/TOML/.. file encrypted with sealed secrets?](#how-do-i-update-parts-of-jsonyamltoml-file-encrypted-with-sealed-secrets)
+    - [Can I bring my own (pre-generated) certificates?](#can-i-bring-my-own-pre-generated-certificates)
+    - [How to use kubeseal if the controller is not running within the `kube-system` namespace?](#how-to-use-kubeseal-if-the-controller-is-not-running-within-the-kube-system-namespace)
+    - [How to verify the images?](#how-to-verify-the-images)
+    - [How to use one controller for a subset of namespaces](#how-to-use-one-controller-for-a-subset-of-namespaces)
+    - [Can I configure the Controller unseal retries?](#can-i-configure-the-controller-unseal-retries)
+    - [How to manage SealedSecrets across the cluster or specific namespaces?](#how-to-manage-sealedsecrets-across-the-cluster-or-specific-namespaces)
+  - [Community](#community)
+    - [Related projects](#related-projects)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -260,6 +262,19 @@ It's also possible to request a scope via annotations in the input secret you pa
 The lack of any of such annotations means `strict` mode. If both are set, `cluster-wide` takes precedence.
 
 > NOTE: Next release will consolidate this into a single `sealedsecrets.bitnami.com/scope` annotation.
+
+## High-level Overview
+
+Sealed Secrets introduces a secure and GitOps-friendly workflow for managing Kubernetes secrets by separating encryption from decryption. A developer or CI system starts by creating a standard Kubernetes Secret, then uses the **`kubeseal`** CLI along with the cluster’s **public** certificate to encrypt it into a SealedSecret. 
+
+This encrypted resource is safe to store and version in a Git repository. Once applied to the cluster, the **Sealed Secrets Controller** detects the SealedSecret **CRD**, decrypts it using its private key (which never leaves the cluster), and creates a native Kubernetes Secret inside the target namespace. From that point on, applications consume the secret as usual, while the sensitive data remains protected throughout the entire external workflow.
+
+
+<div align="center">
+  <p align="center">
+    <img src="./docs/images/sealed-secret-high-level-flow.svg" alt="SealedSecret high-level flow diagram" />
+  </p>
+</div>
 
 ## Installation
 
