@@ -391,6 +391,110 @@ func TestSealRoundTripTemplateData(t *testing.T) {
 	}
 }
 
+// TestTemplateDataPlaintextReference verifies that plaintext keys defined
+// in spec.template.data can be referenced from sibling templates as
+// {{ .key }} variables. Regression test for
+// https://github.com/bitnami-labs/sealed-secrets/issues/1607
+func TestTemplateDataPlaintextReference(t *testing.T) {
+	sealed := SealedSecret{
+		Spec: SealedSecretSpec{
+			Template: SecretTemplateSpec{
+				Data: map[string]string{
+					"username":     "myUsername",
+					"settings.xml": `<server><username>{{ .username }}</username></server>`,
+				},
+			},
+		},
+	}
+
+	unsealed, err := sealed.Unseal(serializer.CodecFactory{}, nil)
+	if err != nil {
+		t.Fatalf("Unseal returned error: %v", err)
+	}
+
+	if got, want := string(unsealed.Data["username"]), "myUsername"; got != want {
+		t.Errorf("username: got %q, want %q", got, want)
+	}
+	if got, want := string(unsealed.Data["settings.xml"]),
+		`<server><username>myUsername</username></server>`; got != want {
+		t.Errorf("settings.xml: got %q, want %q", got, want)
+	}
+}
+
+// TestTemplateDataMixedEncryptedAndPlaintext verifies that templates in
+// spec.template.data can reference both encryptedData keys and sibling
+// plaintext keys defined in spec.template.data in the same template.
+// Regression test for
+// https://github.com/bitnami-labs/sealed-secrets/issues/1607
+func TestTemplateDataMixedEncryptedAndPlaintext(t *testing.T) {
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+		},
+		Data: map[string][]byte{
+			"password": []byte("hunter2"),
+		},
+	}
+
+	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
+
+	ssecret.Spec.Template.Data = map[string]string{
+		"username": "myUsername",
+		"settings.xml": `<server>` +
+			`<username>{{ .username }}</username>` +
+			`<password>{{ .password }}</password>` +
+			`</server>`,
+	}
+
+	unsealed, err := ssecret.Unseal(codecs, keys)
+	if err != nil {
+		t.Fatalf("Unseal returned error: %v", err)
+	}
+
+	if got, want := string(unsealed.Data["settings.xml"]),
+		`<server><username>myUsername</username><password>hunter2</password></server>`; got != want {
+		t.Errorf("settings.xml: got %q, want %q", got, want)
+	}
+}
+
+// TestTemplateDataEncryptedTakesPrecedenceOverPlaintext verifies that when
+// the same key exists in both encryptedData and template.data, the
+// decrypted value from encryptedData wins. This guards against accidentally
+// shadowing a real secret with a plaintext placeholder.
+func TestTemplateDataEncryptedTakesPrecedenceOverPlaintext(t *testing.T) {
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+		},
+		Data: map[string][]byte{
+			"shared": []byte("from-encrypted"),
+		},
+	}
+
+	ssecret, codecs, keys := sealSecret(t, &secret, NewSealedSecret)
+
+	ssecret.Spec.Template.Data = map[string]string{
+		"shared":  "from-plaintext-should-be-ignored",
+		"out.txt": `{{ .shared }}`,
+	}
+
+	unsealed, err := ssecret.Unseal(codecs, keys)
+	if err != nil {
+		t.Fatalf("Unseal returned error: %v", err)
+	}
+
+	if got, want := string(unsealed.Data["out.txt"]), "from-encrypted"; got != want {
+		t.Errorf("out.txt: got %q, want %q", got, want)
+	}
+	// The output Secret's "shared" key must retain the decrypted value,
+	// not be overwritten by the plaintext template.data entry.
+	if got, want := string(unsealed.Data["shared"]), "from-encrypted"; got != want {
+		t.Errorf("shared key in output Secret: got %q, want %q (plaintext template.data must not overwrite encrypted value)", got, want)
+	}
+}
+
 func TestTemplateWithoutEncryptedData(t *testing.T) {
 	sealed := SealedSecret{
 		Spec: SealedSecretSpec{
