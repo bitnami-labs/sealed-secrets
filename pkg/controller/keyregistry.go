@@ -25,7 +25,7 @@ type Key struct {
 
 // A KeyRegistry manages the key pairs used to (un)seal secrets.
 type KeyRegistry struct {
-	sync.Mutex
+	mu            sync.RWMutex
 	client        kubernetes.Interface
 	namespace     string
 	keyPrefix     string
@@ -78,6 +78,10 @@ func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, c
 		fingerprint:  fingerprint,
 		orderingTime: orderingTime,
 	}
+
+	kr.mu.Lock()
+	defer kr.mu.Unlock()
+
 	kr.keys[k.fingerprint] = k
 
 	if kr.mostRecentKey == nil || kr.mostRecentKey.orderingTime.Before(orderingTime) {
@@ -87,14 +91,50 @@ func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, c
 	return nil
 }
 
-func (kr *KeyRegistry) latestPrivateKey() *rsa.PrivateKey {
-	return kr.mostRecentKey.private
+func (kr *KeyRegistry) latestPrivateKey() (*rsa.PrivateKey, error) {
+	kr.mu.RLock()
+	defer kr.mu.RUnlock()
+
+	if kr.mostRecentKey == nil {
+		return nil, fmt.Errorf("key registry has no keys")
+	}
+	return kr.mostRecentKey.private, nil
+}
+
+// privateKeys returns a snapshot copy of the private keys so callers
+// can iterate without holding the mutex.
+func (kr *KeyRegistry) privateKeys() map[string]*rsa.PrivateKey {
+	kr.mu.RLock()
+	defer kr.mu.RUnlock()
+
+	m := make(map[string]*rsa.PrivateKey, len(kr.keys))
+	for k, v := range kr.keys {
+		m[k] = v.private
+	}
+	return m
+}
+
+func (kr *KeyRegistry) keyLen() int {
+	kr.mu.RLock()
+	defer kr.mu.RUnlock()
+
+	return len(kr.keys)
+}
+
+func (kr *KeyRegistry) mostRecentKeyTime() (time.Time, error) {
+	kr.mu.RLock()
+	defer kr.mu.RUnlock()
+
+	if kr.mostRecentKey == nil {
+		return time.Time{}, fmt.Errorf("key registry has no keys")
+	}
+	return kr.mostRecentKey.orderingTime, nil
 }
 
 // getCert returns the current certificate. This method can be called by another goroutine.
 func (kr *KeyRegistry) getCert() (*x509.Certificate, error) {
-	kr.Lock()
-	defer kr.Unlock()
+	kr.mu.RLock()
+	defer kr.mu.RUnlock()
 
 	if kr.mostRecentKey == nil {
 		return nil, fmt.Errorf("key registry has no keys")
