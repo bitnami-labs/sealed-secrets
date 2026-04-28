@@ -9,9 +9,13 @@ updates:
     directory: "/" # Location of package manifests
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 5
 
   # Enable version updates for Docker
   - package-ecosystem: "docker"
     directory: "/docker"
     schedule:
       interval: "weekly"
+    cooldown:
+      default-days: 5
