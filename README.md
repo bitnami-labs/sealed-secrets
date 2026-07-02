@@ -8,6 +8,7 @@
 [![Download Status](https://img.shields.io/docker/pulls/bitnami/sealed-secrets-controller.svg)](https://hub.docker.com/r/bitnami/sealed-secrets-controller)
 [![Go Report Card](https://goreportcard.com/badge/github.com/bitnami/sealed-secrets)](https://goreportcard.com/report/github.com/bitnami/sealed-secrets)
 ![Downloads](https://img.shields.io/github/downloads/bitnami/sealed-secrets/total.svg)
+[![Artifact Hub](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/sealed-secrets)](https://artifacthub.io/packages/search?repo=sealed-secrets)
 
 **Problem:** "I can manage all my K8s config in git, except Secrets."
 
