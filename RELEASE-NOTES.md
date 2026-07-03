@@ -4,6 +4,17 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami/sealed-secrets.svg)](https://github.com/bitnami/sealed-secrets/releases/latest)
 
+## v0.38.2
+
+- Publish Artifact Hub repository metadata for verified publisher status ([#2000](https://github.com/bitnami/sealed-secrets/pull/2000))
+- Add Artifact Hub badge to README ([#1999](https://github.com/bitnami/sealed-secrets/pull/1999))
+- Bump github.com/onsi/ginkgo/v2 from 2.30.0 to 2.32.0 ([#1998](https://github.com/bitnami/sealed-secrets/pull/1998))
+- Bump github.com/onsi/gomega from 1.42.0 to 1.42.1 ([#1997](https://github.com/bitnami/sealed-secrets/pull/1997))
+- Bump k8s.io/client-go from 0.36.1 to 0.36.2 ([#1996](https://github.com/bitnami/sealed-secrets/pull/1996))
+- Bump k8s.io/api from 0.36.1 to 0.36.2 ([#1994](https://github.com/bitnami/sealed-secrets/pull/1994))
+- Bump github.com/onsi/gomega from 1.41.0 to 1.42.0 ([#1995](https://github.com/bitnami/sealed-secrets/pull/1995))
+- Bump k8s.io/code-generator from 0.36.1 to 0.36.2 ([#1993](https://github.com/bitnami/sealed-secrets/pull/1993))
+
 ## v0.38.1
 - Incomplete release for credentials problems
 
