@@ -4,6 +4,9 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami/sealed-secrets.svg)](https://github.com/bitnami/sealed-secrets/releases/latest)
 
+## v0.38.4
+- Incomplete release for credentials problems
+
 ## v0.38.3
 - Imcomplete release for credentials problems
 
