@@ -73,19 +73,6 @@ jobs:
           helm package helm/sealed-secrets/
           helm push sealed-secrets-${{ env.chart_version }}.tgz oci://registry-1.docker.io/bitnamicharts
 
-      - name: Install oras
-        uses: oras-project/setup-oras@38de303aac69abb66f3e6255b7198bff35f323e3 # v2.0.0
-
-      - name: Push Artifact Hub repository metadata
-        env:
-          OCI_PASS: ${{ secrets.OCI_PASSWORD }}
-          OCI_USR: ${{ secrets.OCI_USERNAME }}
-        run: |
-          echo $OCI_PASS | oras login -u $OCI_USR --password-stdin registry-1.docker.io
-          oras push registry-1.docker.io/bitnamicharts/sealed-secrets:artifacthub.io \
-            --config /dev/null:application/vnd.cncf.artifacthub.config.v1+yaml \
-            helm/sealed-secrets/artifacthub-repo.yml:application/vnd.cncf.artifacthub.repository-metadata.layer.v1.yaml
-
       - name: Create imglock file
         working-directory: ./helm
         run: |
