@@ -145,6 +145,7 @@ The command removes all the Kubernetes components associated with the chart and 
 | `containerSecurityContext.runAsUser`              | Set Sealed Secret containers' Security Context runAsUser                                                           | `1001`                              |
 | `containerSecurityContext.allowPrivilegeEscalation` | Set Sealed Secret containers' privilege escalation                                                               | `false`                             |
 | `containerSecurityContext.capabilities`           | Adds and removes POSIX capabilities from running containers (see `values.yaml`)                                    |                                     |
+| `hostUsers`                                       | Specifies whether or not host or namespaced users should be used                                                   | `null`                              |
 | `podLabels`                                       | Extra labels for Sealed Secret pods                                                                                | `{}`                                |
 | `podAnnotations`                                  | Annotations for Sealed Secret pods                                                                                 | `{}`                                |
 | `priorityClassName`                               | Sealed Secret pods' priorityClassName                                                                              | `""`                                |

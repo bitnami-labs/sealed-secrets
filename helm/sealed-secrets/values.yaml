@@ -221,6 +221,10 @@ containerSecurityContext:
   capabilities:
     drop:
       - ALL
+## Enable user namespaces
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/
+##
+hostUsers: ~
 
 ## @param podLabels [object] Extra labels for Sealed Secret pods
 ## ref: https://kubernetes.io/docs/concepts/overview/working-with-objects/labels/

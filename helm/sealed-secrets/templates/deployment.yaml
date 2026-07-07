@@ -54,6 +54,9 @@ spec:
       securityContext: {{- omit .Values.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "sealed-secrets.serviceAccountName" . }}
+      {{- if kindIs "bool" .Values.hostUsers }}
+      hostUsers: {{ .Values.hostUsers }}
+      {{- end }}
       {{- if .Values.hostNetwork }}
       hostNetwork: true
       {{- end }}
