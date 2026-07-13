@@ -221,7 +221,7 @@ containerSecurityContext:
   capabilities:
     drop:
       - ALL
-## Enable user namespaces
+## @param hostUsers Specifies whether or not host or namespaced users should be used
 ## ref: https://kubernetes.io/docs/concepts/workloads/pods/user-namespaces/
 ##
 hostUsers: ~
