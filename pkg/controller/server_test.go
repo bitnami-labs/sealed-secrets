@@ -5,6 +5,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -38,6 +39,28 @@ func shutdownServer(server *http.Server, t *testing.T) {
 	}
 }
 
+// waitForServer polls addr until the server is accepting TCP connections,
+// failing the test if it is not ready within a short deadline. This replaces
+// a fixed sleep so the test proceeds as soon as the server is up and does not
+// flake under load when startup takes longer than the sleep. It dials the
+// socket rather than issuing an HTTP request so it does not exercise the
+// handler before the test has populated the cert store.
+func waitForServer(t *testing.T, addr string) {
+	t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	for {
+		conn, err := net.DialTimeout("tcp", addr, 100*time.Millisecond)
+		if err == nil {
+			conn.Close()
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("server did not start listening on %s: %v", addr, err)
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+}
+
 func TestHttpCert(t *testing.T) {
 	validFor := time.Hour
 	cn := "my-cn"
@@ -59,7 +82,9 @@ func TestHttpCert(t *testing.T) {
 		hp = fmt.Sprintf("localhost%s", hp)
 	}
 
-	time.Sleep(1 * time.Second) // TODO(mkm) find a better way, e.g. retries
+	// Wait for the server to accept connections instead of sleeping a fixed
+	// amount of time and hoping it is ready.
+	waitForServer(t, hp)
 
 	check := func(cert *x509.Certificate) {
 		resp, err := http.Get(fmt.Sprintf("http://%s/v1/cert.pem", hp))
