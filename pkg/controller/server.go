@@ -69,7 +69,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 	}))))
 
 	// TODO(mkm): rename to re-encrypt
-	mux.Handle("/v1/rotate", Instrument("/v1/rotate", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	mux.Handle("/v1/rotate", Instrument("/v1/rotate", httpRateLimiter.RateLimit(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		content, err := io.ReadAll(r.Body)
 		if err != nil {
 			slog.Error("Error handling /v1/rotate request", "error", err)
@@ -87,7 +87,7 @@ func httpserver(cp certProvider, sc secretChecker, sr secretRotator, burst int, 
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(newSecret)
-	})))
+	}))))
 
 	mux.Handle("/v1/cert.pem", Instrument("/v1/cert.pem", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		certs, err := cp()
