@@ -101,7 +101,7 @@ func bindFlags(f *cliFlags, fs *flag.FlagSet) {
 	fs.BoolVar(&f.reEncrypt, "re-encrypt", false, "Re-encrypt the given sealed secret to use the latest cluster key.")
 	_ = fs.MarkDeprecated("rotate", "please use --re-encrypt instead")
 
-	fs.BoolVar(&f.unseal, "recovery-unseal", false, "Decrypt a sealed secrets file obtained from stdin, using the private key passed with --recovery-private-key. Intended to be used in disaster recovery mode.")
+	fs.BoolVar(&f.unseal, "recovery-unseal", false, "Decrypt a sealed secrets file obtained from stdin, using the private key passed with --recovery-private-key. Intended to be used in disaster recovery mode. If the sealed secret does not declare a namespace, the value of --namespace is used.")
 	fs.StringSliceVar(&f.privKeys, "recovery-private-key", nil, "Private key filename used by the --recovery-unseal command. Multiple files accepted either via comma separated list or by repetition of the flag. Either PEM encoded private keys or a backup of a json/yaml encoded k8s sealed-secret controller secret (and v1.List) are accepted. ")
 	fs.BoolVar(&f.help, "help", false, "Print this help message")
 
@@ -182,7 +182,11 @@ func runCLI(w io.Writer, cfg *config) (err error) {
 	}
 
 	if flags.unseal {
-		return kubeseal.UnsealSealedSecret(w, input, flags.privKeys, flags.outputFormat, scheme.Codecs)
+		namespace, _, err := cfg.clientConfig.Namespace()
+		if err != nil {
+			return err
+		}
+		return kubeseal.UnsealSealedSecret(w, input, flags.privKeys, flags.outputFormat, namespace, scheme.Codecs)
 	}
 	if len(flags.privKeys) != 0 && isatty.IsTerminal(os.Stderr.Fd()) {
 		fmt.Fprintf(os.Stderr, "warning: ignoring --recovery-private-key because unseal command not chosen with --recovery-unseal\n")

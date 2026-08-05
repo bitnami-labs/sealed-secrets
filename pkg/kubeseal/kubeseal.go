@@ -603,7 +603,7 @@ func readPrivKeys(filenames []string) (map[string]*rsa.PrivateKey, error) {
 	return res, nil
 }
 
-func UnsealSealedSecret(w io.Writer, in io.Reader, privKeysFilenames []string, outputFormat string, codecs runtimeserializer.CodecFactory) error {
+func UnsealSealedSecret(w io.Writer, in io.Reader, privKeysFilenames []string, outputFormat, ns string, codecs runtimeserializer.CodecFactory) error {
 	privKeys, err := readPrivKeys(privKeysFilenames)
 	if err != nil {
 		return err
@@ -617,6 +617,9 @@ func UnsealSealedSecret(w io.Writer, in io.Reader, privKeysFilenames []string, o
 	ss, err := decodeSealedSecret(codecs, b)
 	if err != nil {
 		return err
+	}
+	if ss.GetNamespace() == "" && ss.Scope() != ssv1alpha1.ClusterWideScope {
+		ss.SetNamespace(ns)
 	}
 	sec, err := ss.Unseal(codecs, privKeys)
 	if err != nil {

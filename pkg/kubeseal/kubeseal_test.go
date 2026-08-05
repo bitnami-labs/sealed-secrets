@@ -560,13 +560,14 @@ func newTestKeyPair(t *testing.T) (*rsa.PublicKey, map[string]*rsa.PrivateKey) {
 	return pubKey, privKeys
 }
 
-func TestUnseal(t *testing.T) {
+func newTestKeyPairFile(t *testing.T) (*rsa.PublicKey, string) {
+	t.Helper()
 	pubKey, privKeys := newTestKeyPair(t)
 	pkFile, err := os.CreateTemp("", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(pkFile.Name())
+	t.Cleanup(func() { os.RemoveAll(pkFile.Name()) })
 
 	if len(privKeys) != 1 {
 		t.Fatal("assuming only one test key-pair")
@@ -579,6 +580,12 @@ func TestUnseal(t *testing.T) {
 	}
 	pkFile.Close()
 
+	return pubKey, pkFile.Name()
+}
+
+func TestUnseal(t *testing.T) {
+	pubKey, pkFileName := newTestKeyPairFile(t)
+
 	const (
 		secretItemKey   = "foo"
 		secretItemValue = "secret1"
@@ -586,9 +593,9 @@ func TestUnseal(t *testing.T) {
 	ss := mkTestSealedSecret(t, pubKey, secretItemKey, secretItemValue)
 
 	var buf bytes.Buffer
-	privKeysList := []string{pkFile.Name()}
+	privKeysList := []string{pkFileName}
 	outputFormat := "json"
-	if err := UnsealSealedSecret(&buf, bytes.NewBuffer(ss), privKeysList, outputFormat, scheme.Codecs); err != nil {
+	if err := UnsealSealedSecret(&buf, bytes.NewBuffer(ss), privKeysList, outputFormat, "", scheme.Codecs); err != nil {
 		t.Fatal(err)
 	}
 
@@ -600,6 +607,59 @@ func TestUnseal(t *testing.T) {
 	for _, secret := range secret {
 		if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
 			t.Fatalf("got: %q, want: %q", got, want)
+		}
+	}
+}
+
+func TestUnsealNamespaceFromFlag(t *testing.T) {
+	pubKey, pkFileName := newTestKeyPairFile(t)
+
+	const (
+		secretItemKey   = "foo"
+		secretItemValue = "secret1"
+		namespace       = "testns"
+	)
+	// Seal with the "testns" namespace (strict scope binds the label to it),
+	// then strip the namespace from the serialized SealedSecret so it mimics a
+	// file that doesn't declare one.
+	sealed := mkTestSealedSecret(t, pubKey, secretItemKey, secretItemValue, withSecretNamespace(namespace))
+	decoded, err := decodeSealedSecret(scheme.Codecs, sealed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	decoded.SetNamespace("")
+	prettyEnc, err := prettyEncoder(scheme.Codecs, runtime.ContentTypeJSON, ssv1alpha1.SchemeGroupVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ss, err := runtime.Encode(prettyEnc, decoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var buf bytes.Buffer
+	privKeysList := []string{pkFileName}
+	outputFormat := "json"
+
+	if err := UnsealSealedSecret(&buf, bytes.NewBuffer(ss), privKeysList, outputFormat, "", scheme.Codecs); err == nil {
+		t.Fatal("expected error unsealing without a namespace")
+	}
+
+	buf.Reset()
+	if err := UnsealSealedSecret(&buf, bytes.NewBuffer(ss), privKeysList, outputFormat, namespace, scheme.Codecs); err != nil {
+		t.Fatal(err)
+	}
+
+	secrets, err := readSecrets(&buf)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, secret := range secrets {
+		if got, want := string(secret.Data[secretItemKey]), secretItemValue; got != want {
+			t.Fatalf("got: %q, want: %q", got, want)
+		}
+		if got, want := secret.GetNamespace(), namespace; got != want {
+			t.Fatalf("namespace got: %q, want: %q", got, want)
 		}
 	}
 }
@@ -649,7 +709,7 @@ func TestUnsealList(t *testing.T) {
 	var buf bytes.Buffer
 	privKeysList := []string{pkFile.Name()}
 	outputFormat := "json"
-	if err := UnsealSealedSecret(&buf, bytes.NewBuffer(ss), privKeysList, outputFormat, scheme.Codecs); err != nil {
+	if err := UnsealSealedSecret(&buf, bytes.NewBuffer(ss), privKeysList, outputFormat, "", scheme.Codecs); err != nil {
 		t.Fatal(err)
 	}
 
