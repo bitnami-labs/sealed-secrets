@@ -10,6 +10,8 @@ import (
 	"os/signal"
 	"sort"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 
@@ -27,6 +29,11 @@ import (
 	sealedsecrets "github.com/bitnami/sealed-secrets/pkg/client/clientset/versioned"
 	ssinformers "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions"
 )
+
+// Cap concurrent namespace Gets and informer setup so a large
+// --additional-namespaces list does not serialize one RTT per namespace
+// and does not stampede the API server either.
+const additionalNamespaceBootstrapConcurrency = 16
 
 var (
 	// Selector used to find existing public/private key pairs on startup.
@@ -250,30 +257,9 @@ func Main(f *Flags, version string) error {
 
 	go controller.Run(stop)
 
-	if f.AdditionalNamespaces != "" {
-		addNS := removeDuplicates(strings.Split(f.AdditionalNamespaces, ","))
-
-		for _, ns := range addNS {
-			if _, err := clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{}); err != nil {
-				if errors.IsNotFound(err) {
-					slog.Error("namespace doesn't exist", "namespace", ns)
-					continue
-				}
-				return err
-			}
-			if ns != namespace {
-				ctlr, err := prepareController(clientset, ns, myNs, tweakopts, f, ssclientset, keyRegistry)
-				if err != nil {
-					return err
-				}
-				ctlr.oldGCBehavior = f.OldGCBehavior
-				ctlr.updateStatus = f.UpdateStatus
-				slog.Info("Starting informer", "namespace", ns)
-				go ctlr.Run(stop)
-			}
-		}
-	}
-
+	// ready becomes true after additional-namespace informers are started.
+	// HTTP must come up first so liveness probes succeed during that work.
+	var bootstrapped atomic.Bool
 	cp := func() ([]*x509.Certificate, error) {
 		cert, err := keyRegistry.getCert()
 		if err != nil {
@@ -281,9 +267,16 @@ func Main(f *Flags, version string) error {
 		}
 		return []*x509.Certificate{cert}, nil
 	}
-
-	server := httpserver(cp, controller.AttemptUnseal, controller.Rotate, f.RateLimitBurst, f.RateLimitPerSecond)
+	server := httpserver(cp, controller.AttemptUnseal, controller.Rotate, f.RateLimitBurst, f.RateLimitPerSecond, bootstrapped.Load)
 	serverMetrics := httpserverMetrics()
+
+	if f.AdditionalNamespaces != "" {
+		addNS := removeDuplicates(strings.Split(f.AdditionalNamespaces, ","))
+		if err := startAdditionalNamespaceControllers(ctx, clientset, ssclientset, keyRegistry, f, namespace, myNs, tweakopts, addNS, stop); err != nil {
+			return err
+		}
+	}
+	bootstrapped.Store(true)
 
 	sigterm := make(chan os.Signal, 1)
 	signal.Notify(sigterm, syscall.SIGTERM)
@@ -298,6 +291,71 @@ func Main(f *Flags, version string) error {
 	}
 
 	return nil
+}
+
+// startAdditionalNamespaceControllers validates and starts a controller for each
+// extra namespace. Work is bounded-parallel so wall-clock startup scales better
+// than one serial API Get per namespace.
+func startAdditionalNamespaceControllers(
+	ctx context.Context,
+	clientset kubernetes.Interface,
+	ssclientset versioned.Interface,
+	keyRegistry *KeyRegistry,
+	f *Flags,
+	homeNamespace string,
+	keyNamespace string,
+	tweakopts func(*metav1.ListOptions),
+	namespaces []string,
+	stop <-chan struct{},
+) error {
+	sem := make(chan struct{}, additionalNamespaceBootstrapConcurrency)
+	var wg sync.WaitGroup
+	var mu sync.Mutex
+	var firstErr error
+
+	setErr := func(err error) {
+		if err == nil {
+			return
+		}
+		mu.Lock()
+		if firstErr == nil {
+			firstErr = err
+		}
+		mu.Unlock()
+	}
+
+	for _, ns := range namespaces {
+		ns := strings.TrimSpace(ns)
+		if ns == "" || ns == homeNamespace {
+			continue
+		}
+		wg.Add(1)
+		go func(ns string) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+
+			if _, err := clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{}); err != nil {
+				if errors.IsNotFound(err) {
+					slog.Error("namespace doesn't exist", "namespace", ns)
+					return
+				}
+				setErr(err)
+				return
+			}
+			ctlr, err := prepareController(clientset, ns, keyNamespace, tweakopts, f, ssclientset, keyRegistry)
+			if err != nil {
+				setErr(err)
+				return
+			}
+			ctlr.oldGCBehavior = f.OldGCBehavior
+			ctlr.updateStatus = f.UpdateStatus
+			slog.Info("Starting informer", "namespace", ns)
+			go ctlr.Run(stop)
+		}(ns)
+	}
+	wg.Wait()
+	return firstErr
 }
 
 func prepareController(

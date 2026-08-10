@@ -52,7 +52,7 @@ func TestHttpCert(t *testing.T) {
 	}
 
 	cs := &testCertStore{}
-	server := httpserver(cs.getCert, nil, nil, 2, 2)
+	server := httpserver(cs.getCert, nil, nil, 2, 2, nil)
 	defer shutdownServer(server, t)
 	hp := *listenAddr
 	if strings.HasPrefix(hp, ":") {
@@ -94,3 +94,56 @@ func TestHttpCert(t *testing.T) {
 	cs.setCert(certAfter)
 	check(certAfter)
 }
+
+func TestHttpReadyz(t *testing.T) {
+	ready := false
+	server := httpserver(func() ([]*x509.Certificate, error) {
+		return nil, fmt.Errorf("no cert")
+	}, nil, nil, 2, 2, func() bool { return ready })
+	defer shutdownServer(server, t)
+
+	hp := *listenAddr
+	if strings.HasPrefix(hp, ":") {
+		hp = fmt.Sprintf("localhost%s", hp)
+	}
+	url := fmt.Sprintf("http://%s/readyz", hp)
+	healthURL := fmt.Sprintf("http://%s/healthz", hp)
+
+	// Wait for listener
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		resp, err := http.Get(healthURL)
+		if err == nil {
+			resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				break
+			}
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("server did not become reachable")
+		}
+		time.Sleep(50 * time.Millisecond)
+	}
+
+	resp, err := http.Get(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ := io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if got, want := resp.StatusCode, http.StatusServiceUnavailable; got != want {
+		t.Fatalf("before ready: got status %v want %v body %q", got, want, body)
+	}
+
+	ready = true
+	resp, err = http.Get(url)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body, _ = io.ReadAll(resp.Body)
+	resp.Body.Close()
+	if got, want := resp.StatusCode, http.StatusOK; got != want {
+		t.Fatalf("after ready: got status %v want %v body %q", got, want, body)
+	}
+}
+
