@@ -534,7 +534,7 @@ func formatImmutableError(key string) string {
 	return fmt.Sprintf("Error updating %s: the target Secret is immutable. Once a Secret is marked as immutable, it is not possible to revert this change nor to mutate the contents of the data field. You can only delete and recreate the Secret.", key)
 }
 
-// AttemptUnseal tries to unseal a secret.
+// AttemptUnseal checks whether a secret is decryptable, without rendering spec.template.data.
 func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 	if err := multidocyaml.EnsureNotMultiDoc(content); err != nil {
 		return false, err
@@ -547,7 +547,7 @@ func (c *Controller) AttemptUnseal(content []byte) (bool, error) {
 
 	switch s := object.(type) {
 	case *ssv1alpha1.SealedSecret:
-		if _, err := c.attemptUnseal(s); err != nil {
+		if err := s.ValidateEncryptedData(c.keyRegistry.privateKeys()); err != nil {
 			return false, nil
 		}
 		return true, nil

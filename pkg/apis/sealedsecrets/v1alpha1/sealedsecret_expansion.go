@@ -262,6 +262,36 @@ func NewSealedSecret(codecs runtimeserializer.CodecFactory, pubKey *rsa.PublicKe
 	return s, nil
 }
 
+// ValidateEncryptedData checks decryptability without rendering spec.template.data.
+func (s *SealedSecret) ValidateEncryptedData(privKeys map[string]*rsa.PrivateKey) error {
+	label := labelFor(s.GetObjectMeta())
+
+	if s.Spec.Data == nil {
+		var errs []error
+		for key, value := range s.Spec.EncryptedData {
+			valueBytes, err := base64.StdEncoding.DecodeString(value)
+			if err != nil {
+				errs = append(errs, multierror.Tag(key, err))
+				continue
+			}
+			if _, err := crypto.HybridDecrypt(rand.Reader, privKeys, valueBytes, label); err != nil {
+				errs = append(errs, multierror.Tag(key, err))
+			}
+		}
+		if errs != nil {
+			return multierror.Format(errors.Join(multierror.Uniq(errs)...), multierror.InlineFormatter)
+		}
+		return nil
+	} else if AcceptDeprecatedV1Data { // Support decrypting old secrets for backward compatibility
+		if len(s.Spec.EncryptedData) > 0 {
+			return fmt.Errorf("cannot use the field 'encryptedData' and the deprecated field 'data' at the same time")
+		}
+		_, err := crypto.HybridDecrypt(rand.Reader, privKeys, s.Spec.Data, label)
+		return err
+	}
+	return fmt.Errorf("using deprecated 'data' field, use 'encryptedData' or flip the feature flag")
+}
+
 // Unseal decrypts and returns the embedded v1.Secret.
 func (s *SealedSecret) Unseal(codecs runtimeserializer.CodecFactory, privKeys map[string]*rsa.PrivateKey) (*v1.Secret, error) {
 	boolTrue := true
