@@ -146,4 +146,3 @@ func TestHttpReadyz(t *testing.T) {
 		t.Fatalf("after ready: got status %v want %v body %q", got, want, body)
 	}
 }
-

@@ -272,7 +272,14 @@ func Main(f *Flags, version string) error {
 
 	if f.AdditionalNamespaces != "" {
 		addNS := removeDuplicates(strings.Split(f.AdditionalNamespaces, ","))
-		if err := startAdditionalNamespaceControllers(ctx, clientset, ssclientset, keyRegistry, f, namespace, myNs, tweakopts, addNS, stop); err != nil {
+		// Bind ctx to the namespace probe here so the bootstrap helper does not
+		// take a context parameter (contextcheck would otherwise require
+		// prepareController/Run to accept one; those still use stopCh lifecycle).
+		probeNS := func(ns string) error {
+			_, err := clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{})
+			return err
+		}
+		if err := startAdditionalNamespaceControllers(probeNS, clientset, ssclientset, keyRegistry, f, namespace, myNs, tweakopts, addNS, stop); err != nil {
 			return err
 		}
 	}
@@ -296,8 +303,11 @@ func Main(f *Flags, version string) error {
 // startAdditionalNamespaceControllers validates and starts a controller for each
 // extra namespace. Work is bounded-parallel so wall-clock startup scales better
 // than one serial API Get per namespace.
+//
+// probeNS should check that ns exists (typically clientset Get with the caller's
+// context). Missing namespaces are logged and skipped; other probe errors abort.
 func startAdditionalNamespaceControllers(
-	ctx context.Context,
+	probeNS func(ns string) error,
 	clientset kubernetes.Interface,
 	ssclientset versioned.Interface,
 	keyRegistry *KeyRegistry,
@@ -335,7 +345,7 @@ func startAdditionalNamespaceControllers(
 			sem <- struct{}{}
 			defer func() { <-sem }()
 
-			if _, err := clientset.CoreV1().Namespaces().Get(ctx, ns, metav1.GetOptions{}); err != nil {
+			if err := probeNS(ns); err != nil {
 				if errors.IsNotFound(err) {
 					slog.Error("namespace doesn't exist", "namespace", ns)
 					return
