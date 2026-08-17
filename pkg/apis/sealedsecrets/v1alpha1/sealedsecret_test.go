@@ -391,6 +391,43 @@ func TestSealRoundTripTemplateData(t *testing.T) {
 	}
 }
 
+// TestValidateEncryptedDataIgnoresTemplate ensures template execution can't affect decryptability checks.
+func TestValidateEncryptedDataIgnoresTemplate(t *testing.T) {
+	secret := v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "myname",
+			Namespace: "myns",
+		},
+		Data: map[string][]byte{
+			"password": []byte("hunter2"),
+		},
+	}
+
+	ssecret, _, keys := sealSecret(t, &secret, NewSealedSecret)
+
+	// A failing template must not turn a decryptable secret into a validation failure.
+	ssecret.Spec.Template.Data = map[string]string{
+		"probe": `{{ fail "attacker-controlled failure" }}`,
+	}
+	if err := ssecret.ValidateEncryptedData(keys); err != nil {
+		t.Errorf("ValidateEncryptedData returned error for a decryptable secret with a failing template: %v", err)
+	}
+
+	// A template with a parse error must likewise not affect the result.
+	ssecret.Spec.Template.Data = map[string]string{
+		"probe": `{{ .password`,
+	}
+	if err := ssecret.ValidateEncryptedData(keys); err != nil {
+		t.Errorf("ValidateEncryptedData returned error for a decryptable secret with an unparseable template: %v", err)
+	}
+
+	// Sanity check: genuinely undecryptable data must still fail.
+	_, otherKeys := generateTestKey(t, testRand(), 2048)
+	if err := ssecret.ValidateEncryptedData(otherKeys); err == nil {
+		t.Errorf("ValidateEncryptedData did not return an error for encryptedData undecryptable with the given keys")
+	}
+}
+
 // TestTemplateDataPlaintextReference verifies that plaintext keys defined
 // in spec.template.data can be referenced from sibling templates as
 // {{ .key }} variables. Regression test for
