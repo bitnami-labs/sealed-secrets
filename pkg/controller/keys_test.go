@@ -7,7 +7,6 @@ import (
 	"encoding/pem"
 	"io"
 	mathrand "math/rand"
-	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -65,11 +64,15 @@ func TestReadKey(t *testing.T) {
 		t.Errorf("readKey() failed with: %v", err)
 	}
 
-	if !reflect.DeepEqual(key, key2) {
+	// Use crypto value equality, not reflect.DeepEqual: rsa.PrivateKey embeds
+	// PrecomputedValues with unexported sync/once state that differs between a
+	// freshly generated key and one re-parsed from PEM, which made this test
+	// flaky under CI (see #1903).
+	if !key.Equal(key2) {
 		t.Errorf("Extracted key != original key")
 	}
 
-	if !reflect.DeepEqual(cert, cert2[0]) {
+	if len(cert2) == 0 || !cert.Equal(cert2[0]) {
 		t.Errorf("Extracted cert != original cert")
 	}
 }
