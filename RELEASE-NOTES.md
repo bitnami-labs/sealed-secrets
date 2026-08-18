@@ -4,6 +4,23 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami/sealed-secrets.svg)](https://github.com/bitnami/sealed-secrets/releases/latest)
 
+## v0.39.0
+
+- [Security] fix: stop /v1/verify from acting as a decryption oracle ([#2019](https://github.com/bitnami/sealed-secrets/pull/2019))
+- fix(controller): start HTTP early for large additional-namespaces lists ([#2018](https://github.com/bitnami/sealed-secrets/pull/2018))
+- Rate-limit the /v1/rotate endpoint ([#1971](https://github.com/bitnami/sealed-secrets/pull/1971))
+- test(controller): poll for server readiness instead of sleeping ([#2010](https://github.com/bitnami/sealed-secrets/pull/2010))
+- Bump github.com/prometheus/client_golang from 1.23.2 to 1.24.1 ([#2016](https://github.com/bitnami/sealed-secrets/pull/2016))
+- Bump k8s.io/code-generator from 0.36.2 to 0.36.3 ([#2014](https://github.com/bitnami/sealed-secrets/pull/2014))
+- Bump github.com/mattn/go-isatty from 0.0.23 to 0.0.24 ([#2011](https://github.com/bitnami/sealed-secrets/pull/2011))
+- Bump k8s.io/client-go from 0.36.2 to 0.36.3 ([#2012](https://github.com/bitnami/sealed-secrets/pull/2012))
+- Bump github.com/mattn/go-isatty from 0.0.22 to 0.0.23 ([#2009](https://github.com/bitnami/sealed-secrets/pull/2009))
+- Bump golang.org/x/crypto from 0.53.0 to 0.54.0 ([#2007](https://github.com/bitnami/sealed-secrets/pull/2007))
+- Bump distroless/static from `3592aa8` to `9197324` in /docker ([#2008](https://github.com/bitnami/sealed-secrets/pull/2008))
+- Allow setting hostUsers on deployment ([#1978](https://github.com/bitnami/sealed-secrets/pull/1978))
+- Add --metrics-omit-secret-labels to skip per-SealedSecret labels on condition_info ([#1972](https://github.com/bitnami/sealed-secrets/pull/1972))
+- Revert ArtifactHub repository metadata OCI push ([#2005](https://github.com/bitnami/sealed-secrets/pull/2005))
+
 ## v0.38.4
 - Incomplete release for credentials problems
 
