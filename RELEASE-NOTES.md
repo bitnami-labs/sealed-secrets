@@ -4,6 +4,14 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami/sealed-secrets.svg)](https://github.com/bitnami/sealed-secrets/releases/latest)
 
+## v0.39.1
+
+- Bump Golang to 1.26.7 ([#2029](https://github.com/bitnami/sealed-secrets/pull/2029))
+- Bump Golang to 1.26.6 ([#2028](https://github.com/bitnami/sealed-secrets/pull/2028))
+- Bump golang.org/x/crypto from 0.54.0 to 0.55.0 ([#2026](https://github.com/bitnami/sealed-secrets/pull/2026))
+- Bump github.com/onsi/ginkgo/v2 from 2.32.0 to 2.32.1 ([#2027](https://github.com/bitnami/sealed-secrets/pull/2027))
+- test(controller): fix flaky TestReadKey RSA key comparison ([#2021](https://github.com/bitnami/sealed-secrets/pull/2021))
+
 ## v0.39.0
 
 - [Security] fix: stop /v1/verify from acting as a decryption oracle ([#2019](https://github.com/bitnami/sealed-secrets/pull/2019))
