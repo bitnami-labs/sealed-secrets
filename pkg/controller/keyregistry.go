@@ -91,6 +91,22 @@ func (kr *KeyRegistry) registerNewKey(keyName string, privKey *rsa.PrivateKey, c
 	return nil
 }
 
+func (kr *KeyRegistry) unregisterKey(fingerprint string) {
+	kr.mu.Lock()
+	defer kr.mu.Unlock()
+
+	delete(kr.keys, fingerprint)
+
+	if kr.mostRecentKey != nil && kr.mostRecentKey.fingerprint == fingerprint {
+		kr.mostRecentKey = nil
+		for _, k := range kr.keys {
+			if kr.mostRecentKey == nil || kr.mostRecentKey.orderingTime.Before(k.orderingTime) {
+				kr.mostRecentKey = k
+			}
+		}
+	}
+}
+
 func (kr *KeyRegistry) latestPrivateKey() (*rsa.PrivateKey, error) {
 	kr.mu.RLock()
 	defer kr.mu.RUnlock()
