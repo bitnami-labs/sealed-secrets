@@ -23,6 +23,10 @@ import (
 	ssfake "github.com/bitnami/sealed-secrets/pkg/client/clientset/versioned/fake"
 )
 
+func someStr(s string) *string {
+	return &s
+}
+
 func TestIsAnnotatedToBePatched(t *testing.T) {
 	tests := []struct {
 		annotations map[string]string
@@ -445,8 +449,8 @@ func TestAttemptUnsealIgnoresTemplate(t *testing.T) {
 	}
 
 	// Attacker-controlled, always-failing template paired with the victim's real data.
-	ssecret.Spec.Template.Data = map[string]string{
-		"probe": `{{ fail "attacker-controlled failure" }}`,
+	ssecret.Spec.Template.Data = map[string]*string{
+		"probe": someStr(`{{ fail "attacker-controlled failure" }}`),
 	}
 
 	enc, err := prettyEncoder(scheme.Codecs, runtime.ContentTypeJSON, ssv1alpha1.SchemeGroupVersion)

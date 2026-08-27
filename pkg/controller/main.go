@@ -381,7 +381,7 @@ func prepareController(
 		options.LabelSelector = keySelector.String()
 	}, f.WatchForSecrets)
 	sinformer := initSecretInformerFactory(clientset, namespace, tweakopts, !f.SkipRecreate)
-	ssinformer := ssinformers.NewFilteredSharedInformerFactory(ssclientset, 0, namespace, tweakopts)
+	ssinformer := ssinformers.NewSharedInformerFactoryWithOptions(ssclientset, 0, ssinformers.WithNamespace(namespace), ssinformers.WithTweakListOptions(tweakopts))
 	controller, err := NewController(clientset, ssclientset, ssinformer, sinformer, kinformer, keyRegistry, f.MaxRetries, f.KeyOrderPriority)
 	return controller, err
 }
