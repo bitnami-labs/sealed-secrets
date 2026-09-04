@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"errors"
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -468,5 +469,54 @@ func TestAttemptUnsealIgnoresTemplate(t *testing.T) {
 	}
 	if !valid {
 		t.Errorf("AttemptUnseal reported a decryptable secret as invalid because of an unrelated template failure")
+	}
+}
+
+// prepareController is called once per namespace from parallel goroutines when
+// --additional-namespaces is set, so it must be safe to call concurrently.
+// Regression test for #2045.
+func TestPrepareControllerConcurrently(t *testing.T) {
+	ns := "some-namespace"
+	keyNs := "some-key-namespace"
+	var tweakopts func(*metav1.ListOptions)
+	clientset := fake.NewClientset()
+	ssc := ssfake.NewSimpleClientset()
+	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
+
+	const goroutines = 64
+
+	var wg sync.WaitGroup
+	start := make(chan struct{})
+	errs := make(chan error, goroutines)
+
+	for i := 0; i < goroutines; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			<-start
+			if _, err := prepareController(clientset, ns, keyNs, tweakopts, &Flags{}, ssc, keyRegistry); err != nil {
+				errs <- err
+			}
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	for err := range errs {
+		t.Fatalf("prepareController failed under concurrency: %v", err)
+	}
+}
+
+// The controller's decoders (scheme.Codecs.UniversalDecoder) rely on the
+// SealedSecret types being present in the global scheme. That registration comes
+// from the v1alpha1 package init(), which is why NewController does not need to
+// repeat it. Guards that invariant.
+func TestSealedSecretTypesAreRegisteredGlobally(t *testing.T) {
+	for _, kind := range []string{"SealedSecret", "SealedSecretList"} {
+		if !scheme.Scheme.Recognizes(ssv1alpha1.SchemeGroupVersion.WithKind(kind)) {
+			t.Fatalf("%s is not registered in the global scheme", kind)
+		}
 	}
 }
