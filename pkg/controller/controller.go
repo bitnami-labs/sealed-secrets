@@ -30,7 +30,6 @@ import (
 
 	ssv1alpha1 "github.com/bitnami/sealed-secrets/pkg/apis/sealedsecrets/v1alpha1"
 	ssclientset "github.com/bitnami/sealed-secrets/pkg/client/clientset/versioned"
-	ssscheme "github.com/bitnami/sealed-secrets/pkg/client/clientset/versioned/scheme"
 	ssv1alpha1client "github.com/bitnami/sealed-secrets/pkg/client/clientset/versioned/typed/sealedsecrets/v1alpha1"
 	ssinformer "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions"
 	"github.com/bitnami/sealed-secrets/pkg/multidocyaml"
@@ -89,7 +88,6 @@ func NewController(
 ) (*Controller, error) {
 	queue := workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
 
-	utilruntime.Must(ssscheme.AddToScheme(scheme.Scheme))
 	eventBroadcaster := record.NewBroadcaster()
 	eventBroadcaster.StartLogging(func(format string, args ...interface{}) {
 		// Must use Sprintf to ensure slog doesn't interpret args... as key-value pairs
