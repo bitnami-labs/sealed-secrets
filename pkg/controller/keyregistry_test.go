@@ -346,3 +346,43 @@ func TestConcurrentAccess(t *testing.T) {
 		t.Errorf("keyLen after concurrent registration: got %d, want %d", got, numKeys)
 	}
 }
+
+func TestUnregisterKey(t *testing.T) {
+	const keySize = 2048
+	validFor := time.Hour
+	cn := "my-cn"
+	kr := NewKeyRegistry(nil, "namespace", "prefix", "label", keySize)
+
+	key1, cert1, err := generatePrivateKeyAndCert(keySize, validFor, cn)
+	if err != nil {
+		t.Fatal(err)
+	}
+	key2, cert2, err := generatePrivateKeyAndCert(keySize, validFor, cn)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t1 := time.Now()
+	t2 := t1.Add(time.Minute)
+
+	if err := kr.registerNewKey("k1", key1, cert1, t1); err != nil {
+		t.Fatal(err)
+	}
+	if err := kr.registerNewKey("k2", key2, cert2, t2); err != nil {
+		t.Fatal(err)
+	}
+
+	fp2, _ := crypto.PublicKeyFingerprint(&key2.PublicKey)
+	kr.unregisterKey(fp2)
+
+	if kr.keyLen() != 1 {
+		t.Fatalf("expected 1 key, got %d", kr.keyLen())
+	}
+	got, err := kr.latestPrivateKey()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != key1 {
+		t.Errorf("got %v, want %v", got, key1)
+	}
+}

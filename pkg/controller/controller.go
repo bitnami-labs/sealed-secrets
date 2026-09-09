@@ -33,6 +33,7 @@ import (
 	ssscheme "github.com/bitnami/sealed-secrets/pkg/client/clientset/versioned/scheme"
 	ssv1alpha1client "github.com/bitnami/sealed-secrets/pkg/client/clientset/versioned/typed/sealedsecrets/v1alpha1"
 	ssinformer "github.com/bitnami/sealed-secrets/pkg/client/informers/externalversions"
+	"github.com/bitnami/sealed-secrets/pkg/crypto"
 	"github.com/bitnami/sealed-secrets/pkg/multidocyaml"
 )
 
@@ -137,11 +138,49 @@ func watchKeySecrets(kinformer informers.SharedInformerFactory, registry *KeyReg
 	kInformer := kinformer.Core().V1().Secrets().Informer()
 	_, err := kInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			err := registryNewKeyWithSecret(obj.(*corev1.Secret), registry, keyOrderPriority)
-			if err != nil {
-				slog.Error("failed to register key", "error", err)
+			secret, ok := obj.(*corev1.Secret)
+			if !ok {
 				return
 			}
+			err := registryNewKeyWithSecret(secret, registry, keyOrderPriority)
+			if err != nil {
+				slog.Error("failed to register key", "secret", secret.Name, "error", err)
+				return
+			}
+		},
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			secret, ok := newObj.(*corev1.Secret)
+			if !ok {
+				return
+			}
+			err := registryNewKeyWithSecret(secret, registry, keyOrderPriority)
+			if err != nil {
+				slog.Error("failed to register updated key", "secret", secret.Name, "error", err)
+				return
+			}
+		},
+		DeleteFunc: func(obj interface{}) {
+			secret, ok := obj.(*corev1.Secret)
+			if !ok {
+				tombstone, ok := obj.(cache.DeletedFinalStateUnknown)
+				if !ok {
+					return
+				}
+				secret, ok = tombstone.Obj.(*corev1.Secret)
+				if !ok {
+					return
+				}
+			}
+			key, _, err := readKey(secret)
+			if err != nil {
+				return
+			}
+			fp, err := crypto.PublicKeyFingerprint(&key.PublicKey)
+			if err != nil {
+				return
+			}
+			registry.unregisterKey(fp)
+			slog.Info("unregistered deleted private key", "secretname", secret.Name)
 		},
 	})
 	if err != nil {
@@ -243,13 +282,16 @@ func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclien
 // HasSynced returns true once this controller has completed an
 // initial resource listing.
 func (c *Controller) HasSynced() bool {
-	var synced bool
-	if c.sInformer == nil {
-		synced = c.ssInformer.HasSynced()
-	} else {
-		synced = c.ssInformer.HasSynced() && c.sInformer.HasSynced()
+	if !c.ssInformer.HasSynced() {
+		return false
 	}
-	return synced
+	if c.sInformer != nil && !c.sInformer.HasSynced() {
+		return false
+	}
+	if c.kInformer != nil && !c.kInformer.HasSynced() {
+		return false
+	}
+	return true
 }
 
 // LastSyncResourceVersion is the resource version observed when last
