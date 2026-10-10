@@ -5,8 +5,10 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -152,6 +154,40 @@ func TestOpenCertFile(t *testing.T) {
 		if string(data) != testCert {
 			t.Errorf("Read incorrect data from cert file?!")
 		}
+	}
+}
+
+func TestOpenCertInsecureSkipTLSVerify(t *testing.T) {
+	ctx := context.Background()
+	clientConfig := testClientConfig()
+	controllerNs := "default"
+	controllerName := "controller"
+
+	// the server certificate is signed by a CA the client does not know
+	s := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, testCert)
+	}))
+	defer s.Close()
+
+	_, err := OpenCert(ctx, clientConfig, controllerNs, controllerName, s.URL)
+	var verificationErr *tls.CertificateVerificationError
+	if !errors.As(err, &verificationErr) {
+		t.Fatalf("Expected a certificate verification error, got: %v", err)
+	}
+
+	f, err := OpenCertWithOptions(ctx, clientConfig, controllerNs, controllerName, s.URL, OpenCertOptions{InsecureSkipTLSVerify: true})
+	if err != nil {
+		t.Fatalf("Error reading test cert: %v", err)
+	}
+	defer f.Close()
+
+	data, err := io.ReadAll(f)
+	if err != nil {
+		t.Fatalf("Error reading from test cert: %v", err)
+	}
+
+	if string(data) != testCert {
+		t.Errorf("Read incorrect data from cert URL?!")
 	}
 }
 

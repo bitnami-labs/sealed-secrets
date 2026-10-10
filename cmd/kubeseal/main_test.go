@@ -9,6 +9,8 @@ import (
 	goflag "flag"
 	"fmt"
 	"io"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -83,6 +85,34 @@ func TestMainError(t *testing.T) {
 	err := runCLI(io.Discard, testConfig(&flags))
 	if err == nil || !os.IsNotExist(err) {
 		t.Fatalf("expecting not exist error, got: %v", err)
+	}
+}
+
+func TestCertURLInsecureSkipTLSVerify(t *testing.T) {
+	const cert = "certificate served over https"
+	// the server certificate is signed by a CA the client does not know
+	s := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprint(w, cert)
+	}))
+	defer s.Close()
+
+	fetchCert := func(insecureSkipTLSVerify bool) (string, error) {
+		buf := bytes.NewBufferString("")
+		flags := cliFlags{certURL: s.URL, dumpCert: true, insecureSkipTLSVerify: insecureSkipTLSVerify}
+		err := runCLI(buf, testConfig(&flags))
+		return buf.String(), err
+	}
+
+	if _, err := fetchCert(false); err == nil || !strings.Contains(err.Error(), "certificate") {
+		t.Fatalf("expecting a certificate verification error, got: %v", err)
+	}
+
+	got, err := fetchCert(true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != cert {
+		t.Errorf("got: %q, want: %q", got, cert)
 	}
 }
 
