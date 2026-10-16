@@ -69,7 +69,7 @@ spec:
           default: true
         skipRecreate:
           type: boolean
-          description: Specifies whether the Sealed Secrets controller should skip recreating removed secrets
+          description: Specifies whether the Sealed Secrets controller should skip restoring removed or modified secrets
           default: false
         keyrenewperiod:
           type: string

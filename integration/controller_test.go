@@ -600,6 +600,110 @@ var _ = Describe("create", func() {
 		})
 	})
 
+	Describe("Secret Healing", func() {
+		// How long a modification must survive to count as "not healed".
+		const noHealDuration = 5 * time.Second
+
+		getSecret := func() (*v1.Secret, error) {
+			return c.Secrets(ns).Get(ctx, secretName, metav1.GetOptions{})
+		}
+		// modifySecret retries on conflicts, since the controller may update the Secret concurrently.
+		modifySecret := func(modify func(*v1.Secret)) {
+			Eventually(func() error {
+				secret, err := getSecret()
+				if err != nil {
+					return err
+				}
+				modify(secret)
+				_, err = c.Secrets(ns).Update(ctx, secret, metav1.UpdateOptions{})
+				return err
+			}, Timeout, PollingInterval).Should(Succeed())
+		}
+
+		Context("With owned secret", func() {
+			JustBeforeEach(func() {
+				// The Secret is owned as soon as it's created, but the initial unseal may still be
+				// retrying its update. Wait until it succeeded, so that retry can't revert our edit.
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("Unsealed")),
+				)
+				Eventually(getSecret, Timeout, PollingInterval).Should(WithTransform(getFirstOwnerName, Equal(ss.GetName())))
+			})
+
+			It("should restore modified data", func() {
+				modifySecret(func(secret *v1.Secret) { secret.Data["foo"] = []byte("tampered") })
+				Eventually(getSecret, Timeout, PollingInterval).Should(WithTransform(getData, Equal(map[string][]byte{
+					"foo": []byte("bar"),
+				})))
+			})
+
+			It("should remove added data keys", func() {
+				modifySecret(func(secret *v1.Secret) { secret.Data["extra"] = []byte("x") })
+				Eventually(getSecret, Timeout, PollingInterval).Should(WithTransform(getData, Equal(map[string][]byte{
+					"foo": []byte("bar"),
+				})))
+			})
+
+			It("should not revert added labels", func() {
+				modifySecret(func(secret *v1.Secret) { secret.Labels["other-tool"] = "x" })
+				Consistently(getSecret, noHealDuration, PollingInterval).Should(WithTransform(getLabels, Equal(map[string]string{
+					"mylabel":    "myvalue",
+					"other-tool": "x",
+				})))
+			})
+		})
+
+		Context("With unowned secret without managed annotation", func() {
+			BeforeEach(func() {
+				s.Annotations = map[string]string{}
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+			})
+			JustBeforeEach(func() {
+				Eventually(func() (*v1.EventList, error) {
+					return c.Events(ns).Search(scheme.Scheme, ss)
+				}, Timeout, PollingInterval).Should(
+					containEventWithReason(Equal("ErrUpdateFailed")),
+				)
+			})
+
+			It("should not heal the secret", func() {
+				modifySecret(func(secret *v1.Secret) { secret.Data["foo"] = []byte("tampered") })
+				Consistently(getSecret, noHealDuration, PollingInterval).Should(WithTransform(getData, Equal(map[string][]byte{
+					"foo": []byte("tampered"),
+				})))
+			})
+		})
+
+		Context("With unowned secret with patch annotation", func() {
+			BeforeEach(func() {
+				s.Data = map[string][]byte{
+					"foo":  []byte("bar1"),
+					"foo2": []byte("bar2"),
+				}
+				s.Annotations = map[string]string{
+					ssv1alpha1.SealedSecretPatchAnnotation: "true",
+				}
+				c.Secrets(ns).Create(ctx, s, metav1.CreateOptions{})
+			})
+			JustBeforeEach(func() {
+				Eventually(getSecret, Timeout, PollingInterval).Should(WithTransform(getData, Equal(map[string][]byte{
+					"foo":  []byte("bar"),
+					"foo2": []byte("bar2"),
+				})))
+			})
+
+			It("should not heal the secret", func() {
+				modifySecret(func(secret *v1.Secret) { secret.Data["foo"] = []byte("tampered") })
+				Consistently(getSecret, noHealDuration, PollingInterval).Should(WithTransform(getData, Equal(map[string][]byte{
+					"foo":  []byte("tampered"),
+					"foo2": []byte("bar2"),
+				})))
+			})
+		})
+	})
+
 	Describe("Same name, wrong key", func() {
 		BeforeEach(func() {
 			// NB: weak key-size - this is just a test case
