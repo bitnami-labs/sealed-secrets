@@ -129,7 +129,7 @@ fmt:
 	$(GOFMT) -s -w $(GO_FILES)
 
 lint:
-	 $(GOLANGCILINT) run --enable goimports --timeout=5m
+	 $(GOLANGCILINT) run --timeout=5m
 
 lint-gosec:
 	 $(GOSEC) -r -severity low -exclude-generated

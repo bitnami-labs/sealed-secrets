@@ -41,8 +41,9 @@ jobs:
       matrix:
         go: ${{ fromJSON(needs.load-versions.outputs.go_version_list) }}
         os: [ubuntu-latest]
-        golangci-lint: ["1.64.8"]
-        gosec: ["2.22.2"]
+        golangci-lint: ["2.15.0"]
+        # No gosec release can read Go 1.27 export data yet, so pin the first commit that can (post v2.29.0).
+        gosec: ["1cbfd7e6488c2464f18603623354de1be9565b39"]
     steps:
     - name: Set up Go 1.x
       uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
@@ -55,8 +56,8 @@ jobs:
 
     - name: Install dependencies
       run: |
-        go install github.com/golangci/golangci-lint/cmd/golangci-lint@v${{ matrix.golangci-lint }}
-        go install github.com/securego/gosec/v2/cmd/gosec@v${{ matrix.gosec }}
+        go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v${{ matrix.golangci-lint }}
+        go install github.com/securego/gosec/v2/cmd/gosec@${{ matrix.gosec }}
 
     - name: Run linter
       run: make lint

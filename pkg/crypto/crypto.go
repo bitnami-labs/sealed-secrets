@@ -67,6 +67,7 @@ func HybridEncrypt(rnd io.Reader, pubKey *rsa.PublicKey, plaintext, label []byte
 	zeroNonce := make([]byte, aed.NonceSize())
 
 	// Append symmetrically encrypted Secret
+	// #nosec G407 -- the session key is single-use, so a zero nonce is safe
 	ciphertext = aed.Seal(ciphertext, zeroNonce, plaintext, nil)
 
 	return ciphertext, nil

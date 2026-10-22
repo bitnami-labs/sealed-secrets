@@ -3,7 +3,6 @@ package flagenv_test
 import (
 	"flag"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/bitnami/sealed-secrets/pkg/flagenv"
@@ -21,10 +20,8 @@ func TestFlagenv(t *testing.T) {
 	}
 	for i, tc := range testCases {
 		t.Run(fmt.Sprint(i), func(t *testing.T) {
-			defer os.Unsetenv("MY_TEST_FOO")
-
 			if tc.set {
-				os.Setenv("MY_TEST_FOO", tc.val)
+				t.Setenv("MY_TEST_FOO", tc.val)
 			}
 
 			fs := flag.NewFlagSet("test", flag.PanicOnError)
