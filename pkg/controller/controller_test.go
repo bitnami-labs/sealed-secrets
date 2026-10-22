@@ -476,6 +476,29 @@ func TestAttemptUnsealIgnoresTemplate(t *testing.T) {
 	}
 }
 
+// TestAttemptUnsealMalformedYAML checks that malformed input is reported as an error instead of panicking (#857).
+func TestAttemptUnsealMalformedYAML(t *testing.T) {
+	ns := "some-namespace"
+	keyNs := "some-key-namespace"
+	var tweakopts func(*metav1.ListOptions)
+	clientset := fake.NewClientset()
+	ssc := ssfake.NewSimpleClientset()
+	keyRegistry := testKeyRegister(t, context.Background(), clientset, ns)
+
+	controller, err := prepareController(clientset, ns, keyNs, tweakopts, &Flags{SkipRecreate: false}, ssc, keyRegistry)
+	if err != nil {
+		t.Fatalf("err %v want %v", err, nil)
+	}
+
+	valid, err := controller.AttemptUnseal([]byte("apiVersion: v1\nkind: Secret\nmetadata: name: foo\n"))
+	if err == nil {
+		t.Errorf("AttemptUnseal returned no error for malformed YAML")
+	}
+	if valid {
+		t.Errorf("AttemptUnseal reported malformed YAML as valid")
+	}
+}
+
 // TestRotateIgnoresTemplate checks that Rotate never executes spec.template.data as a template.
 func TestRotateIgnoresTemplate(t *testing.T) {
 	ns := "some-namespace"
