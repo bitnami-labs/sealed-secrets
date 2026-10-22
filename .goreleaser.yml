@@ -1,3 +1,4 @@
+version: 2
 project_name: sealed-secrets
 env:
   - CGO_ENABLED=0
@@ -29,7 +30,7 @@ builds:
       - linux_ppc64le
       - windows_amd64
 archives:
-  - builds:
+  - ids:
       - kubeseal
     name_template: "kubeseal-{{ .Version }}-{{ .Os }}-{{ .Arch }}"
 checksum:
