@@ -65,10 +65,10 @@ secretName: "sealed-secrets-key"
 ## @param updateStatus Specifies whether the Sealed Secrets controller should update the status subresource
 ##
 updateStatus: true
-## @param skipRecreate Specifies whether the Sealed Secrets controller should skip recreating removed secrets
+## @param skipRecreate Specifies whether the Sealed Secrets controller should skip restoring removed or modified secrets
 ## Setting it to true allows to optionally restore backward compatibility in low priviledge
 ## environments when old versions of the controller did not require watch permissions on secrets
-## for secret re-creation.
+## for secret re-creation and healing.
 ##
 skipRecreate: false
 ## @param keyrenewperiod Specifies key renewal period. Default 30 days

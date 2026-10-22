@@ -236,45 +236,75 @@ func sealedSecretChanged(oldObj, newObj interface{}) bool {
 
 func watchSecrets(sinformer informers.SharedInformerFactory, ssclientset ssclientset.Interface, queue workqueue.TypedRateLimitingInterface[string]) (cache.SharedIndexInformer, error) {
 	sInformer := sinformer.Core().V1().Secrets().Informer()
-	_, err := sInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		DeleteFunc: func(obj interface{}) {
-			skey, err := cache.DeletionHandlingMetaNamespaceKeyFunc(obj)
-			if err != nil {
-				slog.Error("failed to fetch Secret key", "error", err)
-				return
-			}
-
-			ns, name, err := cache.SplitMetaNamespaceKey(skey)
-			if err != nil {
-				slog.Error("failed to get namespace and name from key", "secret", skey, "error", err)
-				return
-			}
-
-			ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(ns).Get(context.Background(), name, metav1.GetOptions{})
-			if err != nil {
-				if !k8serrors.IsNotFound(err) {
-					slog.Error("failed to get SealedSecret", "secret", skey, "error", err)
-				}
-				return
-			}
-
-			if !metav1.IsControlledBy(obj.(*corev1.Secret), ssecret) && !isAnnotatedToBeManaged(obj.(*corev1.Secret)) {
-				return
-			}
-
-			sskey, err := cache.MetaNamespaceKeyFunc(ssecret)
-			if err != nil {
-				slog.Error("failed to fetch SealedSecret key", "secret", skey, "error", err)
-				return
-			}
-
-			queue.Add(sskey)
-		},
-	})
+	_, err := sInformer.AddEventHandler(secretEventHandlers(ssclientset, queue))
 	if err != nil {
 		return nil, fmt.Errorf("could not add event handler to secrets informer: %w", err)
 	}
 	return sInformer, nil
+}
+
+// secretEventHandlers re-queues the owning SealedSecret when a managed Secret is modified or deleted.
+func secretEventHandlers(ssclientset ssclientset.Interface, queue workqueue.TypedRateLimitingInterface[string]) cache.ResourceEventHandlerFuncs {
+	return cache.ResourceEventHandlerFuncs{
+		UpdateFunc: func(oldObj, newObj interface{}) {
+			oldSecret, ok := oldObj.(*corev1.Secret)
+			if !ok {
+				return
+			}
+			newSecret, ok := newObj.(*corev1.Secret)
+			if !ok {
+				return
+			}
+			if !secretChanged(oldSecret, newSecret) {
+				return
+			}
+			enqueueOwningSealedSecret(ssclientset, queue, newSecret)
+		},
+		DeleteFunc: func(obj interface{}) {
+			if tombstone, ok := obj.(cache.DeletedFinalStateUnknown); ok {
+				obj = tombstone.Obj
+			}
+			secret, ok := obj.(*corev1.Secret)
+			if !ok {
+				slog.Error("unexpected object type in Secret delete handler", "type", fmt.Sprintf("%T", obj))
+				return
+			}
+			enqueueOwningSealedSecret(ssclientset, queue, secret)
+		},
+	}
+}
+
+// secretChanged reports whether a Secret update touched its data or type.
+// Labels and annotations are deliberately ignored, since other tools commonly add them
+// and healing those would make the controller fight over the Secrets metadata.
+func secretChanged(oldSecret, newSecret *corev1.Secret) bool {
+	return !reflect.DeepEqual(oldSecret.Data, newSecret.Data) ||
+		oldSecret.Type != newSecret.Type
+}
+
+// enqueueOwningSealedSecret queues the SealedSecret that owns or manages the given Secret, if any.
+func enqueueOwningSealedSecret(ssclientset ssclientset.Interface, queue workqueue.TypedRateLimitingInterface[string], secret *corev1.Secret) {
+	skey := secret.Namespace + "/" + secret.Name
+
+	ssecret, err := ssclientset.BitnamiV1alpha1().SealedSecrets(secret.Namespace).Get(context.Background(), secret.Name, metav1.GetOptions{})
+	if err != nil {
+		if !k8serrors.IsNotFound(err) {
+			slog.Error("failed to get SealedSecret", "secret", skey, "error", err)
+		}
+		return
+	}
+
+	if !metav1.IsControlledBy(secret, ssecret) && !isAnnotatedToBeManaged(secret) {
+		return
+	}
+
+	sskey, err := cache.MetaNamespaceKeyFunc(ssecret)
+	if err != nil {
+		slog.Error("failed to fetch SealedSecret key", "secret", skey, "error", err)
+		return
+	}
+
+	queue.Add(sskey)
 }
 
 // HasSynced returns true once this controller has completed an

@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 	ktesting "k8s.io/client-go/testing"
 	"k8s.io/client-go/tools/cache"
+	"k8s.io/client-go/util/workqueue"
 )
 
 func someStr(s string) *string {
@@ -721,5 +722,172 @@ func TestWatchKeySecretsDynamicDetection(t *testing.T) {
 	}
 	if latest == nil || !latest.Equal(key1) {
 		t.Fatalf("expected keyRegistry to fallback to key1 after key2 deletion, got: %v", latest)
+	}
+}
+
+func newTestSealedSecret(ns, name string) *ssv1alpha1.SealedSecret {
+	return &ssv1alpha1.SealedSecret{
+		ObjectMeta: metav1.ObjectMeta{Namespace: ns, Name: name, UID: "ss-uid"},
+	}
+}
+
+func newTestOwnedSecret(ss *ssv1alpha1.SealedSecret, data map[string][]byte) *corev1.Secret {
+	return &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace:       ss.Namespace,
+			Name:            ss.Name,
+			OwnerReferences: []metav1.OwnerReference{*metav1.NewControllerRef(ss, ssv1alpha1.SchemeGroupVersion.WithKind("SealedSecret"))},
+		},
+		Data: data,
+	}
+}
+
+func newTestQueue(t *testing.T) workqueue.TypedRateLimitingInterface[string] {
+	queue := workqueue.NewTypedRateLimitingQueue(workqueue.DefaultTypedControllerRateLimiter[string]())
+	t.Cleanup(queue.ShutDown)
+	return queue
+}
+
+func TestSecretChanged(t *testing.T) {
+	base := &corev1.Secret{
+		ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"l": "1"}, Annotations: map[string]string{"a": "1"}},
+		Data:       map[string][]byte{"foo": []byte("bar")},
+		Type:       corev1.SecretTypeOpaque,
+	}
+	tests := []struct {
+		name   string
+		modify func(s *corev1.Secret)
+		want   bool
+	}{
+		{name: "no change", modify: func(s *corev1.Secret) {}, want: false},
+		{name: "metadata only", modify: func(s *corev1.Secret) {
+			s.ResourceVersion = "2"
+			s.ManagedFields = []metav1.ManagedFieldsEntry{{Manager: "x"}}
+		}, want: false},
+		{name: "data", modify: func(s *corev1.Secret) { s.Data["foo"] = []byte("oops") }, want: true},
+		{name: "data key added", modify: func(s *corev1.Secret) { s.Data["extra"] = []byte("x") }, want: true},
+		{name: "type", modify: func(s *corev1.Secret) { s.Type = corev1.SecretTypeTLS }, want: true},
+		{name: "labels", modify: func(s *corev1.Secret) { s.Labels["l"] = "2" }, want: false},
+		{name: "label added", modify: func(s *corev1.Secret) { s.Labels["extra"] = "x" }, want: false},
+		{name: "annotations", modify: func(s *corev1.Secret) { s.Annotations["a"] = "2" }, want: false},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			updated := base.DeepCopy()
+			tc.modify(updated)
+			if got := secretChanged(base, updated); got != tc.want {
+				t.Errorf("secretChanged() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestSecretUpdateHandler(t *testing.T) {
+	ss := newTestSealedSecret("ns", "db")
+	data := map[string][]byte{"password": []byte("s3cr3t")}
+	tests := []struct {
+		name          string
+		sealedSecrets []runtime.Object
+		secret        *corev1.Secret
+		modify        func(s *corev1.Secret)
+		wantKey       string
+	}{
+		{
+			name:          "owned secret modified",
+			sealedSecrets: []runtime.Object{ss},
+			secret:        newTestOwnedSecret(ss, data),
+			modify:        func(s *corev1.Secret) { s.Data["password"] = []byte("oops") },
+			wantKey:       "ns/db",
+		},
+		{
+			name:          "owned secret unchanged",
+			sealedSecrets: []runtime.Object{ss},
+			secret:        newTestOwnedSecret(ss, data),
+			modify:        func(s *corev1.Secret) { s.ResourceVersion = "2" },
+		},
+		{
+			name:          "owned secret labels and annotations modified",
+			sealedSecrets: []runtime.Object{ss},
+			secret:        newTestOwnedSecret(ss, data),
+			modify: func(s *corev1.Secret) {
+				s.Labels = map[string]string{"argocd.argoproj.io/instance": "app"}
+				s.Annotations = map[string]string{"example.com/note": "added by another tool"}
+			},
+		},
+		{
+			name:          "unowned secret modified",
+			sealedSecrets: []runtime.Object{ss},
+			secret:        &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "db"}, Data: data},
+			modify:        func(s *corev1.Secret) { s.Data["password"] = []byte("oops") },
+		},
+		{
+			name:          "managed secret modified",
+			sealedSecrets: []runtime.Object{ss},
+			secret: &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Namespace:   "ns",
+					Name:        "db",
+					Annotations: map[string]string{ssv1alpha1.SealedSecretManagedAnnotation: "true"},
+				},
+				Data: data,
+			},
+			modify:  func(s *corev1.Secret) { s.Data["password"] = []byte("oops") },
+			wantKey: "ns/db",
+		},
+		{
+			name:   "no matching sealed secret",
+			secret: &corev1.Secret{ObjectMeta: metav1.ObjectMeta{Namespace: "ns", Name: "unrelated"}, Data: data},
+			modify: func(s *corev1.Secret) { s.Data["password"] = []byte("changed") },
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			queue := newTestQueue(t)
+			handlers := secretEventHandlers(ssfake.NewSimpleClientset(tc.sealedSecrets...), queue)
+
+			oldSecret := tc.secret.DeepCopy()
+			newSecret := tc.secret.DeepCopy()
+			tc.modify(newSecret)
+
+			handlers.OnUpdate(oldSecret, newSecret)
+
+			if tc.wantKey == "" {
+				if got := queue.Len(); got != 0 {
+					t.Fatalf("expected no queued item, got %d", got)
+				}
+				return
+			}
+			if got := queue.Len(); got != 1 {
+				t.Fatalf("expected 1 queued item, got %d", got)
+			}
+			if key, _ := queue.Get(); key != tc.wantKey {
+				t.Errorf("expected key %s, got %q", tc.wantKey, key)
+			}
+		})
+	}
+}
+
+func TestSecretDeleteQueuesOwningSealedSecret(t *testing.T) {
+	ss := newTestSealedSecret("ns", "db")
+	secret := newTestOwnedSecret(ss, map[string][]byte{"password": []byte("s3cr3t")})
+
+	tests := []struct {
+		name string
+		obj  interface{}
+	}{
+		{name: "secret", obj: secret},
+		{name: "tombstone", obj: cache.DeletedFinalStateUnknown{Key: "ns/db", Obj: secret}},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			queue := newTestQueue(t)
+			handlers := secretEventHandlers(ssfake.NewSimpleClientset(ss), queue)
+
+			handlers.OnDelete(tc.obj)
+
+			if got := queue.Len(); got != 1 {
+				t.Fatalf("expected 1 queued item, got %d", got)
+			}
+		})
 	}
 }
