@@ -4,6 +4,9 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami/sealed-secrets.svg)](https://github.com/bitnami/sealed-secrets/releases/latest)
 
+## v0.41.1
+- Failing pipelines during release
+
 ## v0.41.0
 
 - Heal manually modified Secrets ([#2073](https://github.com/bitnami/sealed-secrets/pull/2073))
