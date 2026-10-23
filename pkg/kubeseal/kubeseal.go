@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -37,6 +38,13 @@ import (
 type ClientConfig interface {
 	ClientConfig() (*rest.Config, error)
 	Namespace() (string, bool, error)
+}
+
+// OpenCertOptions are the options of OpenCertWithOptions.
+type OpenCertOptions struct {
+	// InsecureSkipTLSVerify disables the verification of the server certificate
+	// when the certificate is fetched from an https URL.
+	InsecureSkipTLSVerify bool
 }
 
 func ParseKey(r io.Reader) (*rsa.PublicKey, error) {
@@ -105,7 +113,7 @@ func getServicePortName(ctx context.Context, client corev1.CoreV1Interface, name
 
 // openCertLocal opens a cert URI or local filename, by fetching it locally from the client
 // (as opposed as openCertCluster which fetches it via HTTP but through the k8s API proxy).
-func openCertLocal(filenameOrURI string) (io.ReadCloser, error) {
+func openCertLocal(filenameOrURI string, opts OpenCertOptions) (io.ReadCloser, error) {
 	// detect if a certificate is a local file or an URI.
 	if ok, err := isFilename(filenameOrURI); err != nil {
 		return nil, err
@@ -113,15 +121,19 @@ func openCertLocal(filenameOrURI string) (io.ReadCloser, error) {
 		// #nosec G304 -- should open user provided file
 		return os.Open(filenameOrURI)
 	}
-	return openCertURI(filenameOrURI)
+	return openCertURI(filenameOrURI, opts)
 }
 
-func openCertURI(uri string) (io.ReadCloser, error) {
+func openCertURI(uri string, opts OpenCertOptions) (io.ReadCloser, error) {
 	// support file:// scheme. Note: we're opening the file using os.Open rather
 	// than using the file:// scheme below because there is no point in complicating our lives
 	// and escape the filename properly.
 
 	t := &http.Transport{Proxy: http.ProxyFromEnvironment}
+	if opts.InsecureSkipTLSVerify {
+		// #nosec G402 -- explicitly requested by the user
+		t.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+	}
 	// #nosec: G111 -- we want to allow all files to be opened
 	t.RegisterProtocol("file", http.NewFileTransport(http.Dir("/")))
 	c := &http.Client{Transport: t}
@@ -151,8 +163,13 @@ func openCertCluster(ctx context.Context, c corev1.CoreV1Interface, namespace, n
 }
 
 func OpenCert(ctx context.Context, clientConfig ClientConfig, controllerNs, controllerName string, certURL string) (io.ReadCloser, error) {
+	return OpenCertWithOptions(ctx, clientConfig, controllerNs, controllerName, certURL, OpenCertOptions{})
+}
+
+// OpenCertWithOptions is like OpenCert, with options that apply when the certificate is fetched from certURL.
+func OpenCertWithOptions(ctx context.Context, clientConfig ClientConfig, controllerNs, controllerName string, certURL string, opts OpenCertOptions) (io.ReadCloser, error) {
 	if certURL != "" {
-		return openCertLocal(certURL)
+		return openCertLocal(certURL, opts)
 	}
 
 	conf, err := clientConfig.ClientConfig()

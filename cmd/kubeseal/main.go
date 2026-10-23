@@ -56,6 +56,9 @@ type cliFlags struct {
 	unseal         bool
 	privKeys       []string
 	help           bool
+
+	// insecureSkipTLSVerify is the value of the kubectl --insecure-skip-tls-verify flag.
+	insecureSkipTLSVerify bool
 }
 
 type config struct {
@@ -196,7 +199,9 @@ func runCLI(w io.Writer, cfg *config) (err error) {
 		return kubeseal.ReEncryptSealedSecret(cfg.ctx, cfg.clientConfig, flags.controllerNs, flags.controllerName, flags.outputFormat, input, w, scheme.Codecs)
 	}
 
-	f, err := kubeseal.OpenCert(cfg.ctx, cfg.clientConfig, flags.controllerNs, flags.controllerName, flags.certURL)
+	f, err := kubeseal.OpenCertWithOptions(cfg.ctx, cfg.clientConfig, flags.controllerNs, flags.controllerName, flags.certURL, kubeseal.OpenCertOptions{
+		InsecureSkipTLSVerify: flags.insecureSkipTLSVerify,
+	})
 	if err != nil {
 		return err
 	}
@@ -282,6 +287,10 @@ func mainE(w io.Writer, fs *flag.FlagSet, gofs *goflag.FlagSet, args []string) e
 		fmt.Fprintf(w, "kubeseal version: %s\n", VERSION)
 		return nil
 	}
+
+	// The client config only applies this flag to connections to the API server,
+	// keep its value for certificates fetched from a --cert URL.
+	flags.insecureSkipTLSVerify = overrides.ClusterInfo.InsecureSkipTLSVerify
 
 	clientConfig := initClient(flags.kubeconfig, &overrides, os.Stdout)
 	cfg := newConfig(clientConfig, &flags)
