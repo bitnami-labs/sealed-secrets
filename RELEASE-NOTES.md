@@ -4,6 +4,27 @@ Latest release:
 
 [![](https://img.shields.io/github/release/bitnami/sealed-secrets.svg)](https://github.com/bitnami/sealed-secrets/releases/latest)
 
+## v0.41.0
+
+- Heal manually modified Secrets ([#2073](https://github.com/bitnami/sealed-secrets/pull/2073))
+- fix(controller): remove redundant scheme registration from NewController, fixing a startup abort ("concurrent map read and map write") with `--additional-namespaces` introduced in v0.39.0 ([#2046](https://github.com/bitnami/sealed-secrets/pull/2046))
+- fix(multidocyaml): do not panic on malformed YAML in /v1/verify ([#2074](https://github.com/bitnami/sealed-secrets/pull/2074))
+- controller: with `--watch-for-secrets`, dynamically detect new, updated, and deleted sealing key secrets without a restart ([#2034](https://github.com/bitnami/sealed-secrets/pull/2034))
+- Add terminating newline to end of prometheusrule.yaml ([#2055](https://github.com/bitnami/sealed-secrets/pull/2055))
+- Bump Golang to 1.27.3 ([#2077](https://github.com/bitnami/sealed-secrets/pull/2077))
+- Bump github.com/onsi/ginkgo/v2 from 2.33.0 to 2.33.1 ([#2075](https://github.com/bitnami/sealed-secrets/pull/2075))
+- Bump distroless/static from `5813399` to `9e0130b` in /docker ([#2076](https://github.com/bitnami/sealed-secrets/pull/2076))
+- Bump github.com/prometheus/client_golang from 1.24.1 to 1.25.0 ([#2071](https://github.com/bitnami/sealed-secrets/pull/2071))
+- Bump golang.org/x/crypto from 0.57.0 to 0.58.0 ([#2072](https://github.com/bitnami/sealed-secrets/pull/2072))
+- Bump github.com/onsi/gomega from 1.43.1 to 1.44.0 ([#2065](https://github.com/bitnami/sealed-secrets/pull/2065))
+- Bump k8s.io/code-generator from 0.37.0 to 0.37.1 ([#2064](https://github.com/bitnami/sealed-secrets/pull/2064))
+- Bump k8s.io/client-go from 0.37.0 to 0.37.1 ([#2067](https://github.com/bitnami/sealed-secrets/pull/2067))
+- Bump github.com/onsi/gomega from 1.43.0 to 1.43.1 ([#2062](https://github.com/bitnami/sealed-secrets/pull/2062))
+- Bump github.com/onsi/ginkgo/v2 from 2.32.2 to 2.33.0 ([#2061](https://github.com/bitnami/sealed-secrets/pull/2061))
+- Bump golang.org/x/crypto from 0.56.0 to 0.57.0 ([#2057](https://github.com/bitnami/sealed-secrets/pull/2057))
+- Bump distroless/static from `f2ea270` to `5813399` in /docker ([#2056](https://github.com/bitnami/sealed-secrets/pull/2056))
+- Bump github.com/onsi/ginkgo/v2 from 2.32.1 to 2.32.2 ([#2058](https://github.com/bitnami/sealed-secrets/pull/2058))
+
 ## v0.40.0
 
 - Bump Golang to 1.26.8 ([#2050](https://github.com/bitnami/sealed-secrets/pull/2050))
